@@ -1,0 +1,8 @@
+      PID    PPID    PGID     WINPID   TTY         UID    STIME COMMAND
+     1786    1778    1776      23868  ?         197609   Aug 16 /c/Program Files/nodejs/node
+     3130    2528    3130      23980  cons0     197609 11:25:20 /usr/bin/bash
+     3135    3130    3130      37844  cons0     197609 11:25:20 /usr/bin/ps
+     2528       1    2528      14400  cons0     197609 10:18:57 /usr/bin/bash
+     1334    1332    1332       6064  ?         197609   Aug 16 /usr/bin/bash
+     1342    1334    1332      20532  ?         197609   Aug 16 /c/Program Files/nodejs/node
+     1778    1776    1776       6528  ?         197609   Aug 16 /usr/bin/bash
