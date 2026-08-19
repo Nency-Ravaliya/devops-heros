@@ -1,0 +1,1 @@
+The while loop keeps asking the user for input until we enter q, and the if conditions check whether the input is q or a valid number. If the input is invalid, the script shows an error and continues the loop.
