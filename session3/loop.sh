@@ -1,7 +1,11 @@
-#!/bin/bash
-# for in in 1 2 3 4 5
+read -p "Enter start number: " start
+read -p "Enter end number: " end
 
-for i in {1..5}
+sum=0
+
+for ((i=start; i<=end; i++))
 do
-  echo "This is iteration number $i"
+    sum=$((sum + i))
 done
+
+echo "Sum = $sum"

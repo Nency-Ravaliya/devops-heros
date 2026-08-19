@@ -1,9 +1,7 @@
-#!/bin/bash
+read -p "Enter Your Name: " name
+read -p "Enter Your Roll Number: " roll_no
+read -p "Enter Your Comment: " comment
 
-read -p "Enter your name: " name
-read -p "Enter your roll number: " roll_no
-read -p "Enter your comment: " comment
-
-echo  "My name is $name"
+echo "My name is $name"
 echo "My roll number is $roll_no"
-echo "My comment is: $comment"
+echo "I am $comment"
