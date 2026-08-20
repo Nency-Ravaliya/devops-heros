@@ -4,7 +4,7 @@ while true; do
     if [ $num == "q" ]; then
         echo "Exiting the loop"
         break
-    elif [[ $num =~ ^[0-9]+$ ]]; then
+    elif ! [[ $num =~ ^[0-9]+$ ]]; then
         echo "Invalid"
     fi
     echo "You entered : $num!!"
