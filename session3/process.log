@@ -1,0 +1,3 @@
+  PID TTY           TIME CMD
+45177 ttys001    0:00.46 /bin/zsh -il
+48683 ttys001    0:00.01 sh ./task.sh

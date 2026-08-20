@@ -1,5 +1,3 @@
-#!/bin/bash
-
 while true; do
     read -p "Enter a number (or 'q' to quit): " input
 

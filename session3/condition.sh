@@ -1,5 +1,3 @@
-#!/bin/bash
-
 read -p "Enter your age: " age
 
 if [ $age -lt 0 ]; then
