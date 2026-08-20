@@ -230,7 +230,7 @@ done
 
 ### Output
 
-![While Loop Output](images/whileloop.png)
+![While Loop Output](images/whileLoop.png)
 
 ### Concept
 
