@@ -1,0 +1,23 @@
+This is my result file
+My name is Minesh Shaw
+User: mineshshaw
+Roll Number: 24BCS10029
+Date: Thu 20 Aug 2026 10:42:27 AM IST
+Host Name: Minesh-Shaw-Laptop-Ubuntu
+Disk Usage:
+Filesystem      Size  Used Avail Use% Mounted on
+tmpfs           3.0G  3.5M  3.0G   1% /run
+/dev/nvme0n1p7  348G   24G  307G   7% /
+tmpfs           7.3G   89M  7.2G   2% /dev/shm
+efivarfs        128K   54K   70K  44% /sys/firmware/efi/efivars
+none            1.0M     0  1.0M   0% /run/credentials/systemd-journald.service
+tmpfs           7.3G   48M  7.3G   1% /tmp
+none            1.0M     0  1.0M   0% /run/credentials/systemd-resolved.service
+/dev/nvme0n1p1  256M   58M  199M  23% /boot/efi
+tmpfs           1.5G  120K  1.5G   1% /run/user/1000
+/dev/nvme0n1p3  595G  408G  188G  69% /run/media/mineshshaw/OS
+Process List:
+    PID TTY          TIME CMD
+   7297 pts/0    00:00:00 bash
+  43183 pts/0    00:00:00 test1.sh
+  43191 pts/0    00:00:00 ps
