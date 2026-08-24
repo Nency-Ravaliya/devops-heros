@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  apache-app:
+    build: ./apache
+    ports:
+      - "8001:80"
+
+  python-app:
+    build: ./python
+    ports:
+      - "8002:8000"
+
+  java-app:
+    build: ./java
+    ports:
+      - "8003:8080"
+
+  node-app:
+    build: ./node
+    ports:
+      - "8004:3000"
+
+  react-app:
+    build: ./react
+    ports:
+      - "8005:5173"
