@@ -1,0 +1,1 @@
+This is an infinite loop . It  runs until the user enters q, if it is invalid input then it prints an error message and continues to take another response if it is a valid number then it print it and and then takes  another input
