@@ -6,6 +6,11 @@ echo $variable
 #ls="myfile" -- wrong way
 #we can't use commands names as a variable name
 
+
+
+
+
+
 name="Nensi"
 roll_no=123
 comment="Awesome"
