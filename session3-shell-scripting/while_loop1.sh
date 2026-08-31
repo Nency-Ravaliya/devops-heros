@@ -1,4 +1,4 @@
-#!/bin/bash
+`#!/bin/bash
 
 count=0
 while [ $count -lt 5 ]
