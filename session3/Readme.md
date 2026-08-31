@@ -244,6 +244,94 @@ done
 
 ---
 
+---
+
+## 7. Shell Scripting Homework
+
+### Objective
+
+The homework was to create a shell script that demonstrates variables, user
+input, system information, file creation, directory creation, and output
+redirection.
+
+The script performs the following tasks:
+
+- Prints the current date
+- Prints the hostname
+- Prints the current username
+- Displays disk usage
+- Displays running processes
+- Takes user input using `read -p`
+- Creates a directory
+- Creates a file inside the directory
+- Stores process information in the file
+
+### Script
+
+```bash
+#!/bin/bash
+
+read -p "Enter your name: " name
+read -p "Enter your roll number: " roll_no
+
+current_date=$(date)
+hostname_name=$(hostname)
+username=$(whoami)
+
+echo "Name: $name"
+echo "Roll Number: $roll_no"
+echo "Current Date: $current_date"
+echo "Hostname: $hostname_name"
+echo "Username: $username"
+
+echo "Disk Usage:"
+df -h
+
+mkdir -p system_info
+touch system_info/processes.txt
+
+ps > system_info/processes.txt
+
+echo "Running processes have been stored in system_info/processes.txt"
+
+echo "Process information:"
+cat system_info/processes.txt
+```
+
+### Commands Used
+
+| Command / Concept | Purpose |
+|---|---|
+| `read -p` | Takes input from the user |
+| Variables | Store and reuse values |
+| `date` | Displays the current date and time |
+| `hostname` | Displays the system hostname |
+| `whoami` | Displays the current username |
+| `df -h` | Displays disk usage in human-readable format |
+| `mkdir` | Creates the directory |
+| `touch` | Creates the output file |
+| `ps` | Displays running processes |
+| `>` | Redirects process output into a file |
+| `echo` | Displays text and variable values |
+
+### Output
+
+The script was executed in the Linux environment and the generated process
+information was stored in:
+
+```text
+system_info/processes.txt
+```
+
+### Result
+
+The script successfully demonstrates the required Linux commands and shell
+scripting concepts including variables, user input, command substitution,
+directory and file creation, disk usage, process information, and output
+redirection.
+
+---
+
 ## Commands & Concepts Used
 
 | Command / Concept  | Purpose                                    |
