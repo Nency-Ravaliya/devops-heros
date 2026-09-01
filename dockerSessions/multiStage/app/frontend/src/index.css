@@ -1,0 +1,53 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  background-color: #020408;
+  color: #e2e8f0;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  overflow-x: hidden;
+}
+
+/* Custom glowing ambient effects */
+.glow-text-cyan {
+  text-shadow: 0 0 20px rgba(0, 240, 255, 0.45);
+}
+
+.glow-border {
+  border: 1px solid rgba(0, 240, 255, 0.2);
+  box-shadow: 0 0 15px rgba(0, 240, 255, 0.08);
+}
+
+.glow-border:hover {
+  border-color: rgba(0, 240, 255, 0.45);
+  box-shadow: 0 0 25px rgba(0, 240, 255, 0.18);
+}
+
+.deep-sea-mesh {
+  background: 
+    radial-gradient(circle at 50% 0%, rgba(2, 132, 199, 0.15) 0%, transparent 60%),
+    radial-gradient(circle at 100% 50%, rgba(13, 242, 201, 0.05) 0%, transparent 50%),
+    radial-gradient(circle at 0% 80%, rgba(2, 56, 110, 0.18) 0%, transparent 55%),
+    #020408;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #020408;
+}
+::-webkit-scrollbar-thumb {
+  background: #0f2242;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #0284c7;
+}

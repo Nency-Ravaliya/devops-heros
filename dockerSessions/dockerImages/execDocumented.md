@@ -1,0 +1,1 @@
+![Terminal sreenshot](./Screenshot%20from%202026-08-29%2013-31-58.png)

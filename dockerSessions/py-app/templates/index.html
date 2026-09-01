@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Todo List</h1>
+<div class="mb-3">
+    <input type="text" id="searchInput" class="form-control" placeholder="Search todos...">
+</div>
+
+<div class="row" id="todoList">
+    {% for todo in todos %}
+    <div class="col-md-4 mb-3">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">{{ todo.title }}</h5>
+                <p class="card-text">{{ todo.description }}</p>
+                <p class="card-text">
+                    <small class="text-muted">
+                        Due: {{ todo.due_date.strftime('%Y-%m-%d %H:%M') if todo.due_date }}
+                    </small>
+                </p>
+                <div class="form-check mb-2">
+                    <input type="checkbox" class="form-check-input" 
+                           {% if todo.completed %}checked{% endif %}
+                           onchange="updateStatus({{ todo.id }}, this.checked)">
+                    <label class="form-check-label">Completed</label>
+                </div>
+                <a href="{{ url_for('update_todo', id=todo.id) }}" class="btn btn-primary">Edit</a>
+                <button onclick="deleteTodo({{ todo.id }})" class="btn btn-danger">Delete</button>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/search.js') }}"></script>
+{% endblock %} 

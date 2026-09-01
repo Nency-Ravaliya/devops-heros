@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Update Todo</h1>
+<form method="POST">
+    {{ form.csrf_token }}
+    <div class="mb-3">
+        <label class="form-label">{{ form.title.label }}</label>
+        {{ form.title(class="form-control") }}
+    </div>
+    <div class="mb-3">
+        <label class="form-label">{{ form.description.label }}</label>
+        {{ form.description(class="form-control") }}
+    </div>
+    <div class="mb-3">
+        <label class="form-label">{{ form.due_date.label }}</label>
+        {{ form.due_date(class="form-control", type="datetime-local") }}
+    </div>
+    <div class="mb-3 form-check">
+        {{ form.completed(class="form-check-input") }}
+        <label class="form-check-label">{{ form.completed.label }}</label>
+    </div>
+    <button type="submit" class="btn btn-primary">Update Todo</button>
+</form>
+{% endblock %} 
