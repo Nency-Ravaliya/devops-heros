@@ -1,0 +1,19 @@
+=== Run nginx with the folder bind-mounted read-only ===
+docker run -d --name nginx-bind -p 8091:80 \
+  -v $(pwd)/bind-mount/html:/usr/share/nginx/html:ro nginx:alpine
+1608a93afaae90008d3dba2020ff8a5601fb3a2c9628666c86e7ef21111f32cd
+
+=== docker inspect: confirm the bind mount ===
+Type:   bind
+Source: /Users/anuskaroy/Desktop/devops-heros/session8-docker-networking-volume/bind-mount/html
+Dest:   /usr/share/nginx/html
+RW:     false
+
+=== Initial content via curl http://localhost:8091 ===
+<!DOCTYPE html>
+<html>
+<head><title>Bind Mount Demo</title></head>
+<body>
+  <h1>Hello students</h1>
+</body>
+</html>
