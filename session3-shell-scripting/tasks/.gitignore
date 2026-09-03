@@ -1,0 +1,4 @@
+# Directories the script creates at run time - regenerated on every run,
+# so they are not part of the submission.
+logs/
+test/
