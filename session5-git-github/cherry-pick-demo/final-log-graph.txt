@@ -1,0 +1,10 @@
+* bb8becd feature: the important fix we need on main
+| * f1942c3 feature: the important fix we need on main
+| * 0d42ead feature: work B
+| * 631eb0b feature: add feature.txt with work A
+|/  
+* eb61eec main: change 3
+* d0c29c6 main: change 2
+* 5180894 main: change 1
+* 65f33e0 add line2 (with -a)
+* ab1a34c initial commit

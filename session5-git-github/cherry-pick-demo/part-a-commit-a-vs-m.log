@@ -1,0 +1,33 @@
+===== PART A: git commit -a -m  vs  git commit -m =====
+
+--- Modify a TRACKED file, then use plain "git commit -m" (no -a) ---
+$ git status --short
+ M file.txt
+?? part-a.log
+$ git commit -m "add line2"   (forgot to git add)
+On branch main
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   file.txt
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	part-a.log
+
+no changes added to commit (use "git add" and/or "git commit -a")
+$ git status --short   (change is still uncommitted, still shows modified)
+ M file.txt
+?? part-a.log
+
+--- Now use "git commit -a -m" on the same still-modified file ---
+$ git commit -a -m "add line2 (with -a)"
+[main 65f33e0] add line2 (with -a)
+ 1 file changed, 1 insertion(+)
+$ git status --short   (clean now)
+?? part-a.log
+
+CONCLUSION: -a automatically stages changes to files git ALREADY tracks
+(modified/deleted), skipping a separate "git add". It does NOT stage
+brand-new untracked files - those still need an explicit "git add".
+Plain "git commit -m" only commits what is already in the staging area.

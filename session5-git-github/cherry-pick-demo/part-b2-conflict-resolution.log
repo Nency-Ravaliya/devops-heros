@@ -1,0 +1,38 @@
+
+--- Conflict encountered: cherry-pick reported a modify/delete conflict ---
+Why: cherry-pick 3-way-merges against the PARENT of the picked commit as the
+base. That base (still on feature-branch) already has feature.txt, but main
+never had feature.txt at all (main never merged the earlier feature commits
+that created it) - so relative to that base, main looks like it "deleted" the
+file. Git flags this as a modify/delete conflict even though really this is
+just a new file being introduced.
+
+Resolution: keep the incoming version (the file as it exists in the picked commit).
+$ git status --short
+DU feature.txt
+?? part-a.log
+?? part-b.log
+?? part-b2.log
+$ git add feature.txt
+$ git cherry-pick --continue --no-edit
+[main bb8becd] feature: the important fix we need on main
+ Date: Thu Sep 3 19:54:14 2026 +0530
+ 1 file changed, 3 insertions(+)
+ create mode 100644 feature.txt
+
+--- Verify the cherry-picked commit/change is now on main ---
+$ git log --oneline main
+bb8becd feature: the important fix we need on main
+eb61eec main: change 3
+d0c29c6 main: change 2
+5180894 main: change 1
+65f33e0 add line2 (with -a)
+ab1a34c initial commit
+$ cat feature.txt
+feature work A
+feature work B
+TARGET: this is the one commit we will cherry-pick
+
+CONCLUSION: main now has the one specific commit's change from feature-branch
+(feature.txt with the fix), WITHOUT the other feature-branch-only commits
+that main doesn't need.

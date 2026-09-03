@@ -1,0 +1,47 @@
+===== PART B: git cherry-pick =====
+
+--- 2-4 commits on main ---
+$ git log --oneline main
+eb61eec main: change 3
+d0c29c6 main: change 2
+5180894 main: change 1
+65f33e0 add line2 (with -a)
+ab1a34c initial commit
+
+--- Create a new branch, add 2-3 commits there ---
+$ git log --oneline feature-branch
+f1942c3 feature: the important fix we need on main
+0d42ead feature: work B
+631eb0b feature: add feature.txt with work A
+eb61eec main: change 3
+d0c29c6 main: change 2
+5180894 main: change 1
+65f33e0 add line2 (with -a)
+ab1a34c initial commit
+
+--- Identify the specific commit to cherry-pick ---
+Commit to cherry-pick: f1942c31849498614036ee8aa32571d4589b50f9  ("feature: the important fix we need on main")
+
+--- Switch back to main and cherry-pick that one commit ---
+$ git cherry-pick f1942c31849498614036ee8aa32571d4589b50f9
+CONFLICT (modify/delete): feature.txt deleted in HEAD and modified in f1942c3 (feature: the important fix we need on main).  Version f1942c3 (feature: the important fix we need on main) of feature.txt left in tree.
+error: could not apply f1942c3... feature: the important fix we need on main
+hint: After resolving the conflicts, mark them with
+hint: "git add/rm <pathspec>", then run
+hint: "git cherry-pick --continue".
+hint: You can instead skip this commit with "git cherry-pick --skip".
+hint: To abort and get back to the state before "git cherry-pick",
+hint: run "git cherry-pick --abort".
+hint: Disable this message with "git config set advice.mergeConflict false"
+
+--- Verify the change is now on main ---
+$ git log --oneline main
+eb61eec main: change 3
+d0c29c6 main: change 2
+5180894 main: change 1
+65f33e0 add line2 (with -a)
+ab1a34c initial commit
+$ cat feature.txt   (present on main now, even though main never had the other feature commits)
+feature work A
+feature work B
+TARGET: this is the one commit we will cherry-pick
