@@ -1,0 +1,6 @@
+$ netstat -an -p tcp | awk "NR>2{print \$6}" | sort | uniq -c | sort -rn | head
+  40 ESTABLISHED
+  16 LISTEN
+   3 TIME_WAIT
+   1 FIN_WAIT_1
+   1 CLOSE_WAIT

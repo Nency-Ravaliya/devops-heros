@@ -1,0 +1,9 @@
+$ ifconfig en0
+en0: flags=8863<UP,BROADCAST,SMART,RUNNING,SIMPLEX,MULTICAST> mtu 1500
+	options=6460<TSO4,TSO6,CHANNEL_IO,PARTIAL_CSUM,ZEROINVERT_CSUM>
+	ether 66:48:3c:xx:xx:xx
+	inet6 fe80::xxxx:xxxx:xxxx:xxxx%en0 prefixlen 64 secured scopeid 0x11 
+	inet <redacted-lan-ip> netmask 0xfffff000 broadcast 100.129.175.255
+	nd6 options=201<PERFORMNUD,DAD>
+	media: autoselect
+	status: active

@@ -1,0 +1,14 @@
+# homework run on my MacBook
+# generated on Thursday, 03 September 2026 21:08:56 IST by kushalscaler@Kushals-MacBook-Pro.local
+  UID   PID  PPID   C STIME   TTY           TIME CMD
+    0     1     0   0  5:04PM ??         1:17.65 /sbin/launchd
+  213   377     1   0  5:04PM ??         0:00.20 /System/Library/PrivateFrameworks/MobileDevice.framework/Versions/A/Resources/usbmuxd -launchd
+    0   400     1   0  5:04PM ??         0:37.15 /usr/libexec/corebrightnessd --launchd
+    0   416     1   0  5:04PM ??         0:00.20 /System/Library/CoreServices/TimeMachine/backupd-helper -launchd
+    0   428     1   0  5:04PM ??         0:00.39 /usr/libexec/biometrickitd --launchd
+  502   609     1   0  5:04PM ??         0:01.25 /usr/sbin/universalaccessd launchd -s
+  502   618     1   0  5:04PM ??         0:45.34 /System/Library/PrivateFrameworks/UniversalAccess.framework/Versions/A/Resources/AXVisualSupportAgent.app/Contents/MacOS/AXVisualSupportAgent launchd -s
+  502   643     1   0  5:04PM ??         0:41.68 /System/Applications/Utilities/Terminal.app/Contents/MacOS/Terminal
+  502   693     1   0  5:04PM ??         0:00.16 /System/Library/PrivateFrameworks/AMPDevices.framework/Versions/A/Support/AMPDeviceDiscoveryAgent --launchd
+  502  2062     1   0  5:05PM ??         0:04.00 /System/Library/CoreServices/Siri.app/Contents/MacOS/Siri launchd
+... (649 more lines trimmed for the repo)
