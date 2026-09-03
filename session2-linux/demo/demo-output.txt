@@ -1,0 +1,27 @@
+$ ls -li
+total 24
+6705840 -rw-r--r--@ 1 shreyas  staff   9 Sep  3 19:51 demo-output.txt
+6705836 -rw-r--r--@ 2 shreyas  staff  27 Sep  3 19:51 hard-link.txt
+6705836 -rw-r--r--@ 2 shreyas  staff  27 Sep  3 19:51 original.txt
+6705837 lrwxr-xr-x@ 1 shreyas  staff  12 Sep  3 19:51 soft-link.txt -> original.txt
+
+$ cat soft-link.txt
+This is the original file.
+
+$ cat hard-link.txt
+This is the original file.
+
+# Deleting the original file:
+$ rm original.txt
+
+$ cat soft-link.txt   (broken now, points to a missing file)
+cat: soft-link.txt: No such file or directory
+
+$ cat hard-link.txt   (still works, data is preserved)
+This is the original file.
+
+$ ls -li  (soft-link.txt is now dangling)
+total 16
+6705840 -rw-r--r--@ 1 shreyas  staff  686 Sep  3 19:51 demo-output.txt
+6705836 -rw-r--r--@ 1 shreyas  staff   27 Sep  3 19:51 hard-link.txt
+6705837 lrwxr-xr-x@ 1 shreyas  staff   12 Sep  3 19:51 soft-link.txt -> original.txt
