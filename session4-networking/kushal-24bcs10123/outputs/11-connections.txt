@@ -1,0 +1,11 @@
+$ netstat -an -p tcp | grep -c ESTABLISHED; echo; netstat -an -p tcp | grep ESTABLISHED | head -8
+55
+
+tcp4       0      0  <redacted-lan-ip>.54343  3.33.235.18.443        ESTABLISHED
+tcp4       0      0  <redacted-lan-ip>.54342  104.26.6.164.443       ESTABLISHED
+tcp4       0      0  <redacted-lan-ip>.54339  104.26.6.164.443       ESTABLISHED
+tcp4       0      0  <redacted-lan-ip>.54337  35.190.88.7.443        ESTABLISHED
+tcp4       0      0  <redacted-lan-ip>.54336  35.190.88.7.443        ESTABLISHED
+tcp4       0      0  <redacted-lan-ip>.53393  35.190.88.7.443        ESTABLISHED
+tcp4       0      0  <redacted-lan-ip>.52783  13.227.249.119.443     ESTABLISHED
+tcp4       0      0  <redacted-lan-ip>.52712  13.227.249.119.443     ESTABLISHED

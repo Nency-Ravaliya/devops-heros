@@ -1,0 +1,16 @@
+$ lsof -nP -iTCP -sTCP:LISTEN | head -15
+COMMAND    PID         USER   FD   TYPE             DEVICE SIZE/OFF NODE NAME
+rapportd   631 kushalscaler   10u  IPv4 0x2fb7d674d4374928      0t0  TCP *:51033 (LISTEN)
+rapportd   631 kushalscaler   11u  IPv6 0x136ed17e6297c973      0t0  TCP *:51033 (LISTEN)
+rapportd   631 kushalscaler   19u  IPv6 0x294da716fb0b8f39      0t0  TCP *:60484 (LISTEN)
+rapportd   631 kushalscaler   21u  IPv6 0x466640362c0fae90      0t0  TCP *:60485 (LISTEN)
+Spotify    646 kushalscaler   51u  IPv4 0x877670db69cd7f90      0t0  TCP *:51045 (LISTEN)
+Spotify    646 kushalscaler   80u  IPv4  0x58dac7b1721e643      0t0  TCP 127.0.0.1:7768 (LISTEN)
+Spotify    646 kushalscaler  112u  IPv4 0xc9ffe5ba1aea1ce6      0t0  TCP *:57621 (LISTEN)
+Code\x20H 1931 kushalscaler   39u  IPv6  0xffa5995daaf2197      0t0  TCP *:47821 (LISTEN)
+Code\x20H 1931 kushalscaler   40u  IPv6 0x17f1181f3391ad6c      0t0  TCP *:47822 (LISTEN)
+Code\x20H 1931 kushalscaler   41u  IPv6 0xcbb799bb3a151d6b      0t0  TCP *:27121 (LISTEN)
+Code\x20H 1931 kushalscaler   64u  IPv4 0xbfa74dd08aeae398      0t0  TCP 127.0.0.1:16430 (LISTEN)
+Code\x20H 1931 kushalscaler   67u  IPv4 0xf3224bb032513dc8      0t0  TCP 127.0.0.1:49237 (LISTEN)
+Raycast   2079 kushalscaler   27u  IPv4 0x6a7262f4a19a5463      0t0  TCP 127.0.0.1:7265 (LISTEN)
+Adobe\x20 2717 kushalscaler   35u  IPv4 0x11f609e3cef9d7e9      0t0  TCP 127.0.0.1:15292 (LISTEN)
