@@ -1,0 +1,213 @@
+# Linux Fundamentals Homework Assignment
+
+## Task 1: Soft Link & Hard Link
+
+### Understanding Inodes & File Systems
+In Linux file systems (like ext4), files are composed of data blocks containing the actual content and an **inode** (index node) containing metadata about the file (file type, size, owner, permissions, timestamps, data block pointers). The filename itself is just an entry in a directory mapping a human-readable name to an inode number.
+
+### Hard Links vs Soft Links (Symbolic Links)
+
+| Feature | Hard Link | Soft Link (Symbolic Link / Symlink) |
+| :--- | :--- | :--- |
+| **Inode Number** | Shares the **same inode number** as the target file. | Has a **unique, separate inode number**. |
+| **Data Pointer** | Directly points to the data blocks on the disk. | Points to the file path string of the target file. |
+| **Target File Deletion** | If target is deleted, data remains accessible via hard link until link count drops to 0. | If target is deleted, symlink becomes a **broken link** (dangling pointer). |
+| **Cross-Filesystem** | Cannot span across different file systems/partitions. | Can link files/directories across different file systems. |
+| **Directory Linking** | Cannot link directories (to prevent directory loops). | Can link directories (`ln -s /path/to/dir linkname`). |
+| **File Size** | Displays original file size (shares inode). | Displays size equal to length of path string. |
+
+### Commands to Create & Delete Links
+
+#### 1. Creating a Hard Link
+```bash
+ln target_file.txt hardlink_file.txt
+```
+
+#### 2. Creating a Soft Link
+```bash
+ln -s target_file.txt softlink_file.txt
+```
+
+#### 3. Practical Workflow & Verification
+```bash
+# Step 1: Create a test file
+echo "Hello Linux Links" > original.txt
+
+# Step 2: Create Hard Link and Soft Link
+ln original.txt hardlink.txt
+ln -s original.txt softlink.txt
+
+# Step 3: Inspect inode numbers and file permissions
+ls -li original.txt hardlink.txt softlink.txt
+# Output:
+# 1234567 -rw-r--r-- 2 user group 18 Sep 3 23:00 hardlink.txt
+# 1234567 -rw-r--r-- 2 user group 18 Sep 3 23:00 original.txt
+# 1234568 lrwxrwxrwx 1 user group 12 Sep 3 23:00 softlink.txt -> original.txt
+
+# Step 4: Delete original file and check link behaviors
+rm original.txt
+
+# Hard link still retains data:
+cat hardlink.txt  # Output: Hello Linux Links
+
+# Soft link is broken:
+cat softlink.txt  # Output: cat: softlink.txt: No such file or directory
+```
+
+### Interview Questions & Answers
+- **Q: What happens to a hard link when the original file is updated?**  
+  *A:* Changes are reflected immediately because both names point to the exact same inode and data blocks on disk.
+- **Q: How do you identify broken soft links?**  
+  *A:* Using `find /path -xtype l` or `find . -type l ! -exec test -e {} \; -print`.
+
+---
+
+## Task 2: `adduser` vs `useradd`
+
+### Technical Comparison
+
+| Metric | `useradd` | `adduser` |
+| :--- | :--- | :--- |
+| **Tool Type** | Low-level system binary utility (compiled C executable). | High-level interactive Perl script wrapper around `useradd`. |
+| **Interactive Prompt** | Non-interactive by default. Does not prompt for password or user details. | Interactive. Prompts for password, full name, room number, etc. |
+| **Home Directory** | Does NOT create home directory by default (unless `-m` flag is explicitly passed). | Automatically creates home directory (`/home/username`) and copies `/etc/skel`. |
+| **Default Shell** | Assigns default system shell (often `/bin/sh` or `/bin/false`). | Assigns `/bin/bash` by default (defined in `/etc/adduser.conf`). |
+| **Use Case** | Ideal for system administration scripts and automated provisioning. | Recommended for interactive user creation on Ubuntu/Debian desktop and servers. |
+
+### Why `adduser` is Preferred on Ubuntu/Debian
+On Debian-based systems like Ubuntu, `adduser` is preferred for manual user creation because:
+1. It enforces security standards out-of-the-box (prompts for strong password initialization).
+2. It sets up environment files (`.bashrc`, `.profile`) automatically from `/etc/skel`.
+3. It creates a default user group matching the username (`UID == GID`).
+
+### Practical Execution Example
+```bash
+# Recommended command to create a test user interactively
+sudo adduser testuser
+
+# Output Walkthrough:
+# Adding user `testuser' ...
+# Adding new group `testuser' (1001) ...
+# Adding new user `testuser' (1001) with group `testuser' ...
+# Creating home directory `/home/testuser' ...
+# Copying files from `/etc/skel' ...
+# New password: 
+# Retype new password: 
+# passwd: password updated successfully
+# Changing the user information for testuser
+# Enter the new value, or press ENTER for the default
+#     Full Name []: Test User
+# Is the information correct? [Y/n] y
+```
+
+To verify user creation:
+```bash
+id testuser
+grep testuser /etc/passwd
+ls -la /home/testuser
+```
+
+---
+
+## Task 3: `journalctl`
+
+### What is `journalctl`?
+`journalctl` is a command-line utility used to query and view logs generated by `systemd-journald`, the centralized logging daemon in modern Linux distributions using `systemd`. It collects log messages from the kernel, system services, stdout/stderr of services, syslog, and boot logs.
+
+### Key Advantages of `systemd-journald`
+- Binary log format enabling fast searching, filtering, and indexing.
+- Unified logging for all system processes without requiring separate syslog daemon configuration.
+- Secure, structured log metadata (timestamp, PID, UID, systemd unit name).
+
+### Common `journalctl` Usage & Commands
+
+#### 1. Viewing System Logs
+```bash
+# View all journal logs from top (oldest first)
+journalctl
+
+# View logs in reverse order (newest first)
+journalctl -r
+
+# Tail logs in real-time (live view like tail -f)
+journalctl -f
+```
+
+#### 2. Filtering by Service / Systemd Unit
+```bash
+# View logs for a specific service (e.g., Nginx, SSH, Apache)
+journalctl -u nginx.service
+
+# View live logs for SSH service
+journalctl -u sshd.service -f
+```
+
+#### 3. Filtering by Time and Priority
+```bash
+# Logs from the current boot only
+journalctl -b
+
+# Logs within a specific time range
+journalctl --since "2026-09-03 20:00:00" --until "2026-09-03 23:00:00"
+
+# Logs from the last 1 hour
+journalctl --since "1 hour ago"
+
+# Filter logs by priority (e.g., Error level and above)
+journalctl -p err
+# Priority levels: 0:emerg, 1:alert, 2:crit, 3:err, 4:warning, 5:notice, 6:info, 7:debug
+```
+
+#### 4. Formatting Output
+```bash
+# Format output as JSON for parsing
+journalctl -u nginx.service -o json-pretty -n 5
+```
+
+---
+
+## Task 4: Linux Command Cheat Sheet
+
+### 1. File & Directory Navigation
+- `pwd`: Print absolute path of current working directory.
+- `cd /path/to/dir`: Change directory (`cd ..` to go up, `cd ~` for home).
+- `ls -la`: List all files including hidden files with detailed metadata (permissions, size, owner).
+- `mkdir -p /path/to/dir`: Create directory structure recursively.
+- `rmdir dir`: Remove empty directory.
+- `rm -rf dir`: Force remove directory and contents recursively.
+
+### 2. File Operations & Viewing
+- `touch filename`: Create empty file or update timestamp.
+- `cp -r src dst`: Copy files or directories recursively.
+- `mv src dst`: Move or rename file/directory.
+- `cat file`: Output full content of file to stdout.
+- `less file`: View file with pagination and search capability.
+- `head -n 20 file`: View first 20 lines of a file.
+- `tail -n 20 -f file`: View last 20 lines and follow additions in real time.
+
+### 3. File Permissions & Ownership
+- `chmod 755 script.sh`: Modify file read/write/execute permissions (User: rwx, Group: r-x, Others: r-x).
+- `chmod +x script.sh`: Make file executable.
+- `chown user:group file`: Change file owner and group.
+
+### 4. Search & Filter
+- `grep -rn "pattern" /path`: Search for text pattern recursively with line numbers.
+- `find /path -name "*.log"`: Search for files by pattern or attributes.
+- `awk '{print $1}' file`: Text processing and field extraction.
+- `sed -i 's/old/new/g' file`: Search and replace string inline.
+
+### 5. System, Memory & Process Management
+- `ps aux`: Display detailed list of all running processes.
+- `top` / `htop`: Interactive real-time process monitor.
+- `kill -9 <PID>`: Terminate process forcefully by Process ID.
+- `pkill service_name`: Terminate process by name.
+- `free -h`: View total, used, and available RAM/Swap in human-readable format.
+- `df -h`: View disk space usage per mounted file system.
+- `du -sh /path`: View total disk space used by a specific directory.
+
+### 6. Networking Commands
+- `ip a` / `ifconfig`: Display network interfaces and IP addresses.
+- `ping host`: Send ICMP echo requests to test host reachability.
+- `ss -tulpn` / `netstat -tulpn`: List listening sockets, TCP/UDP ports, and process names.
+- `curl -I URL`: Fetch HTTP headers from web server.
+- `wget URL`: Download file from web URL.
