@@ -1,0 +1,52 @@
+############ TASK 2: Apache on the host network ############
+$ docker pull -q httpd:2.4
+Error response from daemon: failed to resolve reference "docker.io/library/httpd:2.4": failed to do request: Head "https://registry-1.docker.io/v2/library/httpd/manifests/2.4": dialing registry-1.docker.io:443 container via direct connection because Docker Desktop has no HTTPS proxy: connecting to registry-1.docker.io:443: dial tcp [2600:1f18:2148:bc02:e82d:d775:8efd:e4b4]:443: connect: no route to host
+
+$ docker run -d --name apache-host --network host httpd:2.4
+983d6c1c3d0a62241d05d02eb7f3ccf99f56752e802db49fb410f39a856d566b
+
+$ sleep 3
+
+$ docker ps --filter name=apache-host --format 'table {{.Names}}	{{.Image}}	{{.Status}}	{{.Ports}}	{{.Networks}}'
+NAMES         IMAGE       STATUS         PORTS     NETWORKS
+apache-host   httpd:2.4   Up 3 seconds             host
+
+--- no -p flag, empty PORTS column, no container IP: the container shares the host's network namespace
+$ docker inspect -f 'NetworkMode={{.HostConfig.NetworkMode}}  PortBindings={{.HostConfig.PortBindings}}  ContainerIP="{{.NetworkSettings.IPAddress}}"' apache-host
+NetworkMode=host  PortBindings=map[]  ContainerIP=""
+
+$ docker logs apache-host 2>&1 | tail -2
+[Thu Sep 03 15:48:55.253939 2026] [mpm_event:notice] [pid 1:tid 1] AH00489: Apache/2.4.68 (Unix) configured -- resuming normal operations
+[Thu Sep 03 15:48:55.254290 2026] [core:notice] [pid 1:tid 1] AH00094: Command line: 'httpd -D FOREGROUND'
+
+--- from a second container that also shares the host namespace, Apache is simply localhost:80
+$ docker run --rm --network host alpine:3.20 sh -c 'hostname; netstat -ltn | grep -E "Proto|:80 "'
+docker-desktop
+Proto Recv-Q Send-Q Local Address           Foreign Address         State       
+tcp        0      0 :::80                   :::*                    LISTEN      
+
+$ docker run --rm --network host alpine:3.20 wget -qO- http://localhost:80
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+<title>It works! Apache httpd</title>
+</head>
+<body>
+<p>It works!</p>
+</body>
+</html>
+
+$ docker run --rm --network host alpine:3.20 wget -qS -O /dev/null http://localhost:80 2>&1 | head -3
+  HTTP/1.1 200 OK
+  Date: Thu, 03 Sep 2026 15:48:58 GMT
+  Server: Apache/2.4.68 (Unix)
+
+--- from the macOS terminal (Docker Desktop caveat: the 'host' is the Linux VM, not macOS itself)
+$ curl -s -m 3 -o /dev/null -w 'http_code=%{http_code}
+' http://localhost:80; echo "curl exit code: $?"
+http_code=000
+curl exit code: 7
+
+$ docker rm -f apache-host
+apache-host
+
