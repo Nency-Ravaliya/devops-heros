@@ -1,0 +1,80 @@
+$ ifconfig en0
+en0: flags=8863<UP,BROADCAST,SMART,RUNNING,SIMPLEX,MULTICAST> mtu 1500
+	options=6460<TSO4,TSO6,CHANNEL_IO,PARTIAL_CSUM,ZEROINVERT_CSUM>
+	ether XX:XX:XX:XX:XX:XX (redacted)
+	inet6 fe80::10aa:7e54:e077:3710%en0 prefixlen 64 secured scopeid 0xb 
+	inet 100.128.167.202 netmask 0xfffff000 broadcast 100.128.175.255
+	nd6 options=201<PERFORMNUD,DAD>
+	media: autoselect
+	status: active
+
+$ ping -c 4 google.com
+PING google.com (142.250.207.174): 56 data bytes
+64 bytes from 142.250.207.174: icmp_seq=0 ttl=119 time=17.660 ms
+64 bytes from 142.250.207.174: icmp_seq=1 ttl=119 time=21.730 ms
+64 bytes from 142.250.207.174: icmp_seq=2 ttl=119 time=15.993 ms
+64 bytes from 142.250.207.174: icmp_seq=3 ttl=119 time=19.646 ms
+
+--- google.com ping statistics ---
+4 packets transmitted, 4 packets received, 0.0% packet loss
+round-trip min/avg/max/stddev = 15.993/18.757/21.730/2.149 ms
+
+$ traceroute -m 10 google.com
+traceroute to google.com (142.250.207.174), 10 hops max, 40 byte packets
+ 1  wifi.height8tech.com (100.128.160.1)  6.206 ms  6.865 ms  10.811 ms
+ 2  114.79.130.29.dvois.com (114.79.130.29)  17.699 ms  19.923 ms  39.137 ms
+ 3  72.14.208.165 (72.14.208.165)  26.135 ms  31.988 ms  22.590 ms
+ 4  192.178.111.151 (192.178.111.151)  19.436 ms
+    192.178.84.175 (192.178.84.175)  33.952 ms
+    192.178.111.151 (192.178.111.151)  28.597 ms
+ 5  142.250.214.111 (142.250.214.111)  18.510 ms
+    142.250.214.113 (142.250.214.113)  24.126 ms  17.961 ms
+ 6  pnbomb-bl-in-f14.1e100.net (142.250.207.174)  26.034 ms  19.336 ms  18.089 ms
+
+$ nslookup google.com
+Server:		100.128.160.1
+Address:	100.128.160.1#53
+
+Non-authoritative answer:
+Name:	google.com
+Address: 142.250.207.174
+
+
+$ netstat -rn | head -15
+Routing tables
+
+Internet:
+Destination        Gateway            Flags               Netif Expire
+default            100.128.160.1      UGScg                 en0       
+100.128.160/20     link#11            UCS                   en0      !
+100.128.160.1/32   link#11            UCS                   en0      !
+100.128.160.1      XX:XX:XX:XX:XX:XX   UHLWIir               en0   1170
+100.128.160.67     XX:XX:XX:XX:XX:XX   UHLWI                 en0      !
+100.128.160.70     link#11            UHLWI                 en0      !
+100.128.160.80     XX:XX:XX:XX:XX:XX  UHLWI                 en0    157
+100.128.160.88     XX:XX:XX:XX:XX:XX  UHLWI                 en0      !
+100.128.160.102    XX:XX:XX:XX:XX:XX  UHLWI                 en0   1163
+100.128.160.112    XX:XX:XX:XX:XX:XX  UHLWI                 en0    983
+100.128.160.135    XX:XX:XX:XX:XX:XX  UHLWI                 en0   1087
+
+$ whois -h whois.iana.org google.com | head -20
+% IANA WHOIS server
+% for more information on IANA, visit http://www.iana.org
+% This query returned 1 object
+
+refer:        whois.verisign-grs.com
+
+domain:       COM
+
+organisation: VeriSign Global Registry Services
+address:      12061 Bluemont Way
+address:      Reston VA 20190
+address:      United States of America (the)
+
+contact:      administrative
+name:         Registry Customer Service
+organisation: VeriSign Global Registry Services
+address:      12061 Bluemont Way
+address:      Reston VA 20190
+address:      United States of America (the)
+phone:        +1 703 925-6999
