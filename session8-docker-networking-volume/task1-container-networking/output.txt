@@ -1,0 +1,18 @@
+=== 1) create 3 docker networks ===
+$ docker network create net-frontend
+20cea09b1df880a042635cc227fa8533cbd1d468ea2d0a59462c7dde1a92ec80
+$ docker network create net-backend
+1a87edac7065ebcf7756a25cef34989c8a3968ba765bbb531cfb7e2fb8351a00
+$ docker network create net-database
+5bf0306e8c83271454d73bc76107acb4644583395f44b73da5bdb4866faa1bd6
+
+$ docker network ls
+NETWORK ID     NAME                DRIVER    SCOPE
+ca660a0a4f14   bridge              bridge    local
+80aca8ada24a   host                host      local
+bd43785d3bdb   minikube            bridge    local
+1a87edac7065   net-backend         bridge    local
+5bf0306e8c83   net-database        bridge    local
+20cea09b1df8   net-frontend        bridge    local
+9346e965cf3a   none                null      local
+f569123fd306   typeahead_default   bridge    local

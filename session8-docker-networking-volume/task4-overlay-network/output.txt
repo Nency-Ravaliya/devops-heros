@@ -1,0 +1,24 @@
+$ docker swarm init
+Swarm initialized: current node (hhe51jfyxsedtrwx3atj0dgi5) is now a manager.
+
+To add a worker to this swarm, run the following command:
+
+    docker swarm join --token SWMTKN-1-1i7412br3wxwnrgcypjq6nkeqges716p9qy57xmvtjei65ub24-bj6mgz1ugpsuiwqd4in6ewigf 192.168.65.3:2377
+
+To add a manager to this swarm, run 'docker swarm join-token manager' and follow the instructions.
+
+$ docker network create -d overlay demo-overlay
+k99so5aabv1qgkcmx7796lovg
+
+$ docker network ls --filter driver=overlay
+NETWORK ID     NAME           DRIVER    SCOPE
+k99so5aabv1q   demo-overlay   overlay   swarm
+b09osruncue4   ingress        overlay   swarm
+
+$ docker network inspect demo-overlay --format "Driver={{.Driver}} Scope={{.Scope}}"
+Driver=overlay Scope=swarm
+
+$ docker network rm demo-overlay
+demo-overlay
+$ docker swarm leave --force
+Node left the swarm.
