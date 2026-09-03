@@ -1,0 +1,8 @@
+{
+  "name": "hello-nodejs",
+  "version": "1.0.0",
+  "description": "Hello World HTTP server using only the Node.js standard library",
+  "main": "server.js",
+  "scripts": { "start": "node server.js" },
+  "license": "MIT"
+}

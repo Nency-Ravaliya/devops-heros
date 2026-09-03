@@ -1,0 +1,6 @@
+$ ipconfig getifaddr en0; echo; ipconfig getoption en0 router; echo; ipconfig getoption en0 domain_name_server
+<redacted-lan-ip>
+
+100.129.160.1
+
+100.129.160.1

@@ -1,0 +1,174 @@
+### Environment
+$ grep PRETTY_NAME /etc/os-release
+PRETTY_NAME="Ubuntu 24.04.4 LTS"
+
+$ uname -srm
+Linux 6.12.54-linuxkit aarch64
+
+############ TASK 1: SOFT LINK vs HARD LINK ############
+$ echo 'hello from the original file' > original.txt
+
+$ ln -s original.txt soft.txt
+
+$ ln original.txt hard.txt
+
+$ ls -li
+total 8
+278182 -rw-r--r-- 2 root root 29 Sep  3 15:39 hard.txt
+278182 -rw-r--r-- 2 root root 29 Sep  3 15:39 original.txt
+278183 lrwxrwxrwx 1 root root 12 Sep  3 15:39 soft.txt -> original.txt
+
+$ stat -c '%n  inode=%i  links=%h  type=%F' original.txt hard.txt soft.txt
+original.txt  inode=278182  links=2  type=regular file
+hard.txt  inode=278182  links=2  type=regular file
+soft.txt  inode=278183  links=1  type=symbolic link
+
+$ readlink soft.txt
+original.txt
+
+$ file soft.txt hard.txt
+soft.txt: symbolic link to original.txt
+hard.txt: ASCII text
+
+--- editing through the hard link updates the original (same inode)
+$ echo 'appended via hard link' >> hard.txt
+
+$ cat original.txt
+hello from the original file
+appended via hard link
+
+--- renaming the original: soft link breaks, hard link still works
+$ mv original.txt renamed.txt
+
+$ ls -l
+total 8
+-rw-r--r-- 2 root root 52 Sep  3 15:39 hard.txt
+-rw-r--r-- 2 root root 52 Sep  3 15:39 renamed.txt
+lrwxrwxrwx 1 root root 12 Sep  3 15:39 soft.txt -> original.txt
+
+$ cat soft.txt
+cat: soft.txt: No such file or directory
+
+$ cat hard.txt
+hello from the original file
+appended via hard link
+
+--- deleting the last 'original' name: data survives while a hard link exists
+$ rm renamed.txt
+
+$ ls -li
+total 4
+278182 -rw-r--r-- 1 root root 52 Sep  3 15:39 hard.txt
+278183 lrwxrwxrwx 1 root root 12 Sep  3 15:39 soft.txt -> original.txt
+
+$ cat hard.txt
+hello from the original file
+appended via hard link
+
+$ cat soft.txt
+cat: soft.txt: No such file or directory
+
+--- deleting links
+$ rm soft.txt hard.txt
+
+$ ls -la
+total 8
+drwxr-xr-x 2 root root 4096 Sep  3 15:39 .
+drwx------ 1 root root 4096 Sep  3 15:39 ..
+
+--- directories and dangling links
+$ ln -s /root/links linkdir
+
+$ ls -ld linkdir
+lrwxrwxrwx 1 root root 11 Sep  3 15:39 linkdir -> /root/links
+
+$ ln /root/links hard_dir
+ln: /root/links: hard link not allowed for directory
+
+$ ln -s /does/not/exist dangling
+
+$ ls -l dangling
+lrwxrwxrwx 1 root root 15 Sep  3 15:39 dangling -> /does/not/exist
+
+$ find . -xtype l
+./dangling
+
+$ rm dangling linkdir
+
+############ TASK 2: adduser vs useradd ############
+$ which adduser useradd
+/usr/sbin/adduser
+/usr/sbin/useradd
+
+$ file /usr/sbin/adduser
+/usr/sbin/adduser: Perl script text executable
+
+$ head -1 /usr/sbin/adduser
+#! /usr/bin/perl
+
+$ file /usr/sbin/useradd
+/usr/sbin/useradd: ELF 64-bit LSB pie executable, ARM aarch64, version 1 (SYSV), dynamically linked, interpreter /lib/ld-linux-aarch64.so.1, BuildID[sha1]=483f79642f7a936acdeb2cb2fd1c4e70c2f0ef9d, for GNU/Linux 3.7.0, stripped
+
+--- useradd with no options: no home dir, default shell /bin/sh
+$ useradd rawuser
+
+$ grep rawuser /etc/passwd
+rawuser:x:1001:1001::/home/rawuser:/bin/sh
+
+$ ls -ld /home/rawuser
+ls: cannot access '/home/rawuser': No such file or directory
+
+--- useradd done properly needs flags
+$ useradd -m -s /bin/bash -c 'Raw User 2' rawuser2
+
+$ grep rawuser2 /etc/passwd
+rawuser2:x:1002:1002:Raw User 2:/home/rawuser2:/bin/bash
+
+$ ls -la /home/rawuser2
+total 20
+drwxr-x--- 2 rawuser2 rawuser2 4096 Sep  3 15:39 .
+drwxr-xr-x 1 root     root     4096 Sep  3 15:39 ..
+-rw-r--r-- 1 rawuser2 rawuser2  220 Mar 31  2024 .bash_logout
+-rw-r--r-- 1 rawuser2 rawuser2 3771 Mar 31  2024 .bashrc
+-rw-r--r-- 1 rawuser2 rawuser2  807 Mar 31  2024 .profile
+
+--- adduser (recommended on Ubuntu): creates home, group, copies /etc/skel, sets shell
+$ adduser --disabled-password --gecos 'Kushal Test User,,,' testuser
+info: Adding user `testuser' ...
+info: Selecting UID/GID from range 1000 to 59999 ...
+info: Adding new group `testuser' (1003) ...
+info: Adding new user `testuser' (1003) with group `testuser (1003)' ...
+info: Creating home directory `/home/testuser' ...
+info: Copying files from `/etc/skel' ...
+info: Adding new user `testuser' to supplemental / extra groups `users' ...
+info: Adding user `testuser' to group `users' ...
+
+$ grep testuser /etc/passwd
+testuser:x:1003:1003:Kushal Test User,,,:/home/testuser:/bin/bash
+
+$ id testuser
+uid=1003(testuser) gid=1003(testuser) groups=1003(testuser),100(users)
+
+$ ls -la /home/testuser
+total 20
+drwxr-x--- 2 testuser testuser 4096 Sep  3 15:39 .
+drwxr-xr-x 1 root     root     4096 Sep  3 15:39 ..
+-rw-r--r-- 1 testuser testuser  220 Sep  3 15:39 .bash_logout
+-rw-r--r-- 1 testuser testuser 3771 Sep  3 15:39 .bashrc
+-rw-r--r-- 1 testuser testuser  807 Sep  3 15:39 .profile
+
+$ getent group testuser
+testuser:x:1003:
+
+$ grep -E '^(DSHELL|DHOME|SKEL|USERGROUPS)' /etc/adduser.conf
+
+--- cleanup: deluser
+$ deluser --remove-home testuser
+info: Looking for files to backup/remove ...
+info: Removing files ...
+warn: `/usr/bin/crontab' not executed. Skipping crontab removal. Package `cron' required.
+info: Removing user `testuser' ...
+
+$ id testuser
+id: 'testuser': no such user
+

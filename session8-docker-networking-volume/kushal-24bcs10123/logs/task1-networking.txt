@@ -1,0 +1,183 @@
+############ TASK 1: three containers, three networks ############
+$ docker network create ui-net
+5019fc0811396c40d9a3e170134306f83e5843dfc315fd852dae6a9075182080
+
+$ docker network create api-net
+847916c44d8959148614a472728a641b78f10cabd9e074cfd200003e8f3dc100
+
+$ docker network create data-net
+ffcb97f8f9af03bf3d76b4e8e68610c727e2178c96166d53f6073d679f086c28
+
+$ docker network ls --filter driver=bridge --format 'table {{.Name}}	{{.Driver}}	{{.Scope}}'
+NAME       DRIVER    SCOPE
+api-net    bridge    local
+bridge     bridge    local
+data-net   bridge    local
+ui-net     bridge    local
+
+$ docker run -d --name web-ui --network ui-net nginx:alpine
+Unable to find image 'nginx:alpine' locally
+alpine: Pulling from library/nginx
+badda8760139: Pulling fs layer
+9592924c961c: Pulling fs layer
+accee44535cd: Pulling fs layer
+d6c1262595ab: Pulling fs layer
+853498d24c3c: Pulling fs layer
+1791812138bb: Pulling fs layer
+2123acec2175: Pulling fs layer
+9592924c961c: Download complete
+853498d24c3c: Download complete
+d6c1262595ab: Download complete
+2123acec2175: Download complete
+1791812138bb: Download complete
+accee44535cd: Download complete
+accee44535cd: Pull complete
+9592924c961c: Pull complete
+853498d24c3c: Pull complete
+d6c1262595ab: Pull complete
+2123acec2175: Pull complete
+1791812138bb: Pull complete
+badda8760139: Download complete
+badda8760139: Pull complete
+Digest: sha256:a9ae6f6d078d477e21323310498e5196cb2b7c0aedd9e07b7306612077227d7c
+Status: Downloaded newer image for nginx:alpine
+48fe5dd6e1500a598bfa66bc9df6fb728347a20fe80af398234d15aa20ee6364
+
+$ docker run -d --name api-svc --network ui-net alpine:3.20 sleep infinity
+Unable to find image 'alpine:3.20' locally
+3.20: Pulling from library/alpine
+3f26bc2dec0b: Pulling fs layer
+3f26bc2dec0b: Download complete
+3f26bc2dec0b: Pull complete
+Digest: sha256:d9e853e87e55526f6b2917df91a2115c36dd7c696a35be12163d44e6e2a4b6bc
+Status: Downloaded newer image for alpine:3.20
+b1d7ab4ed70ca29f6cb6ebbed7da4dcd2671993259de6ef079d4dcaaf650d9f4
+
+$ docker network connect data-net api-svc
+
+$ docker run -d --name db-mysql --network data-net -e MYSQL_ROOT_PASSWORD=secret -e MYSQL_DATABASE=appdb mysql:8.0
+Unable to find image 'mysql:8.0' locally
+8.0: Pulling from library/mysql
+70a53223cb4c: Pulling fs layer
+e9b2852d2a9d: Pulling fs layer
+605b7f42ac6e: Pulling fs layer
+7b9f24d93d52: Pulling fs layer
+fa30ab141b5a: Pulling fs layer
+1959e4a06a1c: Pulling fs layer
+4fcb28d1dfcf: Pulling fs layer
+42505e6e6b91: Pulling fs layer
+11c0b299cb47: Pulling fs layer
+ad770837e789: Pulling fs layer
+7ce425b17caf: Pulling fs layer
+1959e4a06a1c: Download complete
+4fcb28d1dfcf: Download complete
+e9b2852d2a9d: Download complete
+42505e6e6b91: Download complete
+70a53223cb4c: Download complete
+7ce425b17caf: Download complete
+7b9f24d93d52: Download complete
+11c0b299cb47: Download complete
+fa30ab141b5a: Download complete
+ad770837e789: Download complete
+ad770837e789: Pull complete
+70a53223cb4c: Pull complete
+7ce425b17caf: Pull complete
+7b9f24d93d52: Pull complete
+11c0b299cb47: Pull complete
+e9b2852d2a9d: Pull complete
+605b7f42ac6e: Download complete
+1959e4a06a1c: Pull complete
+605b7f42ac6e: Pull complete
+4fcb28d1dfcf: Pull complete
+42505e6e6b91: Pull complete
+fa30ab141b5a: Pull complete
+Digest: sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b
+Status: Downloaded newer image for mysql:8.0
+ba6cc3d075dc7e8fcc1e6a2c150dd9b53f1ee1161402231e9c4cb90f07183c2f
+
+$ sleep 25
+
+$ docker ps --filter name=web-ui --filter name=api-svc --filter name=db-mysql --format 'table {{.Names}}	{{.Image}}	{{.Status}}	{{.Networks}}'
+NAMES      IMAGE          STATUS              NETWORKS
+db-mysql   mysql:8.0      Up 25 seconds       data-net
+api-svc    alpine:3.20    Up About a minute   ui-net,data-net
+web-ui     nginx:alpine   Up About a minute   ui-net
+
+$ docker inspect -f '{{.Name}}: {{range $k,$v := .NetworkSettings.Networks}}{{$k}}={{$v.IPAddress}} {{end}}' web-ui api-svc db-mysql
+/web-ui: ui-net=172.18.0.2 
+/api-svc: data-net=172.20.0.2 ui-net=172.18.0.3 
+/db-mysql: data-net=172.20.0.3 
+
+$ docker network inspect -f '{{.Name}}: subnet={{(index .IPAM.Config 0).Subnet}} containers={{range .Containers}}{{.Name}} {{end}}' ui-net api-net data-net
+ui-net: subnet=172.18.0.0/16 containers=web-ui api-svc 
+api-net: subnet=172.19.0.0/16 containers=
+data-net: subnet=172.20.0.0/16 containers=api-svc db-mysql 
+
+--- connectivity FROM api-svc (on both networks): should reach both
+$ docker exec api-svc ping -c 2 -W 1 web-ui
+PING web-ui (172.18.0.2): 56 data bytes
+64 bytes from 172.18.0.2: seq=0 ttl=64 time=0.248 ms
+64 bytes from 172.18.0.2: seq=1 ttl=64 time=0.207 ms
+
+--- web-ui ping statistics ---
+2 packets transmitted, 2 packets received, 0% packet loss
+round-trip min/avg/max = 0.207/0.227/0.248 ms
+
+$ docker exec api-svc ping -c 2 -W 1 db-mysql
+PING db-mysql (172.20.0.3): 56 data bytes
+64 bytes from 172.20.0.3: seq=0 ttl=64 time=0.283 ms
+64 bytes from 172.20.0.3: seq=1 ttl=64 time=0.344 ms
+
+--- db-mysql ping statistics ---
+2 packets transmitted, 2 packets received, 0% packet loss
+round-trip min/avg/max = 0.283/0.313/0.344 ms
+
+$ docker exec api-svc wget -qO- --timeout=3 http://web-ui | grep -o '<h1>.*</h1>'
+<h1>Welcome to nginx!</h1>
+
+$ docker exec api-svc nc -zv -w 3 db-mysql 3306
+db-mysql (172.20.0.3:3306) open
+
+--- connectivity FROM web-ui (ui-net only): db-mysql should be unreachable
+$ docker exec web-ui ping -c 2 -W 1 api-svc
+PING api-svc (172.18.0.3): 56 data bytes
+64 bytes from 172.18.0.3: seq=0 ttl=64 time=0.117 ms
+64 bytes from 172.18.0.3: seq=1 ttl=64 time=0.286 ms
+
+--- api-svc ping statistics ---
+2 packets transmitted, 2 packets received, 0% packet loss
+round-trip min/avg/max = 0.117/0.201/0.286 ms
+
+$ docker exec web-ui ping -c 2 -W 1 db-mysql
+ping: bad address 'db-mysql'
+
+$ docker exec web-ui nslookup db-mysql
+Server:		127.0.0.11
+Address:	127.0.0.11:53
+
+Non-authoritative answer:
+
+** server can't find db-mysql: NXDOMAIN
+
+
+--- connectivity FROM db-mysql (data-net only): web-ui should be unreachable
+$ docker exec db-mysql bash -c 'getent hosts api-svc; getent hosts web-ui || echo web-ui: not resolvable'
+172.20.0.2      api-svc
+web-ui: not resolvable
+
+$ docker exec db-mysql mysql -uroot -psecret -e 'SHOW DATABASES;' 2>/dev/null
+Database
+appdb
+information_schema
+mysql
+performance_schema
+sys
+
+--- api-net exists but is empty (a third network as required); attach web-ui to prove hot-plugging works
+$ docker network connect api-net web-ui
+
+$ docker network inspect -f '{{.Name}}: containers={{range .Containers}}{{.Name}} {{end}}' api-net
+api-net: containers=web-ui 
+
+$ docker network disconnect api-net web-ui
+

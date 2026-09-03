@@ -1,0 +1,47 @@
+############ TASK 3: three application types deployed together with Docker Compose ############
+$ docker compose up -d --build 2>&1 | grep -E 'Container|Network' | sort -u
+ Container stack-java  Created
+ Container stack-java  Creating
+ Container stack-java  Started
+ Container stack-java  Starting
+ Container stack-node  Created
+ Container stack-node  Creating
+ Container stack-node  Started
+ Container stack-node  Starting
+ Container stack-python  Created
+ Container stack-python  Creating
+ Container stack-python  Started
+ Container stack-python  Starting
+ Network multi-stage-build_default  Created
+ Network multi-stage-build_default  Creating
+
+$ sleep 15
+
+$ docker compose ps --format 'table {{.Name}}	{{.Image}}	{{.Status}}	{{.Ports}}'
+NAME           IMAGE              STATUS                    PORTS
+stack-java     hello-java-app     Up 15 seconds (healthy)   0.0.0.0:8180->8080/tcp, [::]:8180->8080/tcp
+stack-node     hello-nodejs-app   Up 15 seconds             0.0.0.0:3100->3000/tcp, [::]:3100->3000/tcp
+stack-python   hello-python-app   Up 15 seconds             0.0.0.0:5100->5000/tcp, [::]:5100->5000/tcp
+
+$ for p in 3100 5100 8180; do printf 'localhost:%s -> ' $p; curl -s http://localhost:$p | grep -o '<h1>[^<]*</h1>\|<p>from[^<]*<strong>[^<]*' | tr -d '
+'; echo; done
+localhost:3100 -> <h1>Hello World</h1><p>from <strong>Node.js v22.23.2
+localhost:5100 -> <h1>Hello World</h1><p>from <strong>Python 3.12.14
+localhost:8180 -> <h1>Hello World</h1><p>from <strong>Java 21
+
+$ docker compose down 2>&1 | grep -E 'Container|Network' | sort -u
+ Container stack-java  Removed
+ Container stack-java  Removing
+ Container stack-java  Stopped
+ Container stack-java  Stopping
+ Container stack-node  Removed
+ Container stack-node  Removing
+ Container stack-node  Stopped
+ Container stack-node  Stopping
+ Container stack-python  Removed
+ Container stack-python  Removing
+ Container stack-python  Stopped
+ Container stack-python  Stopping
+ Network multi-stage-build_default  Removed
+ Network multi-stage-build_default  Removing
+

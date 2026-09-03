@@ -1,0 +1,4 @@
+$ nc -zv -G 3 github.com 443; nc -zv -G 3 github.com 22; nc -zv -G 2 github.com 8080
+Connection to github.com port 443 [tcp/https] succeeded!
+Connection to github.com port 22 [tcp/ssh] succeeded!
+nc: connectx to github.com port 8080 (tcp) failed: Operation timed out
