@@ -1,0 +1,14 @@
+===== SYSTEM SUMMARY =====
+Generated on : Mon Aug 31 18:35:13 UTC 2026
+Hostname     : 933ff97fed17
+Username     : root
+Name         : Chhavi Ahlawat
+Roll Number  : 24BCS10201
+Comment      : Completed the shell scripting homework successfully!
+--- Disk Usage ---
+Filesystem      Size  Used Avail Use% Mounted on
+overlay         224G  2.8G  210G   2% /
+tmpfs            64M     0   64M   0% /dev
+shm              64M     0   64M   0% /dev/shm
+/dev/vda1       224G  2.8G  210G   2% /etc/hosts
+tmpfs           4.0K     0  4.0K   0% /proc/scsi

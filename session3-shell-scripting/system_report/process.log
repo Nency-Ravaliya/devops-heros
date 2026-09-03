@@ -1,0 +1,5 @@
+USER         PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND
+root           1  0.0  0.0   4020  3312 pts/0    Ss+  18:25   0:00 bash
+root         480  0.0  0.0   3888  2796 ?        Ss   18:35   0:00 bash -c cd /root && rm -rf system_report && printf "Chhavi Ahlawat\n24BCS10201\nCompleted the shell scripting homework successfully!\n" | bash system-info.sh >/dev/null 2>&1
+root         488  0.0  0.0   3888  2796 ?        S    18:35   0:00 bash system-info.sh
+root         499  0.0  0.0   6456  2480 ?        R    18:35   0:00 ps aux
