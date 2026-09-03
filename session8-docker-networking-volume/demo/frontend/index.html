@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+    <title>Docker Network Demo</title>
+</head>
+
+<body>
+
+    <h1>Docker 3-Tier Application</h1>
+
+    <button onclick="getData()">
+        Get Data From Backend
+    </button>
+
+    <h2>Response:</h2>
+
+    <pre id="result"></pre>
+
+    <script>
+
+        async function getData() {
+
+            const response = await fetch('/api');
+
+            const data = await response.json();
+
+            document.getElementById("result").textContent =
+                JSON.stringify(data, null, 2);
+        }
+
+    </script>
+
+</body>
+
+</html>
