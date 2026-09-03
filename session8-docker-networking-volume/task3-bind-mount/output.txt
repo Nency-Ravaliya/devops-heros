@@ -1,0 +1,17 @@
+$ echo "<h1>Hello students</h1>" > site/index.html
+$ docker run -d --name bindmount-nginx-c -p 8090:80 -v "$(pwd)/site:/usr/share/nginx/html" nginx:alpine
+63e13f5edd254b71e00a6e81ffc2c10ecfcdba67cbde264168390a345098ffbe
+
+$ curl http://localhost:8090
+<h1>Hello students</h1>
+
+
+----- modify the file on the HOST (no container restart) -----
+$ echo "<h1>Hello students - updated live!</h1>" > site/index.html
+$ curl http://localhost:8090   (same running container, no restart)
+<h1>Hello students - updated live!</h1>
+
+
+$ docker ps --filter name=bindmount-nginx-c   (confirms container never restarted)
+CONTAINER ID   IMAGE          COMMAND                  CREATED         STATUS         PORTS                                     NAMES
+63e13f5edd25   nginx:alpine   "/docker-entrypoint.…"   3 seconds ago   Up 3 seconds   0.0.0.0:8090->80/tcp, [::]:8090->80/tcp   bindmount-nginx-c
