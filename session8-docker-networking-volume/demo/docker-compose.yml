@@ -3,7 +3,7 @@ services:
   frontend:
     image: nginx:latest
     ports:
-      - "8080:80"
+      - "8081:80"
     volumes:
       - ./frontend/index.html:/usr/share/nginx/html/index.html
       - ./frontend/nginx.conf:/etc/nginx/conf.d/default.conf
