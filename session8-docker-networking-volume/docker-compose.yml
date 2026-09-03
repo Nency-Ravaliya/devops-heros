@@ -1,20 +1,33 @@
 services:
 
   frontend:
-    image: nginx
+    image: nginx:alpine
     ports:
       - "8080:80"
+    networks:
+      - frontend_net
 
   backend:
-    image: nginx
+    image: nginx:alpine
+    networks:
+      - frontend_net
+      - backend_net
 
   database:
     image: mysql:8.0
     environment:
       MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: appdb
     volumes:
       - db_data:/var/lib/mysql
+    networks:
+      - backend_net
+      - admin_net
+
+networks:
+  frontend_net:
+  backend_net:
+  admin_net:
 
 volumes:
   db_data:
-
