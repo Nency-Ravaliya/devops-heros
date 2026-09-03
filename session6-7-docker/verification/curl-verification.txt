@@ -1,0 +1,50 @@
+$ curl http://localhost:3001   (Node.js)
+<h1>Hello World from Docker!</h1>
+
+$ curl http://localhost:5001   (Python)
+<h1>Hello World from Docker (Python)!</h1>
+
+$ curl http://localhost:8001   (Java)
+<h1>Hello World from Docker (Java)!</h1>
+
+$ curl http://localhost:8002   (Apache)
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Hello Apache</title>
+</head>
+<body>
+    <h1>Hello World from Docker (Apache HTTP Server)!</h1>
+</body>
+</html>
+
+$ curl http://localhost:8003   (React)
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Hello React</title>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+</head>
+<body>
+    <div id="root"><h1>Hello World from Docker (React)!</h1></div>
+    <script>
+        const { createElement } = React;
+        const root = ReactDOM.createRoot(document.getElementById("root"));
+        root.render(createElement("h1", null, "Hello World from Docker (React)!"));
+    </script>
+</body>
+</html>
+
+$ curl http://localhost:8004   (Nginx)
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Hello Docker</title>
+</head>
+<body>
+    <h1>Hello World from Nginx + Docker!</h1>
+</body>
+</html> 
+$ curl http://localhost:8080   (Multi-stage build)
+<h1>Hello World from Docker Multi-Stage Build!</h1>

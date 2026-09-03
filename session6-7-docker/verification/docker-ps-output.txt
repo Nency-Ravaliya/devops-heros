@@ -1,0 +1,20 @@
+=== docker images ===
+hello-apache:latest                                                                      49ab39f0e8b3        105MB         21.1MB   U    
+hello-java:latest                                                                        13dbe16e7e3a        446MB          108MB   U    
+hello-multistage:latest                                                                  353b67ac4a81        243MB         60.9MB   U    
+hello-nginx:latest                                                                       9ffcdf07a542        268MB           65MB   U    
+hello-node:latest                                                                        eaa738ceee34        249MB         61.8MB   U    
+hello-python:latest                                                                      a787184cc7fc        240MB         53.3MB   U    
+hello-react:latest                                                                       3ae866f79467        102MB           29MB   U    
+hello-world:latest                                                                       5dd0d3e6e255       22.6kB         10.3kB        
+
+=== docker ps (all 7 hello-world containers + multi-stage running) ===
+NAMES                IMAGE                    STATUS              PORTS
+hello-java-c         hello-java               Up About a minute   0.0.0.0:8001->8000/tcp, [::]:8001->8000/tcp
+hello-multistage-c   hello-multistage         Up 2 minutes        0.0.0.0:8080->3000/tcp, [::]:8080->3000/tcp
+hello-nginx-c        hello-nginx              Up 2 minutes        0.0.0.0:8004->80/tcp, [::]:8004->80/tcp
+hello-react-c        hello-react              Up 2 minutes        0.0.0.0:8003->80/tcp, [::]:8003->80/tcp
+hello-apache-c       hello-apache             Up 2 minutes        0.0.0.0:8002->80/tcp, [::]:8002->80/tcp
+hello-python-c       hello-python             Up 2 minutes        0.0.0.0:5001->5000/tcp, [::]:5001->5000/tcp
+hello-node-c         hello-node               Up 2 minutes        0.0.0.0:3001->3000/tcp, [::]:3001->3000/tcp
+minikube             kicbase/stable:v0.0.51   Up 8 hours          127.0.0.1:61645->22/tcp, 127.0.0.1:61647->2376/tcp, 127.0.0.1:61648->5000/tcp, 127.0.0.1:61649->8443/tcp, 127.0.0.1:61646->32443/tcp
