@@ -1,0 +1,43 @@
+$ git init
+$ echo "line1" > file.txt
+$ git add file.txt && git commit -m "initial commit"
+[main (root-commit) 8b57263] initial commit
+ 1 file changed, 1 insertion(+)
+ create mode 100644 file.txt
+
+----- 1) modify a TRACKED file, then try: git commit -m (no prior add) -----
+$ echo "line2" >> file.txt
+$ git status --short
+ M file.txt
+$ git commit -m "update via commit -m only"
+On branch main
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   file.txt
+
+no changes added to commit (use "git add" and/or "git commit -a")
+$ git status --short   (change is still unstaged)
+ M file.txt
+
+----- 2) same modified file, now with: git commit -a -m -----
+$ git commit -a -m "update via commit -a -m"
+[main 1eb546e] update via commit -a -m
+ 1 file changed, 1 insertion(+)
+$ git log --oneline
+1eb546e update via commit -a -m
+8b57263 initial commit
+
+----- 3) commit -a does NOT stage a brand-new UNTRACKED file -----
+$ echo "brand new" > newfile.txt
+$ git status --short
+?? newfile.txt
+$ git commit -a -m "trying to include newfile.txt via -a"
+On branch main
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	newfile.txt
+
+nothing added to commit but untracked files present (use "git add" to track)
+$ git status --short   (newfile.txt is still untracked)
+?? newfile.txt
