@@ -1,0 +1,34 @@
+# Task 3: deploy three different application types with one command.
+# Reuses the images defined in ../hello-world-apps so nothing is duplicated.
+#   docker compose up -d --build
+#   docker compose ps
+#   docker compose down
+services:
+  node-hello:
+    build: ../hello-world-apps/nodejs-app
+    image: hello-nodejs-app
+    container_name: stack-node
+    ports:
+      - "3100:3000"
+    restart: unless-stopped
+
+  python-hello:
+    build: ../hello-world-apps/python-app
+    image: hello-python-app
+    container_name: stack-python
+    ports:
+      - "5100:5000"
+    restart: unless-stopped
+
+  java-hello:
+    build: ../hello-world-apps/java-app
+    image: hello-java-app
+    container_name: stack-java
+    ports:
+      - "8180:8080"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080 >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
