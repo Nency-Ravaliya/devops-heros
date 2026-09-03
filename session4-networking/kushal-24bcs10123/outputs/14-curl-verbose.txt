@@ -1,0 +1,3 @@
+$ curl -s -o /dev/null -w "dns=%{time_namelookup}s connect=%{time_connect}s tls=%{time_appconnect}s ttfb=%{time_starttransfer}s total=%{time_total}s http=%{http_code} ip=%{remote_ip}
+" https://www.google.com
+dns=0.069921s connect=0.110979s tls=0.161342s ttfb=0.285936s total=0.343059s http=200 ip=142.251.157.119
