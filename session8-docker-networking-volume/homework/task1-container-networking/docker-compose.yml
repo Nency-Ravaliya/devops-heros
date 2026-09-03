@@ -1,0 +1,34 @@
+services:
+
+  frontend:
+    image: nginx:alpine
+    container_name: hw-frontend
+    networks:
+      - net-a
+
+  backend:
+    image: nginx:alpine
+    container_name: hw-backend
+    # Backend joins 2 of the 3 networks, so it can reach both frontend (net-a)
+    # and database (net-b), even though frontend and database can't reach
+    # each other directly - a simple way to demonstrate network segmentation.
+    networks:
+      - net-a
+      - net-b
+
+  database:
+    image: mysql:8.0
+    container_name: hw-database
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+    networks:
+      - net-b
+
+networks:
+  net-a:
+  net-b:
+  # A third network, created to satisfy "create 3 different Docker networks"
+  # but deliberately left unattached - proves networks are independent
+  # Docker resources you can create ahead of needing them (e.g. to later
+  # attach a monitoring/logging container).
+  net-c:
