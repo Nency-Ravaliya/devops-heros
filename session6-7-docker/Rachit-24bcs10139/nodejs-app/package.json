@@ -1,0 +1,9 @@
+{
+  "name": "nodejs-hello-world",
+  "version": "1.0.0",
+  "description": "Hello World Node.js Docker app",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  }
+}
