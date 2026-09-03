@@ -1,0 +1,124 @@
+### Environment (Ubuntu 24.04 container booted with systemd as PID 1)
+$ grep PRETTY_NAME /etc/os-release
+PRETTY_NAME="Ubuntu 24.04.4 LTS"
+
+$ systemctl is-system-running
+running
+
+$ journalctl --version | head -1
+systemd 255 (255.4-1ubuntu8.17)
+
+--- start two services so there is something to look at
+$ systemctl start ssh cron
+
+$ systemctl is-active ssh cron
+active
+active
+
+--- the whole journal, newest 15 lines
+$ journalctl -n 15 --no-pager
+Sep 03 15:43:18 1e16d79ee3d9 cron[74]: (CRON) INFO (pidfile fd = 3)
+Sep 03 15:43:18 1e16d79ee3d9 cron[74]: (CRON) INFO (Running @reboot jobs)
+Sep 03 15:43:18 1e16d79ee3d9 systemd[1]: Finished systemd-user-sessions.service - Permit User Sessions.
+Sep 03 15:43:18 1e16d79ee3d9 systemd[1]: e2scrub_reap.service: Deactivated successfully.
+Sep 03 15:43:18 1e16d79ee3d9 systemd[1]: Finished e2scrub_reap.service - Remove Stale Online ext4 Metadata Check Snapshots.
+Sep 03 15:43:18 1e16d79ee3d9 systemd[1]: Reached target multi-user.target - Multi-User System.
+Sep 03 15:43:18 1e16d79ee3d9 systemd[1]: Reached target graphical.target - Graphical Interface.
+Sep 03 15:43:18 1e16d79ee3d9 systemd[1]: Starting systemd-update-utmp-runlevel.service - Record Runlevel Change in UTMP...
+Sep 03 15:43:18 1e16d79ee3d9 systemd[1]: systemd-update-utmp-runlevel.service: Deactivated successfully.
+Sep 03 15:43:18 1e16d79ee3d9 systemd[1]: Finished systemd-update-utmp-runlevel.service - Record Runlevel Change in UTMP.
+Sep 03 15:43:18 1e16d79ee3d9 systemd[1]: Startup finished in 155ms.
+Sep 03 15:44:06 1e16d79ee3d9 systemd[1]: Starting ssh.service - OpenBSD Secure Shell server...
+Sep 03 15:44:06 1e16d79ee3d9 sshd[115]: Server listening on 0.0.0.0 port 22.
+Sep 03 15:44:06 1e16d79ee3d9 sshd[115]: Server listening on :: port 22.
+Sep 03 15:44:06 1e16d79ee3d9 systemd[1]: Started ssh.service - OpenBSD Secure Shell server.
+
+--- logs from the current boot only
+$ journalctl -b --no-pager | head -12
+Sep 03 15:43:18 1e16d79ee3d9 kernel: Booting Linux on physical CPU 0x0000000000 [0x610f0000]
+Sep 03 15:43:18 1e16d79ee3d9 kernel: Linux version 6.12.54-linuxkit (root@buildkitsandbox) (gcc (Alpine 13.2.1_git20240309) 13.2.1 20240309, GNU ld (GNU Binutils) 2.42) #1 SMP Tue Nov  4 21:21:47 UTC 2025
+Sep 03 15:43:18 1e16d79ee3d9 kernel: OF: reserved mem: Reserved memory: No reserved-memory node in the DT
+Sep 03 15:43:18 1e16d79ee3d9 kernel: Zone ranges:
+Sep 03 15:43:18 1e16d79ee3d9 kernel:   DMA      [mem 0x0000000070000000-0x00000000ffffffff]
+Sep 03 15:43:18 1e16d79ee3d9 kernel:   DMA32    empty
+Sep 03 15:43:18 1e16d79ee3d9 kernel:   Normal   [mem 0x0000000100000000-0x000000046fffffff]
+Sep 03 15:43:18 1e16d79ee3d9 kernel: Movable zone start for each node
+Sep 03 15:43:18 1e16d79ee3d9 kernel: Early memory node ranges
+Sep 03 15:43:18 1e16d79ee3d9 kernel:   node   0: [mem 0x0000000070000000-0x000000046fffffff]
+Sep 03 15:43:18 1e16d79ee3d9 kernel: Initmem setup node 0 [mem 0x0000000070000000-0x000000046fffffff]
+Sep 03 15:43:18 1e16d79ee3d9 kernel: psci: probing for conduit method from DT.
+
+$ journalctl --list-boots --no-pager
+IDX BOOT ID                          FIRST ENTRY                 LAST ENTRY
+  0 b7ac96cdc4f24e46b20b7a9e0c94d656 Thu 2026-09-03 15:43:18 UTC Thu 2026-09-03 15:44:06 UTC
+
+--- logs for ONE service
+$ journalctl -u ssh --no-pager
+Sep 03 15:44:06 1e16d79ee3d9 systemd[1]: Starting ssh.service - OpenBSD Secure Shell server...
+Sep 03 15:44:06 1e16d79ee3d9 sshd[115]: Server listening on 0.0.0.0 port 22.
+Sep 03 15:44:06 1e16d79ee3d9 sshd[115]: Server listening on :: port 22.
+Sep 03 15:44:06 1e16d79ee3d9 systemd[1]: Started ssh.service - OpenBSD Secure Shell server.
+
+$ journalctl -u cron --no-pager
+Sep 03 15:43:18 1e16d79ee3d9 systemd[1]: Started cron.service - Regular background program processing daemon.
+Sep 03 15:43:18 1e16d79ee3d9 (cron)[74]: cron.service: Referenced but unset environment variable evaluates to an empty string: EXTRA_OPTS
+Sep 03 15:43:18 1e16d79ee3d9 cron[74]: (CRON) INFO (pidfile fd = 3)
+Sep 03 15:43:18 1e16d79ee3d9 cron[74]: (CRON) INFO (Running @reboot jobs)
+
+--- restart the service and see the new lines appear
+$ systemctl restart ssh
+
+$ journalctl -u ssh -n 6 --no-pager
+Sep 03 15:44:06 1e16d79ee3d9 systemd[1]: ssh.service: Deactivated successfully.
+Sep 03 15:44:06 1e16d79ee3d9 systemd[1]: Stopped ssh.service - OpenBSD Secure Shell server.
+Sep 03 15:44:06 1e16d79ee3d9 systemd[1]: Starting ssh.service - OpenBSD Secure Shell server...
+Sep 03 15:44:06 1e16d79ee3d9 sshd[127]: Server listening on 0.0.0.0 port 22.
+Sep 03 15:44:06 1e16d79ee3d9 sshd[127]: Server listening on :: port 22.
+Sep 03 15:44:06 1e16d79ee3d9 systemd[1]: Started ssh.service - OpenBSD Secure Shell server.
+
+--- filter by priority (err and worse) and by time
+$ journalctl -p err -b --no-pager | tail -5
+-- No entries --
+
+$ journalctl --since '2 minutes ago' -u ssh --no-pager | tail -4
+Sep 03 15:44:06 1e16d79ee3d9 systemd[1]: Starting ssh.service - OpenBSD Secure Shell server...
+Sep 03 15:44:06 1e16d79ee3d9 sshd[127]: Server listening on 0.0.0.0 port 22.
+Sep 03 15:44:06 1e16d79ee3d9 sshd[127]: Server listening on :: port 22.
+Sep 03 15:44:06 1e16d79ee3d9 systemd[1]: Started ssh.service - OpenBSD Secure Shell server.
+
+--- machine-friendly output and following live logs for 3 seconds
+$ journalctl -u ssh -n 2 -o json-pretty --no-pager | head -20
+{
+	"_HOSTNAME" : "1e16d79ee3d9",
+	"__SEQNUM_ID" : "9c36754eb0a74a9fa2005740f24fa62d",
+	"__MONOTONIC_TIMESTAMP" : "703276277",
+	"_SYSTEMD_CGROUP" : "/system.slice/ssh.service",
+	"_SOURCE_REALTIME_TIMESTAMP" : "1788450246855423",
+	"__CURSOR" : "s=9c36754eb0a74a9fa2005740f24fa62d;i=595;b=b7ac96cdc4f24e46b20b7a9e0c94d656;m=29eb24f5;t=65a9605a98bb6;x=badd7e772a6f1f11",
+	"SYSLOG_PID" : "127",
+	"PRIORITY" : "6",
+	"_EXE" : "/usr/sbin/sshd",
+	"_SYSTEMD_UNIT" : "ssh.service",
+	"_CMDLINE" : "\"sshd: /usr/sbin/sshd -D [listener] 0 of 10-100 startups\"",
+	"_UID" : "0",
+	"_GID" : "0",
+	"_MACHINE_ID" : "54bedf1c13744bf0ac0cba2485028e01",
+	"_COMM" : "sshd",
+	"_CAP_EFFECTIVE" : "1ffffffffff",
+	"_BOOT_ID" : "b7ac96cdc4f24e46b20b7a9e0c94d656",
+	"_SYSTEMD_SLICE" : "system.slice",
+	"__REALTIME_TIMESTAMP" : "1788450246855606",
+
+$ timeout 3 journalctl -f -n 2 --no-pager; true
+Sep 03 15:44:06 1e16d79ee3d9 sshd[127]: Server listening on :: port 22.
+Sep 03 15:44:06 1e16d79ee3d9 systemd[1]: Started ssh.service - OpenBSD Secure Shell server.
+
+--- how much disk the journal uses
+$ journalctl --disk-usage
+Archived and active journals take up 8.0M in the file system.
+
+$ journalctl -u ssh -o short-iso -n 3 --no-pager
+2026-09-03T15:44:06+00:00 1e16d79ee3d9 sshd[127]: Server listening on 0.0.0.0 port 22.
+2026-09-03T15:44:06+00:00 1e16d79ee3d9 sshd[127]: Server listening on :: port 22.
+2026-09-03T15:44:06+00:00 1e16d79ee3d9 systemd[1]: Started ssh.service - OpenBSD Secure Shell server.
+
