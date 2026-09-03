@@ -1,0 +1,27 @@
+=== netstat (local listening ports) ===
+tcp4       0      0  127.0.0.1.20697        *.*                    LISTEN     
+tcp46      0      0  *.27121                *.*                    LISTEN     
+tcp46      0      0  *.54553                *.*                    LISTEN     
+tcp46      0      0  *.54552                *.*                    LISTEN     
+tcp6       0      0  *.63058                *.*                    LISTEN     
+tcp4       0      0  *.63058                *.*                    LISTEN     
+tcp4       0      0  127.0.0.1.61649        *.*                    LISTEN     
+tcp4       0      0  127.0.0.1.61648        *.*                    LISTEN     
+tcp4       0      0  127.0.0.1.61647        *.*                    LISTEN     
+tcp4       0      0  127.0.0.1.61646        *.*                    LISTEN     
+tcp4       0      0  127.0.0.1.61645        *.*                    LISTEN     
+tcp6       0      0  *.5000                 *.*                    LISTEN     
+tcp4       0      0  *.5000                 *.*                    LISTEN     
+tcp6       0      0  *.7000                 *.*                    LISTEN     
+tcp4       0      0  *.7000                 *.*                    LISTEN     
+
+=== arp (IP -> MAC mapping table, sample only) ===
+# Note: this network has 180+ hosts on it (shared office wifi).
+# Only a few representative entries are shown here to avoid publishing
+# the full device/MAC inventory of a shared network.
+wifi.height8tech.com (10.114.0.1) at f4:1e:57:3d:ae:df on en0 ifscope [ethernet]
+? (10.114.0.2) at f2:c8:3a:35:98:14 on en0 ifscope [ethernet]
+? (10.114.0.9) at 82:e9:ef:a7:9f:ca on en0 ifscope [ethernet]
+? (10.114.0.12) at 4e:c0:92:d6:a8:f0 on en0 ifscope [ethernet]
+? (10.114.0.13) at 36:28:ac:52:55:a8 on en0 ifscope [ethernet]
+...

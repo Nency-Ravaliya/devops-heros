@@ -1,0 +1,28 @@
+=== ping (reachability + latency) ===
+PING google.com (172.217.160.142): 56 data bytes
+64 bytes from 172.217.160.142: icmp_seq=0 ttl=117 time=24.076 ms
+64 bytes from 172.217.160.142: icmp_seq=1 ttl=117 time=49.905 ms
+64 bytes from 172.217.160.142: icmp_seq=2 ttl=117 time=101.607 ms
+64 bytes from 172.217.160.142: icmp_seq=3 ttl=117 time=23.217 ms
+
+--- google.com ping statistics ---
+4 packets transmitted, 4 packets received, 0.0% packet loss
+round-trip min/avg/max/stddev = 23.217/49.701/101.607/31.829 ms
+
+=== traceroute (path to host) ===
+traceroute to google.com (172.217.160.142), 10 hops max, 40 byte packets
+ 1  wifi.height8tech.com (10.114.0.1)  73.022 ms  7.214 ms  6.919 ms
+ 2  202.131.133.17.convergentindia.com (202.131.133.17)  8.880 ms  14.075 ms  12.919 ms
+ 3  115.117.125.189.static-mumbai.vsnl.net.in (115.117.125.189)  12.499 ms  9.642 ms  9.912 ms
+ 4  * 172.28.117.90 (172.28.117.90)  98.848 ms  15.551 ms
+ 5  115.112.15.114.static-chennai.vsnl.net.in (115.112.15.114)  27.595 ms  15.429 ms  18.764 ms
+ 6  * * *
+ 7  216.239.56.62 (216.239.56.62)  51.581 ms
+    216.239.54.158 (216.239.54.158)  23.415 ms
+    142.251.55.90 (142.251.55.90)  23.456 ms
+ 8  142.251.50.58 (142.251.50.58)  14.892 ms
+    142.251.230.90 (142.251.230.90)  30.697 ms
+    172.253.75.14 (172.253.75.14)  15.236 ms
+ 9  142.251.241.173 (142.251.241.173)  26.059 ms * *
+10  192.178.254.210 (192.178.254.210)  88.122 ms  33.489 ms
+    192.178.254.238 (192.178.254.238)  40.893 ms
