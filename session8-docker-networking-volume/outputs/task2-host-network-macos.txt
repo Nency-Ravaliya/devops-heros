@@ -1,0 +1,19 @@
+=== Proof the macOS host has nothing serving on port 80 ===
+HTTP code from macOS localhost:80 = 000
+
+=== Workaround for Docker Desktop on macOS: publish the port ===
+316c03b6a426ee1e43ab13bebe7b52af535f26486e07519ce07b607d2ce60bb5
+NAMES              STATUS         PORTS
+apache-published   Up 3 seconds   0.0.0.0:8095->80/tcp, [::]:8095->80/tcp
+
+=== Access from macOS: curl http://localhost:8095 ===
+HTTP/1.1 200 OK
+Date: Wed, 02 Sep 2026 18:49:39 GMT
+Server: Apache/2.4.68 (Unix)
+Last-Modified: Fri, 07 Nov 2025 08:23:08 GMT
+ETag: "bf-642fce432f300"
+Accept-Ranges: bytes
+Content-Length: 191
+Content-Type: text/html
+
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">

@@ -1,0 +1,24 @@
+=== Attempt overlay network WITHOUT swarm (expected to fail) ===
+Error response from daemon: This node is not a swarm manager. Use "docker swarm init" or "docker swarm join" to connect this node to swarm and try again.
+
+=== Initialise swarm mode ===
+Swarm initialized: current node (rsv5dzaq6w2h6pz490biu087l) is now a manager.
+
+To add a worker to this swarm, run the following command:
+
+    docker swarm join --token SWMTKN-1-3kxofh1kx9ocspwe5hwe8iavnwko83hpqm33rlm9ylhglxukfo-7u81brg4ut5riroh88w3e1knj 192.168.65.3:2377
+
+=== Create the overlay network ===
+jpkcclmowiw7ii35bt17o7h5o
+
+=== Networks (note SCOPE column) ===
+NETWORK ID     NAME             DRIVER    SCOPE
+jpkcclmowiw7   app-overlay      overlay   swarm
+3f4b4042dd44   backend-net      bridge    local
+4abbd666f7b2   bridge           bridge    local
+6545d9477177   database-net     bridge    local
+e9a89b4e1a89   docker_default   bridge    local
+2ce3f29c0e33   frontend-net     bridge    local
+0d6ab4e6fcff   host             host      local
+hyoustejowfr   ingress          overlay   swarm
+349dad335bff   none             null      local
