@@ -1,0 +1,27 @@
+services:
+
+  frontend:
+    image: nginx:latest
+    networks:
+      - frontend-net
+
+  backend:
+    image: alpine:latest
+    command: sleep 3600
+    networks:
+      - frontend-net
+      - backend-net
+
+  database:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: demo
+    networks:
+      - backend-net
+      - database-net
+
+networks:
+  frontend-net:
+  backend-net:
+  database-net:
