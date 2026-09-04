@@ -4,29 +4,29 @@
 
 ### The codes of all the applications are given below:
 
-- [Nodejs](./hello-world-docker/nodejs-app/)
-- [Python](./hello-world-docker/python-app/)
-- [Java](./hello-world-docker/java-app/)
-- [Apache](./hello-world-docker/Apache-app/)
-- [React](./hello-world-docker/React-app/)
-- [Nginx](./hello-world-docker/nginx-app/)
+- [Nodejs](./Docker%20Fundamental%20Task/nodejs-app/)
+- [Python](./Docker%20Fundamental%20Task/python-app/)
+- [Java](./Docker%20Fundamental%20Task/java-app/)
+- [Apache](./Docker%20Fundamental%20Task/Apache-app/)
+- [React](./Docker%20Fundamental%20Task/React-app/)
+- [Nginx](./Docker%20Fundamental%20Task/nginx-app/)
 
 ### Screenshots of localhost running these applications:
 
 - Nodejs:
-    ![Nodejs](./hello-world-docker/screenshots/nodejs-app.png)
+    ![Nodejs](./Docker%20Fundamental%20Task/screenshots/nodejs-app.png)
 
 - Python:
-    ![Python](./hello-world-docker/screenshots/python-app.png)
+    ![Python](./Docker%20Fundamental%20Task/screenshots/python-app.png)
 
 - Java:
-    ![Java](./hello-world-docker/screenshots/java-app.png)
+    ![Java](./Docker%20Fundamental%20Task/screenshots/java-app.png)
 
 - Apache:
-    ![Apache](./hello-world-docker/screenshots/Apache-app.png)
+    ![Apache](./Docker%20Fundamental%20Task/screenshots/Apache-app.png)
 
 - React:
-    ![React](./hello-world-docker/screenshots/React-app.png)
+    ![React](./Docker%20Fundamental%20Task/screenshots/React-app.png)
 
 - Nginx:
-    ![Nginx](./hello-world-docker/screenshots/nginx-app.png)
+    ![Nginx](./Docker%20Fundamental%20Task/screenshots/nginx-app.png)
