@@ -1,0 +1,4 @@
+  PID TTY          TIME CMD
+13515 pts/5    00:00:00 bash
+13569 pts/5    00:00:00 shell_script.sh
+13651 pts/5    00:00:00 ps
