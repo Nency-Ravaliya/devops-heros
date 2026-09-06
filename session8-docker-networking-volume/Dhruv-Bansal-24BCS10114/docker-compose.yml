@@ -1,0 +1,33 @@
+services:
+  frontend:
+    image: nginx:1.27-alpine
+    ports:
+      - "8082:80"
+    volumes:
+      - ./frontend/index.html:/usr/share/nginx/html/index.html:ro
+    networks:
+      - frontend_net
+
+  backend:
+    image: alpine:3.20
+    command: ["sh", "-c", "sleep infinity"]
+    networks:
+      - frontend_net
+      - backend_net
+
+  database:
+    image: mysql:8.4
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: demo
+    volumes:
+      - db_data:/var/lib/mysql
+    networks:
+      - backend_net
+
+networks:
+  frontend_net:
+  backend_net:
+
+volumes:
+  db_data:
