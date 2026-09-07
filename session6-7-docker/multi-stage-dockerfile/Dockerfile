@@ -1,19 +1,25 @@
-# -------------------------
-# Stage 1: Build
-# -------------------------
-FROM node:24-alpine AS builder
-WORKDIR /app
-COPY package*.json ./
-RUN npm install
-COPY . .
+FROM node:18-alpine AS builder
 
-# -------------------------
-# Stage 2: Production
-# -------------------------
-FROM node:24-alpine AS production
+WORKDIR /build
+
+# Copy application files
+COPY server.js ./
+
+# Perform build tasks / package verification if needed
+RUN echo "Building lightweight production artifact..."
+
+FROM node:18-alpine AS runner
+
+# Create non-root system user for security best practices
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+
 WORKDIR /app
-COPY --from=builder /app/package*.json ./
-RUN npm install --omit=dev
-COPY --from=builder /app/server.js ./
-EXPOSE 3000
-CMD ["npm", "start"]
+
+COPY --from=builder /build/server.js ./
+
+ENV PORT=8080
+USER appuser
+
+EXPOSE 8080
+
+CMD ["node", "server.js"]
