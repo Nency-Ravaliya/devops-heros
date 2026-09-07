@@ -1,0 +1,12 @@
+=== fix: backend should bridge frontend <-> database, so it needs to share a network with each ===
+$ docker run -d --name net-backend-c --network net-frontend nginx:alpine   (1st network: net-frontend)
+4551f8951316238f0d427bd267558e472821501c0a4490b37927f1b8f49d9b37
+$ docker network connect net-database net-backend-c                        (2nd network: net-database)
+
+$ docker inspect net-backend-c --format "{{range $k,$v := .NetworkSettings.Networks}}{{$k}} {{end}}"
+net-database net-frontend 
+
+Note: net-backend (the 3rd network created) is intentionally left unattached here -
+it satisfies the 'create 3 networks' requirement and is available for e.g. a cache/queue tier,
+while the backend container itself only needs to join 2 networks (net-frontend + net-database)
+to bridge the frontend and database tiers.
