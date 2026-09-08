@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: node-logging-agent
+  labels:
+    app: node-logging-agent
+spec:
+  selector:
+    matchLabels:
+      app: node-logging-agent
+  template:
+    metadata:
+      labels:
+        app: node-logging-agent
+    spec:
+      containers:
+        - name: fluent-logger
+          image: busybox:1.36
+          command: ["sh", "-c", "while true; do echo \"[$(date)] Collecting host system metrics on $(hostname)\"; sleep 10; done"]
+          resources:
+            requests:
+              cpu: "10m"
+              memory: "16Mi"
+            limits:
+              cpu: "50m"
+              memory: "32Mi"
