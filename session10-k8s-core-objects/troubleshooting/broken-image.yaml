@@ -1,0 +1,35 @@
+# ==============================================================================
+# INTENTIONALLY BROKEN MANIFEST FOR ROLLOUT FAILURE & ROLLBACK LAB
+# The image tag 'non-existent-tag-v999' does not exist in Docker Hub.
+# Applying this manifest will trigger ImagePullBackOff on new surge pods,
+# halting the rollout and proving that old pods remain healthy.
+# ==============================================================================
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: yatri-backend
+  labels:
+    app: yatri-backend
+    version: "broken-v3"
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: yatri-backend
+  template:
+    metadata:
+      labels:
+        app: yatri-backend
+        version: "broken-v3"
+    spec:
+      containers:
+        - name: backend
+          image: yatri-backend:non-existent-tag-v999
+          ports:
+            - containerPort: 5000
