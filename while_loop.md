@@ -1,0 +1,1 @@
+this is a while loop which only exit when a user enters "q". If a user enters the number it echos that number and if user enters any other thing it echos invalid input.
