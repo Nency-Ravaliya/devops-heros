@@ -5,4 +5,4 @@ metadata:
 spec:
   containers:
     - name: broken-image
-      image: nginx:this-tag-does-not-exist-99999
+      image: jakwehrgkaejw:kahsdfgkhj

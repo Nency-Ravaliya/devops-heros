@@ -1,0 +1,20 @@
+# service-green.yaml — Service pointing to GREEN (v2) — SWITCHED traffic
+# Apply this to promote GREEN and route ALL traffic to v2 instantly
+apiVersion: v1
+kind: Service
+metadata:
+  name: myapp-service
+  labels:
+    app: myapp
+spec:
+  type: NodePort
+  # THE SWITCH: Selector flipped to green — all traffic now goes to v2
+  selector:
+    app: myapp
+    slot: green    # <-- NOW routing to GREEN (v2)
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
+      nodePort: 30020
+      protocol: TCP
