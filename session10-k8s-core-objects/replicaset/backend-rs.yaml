@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: yatri-backend-rs
+  labels:
+    app: yatri-backend
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: yatri-backend
+  template:
+    metadata:
+      labels:
+        app: yatri-backend
+    spec:
+      containers:
+        - name: backend
+          image: python:3.11-alpine
+          command: ["python3", "-c", "import http.server; http.server.test(HandlerClass=http.server.SimpleHTTPRequestHandler, port=5000)"]
+          ports:
+            - containerPort: 5000

@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: yatri-backend-nodeport
+  labels:
+    app: yatri-backend
+spec:
+  type: NodePort
+  selector:
+    app: yatri-backend
+  ports:
+    - name: http
+      port: 80
+      targetPort: 5000
+      nodePort: 30080
+      protocol: TCP

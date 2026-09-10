@@ -1,0 +1,20 @@
+# ==============================================================================
+# INTENTIONALLY BROKEN SERVICE FOR ENDPOINT TRIAGE DRILL
+# Problem: The selector 'app: wrong-backend-name' does not match the backend pods!
+# Result: 'kubectl get endpoints broken-backend-service' will display: <none>
+# ==============================================================================
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: broken-backend-service
+spec:
+  type: ClusterIP
+  selector:
+    # BUG: Typo in label selector! Running pods have label app: yatri-backend
+    app: wrong-backend-name
+  ports:
+    - name: http
+      port: 80
+      targetPort: 5000
+      protocol: TCP

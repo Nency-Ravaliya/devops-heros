@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: yatri-backend
+  labels:
+    app: yatri-backend
+    tier: api
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: yatri-backend
+  template:
+    metadata:
+      labels:
+        app: yatri-backend
+        tier: api
+    spec:
+      containers:
+        - name: backend
+          image: python:3.11-alpine3.19
+          command:
+            - "python3"
+            - "-c"
+            - |
+              import http.server
+              import socketserver
+
+              class Handler(http.server.SimpleHTTPRequestHandler):
+                  def do_GET(self):
+                      if self.path == '/healthz':
+                          self.send_response(200)
+                          self.send_header('Content-type', 'application/json')
+                          self.end_headers()
+                          self.wfile.write(b'{"status":"healthy","service":"yatri-backend"}\n')
+                      else:
+                          self.send_response(200)
+                          self.send_header('Content-type', 'text/plain')
+                          self.end_headers()
+                          self.wfile.write(b'Backend v1.0.0 listening on port 5000\n')
+
+              print("Backend server listening on port 5000...")
+              with socketserver.TCPServer(("", 5000), Handler) as httpd:
+                  httpd.serve_forever()
+          ports:
+            - containerPort: 5000
+              name: http
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+            limits:
+              cpu: "150m"
+              memory: "128Mi"

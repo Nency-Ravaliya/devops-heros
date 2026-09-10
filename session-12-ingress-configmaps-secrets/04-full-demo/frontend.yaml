@@ -1,0 +1,53 @@
+---
+# Frontend Deployment — serves an HTML page at path /
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: yatri-frontend
+  namespace: default
+  labels:
+    app: yatri-frontend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: yatri-frontend
+  template:
+    metadata:
+      labels:
+        app: yatri-frontend
+    spec:
+      containers:
+        - name: frontend
+          image: nginx:1.25-alpine
+          ports:
+            - containerPort: 80
+          # Inject plain-text config from ConfigMap
+          envFrom:
+            - configMapRef:
+                name: yatri-app-config
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+            limits:
+              cpu: "100m"
+              memory: "128Mi"
+---
+# Frontend ClusterIP Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: yatri-frontend-service
+  namespace: default
+  labels:
+    app: yatri-frontend
+spec:
+  type: ClusterIP
+  selector:
+    app: yatri-frontend
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
+      protocol: TCP

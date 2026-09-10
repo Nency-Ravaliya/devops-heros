@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: yatri-backend
+  labels:
+    app: yatri-backend
+    version: "2.0.0"
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: yatri-backend
+  template:
+    metadata:
+      labels:
+        app: yatri-backend
+        version: "2.0.0"
+    spec:
+      containers:
+        - name: backend
+          image: python:3.11-alpine3.19
+          command: ["python3", "-c", "import http.server; print('Backend v2.0.0 listening on 5000'); http.server.test(HandlerClass=http.server.SimpleHTTPRequestHandler, port=5000)"]
+          ports:
+            - containerPort: 5000
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "250m"
+              memory: "256Mi"

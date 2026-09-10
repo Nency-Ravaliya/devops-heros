@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-blue
+  labels:
+    app: myapp
+    slot: blue
+    version: v1
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: myapp
+      slot: blue
+  template:
+    metadata:
+      labels:
+        app: myapp
+        slot: blue
+        version: v1
+    spec:
+      containers:
+        - name: web
+          image: nginx:1.24-alpine
+          ports:
+            - containerPort: 80
+          lifecycle:
+            postStart:
+              exec:
+                command:
+                  - sh
+                  - -c
+                  - |
+                    echo '<html><body style="background:#003566;color:#ffd60a;font-family:monospace;font-size:3em;text-align:center;padding-top:20vh">
+                    <p>BLUE ENVIRONMENT</p>
+                    <p style="font-size:0.5em">Version: v1 | Slot: BLUE (LIVE)</p>
+                    </body></html>' > /usr/share/nginx/html/index.html
+          resources:
+            requests:
+              cpu: "30m"
+              memory: "32Mi"
+            limits:
+              cpu: "100m"
+              memory: "64Mi"
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 3
+            periodSeconds: 5
