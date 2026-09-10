@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: yatri-backend
+  labels:
+    app: yatri-backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: yatri-backend
+  template:
+    metadata:
+      labels:
+        app: yatri-backend
+    spec:
+      containers:
+        - name: backend
+          image: python:3.11-alpine3.19
+          command: ["python3", "-c", "import os, time; print(f'Running with ENV={os.getenv(\"ENVIRONMENT\")} and USER={os.getenv(\"POSTGRES_USER\")}'); time.sleep(3600)"]
+          ports:
+            - containerPort: 5000
+          # Bulk inject plain-text configuration from ConfigMap
+          envFrom:
+            - configMapRef:
+                name: yatri-app-config
+            - secretRef:
+                name: yatri-db-secret
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+            limits:
+              cpu: "150m"
+              memory: "128Mi"
