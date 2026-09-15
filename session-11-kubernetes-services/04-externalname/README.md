@@ -56,7 +56,7 @@ Kubernetes CoreDNS redirects that internal query to whatever external hostname i
 
 ---
 
-## 3. Real-World Analogy: The Speed-Dial Nickname
+## 3. Think of It Like This: The Speed-Dial Nickname
 * You store your friend's phone number under the nickname **"Best Friend"** on your phone.
 * When your friend changes their actual phone number from Airtel to Jio, you do not change your daily routine. You just update the number mapped to the nickname **"Best Friend"**.
 * `ExternalName` is your cluster's speed-dial contact nickname for external services.

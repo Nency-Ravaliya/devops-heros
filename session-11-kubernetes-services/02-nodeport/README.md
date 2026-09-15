@@ -46,7 +46,7 @@ External Client / Web Browser
 
 ---
 
-## 3. Real-World Analogy: The Hotel Reception & Room Extension
+## 3. Think of It Like This: The Hotel Reception & Room Extension
 * **The Hotel Building** = A physical or virtual Worker Node.
 * **The Hotel Main Gate Guard (`nodePort: 30080`)** = The outside security gate that lets visitors enter from the street.
 * **The Hotel Lobby Desk (`port: 80`)** = The internal reception desk coordinating guests.
