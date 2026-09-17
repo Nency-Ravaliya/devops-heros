@@ -60,6 +60,10 @@ kube-scheduler-minikube            1/1     Running   4          10d
 storage-provisioner                1/1     Running   7          10d
 ```
 
+Screenshot of the cluster running (`minikube status` + `kubectl get nodes` + `kubectl get pods -n kube-system`):
+
+![minikube cluster status](./screenshots/minikube-cluster-status.png)
+
 `minikube stop` shuts the cluster down again once done (not run here so the cluster stays up for the next session's homework).
 
 ---
