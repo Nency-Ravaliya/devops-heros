@@ -1,5 +1,6 @@
 # Session 10 Homework Question
 
+
 ## Q1. Difference between StatefulSet, Deployment and DaemonSet
 
 - **Deployment:** Used for managing stateless applications where Pods are interchangeable. It supports scaling, rolling updates, and rollbacks.
