@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: campus-selfheal
+  labels:
+    app: campus-selfheal
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: campus-selfheal
+  template:
+    metadata:
+      labels:
+        app: campus-selfheal
+    spec:
+      containers:
+        - name: web
+          image: nginx:1.25-alpine
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              cpu: 25m
+              memory: 32Mi

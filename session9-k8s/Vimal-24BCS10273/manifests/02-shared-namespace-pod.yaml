@@ -1,0 +1,28 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: campus-shared-ns
+  labels:
+    app: campus-shared-ns
+spec:
+  containers:
+    - name: web
+      image: nginx:1.25-alpine
+      ports:
+        - containerPort: 80
+    - name: probe
+      image: busybox:1.36
+      # Reaches the nginx container over localhost to show both containers
+      # sit in the same network namespace.
+      command:
+        - sh
+        - -c
+        - |
+          while true; do
+            if wget -q -O- http://localhost:80 >/dev/null 2>&1; then
+              echo "reached nginx on localhost:80 from the probe container"
+            else
+              echo "localhost:80 unreachable"
+            fi
+            sleep 5
+          done
