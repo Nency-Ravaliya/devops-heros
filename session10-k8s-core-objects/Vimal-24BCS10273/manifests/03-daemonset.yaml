@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: campus-node-agent
+  labels:
+    app: campus-node-agent
+spec:
+  selector:
+    matchLabels:
+      app: campus-node-agent
+  template:
+    metadata:
+      labels:
+        app: campus-node-agent
+    spec:
+      containers:
+        - name: agent
+          image: busybox:1.36
+          command: ["sh", "-c", "while true; do echo \"agent running on $(hostname)\"; sleep 30; done"]
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
