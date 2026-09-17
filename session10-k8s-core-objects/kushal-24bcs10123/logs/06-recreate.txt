@@ -1,0 +1,120 @@
+
+############ Step 1: v1 on NodePort 30040 ############
+
+$ kubectl apply -f 04-recreate/deployment-v1.yaml
+deployment.apps/app-recreate created
+
+$ kubectl apply -f 04-recreate/service.yaml
+service/app-recreate-service created
+
+$ kubectl rollout status deployment/app-recreate
+Waiting for deployment "app-recreate" rollout to finish: 0 of 3 updated replicas are available...
+Waiting for deployment "app-recreate" rollout to finish: 1 of 3 updated replicas are available...
+Waiting for deployment "app-recreate" rollout to finish: 2 of 3 updated replicas are available...
+deployment "app-recreate" successfully rolled out
+
+$ kubectl get pods -l app=app-recreate
+NAME                            READY   STATUS    RESTARTS   AGE
+app-recreate-6c78cb55bb-94sg5   1/1     Running   0          6s
+app-recreate-6c78cb55bb-j28jm   1/1     Running   0          6s
+app-recreate-6c78cb55bb-v4psz   1/1     Running   0          6s
+
+$ kubectl get deployment app-recreate -o jsonpath='strategy={.spec.strategy.type}{"\n"}'
+strategy=Recreate
+
+$ curl -s http://localhost:30040 | grep -o 'VERSION: [^<]*'
+VERSION: v1
+
+############ Step 2-3: apply v2 and watch the outage window ############
+
+$ kubectl apply -f 04-recreate/deployment-v2.yaml
+deployment.apps/app-recreate configured
+
+$ sleep 2; kubectl get pods -l app=app-recreate            # all v1 pods Terminating together, no v2 yet
+NAME                            READY   STATUS        RESTARTS   AGE
+app-recreate-6c78cb55bb-94sg5   1/1     Terminating   0          89s
+
+$ kubectl rollout status deployment/app-recreate
+Waiting for deployment "app-recreate" rollout to finish: 0 out of 3 new replicas have been updated...
+Waiting for deployment "app-recreate" rollout to finish: 0 out of 3 new replicas have been updated...
+Waiting for deployment "app-recreate" rollout to finish: 0 out of 3 new replicas have been updated...
+Waiting for deployment "app-recreate" rollout to finish: 0 of 3 updated replicas are available...
+Waiting for deployment "app-recreate" rollout to finish: 1 of 3 updated replicas are available...
+Waiting for deployment "app-recreate" rollout to finish: 2 of 3 updated replicas are available...
+deployment "app-recreate" successfully rolled out
+
+$ curl -s http://localhost:30040 | grep -o 'VERSION: [^<]*'
+VERSION: v2 (UPGRADED)
+
+############ what the curl loop saw (60 requests, 0.5s apart) ############
+
+$ cat '/Users/kushalscaler/devops-heros/session10-k8s-core-objects/kushal-24bcs10123/logs/06-recreate-curl.txt' | uniq -c
+   1 VERSION: v1
+  33 FAIL (no response)
+  26 VERSION: v2 (UPGRADED)
+
+############ pod watch during the update ############
+
+$ cat '/Users/kushalscaler/devops-heros/session10-k8s-core-objects/kushal-24bcs10123/logs/06-recreate-watch.txt'
+NAME                            READY   STATUS    RESTARTS   AGE
+app-recreate-6c78cb55bb-94sg5   1/1     Running   0          86s
+app-recreate-6c78cb55bb-j28jm   1/1     Running   0          86s
+app-recreate-6c78cb55bb-v4psz   1/1     Running   0          86s
+app-recreate-6c78cb55bb-v4psz   1/1     Terminating   0          87s
+app-recreate-6c78cb55bb-j28jm   1/1     Terminating   0          87s
+app-recreate-6c78cb55bb-94sg5   1/1     Terminating   0          87s
+app-recreate-6c78cb55bb-94sg5   1/1     Terminating   0          87s
+app-recreate-6c78cb55bb-v4psz   1/1     Terminating   0          87s
+app-recreate-6c78cb55bb-j28jm   1/1     Terminating   0          87s
+app-recreate-6c78cb55bb-v4psz   0/1     Completed     0          87s
+app-recreate-6c78cb55bb-j28jm   0/1     Completed     0          87s
+app-recreate-6c78cb55bb-j28jm   0/1     Completed     0          87s
+app-recreate-6c78cb55bb-j28jm   0/1     Completed     0          87s
+app-recreate-6c78cb55bb-v4psz   0/1     Completed     0          87s
+app-recreate-6c78cb55bb-v4psz   0/1     Completed     0          87s
+app-recreate-6c78cb55bb-94sg5   0/1     Completed     0          105s
+app-recreate-7bd8d89b8b-scrz2   0/1     Pending       0          0s
+app-recreate-7bd8d89b8b-7cpzh   0/1     Pending       0          0s
+app-recreate-7bd8d89b8b-dwklp   0/1     Pending       0          0s
+app-recreate-7bd8d89b8b-scrz2   0/1     Pending       0          0s
+app-recreate-7bd8d89b8b-7cpzh   0/1     Pending       0          0s
+app-recreate-7bd8d89b8b-dwklp   0/1     Pending       0          0s
+app-recreate-7bd8d89b8b-scrz2   0/1     ContainerCreating   0          0s
+app-recreate-7bd8d89b8b-7cpzh   0/1     ContainerCreating   0          0s
+app-recreate-7bd8d89b8b-dwklp   0/1     ContainerCreating   0          0s
+app-recreate-7bd8d89b8b-dwklp   0/1     ContainerCreating   0          1s
+app-recreate-7bd8d89b8b-7cpzh   0/1     ContainerCreating   0          1s
+app-recreate-7bd8d89b8b-scrz2   0/1     ContainerCreating   0          1s
+app-recreate-7bd8d89b8b-dwklp   1/1     Running             0          1s
+app-recreate-7bd8d89b8b-scrz2   1/1     Running             0          1s
+app-recreate-7bd8d89b8b-7cpzh   1/1     Running             0          1s
+app-recreate-6c78cb55bb-94sg5   0/1     Completed           0          106s
+app-recreate-6c78cb55bb-94sg5   0/1     Completed           0          106s
+app-recreate-6c78cb55bb-94sg5   0/1     Completed           0          106s
+
+############ Step 5: rollback (also a full stop/start with Recreate) ############
+
+$ kubectl rollout undo deployment/app-recreate
+deployment.apps/app-recreate rolled back
+
+$ kubectl rollout status deployment/app-recreate
+Waiting for deployment "app-recreate" rollout to finish: 0 out of 3 new replicas have been updated...
+Waiting for deployment "app-recreate" rollout to finish: 0 out of 3 new replicas have been updated...
+Waiting for deployment "app-recreate" rollout to finish: 0 out of 3 new replicas have been updated...
+Waiting for deployment "app-recreate" rollout to finish: 0 out of 3 new replicas have been updated...
+Waiting for deployment "app-recreate" rollout to finish: 0 out of 3 new replicas have been updated...
+Waiting for deployment "app-recreate" rollout to finish: 0 of 3 updated replicas are available...
+Waiting for deployment "app-recreate" rollout to finish: 1 of 3 updated replicas are available...
+Waiting for deployment "app-recreate" rollout to finish: 2 of 3 updated replicas are available...
+deployment "app-recreate" successfully rolled out
+
+$ curl -s http://localhost:30040 | grep -o 'VERSION: [^<]*'
+VERSION: v1
+
+############ Cleanup ############
+
+$ kubectl delete -f 04-recreate/service.yaml
+service "app-recreate-service" deleted from default namespace
+
+$ kubectl delete -f 04-recreate/deployment-v2.yaml
+deployment.apps "app-recreate" deleted from default namespace

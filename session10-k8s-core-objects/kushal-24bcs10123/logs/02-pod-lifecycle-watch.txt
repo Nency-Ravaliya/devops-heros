@@ -1,0 +1,154 @@
+NAME                READY   STATUS    RESTARTS   AGE
+lifecycle-running   0/1     Pending   0          0s
+lifecycle-running   0/1     Pending   0          0s
+lifecycle-running   0/1     ContainerCreating   0          0s
+lifecycle-running   0/1     ContainerCreating   0          1s
+lifecycle-running   1/1     Running             0          1s
+lifecycle-pending   0/1     Pending             0          0s
+lifecycle-pending   0/1     Pending             0          0s
+lifecycle-pending   0/1     ContainerCreating   0          0s
+lifecycle-pending   0/1     ContainerCreating   0          0s
+lifecycle-pending   1/1     Running             0          0s
+lifecycle-pending-900gi   0/1     Pending             0          0s
+lifecycle-pending-900gi   0/1     Pending             0          0s
+lifecycle-succeeded       0/1     Pending             0          0s
+lifecycle-succeeded       0/1     Pending             0          0s
+lifecycle-succeeded       0/1     ContainerCreating   0          0s
+lifecycle-succeeded       0/1     ContainerCreating   0          1s
+lifecycle-succeeded       1/1     Running             0          1s
+lifecycle-succeeded       0/1     Completed           0          7s
+lifecycle-succeeded       0/1     Completed           0          8s
+lifecycle-failed          0/1     Pending             0          0s
+lifecycle-failed          0/1     Pending             0          0s
+lifecycle-failed          0/1     ContainerCreating   0          0s
+lifecycle-failed          0/1     ContainerCreating   0          1s
+lifecycle-failed          1/1     Running             0          1s
+lifecycle-failed          0/1     Error               0          6s
+lifecycle-failed          0/1     Error               0          7s
+lifecycle-crashloop       0/1     Pending             0          0s
+lifecycle-crashloop       0/1     Pending             0          0s
+lifecycle-crashloop       0/1     ContainerCreating   0          0s
+lifecycle-crashloop       0/1     ContainerCreating   0          0s
+lifecycle-crashloop       1/1     Running             0          1s
+lifecycle-crashloop       0/1     Error               0          4s
+lifecycle-crashloop       1/1     Running             1 (0s ago)   4s
+lifecycle-crashloop       0/1     Error               1 (4s ago)   8s
+lifecycle-crashloop       0/1     CrashLoopBackOff    1 (12s ago)   19s
+lifecycle-crashloop       1/1     Running             2 (12s ago)   19s
+lifecycle-crashloop       0/1     Error               2 (15s ago)   22s
+lifecycle-pending         1/1     Running             0             64s
+lifecycle-crashloop       0/1     CrashLoopBackOff    2 (27s ago)   49s
+lifecycle-crashloop       1/1     Running             3 (27s ago)   49s
+lifecycle-crashloop       0/1     Error               3 (30s ago)   52s
+lifecycle-image-error     0/1     Pending             0             0s
+lifecycle-image-error     0/1     Pending             0             0s
+lifecycle-image-error     0/1     ContainerCreating   0             0s
+lifecycle-image-error     0/1     ContainerCreating   0             0s
+lifecycle-image-error     0/1     ErrImagePull        0             8s
+lifecycle-image-error     0/1     ImagePullBackOff    0             23s
+lifecycle-crashloop       0/1     CrashLoopBackOff    3 (57s ago)   109s
+lifecycle-crashloop       1/1     Running             4 (57s ago)   109s
+lifecycle-crashloop       0/1     Error               4 (60s ago)   112s
+lifecycle-image-error     0/1     ErrImagePull        0             40s
+lifecycle-readiness       0/1     Pending             0             0s
+lifecycle-readiness       0/1     Pending             0             0s
+lifecycle-readiness       0/1     ContainerCreating   0             0s
+lifecycle-readiness       0/1     ContainerCreating   0             0s
+lifecycle-readiness       0/1     Running             0             0s
+lifecycle-image-error     0/1     ImagePullBackOff    0             52s
+lifecycle-readiness       1/1     Running             0             7s
+lifecycle-liveness        0/1     Pending             0             0s
+lifecycle-liveness        0/1     Pending             0             0s
+lifecycle-liveness        0/1     ContainerCreating   0             0s
+lifecycle-liveness        0/1     ContainerCreating   0             0s
+lifecycle-liveness        1/1     Running             0             0s
+lifecycle-image-error     0/1     ErrImagePull        0             64s
+lifecycle-image-error     0/1     ImagePullBackOff    0             79s
+lifecycle-crashloop       0/1     CrashLoopBackOff    4 (72s ago)   3m4s
+lifecycle-liveness        1/1     Running             1 (0s ago)    60s
+lifecycle-startup         0/1     Pending             0             0s
+lifecycle-startup         0/1     Pending             0             0s
+lifecycle-startup         0/1     ContainerCreating   0             0s
+lifecycle-startup         0/1     ContainerCreating   0             1s
+lifecycle-startup         0/1     Running             0             1s
+lifecycle-image-error     0/1     ErrImagePull        0             116s
+lifecycle-crashloop       1/1     Running             5 (82s ago)   3m14s
+lifecycle-crashloop       0/1     Error               5 (86s ago)   3m18s
+lifecycle-image-error     0/1     ImagePullBackOff    0             2m7s
+lifecycle-startup         0/1     Running             0             36s
+lifecycle-startup         1/1     Running             0             36s
+lifecycle-init            0/1     Pending             0             0s
+lifecycle-init            0/1     Pending             0             0s
+lifecycle-init            0/1     Init:0/1            0             0s
+lifecycle-init            0/1     Init:0/1            0             0s
+lifecycle-init            0/1     Init:0/1            0             0s
+lifecycle-init            0/1     PodInitializing     0             11s
+lifecycle-init            1/1     Running             0             11s
+lifecycle-multi-container   0/2     Pending             0             0s
+lifecycle-multi-container   0/2     Pending             0             0s
+lifecycle-multi-container   0/2     ContainerCreating   0             0s
+lifecycle-multi-container   0/2     ContainerCreating   0             0s
+lifecycle-multi-container   2/2     Running             0             1s
+lifecycle-termination       0/1     Pending             0             0s
+lifecycle-termination       0/1     Pending             0             0s
+lifecycle-termination       0/1     ContainerCreating   0             0s
+lifecycle-termination       0/1     ContainerCreating   0             0s
+lifecycle-termination       1/1     Running             0             0s
+lifecycle-termination       1/1     Terminating         0             0s
+lifecycle-termination       1/1     Terminating         0             1s
+lifecycle-termination       0/1     Completed           0             11s
+lifecycle-termination       0/1     Completed           0             12s
+lifecycle-termination       0/1     Completed           0             12s
+lifecycle-liveness          1/1     Running             2 (0s ago)    2m
+lifecycle-running           1/1     Terminating         0             4m41s
+lifecycle-pending           1/1     Terminating         0             4m40s
+lifecycle-running           1/1     Terminating         0             4m41s
+lifecycle-succeeded         0/1     Completed           0             4m24s
+lifecycle-pending           1/1     Terminating         0             4m40s
+lifecycle-succeeded         0/1     Completed           0             4m24s
+lifecycle-failed            0/1     Error               0             4m16s
+lifecycle-failed            0/1     Error               0             4m16s
+lifecycle-crashloop         0/1     Terminating         5 (2m17s ago)   4m9s
+lifecycle-image-error       0/1     Terminating         0               2m53s
+lifecycle-crashloop         0/1     Terminating         5 (2m17s ago)   4m9s
+lifecycle-readiness         1/1     Terminating         0               2m8s
+lifecycle-image-error       0/1     Terminating         0               2m53s
+lifecycle-liveness          1/1     Terminating         2 (0s ago)      2m
+lifecycle-readiness         1/1     Terminating         0               2m8s
+lifecycle-startup           1/1     Terminating         0               60s
+lifecycle-init              1/1     Terminating         0               24s
+lifecycle-startup           1/1     Terminating         0               60s
+lifecycle-multi-container   2/2     Terminating         0               13s
+lifecycle-init              1/1     Terminating         0               24s
+lifecycle-multi-container   2/2     Terminating         0               13s
+lifecycle-crashloop         0/1     Error               5 (2m17s ago)   4m9s
+lifecycle-image-error       0/1     Terminating         0               2m53s
+lifecycle-pending           0/1     Completed           0               4m40s
+lifecycle-running           0/1     Completed           0               4m41s
+lifecycle-readiness         0/1     Completed           0               2m8s
+lifecycle-init              0/1     Completed           0               24s
+lifecycle-pending           0/1     Completed           0               4m41s
+lifecycle-pending           0/1     Completed           0               4m41s
+lifecycle-liveness          1/1     Terminating         2 (1s ago)      2m1s
+lifecycle-running           0/1     Completed           0               4m42s
+lifecycle-running           0/1     Completed           0               4m42s
+lifecycle-readiness         0/1     Completed           0               2m9s
+lifecycle-readiness         0/1     Completed           0               2m9s
+lifecycle-image-error       0/1     ContainerStatusUnknown   0               2m54s
+lifecycle-image-error       0/1     ContainerStatusUnknown   0               2m54s
+lifecycle-image-error       0/1     ContainerStatusUnknown   0               2m54s
+lifecycle-crashloop         0/1     Error                    5 (2m18s ago)   4m10s
+lifecycle-crashloop         0/1     Error                    5 (2m18s ago)   4m10s
+lifecycle-init              0/1     Completed                0               25s
+lifecycle-init              0/1     Completed                0               25s
+lifecycle-startup           0/1     Error                    0               90s
+lifecycle-multi-container   0/2     Error                    0               43s
+lifecycle-liveness          0/1     Error                    2 (31s ago)     2m31s
+lifecycle-multi-container   0/2     Error                    0               44s
+lifecycle-multi-container   0/2     Error                    0               44s
+lifecycle-startup           0/1     Error                    0               91s
+lifecycle-startup           0/1     Error                    0               91s
+lifecycle-liveness          0/1     Error                    2 (31s ago)     2m31s
+lifecycle-liveness          0/1     Error                    2 (31s ago)     2m31s
+lifecycle-pending-900gi     0/1     Terminating              0               5m3s
+lifecycle-pending-900gi     0/1     Terminating              0               5m3s
