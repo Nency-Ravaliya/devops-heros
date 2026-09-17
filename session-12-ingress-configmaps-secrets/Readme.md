@@ -128,6 +128,8 @@ POSTGRES_DB     : yatri_production_db
 ```
 One IP, one Ingress Controller pod, two backend services routed by path (`/` → frontend, `/api/*` → backend).
 
+![ingress routing test](./screenshots/ingress-routing-test.png)
+
 ### ConfigMap live-update behavior
 ```bash
 kubectl patch configmap yatri-app-config --type merge -p '{"data":{"ENVIRONMENT":"staging"}}'
