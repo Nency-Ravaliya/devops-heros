@@ -22,6 +22,10 @@ kubectl logs hello-pod
 Hello Kubernetes
 ```
 
+Screenshot showing the full lifecycle (ContainerCreating → Completed) plus the container's log output in one terminal:
+
+![hello-pod lifecycle](./screenshots/hello-pod-lifecycle.png)
+
 Because the container runs a one-shot `sh -c "echo ..."` command (like Docker's `CMD`), it exits after finishing its task and the Pod moves to `Completed`. An `nginx` container never exits on its own, so it stays in `Running` indefinitely (`restartPolicy` doesn't apply here since the container never exits).
 
 ---
@@ -77,6 +81,10 @@ Verified `VERSION: v2` was live, then rolled back:
 kubectl rollout undo deployment/app-rolling
 # deployment.apps/app-rolling rolled back
 ```
+
+Screenshot after rollback — all 4 pods back on `version=v1`:
+
+![rolling update deployment](./screenshots/rolling-update-deployment.png)
 
 ### Blue-Green
 ```bash
