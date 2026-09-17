@@ -81,7 +81,7 @@ git status --short
 ```
 
 ```
-[main 463bbce] commit -a -m: stages tracked modifications automatically
+[main ec0b75f] commit -a -m: stages tracked modifications automatically
  1 file changed, 1 insertion(+)
 (clean)
 ```
@@ -128,9 +128,9 @@ git log --oneline
 ```
 
 ```
-2975352 Add newfile.txt (needed explicit git add)
-463bbce commit -a -m: stages tracked modifications automatically
-e338c10 Initial commit: add app.txt
+94f4d3d Add newfile.txt (needed explicit git add)
+ec0b75f commit -a -m: stages tracked modifications automatically
+dbefef9 Initial commit: add app.txt
 ```
 
 ### What I observed
@@ -172,10 +172,10 @@ git log --oneline --decorate
 ```
 
 ```
-72e6e3f (HEAD -> main) main: C4 - add deploy.sh
-ac88e47 main: C3 - add .env
-9fdaedd main: C2 - add nginx.conf
-66437ba main: C1 - add README
+d1c7ef7 (HEAD -> main) main: C4 - add deploy.sh
+1084428 main: C3 - add .env
+0f7784d main: C2 - add nginx.conf
+3a8f32f main: C1 - add README
 ```
 
 ### 2.3 Create a new branch
@@ -186,8 +186,8 @@ git branch -vv
 ```
 
 ```
-* feature/logging 72e6e3f main: C4 - add deploy.sh
-  main            72e6e3f main: C4 - add deploy.sh
+* feature/logging d1c7ef7 main: C4 - add deploy.sh
+  main            d1c7ef7 main: C4 - add deploy.sh
 ```
 
 Both branches point at the same commit right now — the branch is just a movable pointer.
@@ -212,24 +212,24 @@ git log --oneline --decorate
 ```
 
 ```
-3fb17d3 (HEAD -> feature/logging) feature: F3 - add logrotate.conf
-6eaa10c feature: F2 - add healthcheck.sh  <-- THE COMMIT TO CHERRY-PICK
-2d20ae1 feature: F1 - add logging.conf
-72e6e3f (main) main: C4 - add deploy.sh
-ac88e47 main: C3 - add .env
-9fdaedd main: C2 - add nginx.conf
-66437ba main: C1 - add README
+570540a (HEAD -> feature/logging) feature: F3 - add logrotate.conf
+9737cb7 feature: F2 - add healthcheck.sh  <-- THE COMMIT TO CHERRY-PICK
+9280208 feature: F1 - add logging.conf
+d1c7ef7 (main) main: C4 - add deploy.sh
+1084428 main: C3 - add .env
+0f7784d main: C2 - add nginx.conf
+3a8f32f main: C1 - add README
 ```
 
-The commit I want is **`6eaa10c`** — the one that adds `healthcheck.sh`. I want *only* that
+The commit I want is **`9737cb7`** — the one that adds `healthcheck.sh`. I want *only* that
 change on `main`; the logging config work is not ready yet.
 
 ```bash
-git show --stat --oneline 6eaa10c
+git show --stat --oneline 9737cb7
 ```
 
 ```
-6eaa10c feature: F2 - add healthcheck.sh  <-- THE COMMIT TO CHERRY-PICK
+9737cb7 feature: F2 - add healthcheck.sh  <-- THE COMMIT TO CHERRY-PICK
  healthcheck.sh | 2 ++
  1 file changed, 2 insertions(+)
 ```
@@ -241,13 +241,13 @@ git log --oneline --graph --all --decorate
 ```
 
 ```
-* 3fb17d3 (HEAD -> feature/logging) feature: F3 - add logrotate.conf
-* 6eaa10c feature: F2 - add healthcheck.sh  <-- THE COMMIT TO CHERRY-PICK
-* 2d20ae1 feature: F1 - add logging.conf
-* 72e6e3f (main) main: C4 - add deploy.sh
-* ac88e47 main: C3 - add .env
-* 9fdaedd main: C2 - add nginx.conf
-* 66437ba main: C1 - add README
+* 570540a (HEAD -> feature/logging) feature: F3 - add logrotate.conf
+* 9737cb7 feature: F2 - add healthcheck.sh  <-- THE COMMIT TO CHERRY-PICK
+* 9280208 feature: F1 - add logging.conf
+* d1c7ef7 (main) main: C4 - add deploy.sh
+* 1084428 main: C3 - add .env
+* 0f7784d main: C2 - add nginx.conf
+* 3a8f32f main: C1 - add README
 ```
 
 ### 2.7 Switch to `main` — confirm the file is not there
@@ -269,12 +269,12 @@ NO - not on main yet
 ### 2.8 Cherry-pick the commit
 
 ```bash
-git cherry-pick 6eaa10c
+git cherry-pick 9737cb7
 ```
 
 ```
-[main 8e316fc] feature: F2 - add healthcheck.sh  <-- THE COMMIT TO CHERRY-PICK
- Date: Fri Sep 18 02:03:03 2026 +0530
+[main f2699bd] feature: F2 - add healthcheck.sh  <-- THE COMMIT TO CHERRY-PICK
+ Date: Thu Sep 17 20:51:52 2026 +0000
  1 file changed, 2 insertions(+)
  create mode 100644 healthcheck.sh
 ```
@@ -303,11 +303,11 @@ git log --oneline --decorate
 ```
 
 ```
-8e316fc (HEAD -> main) feature: F2 - add healthcheck.sh  <-- THE COMMIT TO CHERRY-PICK
-72e6e3f main: C4 - add deploy.sh
-ac88e47 main: C3 - add .env
-9fdaedd main: C2 - add nginx.conf
-66437ba main: C1 - add README
+f2699bd (HEAD -> main) feature: F2 - add healthcheck.sh  <-- THE COMMIT TO CHERRY-PICK
+d1c7ef7 main: C4 - add deploy.sh
+1084428 main: C3 - add .env
+0f7784d main: C2 - add nginx.conf
+3a8f32f main: C1 - add README
 ```
 
 ### 2.10 Verify ONLY that commit came across
@@ -325,14 +325,14 @@ This is the whole point of cherry-pick: `F1` and `F3` stayed on the feature bran
 
 ```
 original commit on feature branch:
-6eaa10c feature: F2 - add healthcheck.sh  <-- THE COMMIT TO CHERRY-PICK
+9737cb7 feature: F2 - add healthcheck.sh  <-- THE COMMIT TO CHERRY-PICK
 
 cherry-picked commit on main:
-8e316fc feature: F2 - add healthcheck.sh  <-- THE COMMIT TO CHERRY-PICK
+f2699bd feature: F2 - add healthcheck.sh  <-- THE COMMIT TO CHERRY-PICK
 ```
 
 Same message, same diff, **different SHA**. A commit hash is derived from its content *and*
-its parent, and this copy has a different parent (`72e6e3f` instead of `2d20ae1`), so it is
+its parent, and this copy has a different parent (`d1c7ef7` instead of `9280208`), so it is
 a brand-new commit object. That is why cherry-picking the same work twice gives you
 duplicate commits in history.
 
@@ -343,18 +343,18 @@ git log --oneline --graph --all --decorate
 ```
 
 ```
-* 3fb17d3 (feature/logging) feature: F3 - add logrotate.conf
-* 6eaa10c feature: F2 - add healthcheck.sh  <-- THE COMMIT TO CHERRY-PICK
-* 2d20ae1 feature: F1 - add logging.conf
-| * 8e316fc (HEAD -> main) feature: F2 - add healthcheck.sh  <-- THE COMMIT TO CHERRY-PICK
+* 570540a (feature/logging) feature: F3 - add logrotate.conf
+* 9737cb7 feature: F2 - add healthcheck.sh  <-- THE COMMIT TO CHERRY-PICK
+* 9280208 feature: F1 - add logging.conf
+| * f2699bd (HEAD -> main) feature: F2 - add healthcheck.sh  <-- THE COMMIT TO CHERRY-PICK
 |/
-* 72e6e3f main: C4 - add deploy.sh
-* ac88e47 main: C3 - add .env
-* 9fdaedd main: C2 - add nginx.conf
-* 66437ba main: C1 - add README
+* d1c7ef7 main: C4 - add deploy.sh
+* 1084428 main: C3 - add .env
+* 0f7784d main: C2 - add nginx.conf
+* 3a8f32f main: C1 - add README
 ```
 
-The graph shows the fork clearly: both branches share history up to `72e6e3f`, then
+The graph shows the fork clearly: both branches share history up to `d1c7ef7`, then
 diverge, and the same change now exists on both sides as two separate commits.
 
 ### Useful cherry-pick options

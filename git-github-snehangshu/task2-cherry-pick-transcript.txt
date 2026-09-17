@@ -1,59 +1,42 @@
-
 =====[T2-main-commits]=====
-warning: in the working copy of 'README.md', LF will be replaced by CRLF the next time Git touches it
-warning: in the working copy of 'README.md', LF will be replaced by CRLF the next time Git touches it
-warning: in the working copy of 'nginx.conf', LF will be replaced by CRLF the next time Git touches it
-warning: in the working copy of 'README.md', LF will be replaced by CRLF the next time Git touches it
-warning: in the working copy of 'nginx.conf', LF will be replaced by CRLF the next time Git touches it
-warning: in the working copy of '.env', LF will be replaced by CRLF the next time Git touches it
-warning: in the working copy of '.env', LF will be replaced by CRLF the next time Git touches it
-warning: in the working copy of 'README.md', LF will be replaced by CRLF the next time Git touches it
-warning: in the working copy of 'nginx.conf', LF will be replaced by CRLF the next time Git touches it
-warning: in the working copy of 'deploy.sh', LF will be replaced by CRLF the next time Git touches it
 4 commits created on main
 
 =====[T2-git-log-main]=====
-72e6e3f (HEAD -> main) main: C4 - add deploy.sh
-ac88e47 main: C3 - add .env
-9fdaedd main: C2 - add nginx.conf
-66437ba main: C1 - add README
+d1c7ef7 (HEAD -> main) main: C4 - add deploy.sh
+1084428 main: C3 - add .env
+0f7784d main: C2 - add nginx.conf
+3a8f32f main: C1 - add README
 
 =====[T2-create-branch]=====
-* feature/logging 72e6e3f main: C4 - add deploy.sh
-  main            72e6e3f main: C4 - add deploy.sh
+* feature/logging d1c7ef7 main: C4 - add deploy.sh
+  main            d1c7ef7 main: C4 - add deploy.sh
 
 =====[T2-feature-commits]=====
-warning: in the working copy of 'logging.conf', LF will be replaced by CRLF the next time Git touches it
-warning: in the working copy of 'logging.conf', LF will be replaced by CRLF the next time Git touches it
-warning: in the working copy of 'healthcheck.sh', LF will be replaced by CRLF the next time Git touches it
-warning: in the working copy of 'healthcheck.sh', LF will be replaced by CRLF the next time Git touches it
-warning: in the working copy of 'logging.conf', LF will be replaced by CRLF the next time Git touches it
-warning: in the working copy of 'logrotate.conf', LF will be replaced by CRLF the next time Git touches it
 3 commits created on feature/logging
 
 =====[T2-git-log-feature]=====
-3fb17d3 (HEAD -> feature/logging) feature: F3 - add logrotate.conf
-6eaa10c feature: F2 - add healthcheck.sh  <-- THE COMMIT TO CHERRY-PICK
-2d20ae1 feature: F1 - add logging.conf
-72e6e3f (main) main: C4 - add deploy.sh
-ac88e47 main: C3 - add .env
-9fdaedd main: C2 - add nginx.conf
-66437ba main: C1 - add README
+570540a (HEAD -> feature/logging) feature: F3 - add logrotate.conf
+9737cb7 feature: F2 - add healthcheck.sh  <-- THE COMMIT TO CHERRY-PICK
+9280208 feature: F1 - add logging.conf
+d1c7ef7 (main) main: C4 - add deploy.sh
+1084428 main: C3 - add .env
+0f7784d main: C2 - add nginx.conf
+3a8f32f main: C1 - add README
 
 =====[T2-identify-commit]=====
-Commit selected for cherry-pick: 6eaa10c
-6eaa10c feature: F2 - add healthcheck.sh  <-- THE COMMIT TO CHERRY-PICK
+Commit selected for cherry-pick: 9737cb7
+9737cb7 feature: F2 - add healthcheck.sh  <-- THE COMMIT TO CHERRY-PICK
  healthcheck.sh | 2 ++
  1 file changed, 2 insertions(+)
 
 =====[T2-graph-before]=====
-* 3fb17d3 (HEAD -> feature/logging) feature: F3 - add logrotate.conf
-* 6eaa10c feature: F2 - add healthcheck.sh  <-- THE COMMIT TO CHERRY-PICK
-* 2d20ae1 feature: F1 - add logging.conf
-* 72e6e3f (main) main: C4 - add deploy.sh
-* ac88e47 main: C3 - add .env
-* 9fdaedd main: C2 - add nginx.conf
-* 66437ba main: C1 - add README
+* 570540a (HEAD -> feature/logging) feature: F3 - add logrotate.conf
+* 9737cb7 feature: F2 - add healthcheck.sh  <-- THE COMMIT TO CHERRY-PICK
+* 9280208 feature: F1 - add logging.conf
+* d1c7ef7 (main) main: C4 - add deploy.sh
+* 1084428 main: C3 - add .env
+* 0f7784d main: C2 - add nginx.conf
+* 3a8f32f main: C1 - add README
 
 =====[T2-main-before-pick]=====
 README.md
@@ -63,8 +46,8 @@ nginx.conf
 NO - not on main yet
 
 =====[T2-cherry-pick]=====
-[main 8e316fc] feature: F2 - add healthcheck.sh  <-- THE COMMIT TO CHERRY-PICK
- Date: Fri Sep 18 02:03:03 2026 +0530
+[main f2699bd] feature: F2 - add healthcheck.sh  <-- THE COMMIT TO CHERRY-PICK
+ Date: Thu Sep 17 20:51:52 2026 +0000
  1 file changed, 2 insertions(+)
  create mode 100644 healthcheck.sh
 
@@ -80,11 +63,11 @@ YES - cherry-pick succeeded
 curl -sf localhost/health || exit 1
 
 =====[T2-verify-log]=====
-8e316fc (HEAD -> main) feature: F2 - add healthcheck.sh  <-- THE COMMIT TO CHERRY-PICK
-72e6e3f main: C4 - add deploy.sh
-ac88e47 main: C3 - add .env
-9fdaedd main: C2 - add nginx.conf
-66437ba main: C1 - add README
+f2699bd (HEAD -> main) feature: F2 - add healthcheck.sh  <-- THE COMMIT TO CHERRY-PICK
+d1c7ef7 main: C4 - add deploy.sh
+1084428 main: C3 - add .env
+0f7784d main: C2 - add nginx.conf
+3a8f32f main: C1 - add README
 
 =====[T2-verify-only-F2]=====
 logging.conf on main?   NO
@@ -93,17 +76,17 @@ healthcheck.sh on main? YES
 
 =====[T2-different-hash]=====
 original commit on feature branch:
-6eaa10c feature: F2 - add healthcheck.sh  <-- THE COMMIT TO CHERRY-PICK
+9737cb7 feature: F2 - add healthcheck.sh  <-- THE COMMIT TO CHERRY-PICK
 cherry-picked commit on main:
-8e316fc feature: F2 - add healthcheck.sh  <-- THE COMMIT TO CHERRY-PICK
+f2699bd feature: F2 - add healthcheck.sh  <-- THE COMMIT TO CHERRY-PICK
 
 =====[T2-graph-after]=====
-* 3fb17d3 (feature/logging) feature: F3 - add logrotate.conf
-* 6eaa10c feature: F2 - add healthcheck.sh  <-- THE COMMIT TO CHERRY-PICK
-* 2d20ae1 feature: F1 - add logging.conf
-| * 8e316fc (HEAD -> main) feature: F2 - add healthcheck.sh  <-- THE COMMIT TO CHERRY-PICK
+* 570540a (feature/logging) feature: F3 - add logrotate.conf
+* 9737cb7 feature: F2 - add healthcheck.sh  <-- THE COMMIT TO CHERRY-PICK
+* 9280208 feature: F1 - add logging.conf
+| * f2699bd (HEAD -> main) feature: F2 - add healthcheck.sh  <-- THE COMMIT TO CHERRY-PICK
 |/  
-* 72e6e3f main: C4 - add deploy.sh
-* ac88e47 main: C3 - add .env
-* 9fdaedd main: C2 - add nginx.conf
-* 66437ba main: C1 - add README
+* d1c7ef7 main: C4 - add deploy.sh
+* 1084428 main: C3 - add .env
+* 0f7784d main: C2 - add nginx.conf
+* 3a8f32f main: C1 - add README

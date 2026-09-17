@@ -1,6 +1,4 @@
-
 =====[T1-setup]=====
-warning: in the working copy of 'app.txt', LF will be replaced by CRLF the next time Git touches it
 committed initial
 
 =====[T1-modify-then-commit-m]=====
@@ -18,8 +16,7 @@ no changes added to commit (use "git add" and/or "git commit -a")
  M app.txt
 
 =====[T1-commit-a-m]=====
-warning: in the working copy of 'app.txt', LF will be replaced by CRLF the next time Git touches it
-[main 463bbce] commit -a -m: stages tracked modifications automatically
+[main ec0b75f] commit -a -m: stages tracked modifications automatically
  1 file changed, 1 insertion(+)
 (clean)
 
@@ -32,9 +29,5 @@ Untracked files:
 nothing added to commit but untracked files present (use "git add" to track)
 --- status: newfile.txt is still untracked ---
 ?? newfile.txt
-warning: in the working copy of 'newfile.txt', LF will be replaced by CRLF the next time Git touches it
 
 =====[T1-log]=====
-2975352 Add newfile.txt (needed explicit git add)
-463bbce commit -a -m: stages tracked modifications automatically
-e338c10 Initial commit: add app.txt
