@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# 02-secret: credentials as a Secret. Base64 is encoding, not encryption.
+. "$(dirname "$0")/lib.sh"
+x "cat 02-secret/db-secret.yaml"
+x "kubectl apply -f 02-secret/db-secret.yaml"
+x "kubectl get secret yatri-db-secret"
+x "kubectl describe secret yatri-db-secret | sed -n '/^Type/,\$p'          # sizes only, values hidden"
+x "kubectl get secret yatri-db-secret -o jsonpath='{.data.POSTGRES_PASSWORD}'; echo"
+x "kubectl get secret yatri-db-secret -o jsonpath='{.data.POSTGRES_PASSWORD}' | base64 --decode; echo    # anyone with get-secret RBAC can read it"
+hr "base64 is reversible - and the echo newline trap"
+x "echo -n 'secretpassword' | base64"
+x "echo 'secretpassword' | base64             # trailing newline gets encoded too -> ends in Ao="
+x "echo 'c2VjcmV0cGFzc3dvcmQK' | base64 --decode | od -c | head -2"
+x "kubectl create secret generic demo-secret --from-literal=API_KEY=abc123 --dry-run=client -o yaml | grep -A2 '^data'"
+hr "Where it really lives: in etcd, base64 -> plain bytes (no encryption at rest configured on this cluster)"
+x "kubectl -n kube-system exec etcd-kushal-lab-control-plane -- etcdctl --endpoints=https://127.0.0.1:2379 --cacert=/etc/kubernetes/pki/etcd/ca.crt --cert=/etc/kubernetes/pki/etcd/server.crt --key=/etc/kubernetes/pki/etcd/server.key get /registry/secrets/default/yatri-db-secret | strings | grep -E 'yatri_admin|secretpassword'"
+x "kubectl delete -f 02-secret/db-secret.yaml"
