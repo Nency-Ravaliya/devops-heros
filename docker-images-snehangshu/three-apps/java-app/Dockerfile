@@ -1,0 +1,6 @@
+FROM eclipse-temurin:21-jdk-alpine
+WORKDIR /app
+COPY HelloServer.java ./
+RUN javac HelloServer.java
+EXPOSE 8080
+CMD ["java", "HelloServer"]
