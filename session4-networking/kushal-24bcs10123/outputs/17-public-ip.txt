@@ -1,0 +1,2 @@
+$ curl -s https://api.ipify.org; echo
+202.131.xxx.xxx  (public IP, last two octets hidden)

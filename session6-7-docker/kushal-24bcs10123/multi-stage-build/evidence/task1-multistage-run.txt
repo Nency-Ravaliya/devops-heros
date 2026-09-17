@@ -1,0 +1,90 @@
+############ TASK 1: build and run the multi-stage Dockerfile from the course repo ############
+$ cat multi-stage-dockerfile/Dockerfile
+# -------------------------
+# Stage 1: Build
+# -------------------------
+FROM node:24-alpine AS builder
+WORKDIR /app
+COPY package*.json ./
+RUN npm install
+COPY . .
+
+# -------------------------
+# Stage 2: Production
+# -------------------------
+FROM node:24-alpine AS production
+WORKDIR /app
+COPY --from=builder /app/package*.json ./
+RUN npm install --omit=dev
+COPY --from=builder /app/server.js ./
+EXPOSE 3000
+CMD ["npm", "start"]
+$ docker build -t ms-hello:latest multi-stage-dockerfile 2>&1 | grep -E '^#[0-9]+ \[(builder|production)' | sed 's/ [0-9.]*s$//' | sort -u
+#10 [production 3/5] COPY --from=builder /app/package*.json ./
+#11 [production 4/5] RUN npm install --omit=dev
+#12 [production 5/5] COPY --from=builder /app/server.js ./
+#5 [builder 1/5] FROM docker.io/library/node:24-alpine@sha256:e67514e5d0f6c46656005e1b693b2ec9d52e80b641307de684d4a015ba7a4eaf
+#6 [builder 2/5] WORKDIR /app
+#7 [builder 3/5] COPY package*.json ./
+#8 [builder 4/5] RUN npm install
+#9 [builder 5/5] COPY . .
+
+--- for comparison, build ONLY the first stage to see how big the builder image is
+$ docker build -q --target builder -t ms-hello:builder-only multi-stage-dockerfile
+sha256:d2a264ad57220a110973ea55c6c17a5ff19f76ee1131d82374c83fda0c41855d
+
+$ docker images ms-hello --format 'table {{.Repository}}:{{.Tag}}	{{.Size}}'
+REPOSITORY:TAG          SIZE
+ms-hello:latest         243MB
+ms-hello:builder-only   249MB
+
+$ docker history ms-hello:latest --format 'table {{.CreatedBy}}	{{.Size}}' --no-trunc=false | head -8
+CREATED BY                                      SIZE
+CMD ["npm" "start"]                             0B
+EXPOSE [3000/tcp]                               0B
+COPY /app/server.js ./ # buildkit               12.3kB
+RUN /bin/sh -c npm install --omit=dev # buil…   9.45MB
+COPY /app/package*.json ./ # buildkit           45.1kB
+WORKDIR /app                                    8.19kB
+CMD ["node"]                                    0B
+
+--- the app listens on 3000 inside the container; publish it on host port 8080
+$ docker run -d --name ms-hello -p 8080:3000 ms-hello:latest
+a1a055bc300063cebd18255590f702009daaa015d4a84c608f4e2a62c65d4776
+
+$ sleep 3
+
+$ docker ps --filter name=ms-hello --format 'table {{.ID}}	{{.Image}}	{{.Status}}	{{.Ports}}	{{.Names}}'
+CONTAINER ID   IMAGE             STATUS         PORTS                                         NAMES
+a1a055bc3000   ms-hello:latest   Up 3 seconds   0.0.0.0:8080->3000/tcp, [::]:8080->3000/tcp   ms-hello
+
+$ docker port ms-hello
+3000/tcp -> 0.0.0.0:8080
+3000/tcp -> [::]:8080
+
+$ docker logs ms-hello 2>&1 | tail -3
+> node server.js
+
+Server running on port 3000
+
+$ curl -s http://localhost:8080
+<h1>Hello World from Docker Multi-Stage Build!</h1>
+$ curl -sI http://localhost:8080 | head -4
+HTTP/1.1 200 OK
+X-Powered-By: Express
+Content-Type: text/html; charset=utf-8
+Content-Length: 51
+
+$ docker exec ms-hello ls -la /app
+total 52
+drwxr-xr-x    1 root     root          4096 Sep  3 15:51 .
+drwxr-xr-x    1 root     root          4096 Sep  3 15:51 ..
+drwxr-xr-x   67 root     root          4096 Sep  3 15:51 node_modules
+-rw-r--r--    1 root     root         30932 Sep  3 15:51 package-lock.json
+-rw-r--r--    1 root     root           178 Sep  3 15:32 package.json
+-rw-r--r--    1 root     root           258 Sep  3 15:32 server.js
+
+$ docker exec ms-hello sh -c 'ls /app/node_modules | wc -l; du -sh /app/node_modules'
+65
+4.3M	/app/node_modules
+

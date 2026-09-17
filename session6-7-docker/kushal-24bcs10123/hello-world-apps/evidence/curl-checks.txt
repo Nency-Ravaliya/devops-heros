@@ -1,0 +1,42 @@
+$ curl -s http://localhost:3000 | grep -o '<h1>[^<]*</h1>'
+<h1>Hello World</h1>
+
+$ curl -s http://localhost:5000 | grep -o '<h1>[^<]*</h1>'
+<h1>Hello World</h1>
+
+$ curl -s http://localhost:8080 | grep -o '<h1>[^<]*</h1>'
+<h1>Hello World</h1>
+
+$ curl -s http://localhost:8081 | grep -o '<h1>[^<]*</h1>'
+<h1>Hello World</h1>
+
+$ curl -s http://localhost:8082 | grep -o '<h1>[^<]*</h1>'
+(no h1 - dumping body)
+
+$ curl -s http://localhost:8083 | grep -o '<h1>[^<]*</h1>'
+<h1>Hello World</h1>
+
+$ curl -sI http://localhost:8081 | head -3
+HTTP/1.1 200 OK
+Date: Thu, 03 Sep 2026 15:42:48 GMT
+Server: Apache/2.4.68 (Unix)
+
+$ curl -sI http://localhost:8083 | head -3
+HTTP/1.1 200 OK
+Server: nginx/1.27.5
+Date: Thu, 03 Sep 2026 15:42:48 GMT
+
+$ curl -s http://localhost:8082
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>React Hello World</title>
+    <script type="module" crossorigin src="/assets/index-C0PYzgby.js"></script>
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>
+
