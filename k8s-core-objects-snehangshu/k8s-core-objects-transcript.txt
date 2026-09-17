@@ -1,0 +1,177 @@
+
+=====[1-POD-CREATE]=====
+pod/standalone-pod created
+pod/standalone-pod condition met
+NAME             READY   STATUS    RESTARTS   AGE   IP           NODE                NOMINATED NODE   READINESS GATES
+standalone-pod   1/1     Running   0          1s    10.244.1.5   devops-hw-worker2   <none>           <none>
+
+=====[2-POD-IS-NOT-SELF-HEALING]=====
+--- deleting the bare pod ---
+pod "standalone-pod" deleted from default namespace
+--- any pods left? ---
+No resources found in default namespace.
+
+=====[3-REPLICASET-CREATE]=====
+replicaset.apps/web-rs created
+NAME     DESIRED   CURRENT   READY   AGE
+web-rs   3         3         2       9s
+NAME           READY   STATUS              RESTARTS   AGE   IP           NODE                NOMINATED NODE   READINESS GATES
+web-rs-2ck6z   0/1     ContainerCreating   0          9s    <none>       devops-hw-worker    <none>           <none>
+web-rs-nhlhf   1/1     Running             0          9s    10.244.1.6   devops-hw-worker2   <none>           <none>
+web-rs-v5h2g   1/1     Running             0          9s    10.244.1.7   devops-hw-worker2   <none>           <none>
+
+=====[4-REPLICASET-SELF-HEALS]=====
+deleting pod: web-rs-2ck6z
+pod "web-rs-2ck6z" deleted from default namespace
+--- ReplicaSet recreated it: ---
+NAME           READY   STATUS    RESTARTS   AGE
+web-rs-nhlhf   1/1     Running   0          20s
+web-rs-v5h2g   1/1     Running   0          20s
+web-rs-vpxrm   1/1     Running   0          11s
+NAME     DESIRED   CURRENT   READY   AGE
+web-rs   3         3         3       21s
+
+=====[5-REPLICASET-SCALE]=====
+replicaset.apps/web-rs scaled
+NAME     DESIRED   CURRENT   READY   AGE
+web-rs   5         5         5       27s
+5
+
+=====[6-REPLICASET-CANNOT-UPDATE-IMAGE]=====
+--- current image on the ReplicaSet pods ---
+web-rs-hwd5v	nginx:1.27-alpine
+web-rs-nhlhf	nginx:1.27-alpine
+web-rs-t5mk6	nginx:1.27-alpine
+
+=====[7-CLEANUP-RS]=====
+replicaset.apps "web-rs" deleted from default namespace
+No resources found in default namespace.
+
+=====[8-DEPLOYMENT-CREATE]=====
+deployment.apps/web-deploy created
+Waiting for deployment "web-deploy" rollout to finish: 0 of 4 updated replicas are available...
+Waiting for deployment "web-deploy" rollout to finish: 1 of 4 updated replicas are available...
+Waiting for deployment "web-deploy" rollout to finish: 2 of 4 updated replicas are available...
+Waiting for deployment "web-deploy" rollout to finish: 3 of 4 updated replicas are available...
+deployment "web-deploy" successfully rolled out
+
+=====[9-DEPLOYMENT-OWNS-A-REPLICASET]=====
+NAME         READY   UP-TO-DATE   AVAILABLE   AGE
+web-deploy   4/4     4            4           15s
+NAME                    DESIRED   CURRENT   READY   AGE
+web-deploy-56d49f6466   4         4         4       16s
+NAME                          READY   STATUS    RESTARTS   AGE   IP           NODE                NOMINATED NODE   READINESS GATES
+web-deploy-56d49f6466-2w6rr   1/1     Running   0          16s   10.244.1.9   devops-hw-worker2   <none>           <none>
+web-deploy-56d49f6466-69s79   1/1     Running   0          16s   10.244.2.7   devops-hw-worker    <none>           <none>
+web-deploy-56d49f6466-f69bc   1/1     Running   0          16s   10.244.1.8   devops-hw-worker2   <none>           <none>
+web-deploy-56d49f6466-srl5b   1/1     Running   0          16s   10.244.2.8   devops-hw-worker    <none>           <none>
+
+=====[10-OWNERSHIP-CHAIN]=====
+pod:        web-deploy-56d49f6466-2w6rr
+owned by:   ReplicaSet/web-deploy-56d49f6466
+which is owned by: Deployment/web-deploy
+
+=====[11-SCALE-DEPLOYMENT]=====
+deployment.apps/web-deploy scaled
+Waiting for deployment "web-deploy" rollout to finish: 4 of 6 updated replicas are available...
+Waiting for deployment "web-deploy" rollout to finish: 5 of 6 updated replicas are available...
+deployment "web-deploy" successfully rolled out
+NAME         READY   UP-TO-DATE   AVAILABLE   AGE
+web-deploy   6/6     6            6           21s
+
+=====[12-CURRENT-IMAGE]=====
+nginx:1.26-alpine
+
+=====[13-ROLLING-UPDATE]=====
+deployment.apps/web-deploy configured
+Waiting for deployment "web-deploy" rollout to finish: 2 out of 4 new replicas have been updated...
+Waiting for deployment "web-deploy" rollout to finish: 2 out of 4 new replicas have been updated...
+Waiting for deployment "web-deploy" rollout to finish: 2 out of 4 new replicas have been updated...
+Waiting for deployment "web-deploy" rollout to finish: 3 out of 4 new replicas have been updated...
+Waiting for deployment "web-deploy" rollout to finish: 3 out of 4 new replicas have been updated...
+Waiting for deployment "web-deploy" rollout to finish: 3 out of 4 new replicas have been updated...
+Waiting for deployment "web-deploy" rollout to finish: 3 out of 4 new replicas have been updated...
+Waiting for deployment "web-deploy" rollout to finish: 3 out of 4 new replicas have been updated...
+Waiting for deployment "web-deploy" rollout to finish: 1 old replicas are pending termination...
+Waiting for deployment "web-deploy" rollout to finish: 1 old replicas are pending termination...
+Waiting for deployment "web-deploy" rollout to finish: 1 old replicas are pending termination...
+Waiting for deployment "web-deploy" rollout to finish: 3 of 4 updated replicas are available...
+deployment "web-deploy" successfully rolled out
+
+=====[14-AFTER-UPDATE]=====
+NAME         READY   UP-TO-DATE   AVAILABLE   AGE
+web-deploy   4/4     4            4           32s
+NAME                    DESIRED   CURRENT   READY   AGE
+web-deploy-56d49f6466   0         0         0       33s
+web-deploy-648f47fdc7   4         4         4       11s
+nginx:1.27-alpine
+
+=====[15-ROLLOUT-HISTORY]=====
+deployment.apps/web-deploy 
+REVISION  CHANGE-CAUSE
+1         <none>
+2         <none>
+
+
+=====[16-ROLLBACK]=====
+deployment.apps/web-deploy rolled back
+Waiting for deployment "web-deploy" rollout to finish: 2 out of 4 new replicas have been updated...
+Waiting for deployment "web-deploy" rollout to finish: 2 out of 4 new replicas have been updated...
+Waiting for deployment "web-deploy" rollout to finish: 2 out of 4 new replicas have been updated...
+Waiting for deployment "web-deploy" rollout to finish: 2 out of 4 new replicas have been updated...
+Waiting for deployment "web-deploy" rollout to finish: 3 out of 4 new replicas have been updated...
+Waiting for deployment "web-deploy" rollout to finish: 3 out of 4 new replicas have been updated...
+Waiting for deployment "web-deploy" rollout to finish: 3 out of 4 new replicas have been updated...
+Waiting for deployment "web-deploy" rollout to finish: 3 out of 4 new replicas have been updated...
+Waiting for deployment "web-deploy" rollout to finish: 1 old replicas are pending termination...
+Waiting for deployment "web-deploy" rollout to finish: 1 old replicas are pending termination...
+Waiting for deployment "web-deploy" rollout to finish: 1 old replicas are pending termination...
+Waiting for deployment "web-deploy" rollout to finish: 3 of 4 updated replicas are available...
+deployment "web-deploy" successfully rolled out
+image after rollback: nginx:1.26-alpine
+
+=====[17-RS-AFTER-ROLLBACK]=====
+NAME                    DESIRED   CURRENT   READY   AGE
+web-deploy-56d49f6466   4         4         4       44s
+web-deploy-648f47fdc7   0         0         0       22s
+
+=====[18-STRATEGY]=====
+strategy=RollingUpdate maxSurge=1 maxUnavailable=1
+
+=====[19-DAEMONSET]=====
+daemonset.apps/node-agent created
+NAME         DESIRED   CURRENT   READY   UP-TO-DATE   AVAILABLE   NODE SELECTOR   AGE
+node-agent   3         3         3       3            3           <none>          12s
+NAME               READY   STATUS    RESTARTS   AGE   IP            NODE                      NOMINATED NODE   READINESS GATES
+node-agent-tnb6v   1/1     Running   0          12s   10.244.1.15   devops-hw-worker2         <none>           <none>
+node-agent-vzmw4   1/1     Running   0          12s   10.244.0.6    devops-hw-control-plane   <none>           <none>
+node-agent-xbrpk   1/1     Running   0          12s   10.244.2.14   devops-hw-worker          <none>           <none>
+
+=====[20-DAEMONSET-ONE-PER-NODE]=====
+node-agent-tnb6v on devops-hw-worker2
+node-agent-vzmw4 on devops-hw-control-plane
+node-agent-xbrpk on devops-hw-worker
+nodes in cluster: 3
+node-agent pods : 3
+
+=====[21-DAEMONSET-LOGS]=====
+[pod/node-agent-tnb6v/agent] agent alive on devops-hw-worker2
+[pod/node-agent-vzmw4/agent] agent alive on devops-hw-control-plane
+[pod/node-agent-xbrpk/agent] agent alive on devops-hw-worker
+
+=====[22-FINAL-STATE]=====
+NAME                              READY   STATUS    RESTARTS   AGE
+pod/web-deploy-56d49f6466-d95t5   1/1     Running   0          19s
+pod/web-deploy-56d49f6466-d9jhr   1/1     Running   0          19s
+pod/web-deploy-56d49f6466-dhrng   1/1     Running   0          24s
+pod/web-deploy-56d49f6466-hwcqt   1/1     Running   0          24s
+
+NAME                         READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/web-deploy   4/4     4            4           57s
+
+NAME                                    DESIRED   CURRENT   READY   AGE
+replicaset.apps/web-deploy-56d49f6466   4         4         4       57s
+replicaset.apps/web-deploy-648f47fdc7   0         0         0       35s
+
+NAME         DESIRED   CURRENT   READY   UP-TO-DATE   AVAILABLE   NODE SELECTOR   AGE
+node-agent   3         3         3       3            3           <none>          13s
