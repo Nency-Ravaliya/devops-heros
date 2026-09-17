@@ -281,16 +281,54 @@ unified log.
 ### 3.3 Checking logs for a specific service
 
 ```bash
-systemctl start cron
-journalctl -u cron -n 5      # -u = filter by systemd unit
+systemctl status systemd-journald --no-pager
 ```
 
 ```
--- No entries --
+* systemd-journald.service - Journal Service
+     Loaded: loaded (/lib/systemd/system/systemd-journald.service; static)
+     Active: active (running) since Thu 2026-09-17 20:25:43 UTC; 27min ago
+TriggeredBy: * systemd-journald-dev-log.socket
+             * systemd-journald-audit.socket
+             * systemd-journald.socket
+       Docs: man:systemd-journald.service(8)
+             man:journald.conf(5)
 ```
 
-(`cron` had not logged anything yet in this freshly booted system — `-- No entries --` is
-`journalctl` correctly reporting an empty result set for that unit, not an error.)
+```bash
+journalctl -u systemd-journald -n 6      # -u = filter by systemd unit
+```
+
+```
+Sep 17 20:25:43 bd467e9edb8a systemd-journald[22]: Journal started
+Sep 17 20:25:43 bd467e9edb8a systemd-journald[22]: Runtime Journal (/run/log/journal/857d908c2e50479d9e6ceed5a1b1ff60) is 8.0M, max 229.5M, 221.5M free.
+```
+
+`-u` narrows the journal to a single unit, which is the command you reach for constantly in
+practice. If a unit has logged nothing, `journalctl` prints `-- No entries --` — an empty
+result set, not an error.
+
+### 3.3b Logging to the journal and reading it back by tag
+
+To show filtering on my own entries rather than the system's, I wrote three messages at
+different priorities with `logger` and queried them back:
+
+```bash
+logger -p user.notice -t deploy-script "starting deployment of devops-heros build 42"
+logger -p user.err    -t deploy-script "failed to reach database on port 3306"
+logger -p user.info   -t deploy-script "deployment finished"
+
+journalctl -t deploy-script
+```
+
+```
+Sep 17 20:52:56 bd467e9edb8a deploy-script[178]: starting deployment of devops-heros build 42
+Sep 17 20:52:56 bd467e9edb8a deploy-script[179]: failed to reach database on port 3306
+Sep 17 20:52:56 bd467e9edb8a deploy-script[180]: deployment finished
+```
+
+`-t` filters by syslog tag. This is exactly how a shell script or cron job should report
+into the journal instead of writing its own log file.
 
 Typical real-world usage:
 
@@ -304,36 +342,35 @@ journalctl -u docker -u containerd     # several units at once
 ### 3.4 Filtering by priority
 
 ```bash
-journalctl -p err -b -n 5    # only errors and worse from this boot
+journalctl -p err -t deploy-script
 ```
 
 ```
-Sep 17 20:25:43 bd467e9edb8a kernel: misc dxg: dxgk: dxgkio_query_adapter_info: Ioctl failed: -22
-Sep 17 20:25:43 bd467e9edb8a kernel: misc dxg: dxgk: dxgkio_query_adapter_info: Ioctl failed: -22
-Sep 17 20:25:43 bd467e9edb8a kernel: misc dxg: dxgk: dxgkio_query_adapter_info: Ioctl failed: -2
-Sep 17 20:25:43 bd467e9edb8a kernel: virtiofs: Unknown parameter 'negative_dentry_timeout'
-Sep 17 20:25:43 bd467e9edb8a unknown: WSL (372) ERROR: CheckConnection: getaddrinfo() failed: -5
+Sep 17 20:52:56 bd467e9edb8a deploy-script[179]: failed to reach database on port 3306
 ```
+
+Of the three messages logged above, only the one written at `user.err` comes back. This is
+the single most useful journal filter: `journalctl -p err -b` answers "what went wrong since
+this machine booted?" without wading through informational noise.
 
 Priority levels: `emerg` (0), `alert` (1), `crit` (2), `err` (3), `warning` (4),
-`notice` (5), `info` (6), `debug` (7).
+`notice` (5), `info` (6), `debug` (7). `-p err` means "err **and worse**", not "err only".
 
 ### 3.5 Filtering by time
 
 ```bash
-journalctl --since "10 minutes ago" -n 5
+journalctl --since "5 minutes ago" -t deploy-script
 ```
 
 ```
-Sep 17 20:25:43 bd467e9edb8a kernel: Linux version 6.6.87.2-microsoft-standard-WSL2 (root@439a258ad544) (gcc (GCC) 11.2.0, GNU ld (GNU Binutils) 2.37) #1 SMP PREEMPT_DYNAMIC Thu Jun  5 18:30:46 UTC 2025
-Sep 17 20:25:43 bd467e9edb8a kernel: Command line: initrd=\initrd.img WSL_ROOT_INIT=1 panic=-1 nr_cpus=32 hv_utils.timesync_implicit=1 console=hvc0 debug pty.legacy_count=0 WSL_ENABLE_CRASH_DUMP=1
-Sep 17 20:25:43 bd467e9edb8a kernel: KERNEL supported cpus:
-Sep 17 20:25:43 bd467e9edb8a kernel:   Intel GenuineIntel
-Sep 17 20:25:43 bd467e9edb8a kernel:   AMD AuthenticAMD
+Sep 17 20:52:56 bd467e9edb8a deploy-script[178]: starting deployment of devops-heros build 42
+Sep 17 20:52:56 bd467e9edb8a deploy-script[179]: failed to reach database on port 3306
+Sep 17 20:52:56 bd467e9edb8a deploy-script[180]: deployment finished
 ```
 
 Other accepted forms: `--since "2026-09-17 20:00" --until "2026-09-17 21:00"`,
-`--since yesterday`, `--since "1 hour ago"`.
+`--since yesterday`, `--since "1 hour ago"`. Time and unit filters combine freely, which is
+how you scope a log hunt down to one service during one incident window.
 
 ### 3.6 Journal disk usage and retention
 
@@ -404,24 +441,29 @@ Each command below was run and its real output captured.
 
 ```bash
 whoami
-uname -a
 pwd
 uptime
+arch
+grep -E '^NAME|^VERSION=' /etc/os-release
 ```
 
 ```
 root
-Linux bd467e9edb8a 6.6.87.2-microsoft-standard-WSL2 #1 SMP PREEMPT_DYNAMIC Thu Jun  5 18:30:46 UTC 2025 x86_64 x86_64 x86_64 GNU/Linux
 /
  20:26:44 up 3 min,  0 users,  load average: 0.38, 0.29, 0.12
+x86_64
+NAME="Ubuntu"
+VERSION="22.04.5 LTS (Jammy Jellyfish)"
 ```
 
 | Command | Purpose |
 |---|---|
 | `whoami` | Current effective username |
-| `uname -a` | Kernel name, version, architecture |
 | `pwd` | Print working directory |
 | `uptime` | How long the box has been up + load average |
+| `arch` / `uname -m` | CPU architecture |
+| `/etc/os-release` | Distribution name and version — the portable way to identify a distro |
+| `uname -r` | Running kernel release |
 
 ### Disk and memory
 
