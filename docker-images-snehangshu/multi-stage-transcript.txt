@@ -1,0 +1,167 @@
+
+=====[DOCKERFILE]=====
+# -------------------------
+# Stage 1: Build
+# -------------------------
+FROM node:24-alpine AS builder
+WORKDIR /app
+COPY package*.json ./
+RUN npm install
+COPY . .
+
+# -------------------------
+# Stage 2: Production
+# -------------------------
+FROM node:24-alpine AS production
+WORKDIR /app
+COPY --from=builder /app/package*.json ./
+RUN npm install --omit=dev
+COPY --from=builder /app/server.js ./
+EXPOSE 3000
+CMD ["npm", "start"]
+=====[BUILD-MULTISTAGE]=====
+#11 1.764 found 0 vulnerabilities
+#11 1.766 npm notice
+#11 1.766 npm notice New major version of npm available! 11.19.0 -> 12.0.2
+#11 1.766 npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.0.2
+#11 1.766 npm notice To update run: npm install -g npm@12.0.2
+#11 1.766 npm notice
+#11 DONE 1.9s
+
+#12 [production 5/5] COPY --from=builder /app/server.js ./
+#12 DONE 0.1s
+
+#13 exporting to image
+#13 exporting layers
+#13 exporting layers 0.3s done
+#13 exporting manifest sha256:0251e046ffe17f3d6bebe81519910236d30431880300c6d379847eaa5fe83018 0.0s done
+#13 exporting config sha256:7b8609d60c7c92e0b112b130ecda646252f5384b672fdeb1d960cad3ea54e5b1 0.0s done
+#13 exporting attestation manifest sha256:ef78a0d35b71bec6a781df86b0d57424c9275251610ec5a42dfa2599c80e9bda 0.0s done
+#13 exporting manifest list sha256:79f0894bed9e8567adac4229eea59ddb5561f242b9d5a1d12a41f07925c1f49c 0.0s done
+#13 naming to docker.io/library/multistage-hello:1.0 done
+#13 unpacking to docker.io/library/multistage-hello:1.0
+#13 unpacking to docker.io/library/multistage-hello:1.0 0.5s done
+#13 DONE 0.9s
+
+=====[BUILD-SINGLESTAGE-FOR-COMPARISON]=====
+#10 exporting manifest sha256:f1d2729ee6e2a48722d6248af284ddaf7d01f10146b99ad747dbb69c3c8fff5a 0.0s done
+#10 exporting config sha256:b4e971254c4125fa27a951b23c9d95e0c40b5bee91dcbb6e2c3166ef42487173 0.0s done
+#10 exporting attestation manifest sha256:46f2f8a58bb82afaa93da075556801ab977cacec086b5ed380483aecad4a4f54 0.0s done
+#10 exporting manifest list sha256:47918aaaedef14bf650a1ecfc74295863ec2a3818aaacfa1dc397565284f2551 0.0s done
+#10 naming to docker.io/library/singlestage-hello:1.0 done
+#10 unpacking to docker.io/library/singlestage-hello:1.0
+#10 unpacking to docker.io/library/singlestage-hello:1.0 0.5s done
+#10 DONE 1.0s
+
+=====[IMAGE-SIZE-COMPARISON]=====
+REPOSITORY            TAG         SIZE
+multistage-hello      1.0         247MB
+singlestage-hello     1.0         253MB
+
+=====[RUN-ON-PORT-8080]=====
+Run 'docker run --help' for more information
+
+=====[DOCKER-PS]=====
+CONTAINER ID   IMAGE     STATUS    PORTS     NAMES
+
+=====[DOCKER-PS-FULL]=====
+CONTAINER ID   IMAGE                       COMMAND                  CREATED          STATUS                    PORTS                                                                    NAMES
+fa7e7b812ab8   hello-react:1.0             "/docker-entrypoint.…"   2 minutes ago    Up 2 minutes              0.0.0.0:3001->80/tcp, [::]:3001->80/tcp                                  hello-react
+0def57af0578   hello-nginx:1.0             "/docker-entrypoint.…"   3 minutes ago    Up 3 minutes              0.0.0.0:8082->80/tcp, [::]:8082->80/tcp                                  hello-nginx
+
+=====[ACCESS-APP-PORT-8080]=====
+<!doctype html>
+<html>
+  <head><title>Java on Docker</title></head>
+  <body>
+    <h1>Hello World from Java!</h1>
+    <p>Name: Snehangshu Roy | Enrollment: 24BCS10155</p>
+    <p>Served by Java 21.0.12 in container adf8499c87fd</p>
+  </body>
+</html>
+
+=====[CURL-HEADERS]=====
+HTTP/1.1 200 OK
+Date: Thu, 17 Sep 2026 20:42:02 GMT
+Content-type: text/html; charset=utf-8
+
+
+=====[LOGS]=====
+
+=====[IMAGE-HISTORY-MULTISTAGE]=====
+CREATED BY                                      SIZE
+CMD ["npm" "start"]                             0B
+EXPOSE [3000/tcp]                               0B
+COPY /app/server.js ./ # buildkit               12.3kB
+RUN /bin/sh -c npm install --omit=dev # buil…   9.45MB
+COPY /app/package*.json ./ # buildkit           45.1kB
+WORKDIR /app                                    8.19kB
+CMD ["node"]                                    0B
+ENTRYPOINT ["docker-entrypoint.sh"]             0B
+COPY docker-entrypoint.sh /usr/local/bin/ # …   20.5kB
+RUN /bin/sh -c apk add --no-cache --virtual …   5.48MB
+ENV YARN_VERSION=1.22.22                        0B
+
+=====[NO-BUILD-TOOLS-IN-FINAL-IMAGE]=====
+--- dev dependencies present in single-stage image? ---
+65
+--- dev dependencies present in multi-stage image? ---
+65
+
+=====[THREE-APP-TYPES-RUNNING]=====
+NAMES          IMAGE              STATUS         PORTS
+hello-java     hello-java:1.0     Up 3 minutes   0.0.0.0:8080->8080/tcp, [::]:8080->8080/tcp
+hello-python   hello-python:1.0   Up 4 minutes   0.0.0.0:5000->5000/tcp, [::]:5000->5000/tcp
+hello-node     hello-node:1.0     Up 4 minutes   0.0.0.0:3000->3000/tcp, [::]:3000->3000/tcp
+
+=====[THREE-APP-TYPES-RESPONSES]=====
+--- Node.js (3000) ---
+    <h1>Hello World from Node.js!</h1>
+    <p>Served by Node v20.20.2 in container e482380b5f23</p>
+--- Python (5000) ---
+    <h1>Hello World from Python!</h1>
+    <p>Served by Python in container c3f659a15d5d</p>
+--- Java (8080 is taken by multistage; querying container directly) ---
+    <h1>Hello World from Java!</h1>
+    <p>Served by Java 21.0.12 in container adf8499c87fd</p>
+
+=====[RUN-ON-PORT-8080]=====
+3647398de5f9d312f7e028237897625615c791d9e87fc456151c75f1b3aafb0a
+
+=====[DOCKER-PS]=====
+CONTAINER ID   IMAGE                  STATUS         PORTS                                         NAMES
+3647398de5f9   multistage-hello:1.0   Up 5 seconds   0.0.0.0:8080->3000/tcp, [::]:8080->3000/tcp   multistage-hello
+
+=====[ACCESS-APP-PORT-8080]=====
+<h1>Hello World from Docker Multi-Stage Build!</h1>
+
+=====[CURL-HEADERS]=====
+HTTP/1.1 200 OK
+X-Powered-By: Express
+Content-Type: text/html; charset=utf-8
+Content-Length: 51
+ETag: W/"33-gCAsBJJtlso/BVPWoV3U/pWC3Ak"
+Date: Thu, 17 Sep 2026 20:42:27 GMT
+
+=====[LOGS]=====
+
+> docker-hello-world@1.0.0 start
+> node server.js
+
+
+=====[EXPRESS-PRESENT-IN-FINAL-IMAGE]=====
+accepts
+body-parser
+bytes
+call-bind-apply-helpers
+call-bound
+total: 65
+
+=====[BUILDER-STAGE-NOT-SHIPPED]=====
+total 52
+drwxr-xr-x    1 root     root          4096 Sep 17 20:41 .
+drwxr-xr-x    1 root     root          4096 Sep 17 20:42 ..
+drwxr-xr-x   67 root     root          4096 Sep 17 20:41 node_modules
+-rw-r--r--    1 root     root         31935 Sep 17 20:41 package-lock.json
+-rwxr-xr-x    1 root     root           188 Sep 17 20:37 package.json
+-rwxr-xr-x    1 root     root           269 Sep 17 20:37 server.js
