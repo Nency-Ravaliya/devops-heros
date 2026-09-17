@@ -46,6 +46,10 @@ web-service-loadbalancer   LoadBalancer   10.102.101.176   127.0.0.1     80:3180
 ```
 On Minikube there's no real cloud load balancer, so `minikube tunnel` (or `minikube service`) is required to actually populate `EXTERNAL-IP`; verified the service itself is correctly wired via `kubectl port-forward svc/web-service-loadbalancer` — same `Welcome to nginx!` response. On a real cloud provider (EKS/GKE/AKS), the `cloud-controller-manager` provisions an actual external load balancer for this `EXTERNAL-IP` automatically.
 
+Screenshot of all 3 services side by side, plus the ClusterIP service's endpoints:
+
+![service types](./screenshots/service-types.png)
+
 ### ExternalName (`04-externalname/`)
 ```bash
 kubectl apply -f 04-externalname/service.yaml
@@ -81,6 +85,8 @@ Name: web-service-headless.default.svc.cluster.local   Address: 10.244.0.85
 Name: web-service-headless.default.svc.cluster.local   Address: 10.244.0.86
 ```
 This is the key difference from every other Service type above: a normal Service's DNS name resolves to **one** virtual IP that kube-proxy load-balances behind. A **headless** Service's DNS name resolves directly to **all** matching pod IPs (3 separate A records) — no VIP, no load balancing.
+
+![headless service DNS](./screenshots/headless-service-dns.png)
 
 Each pod also gets its own individually addressable name:
 ```bash
