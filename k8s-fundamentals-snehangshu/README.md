@@ -53,6 +53,8 @@ Kustomize Version: v5.7.1
 Server Version: v1.32.2
 ```
 
+Three nodes, one cluster, server running Kubernetes **v1.32.2**.
+
 ---
 
 ## 2. Kubernetes architecture
@@ -69,15 +71,29 @@ CoreDNS is running at https://127.0.0.1:55301/api/v1/namespaces/kube-system/serv
 ```
 
 ```bash
-kubectl get nodes -o wide
+kubectl get nodes
 ```
 
 ```
-NAME                      STATUS   ROLES           AGE     VERSION   INTERNAL-IP   OS-IMAGE                         CONTAINER-RUNTIME
-devops-hw-control-plane   Ready    control-plane   6m12s   v1.32.2   172.22.0.4    Debian GNU/Linux 12 (bookworm)   containerd://2.0.2
-devops-hw-worker          Ready    <none>          6m      v1.32.2   172.22.0.2    Debian GNU/Linux 12 (bookworm)   containerd://2.0.2
-devops-hw-worker2         Ready    <none>          6m      v1.32.2   172.22.0.3    Debian GNU/Linux 12 (bookworm)   containerd://2.0.2
+NAME                      STATUS   ROLES           AGE   VERSION
+devops-hw-control-plane   Ready    control-plane   19m   v1.32.2
+devops-hw-worker          Ready    <none>          18m   v1.32.2
+devops-hw-worker2         Ready    <none>          18m   v1.32.2
 ```
+
+```bash
+kubectl get nodes -o custom-columns='NAME:.metadata.name,STATUS:.status.conditions[-1].type,VERSION:.status.nodeInfo.kubeletVersion,INTERNAL-IP:.status.addresses[0].address,OS-IMAGE:.status.nodeInfo.osImage,RUNTIME:.status.nodeInfo.containerRuntimeVersion'
+```
+
+```
+NAME                      STATUS   VERSION   INTERNAL-IP   OS-IMAGE                         RUNTIME
+devops-hw-control-plane   Ready    v1.32.2   172.22.0.4    Debian GNU/Linux 12 (bookworm)   containerd://2.0.2
+devops-hw-worker          Ready    v1.32.2   172.22.0.2    Debian GNU/Linux 12 (bookworm)   containerd://2.0.2
+devops-hw-worker2         Ready    v1.32.2   172.22.0.3    Debian GNU/Linux 12 (bookworm)   containerd://2.0.2
+```
+
+(`-o custom-columns` is worth knowing on its own — it pulls exactly the fields you want
+straight out of the object, instead of accepting whatever `-o wide` decides to print.)
 
 Three nodes, all `Ready`. The `ROLES` column marks one as `control-plane`; the workers show
 `<none>`, which just means they carry no special role label. Note the container runtime is

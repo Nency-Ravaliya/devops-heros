@@ -13,9 +13,6 @@ To further debug and diagnose cluster problems, use 'kubectl cluster-info dump'.
 
 =====[GET-NODES]=====
 NAME                      STATUS   ROLES           AGE     VERSION   INTERNAL-IP   EXTERNAL-IP   OS-IMAGE                         KERNEL-VERSION                     CONTAINER-RUNTIME
-devops-hw-control-plane   Ready    control-plane   6m12s   v1.32.2   172.22.0.4    <none>        Debian GNU/Linux 12 (bookworm)   6.6.87.2-microsoft-standard-WSL2   containerd://2.0.2
-devops-hw-worker          Ready    <none>          6m      v1.32.2   172.22.0.2    <none>        Debian GNU/Linux 12 (bookworm)   6.6.87.2-microsoft-standard-WSL2   containerd://2.0.2
-devops-hw-worker2         Ready    <none>          6m      v1.32.2   172.22.0.3    <none>        Debian GNU/Linux 12 (bookworm)   6.6.87.2-microsoft-standard-WSL2   containerd://2.0.2
 
 =====[NODE-DESCRIBE-ROLES]=====
 NAME                      STATUS   ROLES           AGE     VERSION   LABELS
