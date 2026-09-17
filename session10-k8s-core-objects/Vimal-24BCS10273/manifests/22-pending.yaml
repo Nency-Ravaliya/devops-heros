@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: campus-unschedulable
+spec:
+  containers:
+    - name: web
+      image: nginx:1.25-alpine
+      resources:
+        requests:
+          # Larger than anything this node advertises, so it can never be scheduled.
+          memory: 64Gi

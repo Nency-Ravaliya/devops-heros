@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: campus-recreate
+  labels:
+    app: campus-recreate
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: campus-recreate
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: campus-recreate
+        version: v1
+    spec:
+      containers:
+        - name: web
+          image: nginx:1.25-alpine
+          ports:
+            - containerPort: 80
+          command: ["/bin/sh", "-c"]
+          args:
+            - 'echo "VERSION v1" > /usr/share/nginx/html/index.html && exec nginx -g "daemon off;"'
+          resources:
+            requests:
+              cpu: 25m
+              memory: 32Mi
