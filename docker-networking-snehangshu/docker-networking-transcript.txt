@@ -1,0 +1,275 @@
+
+=====[HOST-OS]=====
+PRETTY_NAME="Alpine Linux v3.21"
+hostname: 17efeff7766e
+
+=====[T1-create-networks]=====
+30e9ca43731d812f3a7da0e030cae67e0d505938349a03f548850e364ee5269f
+135ef37c23b3cba6f0b19c278a763091eccdda89f3c8b7e7eaa4c15b63d4de1b
+df276c166d61133a57ded4e315017664499fc5d6c83e63e6c7eda3c7e282f92a
+
+=====[T1-network-ls]=====
+NETWORK ID     NAME           DRIVER    SCOPE
+135ef37c23b3   backend-net    bridge    local
+87a617a9c8e2   bridge         bridge    local
+df276c166d61   database-net   bridge    local
+30e9ca43731d   frontend-net   bridge    local
+33da92d29fa0   host           host      local
+73d7a0c401e5   none           null      local
+
+=====[T1-run-frontend]=====
+83c1428db82ccd16c6da3b29dcca08f31177e175db8c5f35e00ff89119673758
+
+=====[T1-run-backend]=====
+5049db2538cc3a358ad25eec8d9fceace31e8e61afac7a11f3782c276fe185f7
+
+=====[T1-attach-backend-to-second-network]=====
+backend is now attached to BOTH frontend-net and database-net
+
+=====[T1-run-database]=====
+e1e2220c2258672b9ad933e9f0c1ad5ca2a711fb203f5cb55497858f2abb2b5b
+
+=====[T1-container-networks]=====
+frontend -> frontend-net(172.19.0.2) 
+backend -> database-net(172.21.0.2) frontend-net(172.19.0.3) 
+database -> database-net(172.21.0.3) 
+
+=====[T1-ps]=====
+NAMES      IMAGE          STATUS
+database   mysql:8.0      Up Less than a second
+backend    alpine:3.20    Up 52 seconds
+frontend   nginx:alpine   Up 57 seconds
+
+=====[T1-backend-to-frontend (shared: frontend-net) EXPECT SUCCESS]=====
+PING frontend (172.19.0.2): 56 data bytes
+64 bytes from 172.19.0.2: seq=0 ttl=64 time=0.692 ms
+64 bytes from 172.19.0.2: seq=1 ttl=64 time=0.084 ms
+64 bytes from 172.19.0.2: seq=2 ttl=64 time=0.091 ms
+
+--- frontend ping statistics ---
+3 packets transmitted, 3 packets received, 0% packet loss
+round-trip min/avg/max = 0.084/0.289/0.692 ms
+
+=====[T1-backend-http-to-frontend]=====
+<!DOCTYPE html>
+<html>
+<head>
+<title>Welcome to nginx!</title>
+<style>
+html { color-scheme: light dark; }
+
+=====[T1-backend-to-database (shared: database-net) EXPECT SUCCESS]=====
+PING database (172.21.0.3): 56 data bytes
+64 bytes from 172.21.0.3: seq=0 ttl=64 time=1.197 ms
+64 bytes from 172.21.0.3: seq=1 ttl=64 time=0.088 ms
+64 bytes from 172.21.0.3: seq=2 ttl=64 time=0.110 ms
+
+--- database ping statistics ---
+3 packets transmitted, 3 packets received, 0% packet loss
+round-trip min/avg/max = 0.088/0.465/1.197 ms
+
+=====[T1-backend-tcp-to-mysql-3306]=====
+port 3306 OPEN on database
+
+=====[T1-frontend-to-database (NO shared network) EXPECT FAILURE]=====
+ping: bad address 'database'
+(exit code: 1)
+
+=====[T1-frontend-to-backend (shared: frontend-net) EXPECT SUCCESS]=====
+PING backend (172.19.0.3): 56 data bytes
+64 bytes from 172.19.0.3: seq=0 ttl=64 time=0.068 ms
+64 bytes from 172.19.0.3: seq=1 ttl=64 time=0.139 ms
+
+--- backend ping statistics ---
+2 packets transmitted, 2 packets received, 0% packet loss
+round-trip min/avg/max = 0.068/0.103/0.139 ms
+
+=====[T1-network-inspect-frontend-net]=====
+backend 172.19.0.3/16
+frontend 172.19.0.2/16
+
+
+=====[T1-network-inspect-database-net]=====
+backend 172.21.0.2/16
+database 172.21.0.3/16
+
+
+=====[T1-network-inspect-backend-net]=====
+Containers attached: 0
+
+=====[T1-mysql-check]=====
+Database
+devops
+information_schema
+mysql
+performance_schema
+sys
+
+=====[T2-pull-apache2]=====
+Status: Downloaded newer image for httpd:2.4
+docker.io/library/httpd:2.4
+
+=====[T2-run-apache-host-network]=====
+74331476f92d8ace5a127f3c9970ca517b2faa5029c792aa15edafac3e7636fc
+
+=====[T2-ps-host-mode]=====
+NAMES         IMAGE       PORTS     STATUS
+apache-host   httpd:2.4             Up 6 seconds
+
+=====[T2-inspect-host-mode]=====
+NetworkMode=host | PortBindings=map[] | Networks=host
+
+=====[T2-access-apache-on-port-80-from-the-host]=====
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+<title>It works! Apache httpd</title>
+</head>
+<body>
+<p>It works!</p>
+</body>
+</html>
+
+=====[T2-http-code-and-headers]=====
+HTTP/1.1 200 OK
+Date: Thu, 17 Sep 2026 20:53:06 GMT
+Server: Apache/2.4.68 (Unix)
+Last-Modified: Fri, 07 Nov 2025 08:23:08 GMT
+ETag: "bf-642fce432f300"
+http_code=200 port=80 ip=::1
+
+=====[T2-port-80-is-listening-on-the-host-itself]=====
+tcp        0      0 :::80                   :::*                    LISTEN      1704/httpd
+
+=====[T2-compare-bridge-container-ports]=====
+frontend PORTS='80/tcp'
+apache-host PORTS=''
+
+=====[T2-apache-logs]=====
+[Thu Sep 17 20:52:59.990775 2026] [core:notice] [pid 1:tid 1] AH00094: Command line: 'httpd -D FOREGROUND'
+::1 - - [17/Sep/2026:20:53:06 +0000] "GET / HTTP/1.1" 200 191
+::1 - - [17/Sep/2026:20:53:06 +0000] "HEAD / HTTP/1.1" 200 -
+::1 - - [17/Sep/2026:20:53:06 +0000] "GET / HTTP/1.1" 200 191
+
+=====[T3-create-folder-and-file-on-the-host]=====
+total 4
+-rw-r--r--    1 root     root           124 Sep 17 20:53 index.html
+<!doctype html>
+<html>
+  <head><title>Bind Mount Demo</title></head>
+  <body>
+    <h1>Hello students</h1>
+  </body>
+</html>
+
+=====[T3-bind-mount-into-nginx]=====
+1bd8caf28e4ee818672f0be573dea84a3967dc28c37c219fb5d7606bc8957745
+
+=====[T3-access-nginx-website]=====
+<!doctype html>
+<html>
+  <head><title>Bind Mount Demo</title></head>
+  <body>
+    <h1>Hello students</h1>
+  </body>
+</html>
+
+=====[T3-inspect-the-mount]=====
+Type=bind Source=/root/bindmount Destination=/usr/share/nginx/html RW=true
+
+=====[T3-file-is-the-same-file-inside-the-container]=====
+<!doctype html>
+<html>
+  <head><title>Bind Mount Demo</title></head>
+inode=280428 size=124
+inode=280428 size=124
+
+=====[T3-record-start-time-before-modifying]=====
+StartedAt=2026-09-17T20:53:06.534998631Z RestartCount=0
+
+=====[T3-modify-index.html-on-the-host]=====
+index.html modified on the host
+
+=====[T3-verify-change-WITHOUT-restarting-the-container]=====
+<!doctype html>
+<html>
+  <head><title>Bind Mount Demo</title></head>
+  <body>
+    <h1>Hello students</h1>
+    <h2>This line was added on the HOST while the container kept running.</h2>
+    <p>Name: Snehangshu Roy | Enrollment: 24BCS10155</p>
+  </body>
+</html>
+
+=====[T3-prove-container-never-restarted]=====
+StartedAt=2026-09-17T20:53:06.534998631Z RestartCount=0
+nginx-bind Up 5 seconds
+
+=====[T3-write-from-inside-the-container-appears-on-the-host]=====
+</html>
+<!-- written from inside the container -->
+
+=====[T3-named-volume-for-comparison]=====
+Name=demo-vol Driver=local Mountpoint=/var/lib/docker/volumes/demo-vol/_data
+data in a named volume
+total 4
+-rw-r--r--    1 root     root            23 Sep 17 20:53 file.txt
+
+=====[T4-overlay-driver-available]=====
+[bridge host ipvlan macvlan null overlay]
+
+=====[T4-swarm-status]=====
+Swarm: inactive
+
+=====[T4-init-swarm-and-create-overlay]=====
+Swarm initialized: current node (2vuao6o2i90bcn1wqdhmlk9g1) is now a manager.
+
+To add a worker to this swarm, run the following command:
+k3pjquy8ksb0gdvrci5lzh0vp
+
+=====[T4-overlay-network-listed]=====
+NETWORK ID     NAME          DRIVER    SCOPE
+k3pjquy8ksb0   app-overlay   overlay   swarm
+uy279wg3wvm5   ingress       overlay   swarm
+
+=====[T4-overlay-inspect]=====
+Name=app-overlay Driver=overlay Scope=swarm Attachable=true Subnet=10.0.1.0/24
+
+=====[T4-attach-containers-to-overlay]=====
+PING ov-b (10.0.1.4): 56 data bytes
+64 bytes from 10.0.1.4: seq=0 ttl=64 time=1.128 ms
+64 bytes from 10.0.1.4: seq=1 ttl=64 time=0.067 ms
+64 bytes from 10.0.1.4: seq=2 ttl=64 time=0.073 ms
+
+--- ov-b ping statistics ---
+3 packets transmitted, 3 packets received, 0% packet loss
+round-trip min/avg/max = 0.067/0.422/1.128 ms
+
+=====[T4-overlay-vs-bridge-scope]=====
+NAME              DRIVER    SCOPE
+app-overlay       overlay   swarm
+frontend-net      bridge    local
+host              host      local
+ingress           overlay   swarm
+
+=====[FINAL-PS]=====
+NAMES         IMAGE          PORTS
+ov-b          alpine:3.20    
+ov-a          alpine:3.20    
+nginx-bind    nginx:alpine   0.0.0.0:8085->80/tcp, [::]:8085->80/tcp
+apache-host   httpd:2.4      
+database      mysql:8.0      3306/tcp, 33060/tcp
+backend       alpine:3.20    
+frontend      nginx:alpine   80/tcp
+
+=====[FINAL-NETWORK-LS]=====
+NETWORK ID     NAME              DRIVER    SCOPE
+k3pjquy8ksb0   app-overlay       overlay   swarm
+135ef37c23b3   backend-net       bridge    local
+87a617a9c8e2   bridge            bridge    local
+df276c166d61   database-net      bridge    local
+f71f49a8da2a   docker_gwbridge   bridge    local
+30e9ca43731d   frontend-net      bridge    local
+33da92d29fa0   host              host      local
+uy279wg3wvm5   ingress           overlay   swarm
+73d7a0c401e5   none              null      local
