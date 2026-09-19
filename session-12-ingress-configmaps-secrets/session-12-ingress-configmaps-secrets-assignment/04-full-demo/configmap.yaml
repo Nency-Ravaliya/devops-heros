@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: yatri-app-config
+  labels:
+    app: yatri-app
+data:
+  ENVIRONMENT: production
+  LOG_LEVEL: INFO
+  PORT: "8080"
+  DEFAULT_CURRENCY: INR
+  MAX_BOOKING_DAYS: "30"
