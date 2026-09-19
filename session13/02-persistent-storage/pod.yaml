@@ -8,7 +8,7 @@ spec:
       image: nginx:1.27
       volumeMounts:
         - name: persistent-storage
-          mountPath: /data
+          mountPath: /amitabh
   volumes:
     - name: persistent-storage
       persistentVolumeClaim:
