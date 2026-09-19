@@ -59,7 +59,7 @@ A managed Cloud Load Balancer acts as a single, resilient entry point with healt
 
 ---
 
-## 3. Real-World Analogy: The International Airport Gate
+## 3. Think of It Like This: The International Airport Gate
 * **The Cloud Load Balancer** = The main international terminal entrance. Every traveler enters through the same glass doors on ground level.
 * **The Worker Nodes** = Terminal shuttles routing passengers across different concourses.
 * **The Pods** = The specific flight boarding gates.

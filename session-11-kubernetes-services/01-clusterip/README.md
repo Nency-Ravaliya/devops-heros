@@ -47,7 +47,7 @@ If your frontend application is configured with `http://10.244.1.25:80`, the mom
 
 ---
 
-## 3. Real-World Analogy: The Corporate Extension Number
+## 3. Think of It Like This: The Office Extension Number
 * Think of an office where 5 customer support agents handle billing inquiries.
 * Agents rotate shifts, take lunch breaks, and switch desks.
 * You do not dial an agent's personal cellphone.

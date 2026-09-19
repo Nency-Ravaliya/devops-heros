@@ -28,7 +28,7 @@ Time Line:
 
 ---
 
-## Real-World Mental Model
+## Think of It Like This
 
 Think of a **restaurant renovation**:
 * **Rolling Update**: Renovation happens room by room while the restaurant stays open. Customers are routed to available tables.
