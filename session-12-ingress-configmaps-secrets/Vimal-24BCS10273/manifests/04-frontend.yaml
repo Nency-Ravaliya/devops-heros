@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: campus-frontend
+  labels:
+    app: campus-frontend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: campus-frontend
+  template:
+    metadata:
+      labels:
+        app: campus-frontend
+    spec:
+      containers:
+        - name: web
+          image: nginx:1.25-alpine
+          ports:
+            - containerPort: 80
+          envFrom:
+            - configMapRef:
+                name: campus-app-config
+          volumeMounts:
+            - name: page
+              mountPath: /usr/share/nginx/html
+          resources:
+            requests:
+              cpu: 25m
+              memory: 32Mi
+      volumes:
+        - name: page
+          configMap:
+            name: campus-frontend-page
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: campus-frontend-page
+data:
+  index.html: |
+    <!doctype html>
+    <html>
+      <head><title>Campus Portal</title></head>
+      <body>
+        <h1>Campus Portal</h1>
+        <p>Frontend served by nginx behind the campus ingress.</p>
+      </body>
+    </html>
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: campus-frontend-service
+spec:
+  type: ClusterIP
+  selector:
+    app: campus-frontend
+  ports:
+    - port: 80
+      targetPort: 80
