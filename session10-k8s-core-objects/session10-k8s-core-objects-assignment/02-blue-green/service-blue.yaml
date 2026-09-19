@@ -1,0 +1,16 @@
+# Live traffic points at Blue (slot=blue).
+apiVersion: v1
+kind: Service
+metadata:
+  name: myapp-service
+  labels:
+    app: myapp
+spec:
+  type: NodePort
+  selector:
+    app: myapp
+    slot: blue
+  ports:
+    - port: 80
+      targetPort: 80
+      nodePort: 30020
