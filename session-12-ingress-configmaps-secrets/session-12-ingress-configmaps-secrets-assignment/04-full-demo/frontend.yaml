@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: yatri-frontend
+  labels:
+    app: yatri-app
+    tier: frontend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: yatri-frontend
+  template:
+    metadata:
+      labels:
+        app: yatri-frontend
+        tier: frontend
+    spec:
+      containers:
+        - name: yatri-frontend
+          image: nginx:alpine
+          ports:
+            - containerPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: yatri-frontend
+  labels:
+    app: yatri-app
+spec:
+  type: ClusterIP
+  selector:
+    app: yatri-frontend
+  ports:
+    - port: 80
+      targetPort: 80
