@@ -1,0 +1,15 @@
+# Selector matches app=myapp-canary only, so it load-balances across BOTH stable and canary pods.
+apiVersion: v1
+kind: Service
+metadata:
+  name: myapp-canary-service
+  labels:
+    app: myapp-canary
+spec:
+  type: NodePort
+  selector:
+    app: myapp-canary
+  ports:
+    - port: 80
+      targetPort: 80
+      nodePort: 30030

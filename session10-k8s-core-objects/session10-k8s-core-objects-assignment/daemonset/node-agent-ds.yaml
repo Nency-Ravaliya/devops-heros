@@ -1,0 +1,21 @@
+# Lightweight host agent stand-in: one node-agent pod per node.
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: node-agent
+  labels:
+    app: node-agent
+spec:
+  selector:
+    matchLabels:
+      app: node-agent
+  template:
+    metadata:
+      labels:
+        app: node-agent
+    spec:
+      containers:
+        - name: node-agent
+          image: nginx:alpine
+          ports:
+            - containerPort: 80

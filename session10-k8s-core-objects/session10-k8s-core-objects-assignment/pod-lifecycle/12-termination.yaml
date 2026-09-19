@@ -1,0 +1,13 @@
+# Traps SIGTERM and delays exit => demonstrates terminationGracePeriodSeconds handling.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: lifecycle-termination
+  labels:
+    demo: lifecycle
+spec:
+  terminationGracePeriodSeconds: 30
+  containers:
+    - name: busybox
+      image: busybox
+      command: ["sh", "-c", "trap 'echo caught SIGTERM; sleep 10; exit 0' TERM; echo running; while true; do sleep 1; done"]

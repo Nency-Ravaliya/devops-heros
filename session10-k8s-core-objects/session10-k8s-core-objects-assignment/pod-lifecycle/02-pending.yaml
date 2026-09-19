@@ -1,0 +1,14 @@
+# Impossible memory request (900Gi) => pod stays Pending with a FailedScheduling event.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: lifecycle-pending
+  labels:
+    demo: lifecycle
+spec:
+  containers:
+    - name: nginx
+      image: nginx:alpine
+      resources:
+        requests:
+          memory: "900Gi"
