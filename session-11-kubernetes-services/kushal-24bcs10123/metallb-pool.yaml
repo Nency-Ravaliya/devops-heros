@@ -1,0 +1,19 @@
+# MetalLB configuration for the kind cluster: hand out LoadBalancer IPs from the top of the
+# docker "kind" network (172.18.0.0/16) and announce them with L2 (ARP), like a bare-metal cluster would.
+apiVersion: metallb.io/v1beta1
+kind: IPAddressPool
+metadata:
+  name: kind-pool
+  namespace: metallb-system
+spec:
+  addresses:
+    - 172.18.255.200-172.18.255.250
+---
+apiVersion: metallb.io/v1beta1
+kind: L2Advertisement
+metadata:
+  name: kind-l2
+  namespace: metallb-system
+spec:
+  ipAddressPools:
+    - kind-pool

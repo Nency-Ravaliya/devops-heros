@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# 01-configmap: plain-text configuration as a Kubernetes object.
+. "$(dirname "$0")/lib.sh"
+x "cat 01-configmap/app-config.yaml"
+x "kubectl apply -f 01-configmap/app-config.yaml"
+x "kubectl get configmap yatri-app-config"
+x "kubectl describe configmap yatri-app-config | sed -n '/^Data/,/^BinaryData/p'"
+x "kubectl get configmap yatri-app-config -o jsonpath='{.data.ENVIRONMENT}'; echo"
+x "kubectl get configmap yatri-app-config -o jsonpath='{.data.LOG_LEVEL}'; echo"
+hr "Two ways a pod can consume it: env vars and a mounted volume"
+x "kubectl run cm-demo --image=busybox:1.36 --restart=Never --overrides='{\"spec\":{\"containers\":[{\"name\":\"cm-demo\",\"image\":\"busybox:1.36\",\"command\":[\"sh\",\"-c\",\"echo ENV: ENVIRONMENT=\$ENVIRONMENT LOG_LEVEL=\$LOG_LEVEL; echo FILES:; ls /etc/config; echo; cat /etc/config/DEFAULT_CURRENCY; echo\"],\"envFrom\":[{\"configMapRef\":{\"name\":\"yatri-app-config\"}}],\"volumeMounts\":[{\"name\":\"cfg\",\"mountPath\":\"/etc/config\"}]}],\"volumes\":[{\"name\":\"cfg\",\"configMap\":{\"name\":\"yatri-app-config\"}}]}}'"
+x "kubectl wait --for=jsonpath='{.status.phase}'=Succeeded pod/cm-demo --timeout=120s && kubectl logs cm-demo"
+x "kubectl delete pod cm-demo"
+x "kubectl create configmap from-cli --from-literal=MODE=demo --from-literal=RETRIES=3 --dry-run=client -o yaml   # imperative alternative"
+x "kubectl delete -f 01-configmap/app-config.yaml"

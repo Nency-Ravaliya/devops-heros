@@ -1,0 +1,199 @@
+
+############ Module 2: deploy an app ############
+
+$ kubectl create deployment hello-k8s --image=nginx:1.25-alpine --replicas=2
+deployment.apps/hello-k8s created
+
+$ kubectl rollout status deployment/hello-k8s
+Waiting for deployment "hello-k8s" rollout to finish: 0 of 2 updated replicas are available...
+Waiting for deployment "hello-k8s" rollout to finish: 1 of 2 updated replicas are available...
+deployment "hello-k8s" successfully rolled out
+
+$ kubectl get deployments,replicasets,pods -o wide
+NAME                               READY   UP-TO-DATE   AVAILABLE   AGE   CONTAINERS   IMAGES              SELECTOR
+deployment.apps/hello-k8s          2/2     2            2           1s    nginx        nginx:1.25-alpine   app=hello-k8s
+deployment.apps/web-app-nodeport   2/2     2            2           2s    web-server   nginx:1.25-alpine   app=web-nodeport
+
+NAME                                        DESIRED   CURRENT   READY   AGE   CONTAINERS   IMAGES              SELECTOR
+replicaset.apps/hello-k8s-6bb5f98d5f        2         2         2       1s    nginx        nginx:1.25-alpine   app=hello-k8s,pod-template-hash=6bb5f98d5f
+replicaset.apps/web-app-nodeport-6c8f48bd   2         2         2       2s    web-server   nginx:1.25-alpine   app=web-nodeport,pod-template-hash=6c8f48bd
+
+NAME                                  READY   STATUS        RESTARTS   AGE   IP            NODE                 NOMINATED NODE   READINESS GATES
+pod/hello-k8s-6bb5f98d5f-kjktf        1/1     Running       0          1s    10.244.3.45   kushal-lab-worker    <none>           <none>
+pod/hello-k8s-6bb5f98d5f-rjr4p        1/1     Running       0          1s    10.244.1.44   kushal-lab-worker2   <none>           <none>
+pod/mypod                             2/2     Terminating   0          23s   10.244.3.43   kushal-lab-worker    <none>           <none>
+pod/web-app-nodeport-6c8f48bd-4vvqf   1/1     Running       0          2s    10.244.3.44   kushal-lab-worker    <none>           <none>
+pod/web-app-nodeport-6c8f48bd-lnshb   1/1     Running       0          2s    10.244.1.43   kushal-lab-worker2   <none>           <none>
+
+############ Module 3: explore the app ############
+
+$ kubectl describe deployment hello-k8s | sed -n '1,12p' | grep -v CreationTimestamp
+Name:                   hello-k8s
+Namespace:              default
+Labels:                 app=hello-k8s
+Annotations:            deployment.kubernetes.io/revision: 1
+Selector:               app=hello-k8s
+Replicas:               2 desired | 2 updated | 2 total | 2 available | 0 unavailable
+StrategyType:           RollingUpdate
+MinReadySeconds:        0
+RollingUpdateStrategy:  25% max unavailable, 25% max surge
+Pod Template:
+  Labels:  app=hello-k8s
+
+$ kubectl logs $POD | tail -3 | sed -E 's#^[0-9/]{10} [0-9:]{8} ##'
+[notice] 1#1: start worker process 37
+[notice] 1#1: start worker process 38
+[notice] 1#1: start worker process 39
+
+$ kubectl exec $POD -- nginx -v
+nginx version: nginx/1.25.5
+
+$ kubectl exec $POD -- cat /etc/hostname
+hello-k8s-6bb5f98d5f-kjktf
+
+############ Module 4: expose the app with a Service ############
+
+$ kubectl expose deployment hello-k8s --type=NodePort --port=80
+service/hello-k8s exposed
+
+$ kubectl get svc hello-k8s
+NAME        TYPE       CLUSTER-IP      EXTERNAL-IP   PORT(S)        AGE
+hello-k8s   NodePort   10.96.191.203   <none>        80:32023/TCP   0s
+
+$ kubectl get endpoints hello-k8s
+Warning: v1 Endpoints is deprecated in v1.33+; use discovery.k8s.io/v1 EndpointSlice
+NAME        ENDPOINTS                       AGE
+hello-k8s   10.244.1.44:80,10.244.3.45:80   0s
+
+$ runonce tmp-curl curlimages/curl:8.5.0 -s --retry 5 --retry-connrefused --retry-delay 2 http://hello-k8s | grep -o '<title>.*</title>'   # one-shot pod inside the cluster
+<title>Welcome to nginx!</title>
+
+$ kubectl label pods -l app=hello-k8s tier=web
+pod/hello-k8s-6bb5f98d5f-kjktf labeled
+pod/hello-k8s-6bb5f98d5f-rjr4p labeled
+
+$ kubectl get pods -l tier=web
+NAME                         READY   STATUS    RESTARTS   AGE
+hello-k8s-6bb5f98d5f-kjktf   1/1     Running   0          81s
+hello-k8s-6bb5f98d5f-rjr4p   1/1     Running   0          81s
+
+############ Module 5: scale ############
+
+$ kubectl scale deployment/hello-k8s --replicas=4
+deployment.apps/hello-k8s scaled
+
+$ kubectl rollout status deployment/hello-k8s
+Waiting for deployment "hello-k8s" rollout to finish: 2 of 4 updated replicas are available...
+deployment "hello-k8s" successfully rolled out
+
+$ kubectl get pods -l app=hello-k8s -o wide
+NAME                         READY   STATUS    RESTARTS   AGE   IP            NODE                 NOMINATED NODE   READINESS GATES
+hello-k8s-6bb5f98d5f-h5qpc   1/1     Running   0          1s    10.244.1.48   kushal-lab-worker2   <none>           <none>
+hello-k8s-6bb5f98d5f-kjktf   1/1     Running   0          82s   10.244.3.45   kushal-lab-worker    <none>           <none>
+hello-k8s-6bb5f98d5f-pp9zx   1/1     Running   0          1s    10.244.3.50   kushal-lab-worker    <none>           <none>
+hello-k8s-6bb5f98d5f-rjr4p   1/1     Running   0          82s   10.244.1.44   kushal-lab-worker2   <none>           <none>
+
+$ kubectl get endpoints hello-k8s
+Warning: v1 Endpoints is deprecated in v1.33+; use discovery.k8s.io/v1 EndpointSlice
+NAME        ENDPOINTS                                                  AGE
+hello-k8s   10.244.1.44:80,10.244.1.48:80,10.244.3.45:80 + 1 more...   81s
+
+$ kubectl scale deployment/hello-k8s --replicas=2
+deployment.apps/hello-k8s scaled
+
+$ sleep 15; kubectl get deployment hello-k8s; kubectl get pods -l app=hello-k8s
+NAME        READY   UP-TO-DATE   AVAILABLE   AGE
+hello-k8s   2/2     2            2           97s
+NAME                         READY   STATUS    RESTARTS   AGE
+hello-k8s-6bb5f98d5f-kjktf   1/1     Running   0          97s
+hello-k8s-6bb5f98d5f-rjr4p   1/1     Running   0          97s
+
+############ Module 6: rolling update and rollback ############
+
+$ kubectl set image deployment/hello-k8s nginx=nginx:1.27-alpine
+deployment.apps/hello-k8s image updated
+
+$ kubectl rollout status deployment/hello-k8s
+Waiting for deployment "hello-k8s" rollout to finish: 1 out of 2 new replicas have been updated...
+Waiting for deployment "hello-k8s" rollout to finish: 1 out of 2 new replicas have been updated...
+Waiting for deployment "hello-k8s" rollout to finish: 1 out of 2 new replicas have been updated...
+Waiting for deployment "hello-k8s" rollout to finish: 1 old replicas are pending termination...
+Waiting for deployment "hello-k8s" rollout to finish: 1 old replicas are pending termination...
+Waiting for deployment "hello-k8s" rollout to finish: 1 old replicas are pending termination...
+deployment "hello-k8s" successfully rolled out
+
+$ sleep 15; kubectl get pods -l app=hello-k8s -o custom-columns='NAME:.metadata.name,IMAGE:.spec.containers[0].image,STATUS:.status.phase'
+NAME                         IMAGE               STATUS
+hello-k8s-774d79f5bf-72dlg   nginx:1.27-alpine   Running
+hello-k8s-774d79f5bf-grqmc   nginx:1.27-alpine   Running
+
+$ kubectl set image deployment/hello-k8s nginx=nginx:does-not-exist
+deployment.apps/hello-k8s image updated
+
+$ sleep 15; kubectl get pods -l app=hello-k8s
+NAME                         READY   STATUS             RESTARTS   AGE
+hello-k8s-558b45678d-dqcm5   0/1     ImagePullBackOff   0          15s
+hello-k8s-774d79f5bf-72dlg   1/1     Running            0          30s
+hello-k8s-774d79f5bf-grqmc   1/1     Running            0          31s
+
+$ kubectl rollout status deployment/hello-k8s --timeout=10s || true
+Waiting for deployment "hello-k8s" rollout to finish: 1 out of 2 new replicas have been updated...
+error: timed out waiting for the condition
+
+$ kubectl rollout history deployment/hello-k8s
+deployment.apps/hello-k8s 
+REVISION  CHANGE-CAUSE
+1         <none>
+2         <none>
+3         <none>
+
+
+$ kubectl rollout undo deployment/hello-k8s
+deployment.apps/hello-k8s rolled back
+
+$ kubectl rollout status deployment/hello-k8s
+deployment "hello-k8s" successfully rolled out
+
+$ sleep 15; kubectl get pods -l app=hello-k8s -o custom-columns='NAME:.metadata.name,IMAGE:.spec.containers[0].image,STATUS:.status.phase'
+NAME                         IMAGE               STATUS
+hello-k8s-774d79f5bf-72dlg   nginx:1.27-alpine   Running
+hello-k8s-774d79f5bf-grqmc   nginx:1.27-alpine   Running
+
+############ Namespaces ############
+
+$ kubectl get namespaces
+NAME                 STATUS   AGE
+default              Active   53m
+kube-node-lease      Active   53m
+kube-public          Active   53m
+kube-system          Active   53m
+local-path-storage   Active   53m
+
+$ kubectl create namespace team-a
+namespace/team-a created
+
+$ kubectl -n team-a create deployment web --image=nginx:1.25-alpine
+deployment.apps/web created
+
+$ kubectl get pods -n team-a
+NAME                   READY   STATUS              RESTARTS   AGE
+web-68847bc8d4-ql8rs   0/1     ContainerCreating   0          0s
+
+$ kubectl get pods            # default namespace does not show team-a pods
+NAME                             READY   STATUS              RESTARTS   AGE
+curl-client                      1/1     Terminating         0          9s
+hello-k8s-774d79f5bf-72dlg       1/1     Running             0          56s
+hello-k8s-774d79f5bf-grqmc       1/1     Running             0          57s
+yatri-backend-77dbb657cd-6l2kg   0/1     ContainerCreating   0          2s
+yatri-backend-cbc55c649-2g2nz    1/1     Running             0          34s
+yatri-backend-cbc55c649-5fmhc    1/1     Running             0          35s
+yatri-backend-cbc55c649-d8459    1/1     Running             0          35s
+
+############ Cleanup ############
+
+$ kubectl delete namespace team-a
+namespace "team-a" deleted
+
+$ kubectl delete service,deployment hello-k8s
+service "hello-k8s" deleted from default namespace
+deployment.apps "hello-k8s" deleted from default namespace

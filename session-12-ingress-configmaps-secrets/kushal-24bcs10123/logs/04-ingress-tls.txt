@@ -1,0 +1,110 @@
+
+$ openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout kushal-24bcs10123/tls-tmp/tls.key -out kushal-24bcs10123/tls-tmp/tls.crt -subj '/CN=campus.local/O=CampusDevOps' 2>&1 | tail -1
+-----
+
+$ kubectl create secret tls campus-tls-cert --cert=kushal-24bcs10123/tls-tmp/tls.crt --key=kushal-24bcs10123/tls-tmp/tls.key
+secret/campus-tls-cert created
+
+$ kubectl get secret campus-tls-cert
+NAME              TYPE                DATA   AGE
+campus-tls-cert   kubernetes.io/tls   2      0s
+
+$ kubectl apply -f 03-ingress/ingress-tls.yaml
+ingress.networking.k8s.io/campus-ingress-tls created
+
+$ kubectl get ingress
+NAME                 CLASS   HOSTS                                  ADDRESS     PORTS     AGE
+campus-ingress-tls   nginx   portal.campus.local,api.campus.local   localhost   80, 443   57s
+yatri-ingress        nginx   yatri.local                            localhost   80        74s
+
+$ kubectl describe ingress campus-ingress-tls | sed -n '/^TLS/,/^Annotations/p'
+TLS:
+  campus-tls-cert terminates portal.campus.local,api.campus.local
+Rules:
+  Host                 Path  Backends
+  ----                 ----  --------
+  portal.campus.local  
+                       /()(.*)   yatri-frontend-service:80 (10.244.1.156:80,10.244.3.183:80)
+  api.campus.local     
+                       /api(/|$)(.*)   yatri-backend-service:80 (10.244.3.185:5000,10.244.1.158:5000)
+Annotations:           nginx.ingress.kubernetes.io/rewrite-target: /$2
+
+############ host-based routing over HTTPS (self-signed, so -k) ############
+
+$ curl -sk --resolve portal.campus.local:443:127.0.0.1 https://portal.campus.local/ | grep -i '<title>'
+<title>Welcome to nginx!</title>
+
+$ curl -sk --resolve api.campus.local:443:127.0.0.1 https://api.campus.local/api/ | head -3
+Yatri Backend API
+=================
+ENVIRONMENT     : production
+
+$ curl -sk --resolve api.campus.local:443:127.0.0.1 -o /dev/null -w 'api host, frontend path -> HTTP %{http_code}\n' https://api.campus.local/
+api host, frontend path -> HTTP 404
+
+$ curl -s --resolve portal.campus.local:80:127.0.0.1 -o /dev/null -w 'plain http -> HTTP %{http_code} redirect to %{redirect_url}\n' http://portal.campus.local/
+plain http -> HTTP 308 redirect to https://portal.campus.local/
+
+$ echo | openssl s_client -connect 127.0.0.1:443 -servername portal.campus.local 2>/dev/null | openssl x509 -noout -subject -issuer
+subject=O=Acme Co, CN=Kubernetes Ingress Controller Fake Certificate
+issuer=O=Acme Co, CN=Kubernetes Ingress Controller Fake Certificate
+
+$ echo | openssl s_client -connect 127.0.0.1:443 -servername yatri.local 2>/dev/null | openssl x509 -noout -subject    # host without TLS config gets the controller's default cert
+subject=O=Acme Co, CN=Kubernetes Ingress Controller Fake Certificate
+
+############ Why the lab's cert was not used: CN=campus.local, no SAN -> does not match portal./api.campus.local ############
+
+$ kubectl -n ingress-nginx logs deploy/ingress-nginx-controller | grep 'does not contain a Common Name' | tail -1 | sed -E 's/^W[0-9]+ [0-9:.]+ +[0-9]+ [a-z_]+\.go:[0-9]+\] //'
+SSL certificate "default/campus-tls-cert" does not contain a Common Name or Subject Alternative Name for server "api.campus.local": x509: certificate is not valid for any names, but wanted to match api.campus.local
+
+$ openssl x509 -in kushal-24bcs10123/tls-tmp/tls.crt -noout -subject -ext subjectAltName 2>&1 | head -3
+No extensions in certificate
+subject=CN=campus.local, O=CampusDevOps
+
+############ Fix: issue the cert with Subject Alternative Names for both hosts and replace the secret ############
+
+$ openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout kushal-24bcs10123/tls-tmp/tls.key -out kushal-24bcs10123/tls-tmp/tls.crt -subj '/CN=campus.local/O=CampusDevOps' -addext 'subjectAltName=DNS:portal.campus.local,DNS:api.campus.local' 2>&1 | tail -1
+-----
+
+$ kubectl delete secret campus-tls-cert && kubectl create secret tls campus-tls-cert --cert=kushal-24bcs10123/tls-tmp/tls.crt --key=kushal-24bcs10123/tls-tmp/tls.key
+secret "campus-tls-cert" deleted from default namespace
+secret/campus-tls-cert created
+
+$ echo | openssl s_client -connect 127.0.0.1:443 -servername portal.campus.local 2>/dev/null | openssl x509 -noout -subject -ext subjectAltName
+subject=CN=campus.local, O=CampusDevOps
+X509v3 Subject Alternative Name: 
+    DNS:portal.campus.local, DNS:api.campus.local
+
+$ curl -s --cacert kushal-24bcs10123/tls-tmp/tls.crt --resolve portal.campus.local:443:127.0.0.1 -o /dev/null -w 'https://portal.campus.local with the cert trusted, no -k -> HTTP %{http_code}\n' https://portal.campus.local/
+https://portal.campus.local with the cert trusted, no -k -> HTTP 200
+
+$ curl -s --cacert kushal-24bcs10123/tls-tmp/tls.crt --resolve api.campus.local:443:127.0.0.1 https://api.campus.local/api/ | head -2
+Yatri Backend API
+=================
+
+############ Cleanup (TLS lab + full demo) ############
+
+$ kubectl delete ingress campus-ingress-tls && kubectl delete secret campus-tls-cert
+ingress.networking.k8s.io "campus-ingress-tls" deleted from default namespace
+secret "campus-tls-cert" deleted from default namespace
+
+$ bash 04-full-demo/cleanup.sh
+[INFO] Deleting Ingress...
+ingress.networking.k8s.io "yatri-ingress" deleted from default namespace
+[INFO] Deleting Backend Deployment and Service...
+deployment.apps "yatri-backend" deleted from default namespace
+service "yatri-backend-service" deleted from default namespace
+[INFO] Deleting Frontend Deployment and Service...
+deployment.apps "yatri-frontend" deleted from default namespace
+service "yatri-frontend-service" deleted from default namespace
+[INFO] Deleting Secret...
+secret "yatri-db-secret" deleted from default namespace
+[INFO] Deleting ConfigMap...
+configmap "yatri-app-config" deleted from default namespace
+[INFO] All demo resources removed.
+
+$ kubectl get all -l app=yatri-app; kubectl get configmap yatri-app-config; kubectl get secret yatri-db-secret; kubectl get ingress yatri-ingress
+No resources found in default namespace.
+Error from server (NotFound): configmaps "yatri-app-config" not found
+Error from server (NotFound): secrets "yatri-db-secret" not found
+Error from server (NotFound): ingresses.networking.k8s.io "yatri-ingress" not found

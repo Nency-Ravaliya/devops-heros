@@ -1,0 +1,56 @@
+
+$ kubectl apply -f https://kind.sigs.k8s.io/examples/ingress/deploy-ingress-nginx.yaml
+namespace/ingress-nginx created
+serviceaccount/ingress-nginx created
+serviceaccount/ingress-nginx-admission created
+role.rbac.authorization.k8s.io/ingress-nginx created
+role.rbac.authorization.k8s.io/ingress-nginx-admission created
+clusterrole.rbac.authorization.k8s.io/ingress-nginx created
+clusterrole.rbac.authorization.k8s.io/ingress-nginx-admission created
+rolebinding.rbac.authorization.k8s.io/ingress-nginx created
+rolebinding.rbac.authorization.k8s.io/ingress-nginx-admission created
+clusterrolebinding.rbac.authorization.k8s.io/ingress-nginx created
+clusterrolebinding.rbac.authorization.k8s.io/ingress-nginx-admission created
+configmap/ingress-nginx-controller created
+service/ingress-nginx-controller created
+service/ingress-nginx-controller-admission created
+deployment.apps/ingress-nginx-controller created
+job.batch/ingress-nginx-admission-create created
+job.batch/ingress-nginx-admission-patch created
+ingressclass.networking.k8s.io/nginx created
+validatingwebhookconfiguration.admissionregistration.k8s.io/ingress-nginx-admission created
+
+$ kubectl -n ingress-nginx get deploy ingress-nginx-controller -o jsonpath='hostPorts={.spec.template.spec.containers[0].ports[*].hostPort} nodeSelector={.spec.template.spec.nodeSelector}{"\n"}'
+hostPorts=80 443 nodeSelector={"kubernetes.io/os":"linux"}
+
+$ kubectl -n ingress-nginx patch deploy ingress-nginx-controller -p '{"spec":{"template":{"spec":{"nodeSelector":{"ingress-ready":"true"}}}}}'
+deployment.apps/ingress-nginx-controller patched
+
+$ kubectl -n ingress-nginx rollout status deploy/ingress-nginx-controller --timeout=180s
+Waiting for deployment "ingress-nginx-controller" rollout to finish: 1 old replicas are pending termination...
+Waiting for deployment "ingress-nginx-controller" rollout to finish: 0 of 1 updated replicas are available...
+deployment "ingress-nginx-controller" successfully rolled out
+
+$ kubectl wait --namespace ingress-nginx --for=condition=ready pod --selector=app.kubernetes.io/component=controller --timeout=180s
+pod/ingress-nginx-controller-56f5db4996-xz5qj condition met
+
+$ kubectl get pods -n ingress-nginx -o wide
+NAME                                        READY   STATUS      RESTARTS   AGE   IP            NODE                       NOMINATED NODE   READINESS GATES
+ingress-nginx-admission-create-gmr2j        0/1     Completed   0          32s   10.244.1.92   kushal-lab-worker2         <none>           <none>
+ingress-nginx-admission-patch-bb9df         0/1     Completed   0          32s   10.244.3.91   kushal-lab-worker          <none>           <none>
+ingress-nginx-controller-56f5db4996-xz5qj   1/1     Running     0          31s   10.244.0.5    kushal-lab-control-plane   <none>           <none>
+
+$ kubectl get ingressclass
+NAME    CONTROLLER             PARAMETERS   AGE
+nginx   k8s.io/ingress-nginx   <none>       31s
+
+$ kubectl -n ingress-nginx get deploy ingress-nginx-controller -o jsonpath='{.spec.template.spec.containers[0].image}{"\n"}'
+registry.k8s.io/ingress-nginx/controller:v1.12.1@sha256:9724476b928967173d501040631b23ba07f47073999e80e34b120e8db5f234d5
+
+$ curl -s -o /dev/null -w 'http://localhost/ with no Ingress rules -> HTTP %{http_code}\n' http://localhost/
+http://localhost/ with no Ingress rules -> HTTP 404
+
+$ curl -s http://localhost/ | head -3
+<html>
+<head><title>404 Not Found</title></head>
+<body>

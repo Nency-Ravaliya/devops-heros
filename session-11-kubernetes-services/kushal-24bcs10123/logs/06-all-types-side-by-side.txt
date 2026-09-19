@@ -1,0 +1,47 @@
+
+$ kubectl create deployment cmp --image=nginx:1.25-alpine --replicas=2
+deployment.apps/cmp created
+
+$ kubectl rollout status deployment/cmp
+Waiting for deployment "cmp" rollout to finish: 0 of 2 updated replicas are available...
+Waiting for deployment "cmp" rollout to finish: 1 of 2 updated replicas are available...
+deployment "cmp" successfully rolled out
+
+$ kubectl expose deployment cmp --name=cmp-clusterip    --port=80 --type=ClusterIP
+service/cmp-clusterip exposed
+
+$ kubectl expose deployment cmp --name=cmp-nodeport     --port=80 --type=NodePort
+service/cmp-nodeport exposed
+
+$ kubectl expose deployment cmp --name=cmp-loadbalancer --port=80 --type=LoadBalancer
+service/cmp-loadbalancer exposed
+
+$ kubectl create service externalname cmp-externalname --external-name=nencyravaliya.me
+service/cmp-externalname created
+
+$ kubectl create service clusterip cmp-headless --clusterip=None --tcp=80 && kubectl set selector svc cmp-headless app=cmp
+service/cmp-headless created
+service/cmp-headless selector updated
+
+$ kubectl get svc -l app=cmp; kubectl get svc cmp-externalname cmp-headless
+NAME               TYPE           CLUSTER-IP      EXTERNAL-IP   PORT(S)        AGE
+cmp-clusterip      ClusterIP      10.96.209.116   <none>        80/TCP         0s
+cmp-loadbalancer   LoadBalancer   10.96.44.27     <pending>     80:30701/TCP   0s
+cmp-nodeport       NodePort       10.96.105.21    <none>        80:32737/TCP   0s
+NAME               TYPE           CLUSTER-IP   EXTERNAL-IP        PORT(S)   AGE
+cmp-externalname   ExternalName   <none>       nencyravaliya.me   <none>    0s
+cmp-headless       ClusterIP      None         <none>             80/TCP    0s
+
+$ kubectl get endpointslices -o custom-columns='SERVICE:.metadata.labels.kubernetes\.io/service-name,ADDRESSES:.endpoints[*].addresses[0]' | grep cmp
+cmp-clusterip      10.244.1.70,10.244.3.74
+cmp-headless       10.244.1.70,10.244.3.74
+cmp-loadbalancer   10.244.3.74,10.244.1.70
+cmp-nodeport       10.244.3.74,10.244.1.70
+
+$ kubectl delete deployment cmp; kubectl delete svc cmp-clusterip cmp-nodeport cmp-loadbalancer cmp-externalname cmp-headless
+deployment.apps "cmp" deleted from default namespace
+service "cmp-clusterip" deleted from default namespace
+service "cmp-nodeport" deleted from default namespace
+service "cmp-loadbalancer" deleted from default namespace
+service "cmp-externalname" deleted from default namespace
+service "cmp-headless" deleted from default namespace

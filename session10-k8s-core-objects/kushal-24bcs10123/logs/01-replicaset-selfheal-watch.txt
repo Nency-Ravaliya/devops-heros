@@ -1,0 +1,14 @@
+NAME                     READY   STATUS    RESTARTS   AGE
+yatri-backend-rs-jzxbq   1/1     Running   0          1s
+yatri-backend-rs-p2hxh   1/1     Running   0          1s
+yatri-backend-rs-wwhld   1/1     Running   0          1s
+yatri-backend-rs-jzxbq   1/1     Terminating   0          3s
+yatri-backend-rs-scdcs   0/1     Pending       0          0s
+yatri-backend-rs-jzxbq   1/1     Terminating   0          3s
+yatri-backend-rs-scdcs   0/1     Pending       0          0s
+yatri-backend-rs-scdcs   0/1     ContainerCreating   0          0s
+yatri-backend-rs-scdcs   0/1     ContainerCreating   0          0s
+yatri-backend-rs-scdcs   1/1     Running             0          0s
+yatri-backend-rs-jzxbq   0/1     Error               0          33s
+yatri-backend-rs-jzxbq   0/1     Error               0          33s
+yatri-backend-rs-jzxbq   0/1     Error               0          33s
