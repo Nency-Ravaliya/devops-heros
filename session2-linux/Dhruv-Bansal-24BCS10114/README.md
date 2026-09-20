@@ -1,27 +1,36 @@
-# Session 2 - Linux fundamentals
+# Session 2 - Linux Fundamentals
 
-**Dhruv Bansal - 24BCS10114**
+Dhruv Bansal - 24BCS10114
 
-This submission uses a disposable directory for the link exercise, so it does not alter files outside the lab.
+I practised file commands, permissions, links, users, processes, storage, memory, and system logs.
 
-## Link behaviour
+## Hard link and symbolic link
 
-`links-lab.sh` creates one file, a hard link, and a symbolic link. It checks that the first two share an inode, removes the original name, and then confirms that the hard link still contains the data while the symbolic link is dangling.
-
-Run it from a Linux shell:
+The `links-lab.sh` script creates a normal file, a hard link, and a symbolic link inside a temporary folder. It checks the inode numbers, deletes the original filename, and then shows that the hard link still works while the symbolic link becomes broken.
 
 ```bash
 bash links-lab.sh --verify
 ```
 
-## User-management note
+## Commands I used
 
-On Debian and Ubuntu, `adduser` is the interactive, policy-aware helper that is suitable for a one-off administrator task. `useradd` is the lower-level command and is better for repeatable scripts when every option is specified deliberately. A safe practice account can be created with `sudo adduser labuser` and removed afterwards with `sudo deluser --remove-home labuser`.
+```bash
+pwd
+ls -lah
+find . -type f
+grep -R "text" .
+df -h
+free -h
+ps aux
+journalctl -b
+journalctl -p warning..alert -b
+```
 
-## Journal inspection
+For user management on Ubuntu, `adduser` is convenient for an interactive task, while `useradd` gives lower-level control for scripts. A temporary practice user can be created and removed with:
 
-Useful commands are `journalctl -b` for the current boot, `journalctl -u ssh --since today` for a service, and `journalctl -p warning..alert -b` to focus on high-severity records. Availability of individual units varies by host, so commands should be run against a service that exists locally.
+```bash
+sudo adduser labuser
+sudo deluser --remove-home labuser
+```
 
-## Command practice
-
-`pwd`, `ls -lah`, `find`, `grep`, `df -h`, `free -h`, and `ps aux` answer different operational questions. I would start with read-only commands before changing ownership, permissions, users, or processes.
+I checked the command output before changing permissions, users, or running processes.
