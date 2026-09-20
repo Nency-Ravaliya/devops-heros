@@ -1,0 +1,18 @@
+# readinessProbe checks a file that is never created => container Running but 0/1 (not Ready).
+apiVersion: v1
+kind: Pod
+metadata:
+  name: lifecycle-readiness
+  labels:
+    demo: lifecycle
+spec:
+  containers:
+    - name: nginx
+      image: nginx:alpine
+      ports:
+        - containerPort: 80
+      readinessProbe:
+        exec:
+          command: ["cat", "/tmp/ready"]
+        initialDelaySeconds: 3
+        periodSeconds: 5
