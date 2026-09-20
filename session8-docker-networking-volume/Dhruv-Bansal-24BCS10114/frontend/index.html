@@ -1,5 +1,22 @@
 <!doctype html>
 <html lang="en">
-  <head><meta charset="utf-8"><title>Session 8</title></head>
-  <body><h1>Docker networking and volumes</h1></body>
+  <head>
+    <meta charset="utf-8">
+    <title>Session 8</title>
+  </head>
+  <body>
+    <h1>Docker networking and volumes</h1>
+    <p>The browser reaches the backend through NGINX. Only the backend can reach MySQL.</p>
+    <pre id="result">Checking the backend...</pre>
+    <script>
+      fetch('/api')
+        .then((response) => response.json())
+        .then((data) => {
+          document.getElementById('result').textContent = JSON.stringify(data, null, 2);
+        })
+        .catch((error) => {
+          document.getElementById('result').textContent = error.toString();
+        });
+    </script>
+  </body>
 </html>

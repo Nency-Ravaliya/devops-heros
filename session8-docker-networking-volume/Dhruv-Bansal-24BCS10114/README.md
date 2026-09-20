@@ -2,13 +2,37 @@
 
 Dhruv Bansal - 24BCS10114
 
-The Compose file uses three services. The frontend is on `frontend_net`; the backend connects `frontend_net` and `backend_net`; the MySQL database is only on `backend_net`. The database data is stored in the named `db_data` volume.
+I made a small three-container setup with NGINX, a Python backend, and MySQL.
+
+- The frontend is connected only to `frontend_net`.
+- The database is connected only to `backend_net`.
+- The backend joins both networks, so it is the only service that can talk to both sides.
+- MySQL data is kept in the named volume `db_data`.
+
+## Run it
 
 ```bash
-docker compose up -d
-docker compose exec backend getent hosts database
+docker compose up -d --build
+docker compose ps
 curl http://localhost:8082
-docker compose down
+curl http://localhost:8082/api
 ```
 
-The frontend page is bind-mounted from `frontend/index.html`. Editing that file updates the page without rebuilding the image.
+The `/api` response shows `"status": "connected"` after the backend reaches the MySQL database. I used the service name `database` instead of an IP address because Compose provides DNS inside each network.
+
+These commands show the networks and volume:
+
+```bash
+docker network ls
+docker network inspect dhruv-bansal-24bcs10114_frontend_net
+docker network inspect dhruv-bansal-24bcs10114_backend_net
+docker volume inspect dhruv-bansal-24bcs10114_db_data
+```
+
+The frontend files are bind-mounted, so I can edit the page without rebuilding it. The database volume remains after `docker compose down`; `docker compose down -v` also removes the stored data.
+
+## Clean up
+
+```bash
+docker compose down
+```
