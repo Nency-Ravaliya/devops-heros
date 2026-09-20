@@ -218,3 +218,11 @@ eth0: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
 | `ifconfig` | Legacy interface config |
 | `iptables` | Firewall rules (kernel netfilter) |
 | `ufw` | Simplified firewall (Ubuntu) |
+
+---
+
+## Executed terminal evidence
+
+The networking commands below were run against the current Linux environment. They verify local interface/routing data, DNS resolution, and HTTPS connectivity. The raw captured output is committed as [`session4-terminal-output.txt`](session4-terminal-output.txt).
+
+![Session 4 executed networking command output](screenshots/session4-terminal-output.png)
