@@ -231,3 +231,11 @@ The `SCOPE` is `swarm` (not `local`), meaning the network is available across al
 | Task 2 — Host Network | Apache2 on `--network host`; served on port 80 without port mapping |
 | Task 3 — Bind Mount | Nginx with `~/nginx-content` bind-mounted; edited HTML live without restart |
 | Task 4 — Overlay Network | Researched VXLAN overlay; created swarm overlay network; explained use cases |
+
+---
+
+## Executed evidence
+
+All four tasks were run in Docker. The screenshot below is rendered from the committed raw run log; the complete output is in [`evidence/session8.log`](evidence/session8.log).
+
+![Session 8 Docker networking and volumes evidence](evidence/session8-terminal.png)
