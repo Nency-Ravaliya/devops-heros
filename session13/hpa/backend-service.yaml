@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: yatri-backend-service
+  labels:
+    app: yatri-backend
+spec:
+  type: ClusterIP
+  selector:
+    app: yatri-backend
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 5000
