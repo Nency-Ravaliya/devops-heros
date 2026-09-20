@@ -183,3 +183,11 @@ With multi-stage: ~178MB — **~6× smaller** because build tools stay in the bu
 - Application runs on port 8080 (host) → 3000 (container)  
 - `Hello World from Docker multi-stage build` confirmed via `curl`  
 - Container confirmed running via `docker ps`
+
+---
+
+## Executed evidence
+
+The applications and multi-stage image were built and run in Docker. The screenshot below is rendered from the committed raw run log; the complete output is in [`evidence/session6-7.log`](evidence/session6-7.log).
+
+![Session 6 and 7 Docker build and run evidence](evidence/session6-7-terminal.png)
