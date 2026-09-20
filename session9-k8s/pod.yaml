@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: hello-kubernetes
+  namespace: rudray-devops-hw
+  labels:
+    app: hello-kubernetes
+spec:
+  containers:
+    - name: nginx
+      image: nginx:1.28-alpine
+      ports:
+        - containerPort: 80
+      resources:
+        requests: {cpu: 25m, memory: 32Mi}
+        limits: {cpu: 100m, memory: 64Mi}
+      readinessProbe:
+        httpGet: {path: /, port: 80}
+        initialDelaySeconds: 2
+        periodSeconds: 3

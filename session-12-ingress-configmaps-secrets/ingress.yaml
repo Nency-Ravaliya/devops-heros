@@ -1,0 +1,21 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata: {name: homework-ingress, namespace: rudray-devops-hw}
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: homework.local
+      http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: homework-backend
+                port: {number: 80}
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: homework-frontend
+                port: {number: 80}
