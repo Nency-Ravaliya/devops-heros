@@ -1,0 +1,22 @@
+$ git init -b main
+$ git commit -m "Initial app"
+$ git commit -a -m "Update tracked app"
+$ git log --oneline --all --graph
+* 9e64df0 Other feature work
+* 53a343e Add selected feature
+* 0059c3b Update tracked app
+* 4dfb2c5 Initial app
+
+$ git cherry-pick 53a343e
+[main 53a343e] Add selected feature
+ Date: Sun Sep 20 22:45:20 2026 +0530
+ 1 file changed, 1 insertion(+)
+ create mode 100644 feature.txt
+
+$ git log --oneline --graph
+* 53a343e Add selected feature
+* 0059c3b Update tracked app
+* 4dfb2c5 Initial app
+
+$ cat feature.txt
+feature

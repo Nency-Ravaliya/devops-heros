@@ -189,3 +189,11 @@ git diff                     # show unstaged changes
 git reset --soft HEAD~1      # undo last commit (keep changes)
 git reset --hard HEAD~1      # undo last commit (discard changes)
 ```
+
+---
+
+## Executed terminal evidence
+
+An isolated Git repository was used to verify `git commit -a -m`, branch-specific commits, commit selection with `git log`, and cherry-picking one selected feature commit back onto `main`. The raw captured output is committed as [`session5-terminal-output.txt`](session5-terminal-output.txt).
+
+![Session 5 executed Git and cherry-pick output](screenshots/session5-terminal-output.png)
