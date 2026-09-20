@@ -1,0 +1,48 @@
+$ printf "Rachit Suresh\\n24BCS10139\\nSession 3 verification\\n" | bash script.sh
+======================================
+       SYSTEM INFORMATION REPORT      
+======================================
+Name        : Rachit Suresh
+Roll Number : 24BCS10139
+Date        : Sun Sep 20 22:45:14 IST 2026
+Hostname    : e2b.local
+Username    : sandbox
+
+======================================
+            DISK USAGE               
+======================================
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/root        29G  8.6G   20G  31% /
+tmpfs           992M     0  992M   0% /dev/shm
+tmpfs           397M  1.1M  396M   1% /run
+tmpfs           5.0M     0  5.0M   0% /run/lock
+mountpoint-s3   8.0E     0  8.0E   0% /observations
+
+======================================
+         RUNNING PROCESSES (top 10)  
+======================================
+    PID USER     COMMAND
+      1 root     systemd
+      2 root     kthreadd
+      3 root     rcu_gp
+      4 root     rcu_par_gp
+      5 root     slub_flushwq
+      6 root     netns
+      7 root     kworker/0:0-cgroup_free
+      8 root     kworker/0:0H-events_highpri
+      9 root     kworker/u4:0-writeback
+     10 root     mm_percpu_wq
+
+Output written to sysinfo_output/result.log and sysinfo_output/process.log
+
+$ ls -l sysinfo_output
+total 5
+-rw-r--r-- 1 sandbox sandbox 3904 Sep 20 22:45 process.log
+-rw-r--r-- 1 sandbox sandbox  128 Sep 20 22:45 result.log
+
+$ head -8 sysinfo_output/result.log
+System info captured on: Sun Sep 20 22:45:14 IST 2026
+Name: Rachit Suresh
+Roll Number: 24BCS10139
+Host: e2b.local
+User: sandbox

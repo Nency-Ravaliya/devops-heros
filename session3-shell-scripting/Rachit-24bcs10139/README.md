@@ -136,3 +136,11 @@ Output written to sysinfo_output/result.log and sysinfo_output/process.log
 | `touch` | Create empty file |
 | `>` | Redirect output to file (overwrite) |
 | `>>` | Redirect output to file (append) |
+
+---
+
+## Executed terminal evidence
+
+`script.sh` was run with the submitted name, enrollment number, and a test comment. It created the required directory/files and wrote system and process data using output redirection. The raw captured output is committed as [`session3-terminal-output.txt`](session3-terminal-output.txt).
+
+![Session 3 executed shell script output](screenshots/session3-terminal-output.png)
