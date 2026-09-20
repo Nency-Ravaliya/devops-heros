@@ -1,0 +1,48 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: demo-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  ingressClassName: nginx
+  rules:
+    # ---- path-based routing on one host ----
+    - host: devops.local
+      http:
+        paths:
+          - path: /one
+            pathType: Prefix
+            backend:
+              service:
+                name: app-one
+                port:
+                  number: 80
+          - path: /two
+            pathType: Prefix
+            backend:
+              service:
+                name: app-two
+                port:
+                  number: 80
+    # ---- host-based routing ----
+    - host: one.devops.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: app-one
+                port:
+                  number: 80
+    - host: two.devops.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: app-two
+                port:
+                  number: 80
