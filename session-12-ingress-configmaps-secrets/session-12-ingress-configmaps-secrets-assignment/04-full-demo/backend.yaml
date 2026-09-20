@@ -1,0 +1,85 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: yatri-backend
+  labels:
+    app: yatri-app
+    tier: backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: yatri-backend
+  template:
+    metadata:
+      labels:
+        app: yatri-backend
+        tier: backend
+    spec:
+      containers:
+        - name: yatri-backend
+          image: python:3.12-alpine
+          # Robust pattern: write a small script to disk with a heredoc, then run it.
+          # Inlining Python as `python3 -c` with a class body is fragile in YAML, so we
+          # use a literal block scalar (|) which keeps newlines/indentation intact.
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              cat > /tmp/server.py <<'PYEOF'
+              import os
+              from http.server import BaseHTTPRequestHandler, HTTPServer
+
+              class H(BaseHTTPRequestHandler):
+                  def do_GET(self):
+                      self.send_response(200)
+                      self.send_header('Content-Type', 'text/plain')
+                      self.end_headers()
+                      body = (
+                          "ENVIRONMENT: %s\n"
+                          "LOG_LEVEL: %s\n"
+                          "POSTGRES_USER: %s\n"
+                          "DEFAULT_CURRENCY: %s\n"
+                          % (
+                              os.environ.get('ENVIRONMENT'),
+                              os.environ.get('LOG_LEVEL'),
+                              os.environ.get('POSTGRES_USER'),
+                              os.environ.get('DEFAULT_CURRENCY'),
+                          )
+                      )
+                      self.wfile.write(body.encode())
+
+              HTTPServer(('', 8080), H).serve_forever()
+              PYEOF
+              exec python3 /tmp/server.py
+          ports:
+            - containerPort: 8080
+          # Bulk-inject all non-sensitive config keys from the ConfigMap.
+          envFrom:
+            - configMapRef:
+                name: yatri-app-config
+          # Granular per-key injection of sensitive credentials from the Secret.
+          env:
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: yatri-db-secret
+                  key: POSTGRES_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: yatri-db-secret
+                  key: POSTGRES_PASSWORD
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: yatri-backend
+  labels:
+    app: yatri-app
+spec:
+  type: ClusterIP
+  selector:
+    app: yatri-backend
+  ports:
+    - port: 8080
+      targetPort: 8080
