@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: hello-pod
+  labels:
+    app: hello-batch
+spec:
+  restartPolicy: Never
+  containers:
+  - name: hello-container
+    image: busybox:latest
+    command: ['sh', '-c', 'echo "Hello Kubernetes Pod Lifecycle!" && sleep 5']

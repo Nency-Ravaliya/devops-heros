@@ -1,0 +1,17 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-dep
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: web-dep
+  template:
+    metadata:
+      labels:
+        app: web-dep
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:alpine

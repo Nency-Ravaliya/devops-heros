@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: lifecycle-image-error
+  labels:
+    app: error-demo
+spec:
+  containers:
+  - name: broken-container
+    image: nginx:this-tag-does-not-exist
+    imagePullPolicy: Always
