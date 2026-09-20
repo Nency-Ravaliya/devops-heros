@@ -1,0 +1,23 @@
+# ==============================================================================
+# INTENTIONALLY BROKEN MANIFEST FOR IMMUTABLE SELECTOR DRILL
+# Demonstrates API server validation error when selector labels do not match pod template labels
+# ==============================================================================
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: selector-error-demo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: correct-app-name
+  template:
+    metadata:
+      labels:
+        # BUG: Label does not match selector.matchLabels above!
+        app: wrong-app-name
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:alpine
