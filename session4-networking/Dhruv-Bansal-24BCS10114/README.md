@@ -1,8 +1,10 @@
 # Session 4 - Networking
 
-**Dhruv Bansal - 24BCS10114**
+Dhruv Bansal - 24BCS10114
 
-## Networking commands practised
+I used these commands to check the local network, DNS, routes, open ports, and HTTP connectivity.
+
+## Commands practised
 
 ### `ip addr`
 
@@ -83,3 +85,18 @@ Legacy interface inspection command; `ip addr` is preferred on modern Linux dist
 ```bash
 ifconfig
 ```
+
+## Basic troubleshooting order
+
+When a website is not opening, I would check it in this order:
+
+```bash
+ip addr
+ip route
+ping -c 4 8.8.8.8
+nslookup example.com
+curl -I https://example.com
+traceroute example.com
+```
+
+This helps separate a local interface problem, a missing route, a DNS problem, and an application-level HTTP problem.
