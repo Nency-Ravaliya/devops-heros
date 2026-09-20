@@ -8,7 +8,7 @@ spec:
       image: nginx:1.27
       volumeMounts:
         - name: persistent-storage
-          mountPath: /data
+          mountPath: /data      #previously it was data now i changed it to  antara.
   volumes:
     - name: persistent-storage
       persistentVolumeClaim:

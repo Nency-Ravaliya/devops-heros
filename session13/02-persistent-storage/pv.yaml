@@ -6,7 +6,7 @@ spec:
   capacity:
     storage: 1Gi
   accessModes:
-    - ReadWriteOnce
+    - ReadWriteOnce   #read about readonlymany and readwritemany and readonlyonce
   persistentVolumeReclaimPolicy: Retain
   hostPath:
     path: /tmp/student-data
