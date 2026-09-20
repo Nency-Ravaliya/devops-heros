@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-stable
+  labels:
+    app: myapp-canary
+    track: stable
+    version: v1
+spec:
+  # 9 stable pods = 90% of traffic (9 out of 10 total pods)
+  replicas: 9
+  selector:
+    matchLabels:
+      app: myapp-canary
+      track: stable
+  template:
+    metadata:
+      labels:
+        app: myapp-canary
+        track: stable
+        version: v1
+    spec:
+      containers:
+        - name: web
+          image: nginx:1.24-alpine
+          ports:
+            - containerPort: 80
+          lifecycle:
+            postStart:
+              exec:
+                command:
+                  - sh
+                  - -c
+                  - |
+                    echo '<html><body style="background:#1a1a2e;color:#e2e2e2;font-family:monospace;font-size:3em;text-align:center;padding-top:20vh">
+                    <p>STABLE v1</p>
+                    <p style="font-size:0.4em;color:#888">Track: stable | 90% of traffic</p>
+                    </body></html>' > /usr/share/nginx/html/index.html
+          resources:
+            requests:
+              cpu: "20m"
+              memory: "32Mi"
+            limits:
+              cpu: "80m"
+              memory: "64Mi"
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 3
+            periodSeconds: 5
