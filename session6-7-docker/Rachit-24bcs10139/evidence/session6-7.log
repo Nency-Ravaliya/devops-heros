@@ -1,0 +1,645 @@
+===== nodejs-app =====
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 143B done
+#1 DONE 0.1s
+
+#2 [internal] load metadata for docker.io/library/node:20-alpine
+#2 ...
+
+#3 [auth] library/node:pull token for registry-1.docker.io
+#3 DONE 0.0s
+
+#2 [internal] load metadata for docker.io/library/node:20-alpine
+#2 DONE 2.6s
+
+#4 [internal] load .dockerignore
+#4 transferring context: 2B done
+#4 DONE 0.0s
+
+#5 [internal] load build context
+#5 transferring context: 611B done
+#5 DONE 0.1s
+
+#6 [1/4] FROM docker.io/library/node:20-alpine@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293
+#6 resolve docker.io/library/node:20-alpine@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293 0.1s done
+#6 DONE 0.2s
+
+#6 [1/4] FROM docker.io/library/node:20-alpine@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293
+#6 sha256:fff4e2c1b189bf87d63ad8bd07f7f4eb288d6f2b6a07a8bb44c60e8c075d2096 445B / 445B 0.1s done
+#6 sha256:b2cbbfe903b0821005780971ddc5892edcc4ce74c5a48d82e1d2b382edac3122 1.26MB / 1.26MB 0.3s done
+#6 sha256:4feea04c154301db6f4a496efa397b3db96603b1c009c797cfdde77bea8b3287 0B / 43.23MB 0.2s
+#6 sha256:6a0ac1617861a677b045b7ff88545213ec31c0ff08763195a70a4a5adda577bb 0B / 3.86MB 0.2s
+#6 sha256:4feea04c154301db6f4a496efa397b3db96603b1c009c797cfdde77bea8b3287 15.71MB / 43.23MB 0.5s
+#6 sha256:6a0ac1617861a677b045b7ff88545213ec31c0ff08763195a70a4a5adda577bb 3.15MB / 3.86MB 0.3s
+#6 sha256:6a0ac1617861a677b045b7ff88545213ec31c0ff08763195a70a4a5adda577bb 3.86MB / 3.86MB 0.5s done
+#6 sha256:4feea04c154301db6f4a496efa397b3db96603b1c009c797cfdde77bea8b3287 36.70MB / 43.23MB 0.8s
+#6 extracting sha256:6a0ac1617861a677b045b7ff88545213ec31c0ff08763195a70a4a5adda577bb
+#6 sha256:4feea04c154301db6f4a496efa397b3db96603b1c009c797cfdde77bea8b3287 43.23MB / 43.23MB 0.9s
+#6 sha256:4feea04c154301db6f4a496efa397b3db96603b1c009c797cfdde77bea8b3287 43.23MB / 43.23MB 2.0s done
+#6 extracting sha256:6a0ac1617861a677b045b7ff88545213ec31c0ff08763195a70a4a5adda577bb 1.4s done
+#6 extracting sha256:4feea04c154301db6f4a496efa397b3db96603b1c009c797cfdde77bea8b3287
+#6 extracting sha256:4feea04c154301db6f4a496efa397b3db96603b1c009c797cfdde77bea8b3287 4.9s done
+#6 DONE 7.2s
+
+#6 [1/4] FROM docker.io/library/node:20-alpine@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293
+#6 extracting sha256:b2cbbfe903b0821005780971ddc5892edcc4ce74c5a48d82e1d2b382edac3122 0.1s done
+#6 DONE 7.3s
+
+#6 [1/4] FROM docker.io/library/node:20-alpine@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293
+#6 extracting sha256:fff4e2c1b189bf87d63ad8bd07f7f4eb288d6f2b6a07a8bb44c60e8c075d2096 0.0s done
+#6 DONE 7.4s
+
+#7 [2/4] WORKDIR /app
+#7 DONE 3.8s
+
+#8 [3/4] COPY package.json .
+#8 DONE 0.1s
+
+#9 [4/4] COPY index.js .
+#9 DONE 0.1s
+
+#10 exporting to image
+#10 exporting layers
+#10 exporting layers 0.2s done
+#10 exporting manifest sha256:6633ea66af4094e8d13451b50c5ff34215a83bd36a0e7b3fed3c554c1bd69339 0.0s done
+#10 exporting config sha256:4f8d630d5fa8ca453f4de342942d3c73b77a71d38fc1ca4363521c654c71b685 0.0s done
+#10 exporting attestation manifest sha256:285b987595af9c6a4bf11252c1849cde1c7f7ae3c1bac4f2b5d9f8ddabb069b6 0.1s done
+#10 exporting manifest list sha256:dc75b84996d40f71c0693dc5ca39ba6c413139c5032662868df2e1ba0995eb8e
+#10 exporting manifest list sha256:dc75b84996d40f71c0693dc5ca39ba6c413139c5032662868df2e1ba0995eb8e 0.0s done
+#10 naming to docker.io/library/rachit-nodejs-app:latest done
+#10 unpacking to docker.io/library/rachit-nodejs-app:latest 0.1s done
+#10 DONE 0.5s
+7321f82b619037455ca0a7a3cf206783f24776497fcfe3c0b10024abbbec5e20
+Hello World from Node.js!
+test-rachit-nodejs-app rachit-nodejs-app Up 5 seconds 0.0.0.0:8080->8080/tcp, [::]:8080->8080/tcp
+
+===== python-app =====
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 160B done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for docker.io/library/python:3.12-slim
+#2 ...
+
+#3 [auth] library/python:pull token for registry-1.docker.io
+#3 DONE 0.0s
+
+#2 [internal] load metadata for docker.io/library/python:3.12-slim
+#2 DONE 0.9s
+
+#4 [internal] load .dockerignore
+#4 transferring context: 2B done
+#4 DONE 0.0s
+
+#5 [internal] load build context
+#5 transferring context: 225B done
+#5 DONE 0.0s
+
+#6 [1/4] FROM docker.io/library/python:3.12-slim@sha256:2f17fc044b579bab302c2e8054d3a686e2cb9a83de48e70534b94cd8ebbe06a9
+#6 resolve docker.io/library/python:3.12-slim@sha256:2f17fc044b579bab302c2e8054d3a686e2cb9a83de48e70534b94cd8ebbe06a9 0.0s done
+#6 DONE 0.1s
+
+#6 [1/4] FROM docker.io/library/python:3.12-slim@sha256:2f17fc044b579bab302c2e8054d3a686e2cb9a83de48e70534b94cd8ebbe06a9
+#6 sha256:06ad939ed42b51caafb25b14810875d14e0ee0c441d3e2e5e46475fb8c150bca 249B / 249B 0.1s done
+#6 sha256:b0dc7f87bef15c2536cb182d6c48b52f90a0522884ec9eb222f833fa97ffebf0 12.12MB / 12.12MB 0.3s
+#6 sha256:3764a9a7d1e8a98213ab2201a41dbf3da9c60240ea35a5ea96ab994555070a70 0B / 1.29MB 0.2s
+#6 sha256:6b37362b3da78869050b894b799ad4df04f1f3b52774087db0d81151570244c8 0B / 29.83MB 0.2s
+#6 sha256:3764a9a7d1e8a98213ab2201a41dbf3da9c60240ea35a5ea96ab994555070a70 1.29MB / 1.29MB 0.3s
+#6 sha256:6b37362b3da78869050b894b799ad4df04f1f3b52774087db0d81151570244c8 4.21MB / 29.83MB 0.3s
+#6 sha256:6b37362b3da78869050b894b799ad4df04f1f3b52774087db0d81151570244c8 20.97MB / 29.83MB 0.5s
+#6 sha256:6b37362b3da78869050b894b799ad4df04f1f3b52774087db0d81151570244c8 29.83MB / 29.83MB 0.6s
+#6 sha256:b0dc7f87bef15c2536cb182d6c48b52f90a0522884ec9eb222f833fa97ffebf0 12.12MB / 12.12MB 1.1s done
+#6 sha256:3764a9a7d1e8a98213ab2201a41dbf3da9c60240ea35a5ea96ab994555070a70 1.29MB / 1.29MB 1.1s done
+#6 sha256:6b37362b3da78869050b894b799ad4df04f1f3b52774087db0d81151570244c8 29.83MB / 29.83MB 1.1s done
+#6 extracting sha256:6b37362b3da78869050b894b799ad4df04f1f3b52774087db0d81151570244c8
+#6 extracting sha256:6b37362b3da78869050b894b799ad4df04f1f3b52774087db0d81151570244c8 1.3s done
+#6 DONE 2.6s
+
+#6 [1/4] FROM docker.io/library/python:3.12-slim@sha256:2f17fc044b579bab302c2e8054d3a686e2cb9a83de48e70534b94cd8ebbe06a9
+#6 extracting sha256:3764a9a7d1e8a98213ab2201a41dbf3da9c60240ea35a5ea96ab994555070a70
+#6 extracting sha256:3764a9a7d1e8a98213ab2201a41dbf3da9c60240ea35a5ea96ab994555070a70 0.2s done
+#6 DONE 2.8s
+
+#6 [1/4] FROM docker.io/library/python:3.12-slim@sha256:2f17fc044b579bab302c2e8054d3a686e2cb9a83de48e70534b94cd8ebbe06a9
+#6 extracting sha256:b0dc7f87bef15c2536cb182d6c48b52f90a0522884ec9eb222f833fa97ffebf0
+#6 extracting sha256:b0dc7f87bef15c2536cb182d6c48b52f90a0522884ec9eb222f833fa97ffebf0 0.8s done
+#6 DONE 3.6s
+
+#6 [1/4] FROM docker.io/library/python:3.12-slim@sha256:2f17fc044b579bab302c2e8054d3a686e2cb9a83de48e70534b94cd8ebbe06a9
+#6 extracting sha256:06ad939ed42b51caafb25b14810875d14e0ee0c441d3e2e5e46475fb8c150bca 0.0s done
+#6 DONE 3.7s
+
+#7 [2/4] WORKDIR /app
+#7 DONE 2.7s
+
+#8 [3/4] RUN pip install --no-cache-dir flask
+#8 2.456 Collecting flask
+#8 2.516   Downloading flask-3.1.3-py3-none-any.whl.metadata (3.2 kB)
+#8 2.533 Collecting blinker>=1.9.0 (from flask)
+#8 2.544   Downloading blinker-1.9.0-py3-none-any.whl.metadata (1.6 kB)
+#8 2.571 Collecting click>=8.1.3 (from flask)
+#8 2.579   Downloading click-8.5.0-py3-none-any.whl.metadata (2.6 kB)
+#8 2.593 Collecting itsdangerous>=2.2.0 (from flask)
+#8 2.603   Downloading itsdangerous-2.2.0-py3-none-any.whl.metadata (1.9 kB)
+#8 2.623 Collecting jinja2>=3.1.2 (from flask)
+#8 2.632   Downloading jinja2-3.1.6-py3-none-any.whl.metadata (2.9 kB)
+#8 2.712 Collecting markupsafe>=2.1.1 (from flask)
+#8 2.720   Downloading markupsafe-3.0.3-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (2.7 kB)
+#8 2.751 Collecting werkzeug>=3.1.0 (from flask)
+#8 2.765   Downloading werkzeug-3.1.8-py3-none-any.whl.metadata (4.0 kB)
+#8 2.782 Downloading flask-3.1.3-py3-none-any.whl (103 kB)
+#8 2.800 Downloading blinker-1.9.0-py3-none-any.whl (8.5 kB)
+#8 2.809 Downloading click-8.5.0-py3-none-any.whl (125 kB)
+#8 2.819 Downloading itsdangerous-2.2.0-py3-none-any.whl (16 kB)
+#8 2.827 Downloading jinja2-3.1.6-py3-none-any.whl (134 kB)
+#8 2.836 Downloading markupsafe-3.0.3-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (22 kB)
+#8 2.845 Downloading werkzeug-3.1.8-py3-none-any.whl (226 kB)
+#8 2.875 Installing collected packages: markupsafe, itsdangerous, click, blinker, werkzeug, jinja2, flask
+#8 3.475 Successfully installed blinker-1.9.0 click-8.5.0 flask-3.1.3 itsdangerous-2.2.0 jinja2-3.1.6 markupsafe-3.0.3 werkzeug-3.1.8
+#8 3.477 WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.
+#8 3.596 
+#8 3.596 [notice] A new release of pip is available: 25.0.1 -> 26.2.1
+#8 3.596 [notice] To update, run: pip install --upgrade pip
+#8 DONE 4.0s
+
+#9 [4/4] COPY app.py .
+#9 DONE 0.1s
+
+#10 exporting to image
+#10 exporting layers
+#10 exporting layers 0.5s done
+#10 exporting manifest sha256:468bbcba73bf9359c72d43f1d2c38e4b06b98c038711c9fc9dfb2a9ecd68f002 0.0s done
+#10 exporting config sha256:4add960fccd153e1a49136dd386ae120a6123d3c370c6334e66d01163235b383 0.0s done
+#10 exporting attestation manifest sha256:94c417062c03eb55bd15c38355ce77a75928c2190c01bb922197442daeeaebe8 0.0s done
+#10 exporting manifest list sha256:0cf424d6af0ca6b3605a78389b75171263786f85765be5c33e95305d2c482fee 0.0s done
+#10 naming to docker.io/library/rachit-python-app:latest done
+#10 unpacking to docker.io/library/rachit-python-app:latest
+#10 unpacking to docker.io/library/rachit-python-app:latest 0.3s done
+#10 DONE 0.9s
+ce20636f6423e5f512e0c8d31fddd6036f8ee6e92b248e3930e8fc83b6262574
+Hello World from Python Flask!
+test-rachit-python-app rachit-python-app Up 1 second 0.0.0.0:8080->8080/tcp, [::]:8080->8080/tcp
+
+===== java-app =====
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 175B done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for docker.io/library/eclipse-temurin:21-jdk-alpine
+#2 ...
+
+#3 [auth] library/eclipse-temurin:pull token for registry-1.docker.io
+#3 DONE 0.0s
+
+#2 [internal] load metadata for docker.io/library/eclipse-temurin:21-jdk-alpine
+#2 DONE 0.9s
+
+#4 [internal] load .dockerignore
+#4 transferring context: 2B done
+#4 DONE 0.0s
+
+#5 [1/4] FROM docker.io/library/eclipse-temurin:21-jdk-alpine@sha256:cd87715a8d45cfaa42419207c64680234f62785c49055cccd20437b5c9018380
+#5 resolve docker.io/library/eclipse-temurin:21-jdk-alpine@sha256:cd87715a8d45cfaa42419207c64680234f62785c49055cccd20437b5c9018380 0.0s done
+#5 ...
+
+#6 [internal] load build context
+#6 transferring context: 707B done
+#6 DONE 0.1s
+
+#5 [1/4] FROM docker.io/library/eclipse-temurin:21-jdk-alpine@sha256:cd87715a8d45cfaa42419207c64680234f62785c49055cccd20437b5c9018380
+#5 sha256:4cb434d94307643c6a23bbfd216d2f6f4c64599139fb2e0840d044236a795003 2.46kB / 2.46kB 0.1s done
+#5 sha256:ccb159d650e75c7da3af4cd09d95f44bd3e7373ecf0a9f1d47cfd2a7a82b492d 129B / 129B 0.2s done
+#5 sha256:5c633b3ab448192e7018639ae3e164c60ef5340505fef64172078c965568f768 0B / 158.33MB 0.2s
+#5 sha256:9cfeb5b8514c9dbbd1d00e50bd1cacea20a9b32df93487951602cae61289310f 0B / 21.44MB 0.2s
+#5 sha256:e2de96513ba9eb53b431787ec8a65cdde380ac4772a3e4c4b714dcfde2a102b5 0B / 3.85MB 0.2s
+#5 sha256:9cfeb5b8514c9dbbd1d00e50bd1cacea20a9b32df93487951602cae61289310f 5.24MB / 21.44MB 0.3s
+#5 sha256:e2de96513ba9eb53b431787ec8a65cdde380ac4772a3e4c4b714dcfde2a102b5 3.85MB / 3.85MB 0.3s
+#5 sha256:5c633b3ab448192e7018639ae3e164c60ef5340505fef64172078c965568f768 9.44MB / 158.33MB 0.5s
+#5 sha256:9cfeb5b8514c9dbbd1d00e50bd1cacea20a9b32df93487951602cae61289310f 11.53MB / 21.44MB 0.5s
+#5 sha256:e2de96513ba9eb53b431787ec8a65cdde380ac4772a3e4c4b714dcfde2a102b5 3.85MB / 3.85MB 0.4s done
+#5 sha256:9cfeb5b8514c9dbbd1d00e50bd1cacea20a9b32df93487951602cae61289310f 18.09MB / 21.44MB 0.6s
+#5 extracting sha256:e2de96513ba9eb53b431787ec8a65cdde380ac4772a3e4c4b714dcfde2a102b5
+#5 sha256:5c633b3ab448192e7018639ae3e164c60ef5340505fef64172078c965568f768 24.12MB / 158.33MB 0.8s
+#5 sha256:9cfeb5b8514c9dbbd1d00e50bd1cacea20a9b32df93487951602cae61289310f 21.44MB / 21.44MB 0.8s
+#5 sha256:5c633b3ab448192e7018639ae3e164c60ef5340505fef64172078c965568f768 36.70MB / 158.33MB 0.9s
+#5 sha256:5c633b3ab448192e7018639ae3e164c60ef5340505fef64172078c965568f768 61.87MB / 158.33MB 1.1s
+#5 sha256:5c633b3ab448192e7018639ae3e164c60ef5340505fef64172078c965568f768 92.27MB / 158.33MB 1.2s
+#5 sha256:5c633b3ab448192e7018639ae3e164c60ef5340505fef64172078c965568f768 119.54MB / 158.33MB 1.4s
+#5 sha256:5c633b3ab448192e7018639ae3e164c60ef5340505fef64172078c965568f768 133.17MB / 158.33MB 1.5s
+#5 extracting sha256:e2de96513ba9eb53b431787ec8a65cdde380ac4772a3e4c4b714dcfde2a102b5 1.1s done
+#5 sha256:5c633b3ab448192e7018639ae3e164c60ef5340505fef64172078c965568f768 158.33MB / 158.33MB 1.8s
+#5 sha256:9cfeb5b8514c9dbbd1d00e50bd1cacea20a9b32df93487951602cae61289310f 21.44MB / 21.44MB 1.6s done
+#5 extracting sha256:9cfeb5b8514c9dbbd1d00e50bd1cacea20a9b32df93487951602cae61289310f
+#5 sha256:5c633b3ab448192e7018639ae3e164c60ef5340505fef64172078c965568f768 158.33MB / 158.33MB 4.5s done
+#5 extracting sha256:9cfeb5b8514c9dbbd1d00e50bd1cacea20a9b32df93487951602cae61289310f 2.9s done
+#5 extracting sha256:5c633b3ab448192e7018639ae3e164c60ef5340505fef64172078c965568f768
+#5 extracting sha256:5c633b3ab448192e7018639ae3e164c60ef5340505fef64172078c965568f768 1.8s done
+#5 DONE 6.5s
+
+#5 [1/4] FROM docker.io/library/eclipse-temurin:21-jdk-alpine@sha256:cd87715a8d45cfaa42419207c64680234f62785c49055cccd20437b5c9018380
+#5 extracting sha256:ccb159d650e75c7da3af4cd09d95f44bd3e7373ecf0a9f1d47cfd2a7a82b492d 0.0s done
+#5 extracting sha256:4cb434d94307643c6a23bbfd216d2f6f4c64599139fb2e0840d044236a795003 0.0s done
+#5 DONE 6.5s
+
+#7 [2/4] WORKDIR /app
+#7 DONE 6.4s
+
+#8 [3/4] COPY HelloWorld.java .
+#8 DONE 1.1s
+
+#9 [4/4] RUN javac HelloWorld.java
+#9 DONE 1.1s
+
+#10 exporting to image
+#10 exporting layers
+#10 exporting layers 0.2s done
+#10 exporting manifest sha256:cac2fad587bb4102ccf1246a1cc2366beec78f3dbe3d5e729ce8b65b5a69df4b 0.0s done
+#10 exporting config sha256:b3e1d45f5a26ebb439b3bbc611588dbe9a970a97cd77ad0fe41ed7b4379699c8 0.0s done
+#10 exporting attestation manifest sha256:4ce117a64ffe22935e8da5b5abe091ab2ac03dbca9324c2f5b86679fdf006052 0.0s done
+#10 exporting manifest list sha256:2fada7a6c236af976287af85fb41057acf89d11cdeb82edf54bd13e89f753405 0.0s done
+#10 naming to docker.io/library/rachit-java-app:latest done
+#10 unpacking to docker.io/library/rachit-java-app:latest 0.1s done
+#10 DONE 0.3s
+e884b25c20a4c33e13364dea61d2ff54b15024348b812e775fab5d6ddca2e4d8
+Hello World from Java!
+test-rachit-java-app rachit-java-app Up 1 second 0.0.0.0:8080->8080/tcp, [::]:8080->8080/tcp
+
+===== Apache-app =====
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 115B done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for docker.io/library/httpd:2.4
+#2 ...
+
+#3 [auth] library/httpd:pull token for registry-1.docker.io
+#3 DONE 0.0s
+
+#2 [internal] load metadata for docker.io/library/httpd:2.4
+#2 DONE 0.9s
+
+#4 [internal] load .dockerignore
+#4 transferring context: 2B done
+#4 DONE 0.0s
+
+#5 [internal] load build context
+#5 transferring context: 221B done
+#5 DONE 0.0s
+
+#6 [1/2] FROM docker.io/library/httpd:2.4@sha256:454942557d44332cd7e4ae415e7ec9b4dbbf01b4a042491f423fcaf10a32ce9f
+#6 resolve docker.io/library/httpd:2.4@sha256:454942557d44332cd7e4ae415e7ec9b4dbbf01b4a042491f423fcaf10a32ce9f 0.0s done
+#6 DONE 0.1s
+
+#6 [1/2] FROM docker.io/library/httpd:2.4@sha256:454942557d44332cd7e4ae415e7ec9b4dbbf01b4a042491f423fcaf10a32ce9f
+#6 sha256:7a3bdd751d957324fe93e08b540c88e6d1f69f221b6740aa55d7aa80e61fb9fa 292B / 292B 0.1s done
+#6 sha256:1320c4426edffd04bccd36632e7ae850afbcd5197edb8c82bfa336e147dbd435 0B / 13.45MB 0.2s
+#6 sha256:2f4636dca22684179caab4ba0e071a0171aef880645944cc045ec9491c2f4451 0B / 2.01MB 0.2s
+#6 sha256:4f4fb700ef54461cfa02571ae0db9a0dc1e0cdb5577484a6d75e68dc38e8acc1 0B / 32B 0.2s
+#6 sha256:6db0cf540580aa8f0b3a277f0a3be3a69e25eed5d29d42fb70945a96435077be 0B / 145B 0.2s
+#6 sha256:1320c4426edffd04bccd36632e7ae850afbcd5197edb8c82bfa336e147dbd435 13.45MB / 13.45MB 0.3s
+#6 sha256:2f4636dca22684179caab4ba0e071a0171aef880645944cc045ec9491c2f4451 2.01MB / 2.01MB 0.3s
+#6 sha256:6db0cf540580aa8f0b3a277f0a3be3a69e25eed5d29d42fb70945a96435077be 145B / 145B 0.3s
+#6 sha256:4f4fb700ef54461cfa02571ae0db9a0dc1e0cdb5577484a6d75e68dc38e8acc1 32B / 32B 0.5s done
+#6 sha256:1320c4426edffd04bccd36632e7ae850afbcd5197edb8c82bfa336e147dbd435 13.45MB / 13.45MB 0.5s done
+#6 sha256:2f4636dca22684179caab4ba0e071a0171aef880645944cc045ec9491c2f4451 2.01MB / 2.01MB 0.5s done
+#6 sha256:6db0cf540580aa8f0b3a277f0a3be3a69e25eed5d29d42fb70945a96435077be 145B / 145B 0.4s done
+#6 extracting sha256:6db0cf540580aa8f0b3a277f0a3be3a69e25eed5d29d42fb70945a96435077be 0.0s done
+#6 extracting sha256:4f4fb700ef54461cfa02571ae0db9a0dc1e0cdb5577484a6d75e68dc38e8acc1 0.0s done
+#6 extracting sha256:2f4636dca22684179caab4ba0e071a0171aef880645944cc045ec9491c2f4451 0.1s done
+#6 DONE 0.9s
+
+#6 [1/2] FROM docker.io/library/httpd:2.4@sha256:454942557d44332cd7e4ae415e7ec9b4dbbf01b4a042491f423fcaf10a32ce9f
+#6 extracting sha256:1320c4426edffd04bccd36632e7ae850afbcd5197edb8c82bfa336e147dbd435
+#6 extracting sha256:1320c4426edffd04bccd36632e7ae850afbcd5197edb8c82bfa336e147dbd435 0.4s done
+#6 DONE 1.2s
+
+#6 [1/2] FROM docker.io/library/httpd:2.4@sha256:454942557d44332cd7e4ae415e7ec9b4dbbf01b4a042491f423fcaf10a32ce9f
+#6 extracting sha256:7a3bdd751d957324fe93e08b540c88e6d1f69f221b6740aa55d7aa80e61fb9fa 0.0s done
+#6 DONE 1.2s
+
+#7 [2/2] COPY index.html /usr/local/apache2/htdocs/index.html
+#7 DONE 0.8s
+
+#8 exporting to image
+#8 exporting layers 0.1s done
+#8 exporting manifest sha256:7dc60a7d59bfaae882d0912aa389f05f9a4cb59d1e1970a786f668b36d7633d5 0.0s done
+#8 exporting config sha256:48d4e880cb74d56404828dec3cc2a7cd4f4805140cccbe4dcdb2f57eb5f643d5 0.0s done
+#8 exporting attestation manifest sha256:95793ba499211f3e0b4227e8b921f8b504a187cf9e02f6d7fa73521d958030f4
+#8 exporting attestation manifest sha256:95793ba499211f3e0b4227e8b921f8b504a187cf9e02f6d7fa73521d958030f4 0.0s done
+#8 exporting manifest list sha256:c9cf26948ce70cae01b79bc4657ebe38b42719955eb4a71c87ec6af8eaa4e41b 0.0s done
+#8 naming to docker.io/library/rachit-apache-app:latest done
+#8 unpacking to docker.io/library/rachit-apache-app:latest 0.0s done
+#8 DONE 0.2s
+953c3a379ed77c496d65db42d4090b0c714725691ff61009352c5ce30ed625f6
+<!DOCTYPE html>
+<html>
+<head><title>Hello World - Apache</title></head>
+<body>
+  <h1>Hello World from Apache!</h1>
+  <p>Served by Apache httpd running in Docker.</p>
+</body>
+</html>
+test-rachit-apache-app rachit-apache-app Up 1 second 0.0.0.0:8080->80/tcp, [::]:8080->80/tcp
+
+===== React-app =====
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 324B done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for docker.io/library/node:20-alpine
+#2 DONE 0.3s
+
+#3 [auth] library/nginx:pull token for registry-1.docker.io
+#3 DONE 0.0s
+
+#4 [internal] load metadata for docker.io/library/nginx:alpine
+#4 DONE 1.0s
+
+#5 [internal] load .dockerignore
+#5 transferring context: 2B done
+#5 DONE 0.0s
+
+#6 [builder 1/6] FROM docker.io/library/node:20-alpine@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293
+#6 resolve docker.io/library/node:20-alpine@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293 0.0s done
+#6 DONE 0.0s
+
+#7 [stage-1 1/2] FROM docker.io/library/nginx:alpine@sha256:62ff2089abf5a9ed33bd232895bef5e22f7bb4b200675cec49a5ebc48e3d4ac8
+#7 resolve docker.io/library/nginx:alpine@sha256:62ff2089abf5a9ed33bd232895bef5e22f7bb4b200675cec49a5ebc48e3d4ac8 0.0s done
+#7 DONE 0.2s
+
+#8 [internal] load build context
+#8 transferring context: 1.21kB done
+#8 DONE 0.1s
+
+#9 [builder 2/6] WORKDIR /app
+#9 CACHED
+
+#10 [builder 3/6] COPY package.json .
+#10 DONE 0.1s
+
+#11 [builder 4/6] RUN npm install
+#11 ...
+
+#7 [stage-1 1/2] FROM docker.io/library/nginx:alpine@sha256:62ff2089abf5a9ed33bd232895bef5e22f7bb4b200675cec49a5ebc48e3d4ac8
+#7 sha256:90de1d15efe20f401c00f8553d831dbf81e264db8f23583d4e0b0726620eae0c 20.53MB / 20.53MB 1.1s done
+#7 sha256:c0ac6b3b9c77aab942ba12244f55f079c4b950e807696b2166954754fea9acd9 1.40kB / 1.40kB 0.2s done
+#7 sha256:f408df9a891a0a5fe88cb632e66ef4b43386983370814bff94d63599faaccddb 1.21kB / 1.21kB 0.3s done
+#7 sha256:cb2f2cc9a341412725d6cee728df1fee1ce2642d1fc6263616bfc47b1913f255 404B / 404B 0.2s done
+#7 sha256:873bdb7a78a1e84b8953d596a24a3d926b639ee297c8a60e162d398113c0f6cb 955B / 955B 0.1s done
+#7 sha256:ce3e77cbba4dac4aeca549c04ba01beb1bff04145c107abf23a045065ef2076e 628B / 628B 0.1s done
+#7 sha256:fb08ee61b60d021b161282fb06e9e08f4667dc996536fce244f04d6bbfa0e0a0 1.93MB / 1.93MB 0.8s done
+#7 extracting sha256:fb08ee61b60d021b161282fb06e9e08f4667dc996536fce244f04d6bbfa0e0a0 0.3s done
+#7 DONE 1.6s
+
+#7 [stage-1 1/2] FROM docker.io/library/nginx:alpine@sha256:62ff2089abf5a9ed33bd232895bef5e22f7bb4b200675cec49a5ebc48e3d4ac8
+#7 extracting sha256:ce3e77cbba4dac4aeca549c04ba01beb1bff04145c107abf23a045065ef2076e 0.1s done
+#7 DONE 1.7s
+
+#11 [builder 4/6] RUN npm install
+#11 ...
+
+#7 [stage-1 1/2] FROM docker.io/library/nginx:alpine@sha256:62ff2089abf5a9ed33bd232895bef5e22f7bb4b200675cec49a5ebc48e3d4ac8
+#7 extracting sha256:873bdb7a78a1e84b8953d596a24a3d926b639ee297c8a60e162d398113c0f6cb 0.2s done
+#7 DONE 1.9s
+
+#7 [stage-1 1/2] FROM docker.io/library/nginx:alpine@sha256:62ff2089abf5a9ed33bd232895bef5e22f7bb4b200675cec49a5ebc48e3d4ac8
+#7 extracting sha256:cb2f2cc9a341412725d6cee728df1fee1ce2642d1fc6263616bfc47b1913f255 0.0s done
+#7 extracting sha256:f408df9a891a0a5fe88cb632e66ef4b43386983370814bff94d63599faaccddb 0.0s done
+#7 extracting sha256:c0ac6b3b9c77aab942ba12244f55f079c4b950e807696b2166954754fea9acd9 0.0s done
+#7 DONE 2.0s
+
+#11 [builder 4/6] RUN npm install
+#11 ...
+
+#7 [stage-1 1/2] FROM docker.io/library/nginx:alpine@sha256:62ff2089abf5a9ed33bd232895bef5e22f7bb4b200675cec49a5ebc48e3d4ac8
+#7 extracting sha256:90de1d15efe20f401c00f8553d831dbf81e264db8f23583d4e0b0726620eae0c 0.8s done
+#7 DONE 2.8s
+
+#11 [builder 4/6] RUN npm install
+===== React-app (verified rerun) =====
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 324B done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for docker.io/library/nginx:alpine
+#2 DONE 0.3s
+
+#3 [internal] load metadata for docker.io/library/node:20-alpine
+#3 DONE 0.3s
+
+#4 [internal] load .dockerignore
+#4 transferring context: 2B done
+#4 DONE 0.0s
+
+#5 [stage-1 1/2] FROM docker.io/library/nginx:alpine@sha256:62ff2089abf5a9ed33bd232895bef5e22f7bb4b200675cec49a5ebc48e3d4ac8
+#5 resolve docker.io/library/nginx:alpine@sha256:62ff2089abf5a9ed33bd232895bef5e22f7bb4b200675cec49a5ebc48e3d4ac8 0.0s done
+#5 CACHED
+
+#6 [builder 1/6] FROM docker.io/library/node:20-alpine@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293
+#6 resolve docker.io/library/node:20-alpine@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293 0.0s done
+#6 DONE 0.0s
+
+#7 [internal] load build context
+#7 transferring context: 175B done
+#7 DONE 0.0s
+
+#8 [builder 2/6] WORKDIR /app
+#8 CACHED
+
+#9 [builder 3/6] COPY package.json .
+#9 CACHED
+
+#10 [builder 4/6] RUN npm install
+#10 70.53 npm warn deprecated rollup-plugin-terser@7.0.2: This package has been deprecated and is no longer maintained. Please use @rollup/plugin-terser
+#10 70.57 npm warn deprecated sourcemap-codec@1.4.8: Please use @jridgewell/sourcemap-codec instead
+#10 71.67 npm warn deprecated stable@0.1.8: Modern JS already guarantees Array#sort() is a stable sort, so this library is deprecated. See the compatibility table on MDN: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/sort#browser_compatibility
+#10 71.70 npm warn deprecated q@1.5.1: You or someone you depend on is using Q, the JavaScript Promise library that gave JavaScript developers strong feelings about promises. They can almost certainly migrate to the native JavaScript promise now. Thank you literally everyone for joining me in this bet against the odds. Be excellent to each other.
+#10 71.70 npm warn deprecated
+#10 71.70 npm warn deprecated (For a CapTP with native promises, see @endo/eventual-send and @endo/captp)
+#10 71.99 npm warn deprecated workbox-google-analytics@6.6.0: It is not compatible with newer versions of GA starting with v4, as long as you are using GAv3 it should be ok, but the package is not longer being maintained
+#10 72.20 npm warn deprecated workbox-cacheable-response@6.6.0: workbox-background-sync@6.6.0
+#10 72.96 npm warn deprecated whatwg-encoding@1.0.5: Use @exodus/bytes instead for a more spec-conformant and faster implementation
+#10 73.03 npm warn deprecated abab@2.0.6: Use your platform's native atob() and btoa() methods instead
+#10 73.06 npm warn deprecated domexception@2.0.1: Use your platform's native DOMException instead
+#10 73.12 npm warn deprecated w3c-hr-time@1.0.2: Use your platform's native performance.now() and performance.timeOrigin.
+#10 73.38 npm warn deprecated inflight@1.0.6: This module is not supported, and leaks memory. Do not use it. Check out lru-cache if you want a good and tested way to coalesce async requests by a key value, which is much more comprehensive and powerful.
+#10 73.41 npm warn deprecated glob@7.2.3: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+#10 73.63 npm warn deprecated rimraf@3.0.2: Rimraf versions prior to v4 are no longer supported
+#10 73.96 npm warn deprecated uuid@8.3.2: uuid@10 and below is no longer supported.  For ESM codebases, update to uuid@latest.  For CommonJS codebases, use uuid@11 (but be aware this version will likely be deprecated in 2028).
+#10 74.39 npm warn deprecated @humanwhocodes/object-schema@2.0.3: Use @eslint/object-schema instead
+#10 74.54 npm warn deprecated @humanwhocodes/config-array@0.13.0: Use @eslint/config-array instead
+#10 74.97 npm warn deprecated @babel/plugin-proposal-class-properties@7.18.6: This proposal has been merged to the ECMAScript standard and thus this plugin is no longer maintained. Please use @babel/plugin-transform-class-properties instead.
+#10 75.00 npm warn deprecated @babel/plugin-proposal-numeric-separator@7.18.6: This proposal has been merged to the ECMAScript standard and thus this plugin is no longer maintained. Please use @babel/plugin-transform-numeric-separator instead.
+#10 75.00 npm warn deprecated @babel/plugin-proposal-private-methods@7.18.6: This proposal has been merged to the ECMAScript standard and thus this plugin is no longer maintained. Please use @babel/plugin-transform-private-methods instead.
+#10 75.00 npm warn deprecated @babel/plugin-proposal-optional-chaining@7.21.0: This proposal has been merged to the ECMAScript standard and thus this plugin is no longer maintained. Please use @babel/plugin-transform-optional-chaining instead.
+#10 75.03 npm warn deprecated @babel/plugin-proposal-nullish-coalescing-operator@7.18.6: This proposal has been merged to the ECMAScript standard and thus this plugin is no longer maintained. Please use @babel/plugin-transform-nullish-coalescing-operator instead.
+#10 78.09 npm warn deprecated @babel/plugin-proposal-private-property-in-object@7.21.11: This proposal has been merged to the ECMAScript standard and thus this plugin is no longer maintained. Please use @babel/plugin-transform-private-property-in-object instead.
+#10 79.11 npm warn deprecated svgo@1.3.2: This SVGO version is no longer supported. Upgrade to v2.x.x.
+#10 81.29 npm warn deprecated eslint@8.57.1: This version is no longer supported. Please see https://eslint.org/version-support for other options.
+#10 85.27 
+#10 85.27 added 1291 packages, and audited 1292 packages in 1m
+#10 85.28 
+#10 85.28 273 packages are looking for funding
+#10 85.28   run `npm fund` for details
+#10 85.33 
+#10 85.33 28 vulnerabilities (9 low, 5 moderate, 14 high)
+#10 85.33 
+#10 85.33 To address issues that do not require attention, run:
+#10 85.33   npm audit fix
+#10 85.33 
+#10 85.33 To address all issues (including breaking changes), run:
+#10 85.33   npm audit fix --force
+#10 85.33 
+#10 85.33 Run `npm audit` for details.
+#10 85.33 npm notice
+#10 85.33 npm notice New major version of npm available! 10.8.2 -> 12.0.2
+#10 85.33 npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.0.2
+#10 85.33 npm notice To update run: npm install -g npm@12.0.2
+#10 85.33 npm notice
+#10 DONE 92.2s
+
+#11 [builder 5/6] COPY . .
+#11 DONE 1.0s
+
+#12 [builder 6/6] RUN npm run build
+#12 0.476 
+#12 0.476 > react-hello-world@1.0.0 build
+#12 0.476 > react-scripts build
+#12 0.476 
+#12 1.759 Could not find a required file.
+#12 1.759   Name: index.html
+#12 1.759   Searched in: /app/public
+#12 ERROR: process "/bin/sh -c npm run build" did not complete successfully: exit code: 1
+------
+ > [builder 6/6] RUN npm run build:
+0.476 
+0.476 > react-hello-world@1.0.0 build
+0.476 > react-scripts build
+0.476 
+1.759 Could not find a required file.
+1.759   Name: index.html
+1.759   Searched in: /app/public
+------
+Dockerfile:7
+--------------------
+   5 |     RUN npm install
+   6 |     COPY . .
+   7 | >>> RUN npm run build
+   8 |     
+   9 |     # Stage 2 — Serve with Nginx
+--------------------
+ERROR: failed to build: failed to solve: process "/bin/sh -c npm run build" did not complete successfully: exit code: 1
+===== React-app (verified successful run) =====
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 324B done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for docker.io/library/node:20-alpine
+#2 ...
+
+#3 [internal] load metadata for docker.io/library/nginx:alpine
+#3 DONE 0.3s
+
+#2 [internal] load metadata for docker.io/library/node:20-alpine
+#2 DONE 0.3s
+
+#4 [internal] load .dockerignore
+#4 transferring context: 2B done
+#4 DONE 0.0s
+
+#5 [builder 1/6] FROM docker.io/library/node:20-alpine@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293
+#5 resolve docker.io/library/node:20-alpine@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293 0.0s done
+#5 DONE 0.0s
+
+#6 [stage-1 1/2] FROM docker.io/library/nginx:alpine@sha256:62ff2089abf5a9ed33bd232895bef5e22f7bb4b200675cec49a5ebc48e3d4ac8
+#6 resolve docker.io/library/nginx:alpine@sha256:62ff2089abf5a9ed33bd232895bef5e22f7bb4b200675cec49a5ebc48e3d4ac8 0.0s done
+#6 CACHED
+
+#7 [internal] load build context
+#7 transferring context: 504B done
+#7 DONE 0.0s
+
+#8 [builder 2/6] WORKDIR /app
+#8 CACHED
+
+#9 [builder 3/6] COPY package.json .
+#9 CACHED
+
+#10 [builder 4/6] RUN npm install
+#10 CACHED
+
+#11 [builder 5/6] COPY . .
+#11 DONE 0.0s
+
+#12 [builder 6/6] RUN npm run build
+#12 0.405 
+#12 0.405 > react-hello-world@1.0.0 build
+#12 0.405 > react-scripts build
+#12 0.405 
+#12 1.592 Could not find a required file.
+#12 1.595   Name: index.js
+#12 1.595   Searched in: /app/src
+#12 ERROR: process "/bin/sh -c npm run build" did not complete successfully: exit code: 1
+------
+ > [builder 6/6] RUN npm run build:
+0.405 
+0.405 > react-hello-world@1.0.0 build
+0.405 > react-scripts build
+0.405 
+1.592 Could not find a required file.
+1.595   Name: index.js
+1.595   Searched in: /app/src
+------
+Dockerfile:7
+--------------------
+   5 |     RUN npm install
+   6 |     COPY . .
+   7 | >>> RUN npm run build
+   8 |     
+   9 |     # Stage 2 — Serve with Nginx
+--------------------
+ERROR: failed to build: failed to solve: process "/bin/sh -c npm run build" did not complete successfully: exit code: 1
+===== React-app (final verified run) =====
+sha256:7d3088e65a25c9710879ff26b0785e5da9808b9bbca6c55438573056c8c2bb75
+882dbb2fa0c3e735c8b72265eb18743dc58a3ff076cf4977f3af2df1e3e3fd4f
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>React Hello World</title><script defer="defer" src="/static/js/main.51419764.js"></script></head><body><div id="root"></div></body></html>
+test-rachit-react-app rachit-react-app Up 1 second 0.0.0.0:8080->80/tcp, [::]:8080->80/tcp
+===== nginx-app (final verified run) =====
+sha256:edcdf0a78cfd93d9c330116d5cf709ec836ed51eb234c7fbd819d61808ca827a
+337089020a0c2d6ef83facdee07a3cb181fecbfe66639568cea3891b1f3a9b2b
+<!DOCTYPE html>
+<html>
+<head><title>Hello World - Nginx</title></head>
+<body>
+  <h1>Hello World from Nginx!</h1>
+  <p>Served by Nginx running in Docker.</p>
+</body>
+</html>
+test-rachit-nginx-app rachit-nginx-app Up 1 second 0.0.0.0:8080->80/tcp, [::]:8080->80/tcp
+===== multi-stage (final verified run) =====
+sha256:10888caee55051305758765153f0298159af3917768b8172a4ae1198cd548099
+0e6900cf4c31c48e8b579b6ff40e0bfa059abc352e77a7c56ee6759ea26e05f4
+Hello World from Docker multi-stage build
+test-rachit-multi-stage rachit-multi-stage Up 1 second 0.0.0.0:8080->3000/tcp, [::]:8080->3000/tcp
+===== image sizes =====
+rachit-apache-app latest 175MB
+rachit-java-app latest 552MB
+rachit-multi-stage latest 193MB
+rachit-nginx-app latest 93.6MB
+rachit-nodejs-app latest 193MB
+rachit-python-app latest 198MB
+rachit-react-app latest 94.2MB
