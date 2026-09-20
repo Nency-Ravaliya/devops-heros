@@ -317,3 +317,11 @@ cmd 2> err.log      # redirect stderr
 cmd1 | cmd2         # pipe output to next command
 cmd &               # run in background
 ```
+
+---
+
+## Executed terminal evidence
+
+The commands below were run to verify the link behavior and Linux account/log tooling described above. The raw captured output is committed as [`session2-terminal-output.txt`](session2-terminal-output.txt).
+
+![Session 2 executed terminal output](screenshots/session2-terminal-output.png)
