@@ -453,3 +453,73 @@ The official DNS troubleshooting guide also recommends checking DNS resolution f
   https://kubernetes.io/docs/concepts/services-networking/service/
 * **Debug Services:**  
   https://kubernetes.io/docs/tasks/debug/debug-application/debug-service/
+
+---
+
+## Screenshots
+
+Output captured from running the commands above on a local minikube cluster.
+
+**1. Create the Deployment**
+
+![Create the Deployment](screenshots/1-apply-deployment.png)
+
+**2. Pods are Running**
+
+![Pods are Running](screenshots/2-get-pods.png)
+
+**3. Create the Service**
+
+![Create the Service](screenshots/3-apply-service.png)
+
+**4. `kubectl describe service web-service` (Selector, Port, TargetPort, Endpoints)**
+
+![kubectl describe service web-service (Selector, Port, TargetPort, Endpoints)](screenshots/4-describe-service.png)
+
+**5. `kubectl get endpoints web-service`**
+
+![kubectl get endpoints web-service](screenshots/5-endpoints.png)
+
+**6. Create the DNS test Pod**
+
+![Create the DNS test Pod](screenshots/6-apply-dns-test.png)
+
+**7. DNS test Pod is Running**
+
+![DNS test Pod is Running](screenshots/7-get-dns-test.png)
+
+**8. `nslookup` of the fully qualified Service name**
+
+![nslookup of the fully qualified Service name](screenshots/8-nslookup.png)
+
+**9. `nslookup web-service`**
+
+![nslookup web-service](screenshots/9-nslookup-short.png)
+
+**10. HTTP request to the Service with `wget`**
+
+![HTTP request to the Service with wget](screenshots/10-http.png)
+
+**11. Create the broken Service: endpoints are `<none>`**
+
+![Create the broken Service: endpoints are <none>](screenshots/11-apply-broken-service.png)
+
+**12. Pod labels vs the broken Service selector**
+
+![Pod labels vs the broken Service selector](screenshots/12-show-labels.png)
+
+**13. Delete the broken Service; `web-service` has endpoints again**
+
+![Delete the broken Service; web-service has endpoints again](screenshots/13-delete-broken-fix.png)
+
+**14. CoreDNS Pods in `kube-system`**
+
+![CoreDNS Pods in kube-system](screenshots/14-coredns.png)
+
+**15. `/etc/resolv.conf` inside the Pod**
+
+![/etc/resolv.conf inside the Pod](screenshots/15-resolv-conf.png)
+
+**16. CoreDNS logs**
+
+![CoreDNS logs](screenshots/16-coredns-logs.png)
