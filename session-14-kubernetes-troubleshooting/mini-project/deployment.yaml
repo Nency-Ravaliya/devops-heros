@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: troubleshooting-app
+
+spec:
+  replicas: 2
+
+  selector:
+    matchLabels:
+      app: troubleshooting-app
+
+  template:
+    metadata:
+      labels:
+        app: troubleshooting-app
+
+    spec:
+      containers:
+        - name: app
+          image: nginx:1.27
+
+          ports:
+            - containerPort: 80
