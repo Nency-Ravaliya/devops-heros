@@ -1,0 +1,12 @@
+replicaCount: 1
+
+image:
+  repository: nginx
+  tag: "1.24"
+
+service:
+  port: 80
+
+config:
+  welcomeMessage: "Welcome to the Guestbook!"
+  appName: "My Guestbook"

@@ -1,0 +1,11 @@
+replicaCount: 5
+
+image:
+  repository: nginx
+  tag: v2.0.0
+
+service:
+  port: 80
+
+app:
+  name: demo-app-prod
