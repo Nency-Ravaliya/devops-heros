@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+
+metadata:
+  name: broken-service
+
+spec:
+  selector:
+    app: does-not-exist
+
+  ports:
+    - port: 80
+      targetPort: 80
+
+  type: ClusterIP
