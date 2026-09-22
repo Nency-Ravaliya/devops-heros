@@ -223,14 +223,37 @@ Runs a small number of Pods from a new release alongside the stable release so t
 ---
 
 ### 4.4 Recreate Deployment Strategy
-Terminates all existing pods before starting new ones. Causes brief downtime window, suitable for breaking database schema migrations.
+
+Terminates the existing Pods before creating Pods for the new version. This can create a temporary period with no available Pods during the update.
 
 - **Manifests**:
+
   - [04-recreate/deployment-v1.yaml](04-recreate/deployment-v1.yaml)
+
   - [04-recreate/deployment-v2.yaml](04-recreate/deployment-v2.yaml)
-  - [04-recreate/service.yaml](04-recreate/service.yaml)
+
+- **Strategy**: `Recreate`
+
+- **Version Change**:
+
+  - v1: `nginx:1.24-alpine`
+
+  - v2: `nginx:1.25-alpine`
+
+- **Observed Result**:
+
+  - v1 initially ran 3 Pods with `pod-template-hash=5b89644bcf`.
+
+  - After applying v2, the v1 Pods were replaced by 3 new Pods with `pod-template-hash=cd586d694`.
+
+  - Final Deployment state: `3/3` ready and `3/3` available.
+
 - **Evidence**:
-  - `MISSING EVIDENCE — screenshot still required`
+
+  - ![Recreate v1 to v2](screenshots/recreate-v1-v2.png)
+
+> **Note:** The captured evidence shows the old and new Pod sets before/after the update, but does not capture the brief interval during which the old Pods had terminated and the new Pods had not yet become ready.
+
 
 ---
 
