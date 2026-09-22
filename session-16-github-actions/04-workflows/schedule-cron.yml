@@ -1,0 +1,13 @@
+name: Scheduled Cron Example
+
+on:
+  schedule:
+    # Runs at 00:00 UTC every day (minute hour day-of-month month day-of-week)
+    - cron: '0 0 * * *'
+
+jobs:
+  nightly-maintenance:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run nightly maintenance tasks
+        run: echo "Executing nightly automated maintenance job at $(date -u)"

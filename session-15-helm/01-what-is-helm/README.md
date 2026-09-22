@@ -173,3 +173,4 @@ helm uninstall <release-name>
 
 * **Helm Documentation:** https://helm.sh/docs/
 * **Helm GitHub:** https://github.com/helm/helm
+* **Helm Charts:** https://helm.sh/docs/topics/charts/
