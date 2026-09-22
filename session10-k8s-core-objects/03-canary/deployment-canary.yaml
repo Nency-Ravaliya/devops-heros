@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-canary-v2
+  labels:
+    app: app-canary
+    track: canary
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: app-canary
+      track: canary
+  template:
+    metadata:
+      labels:
+        app: app-canary
+        track: canary
+    spec:
+      containers:
+        - name: web
+          image: nginx:1.25-alpine
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 80

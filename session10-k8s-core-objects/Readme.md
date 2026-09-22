@@ -194,15 +194,31 @@ Maintains two identical environments (Blue=Live, Green=New). Switch traffic via 
 ---
 
 ### 4.3 Canary Deployment Strategy
-Directs a small fraction of user traffic to a new release (e.g. 1 out of 10 pods = 10%) before full rollout.
+
+Runs a small number of Pods from a new release alongside the stable release so the new version can be exposed to a limited portion of traffic.
 
 - **Manifests**:
+
   - [03-canary/deployment-stable.yaml](03-canary/deployment-stable.yaml)
+
   - [03-canary/deployment-canary.yaml](03-canary/deployment-canary.yaml)
+
   - [03-canary/service.yaml](03-canary/service.yaml)
-- **Traffic Split**: 9 Stable pods (90%) : 1 Canary pod (10%).
+
+- **Workload Distribution**: 9 Stable pods (`track=stable`) : 1 Canary pod (`track=canary`).
+
+- **Service Selector**: The Service selects `app=app-canary`, which includes both stable and canary Pods.
+
+- **Observed Result**:
+  - Stable Deployment: `9/9` ready.
+  - Canary Deployment: `1/1` ready.
+  - Service exposed 10 total endpoints, corresponding to the 9 stable and 1 canary Pods.
+
 - **Evidence**:
-  - `MISSING EVIDENCE — screenshot still required`
+
+  - ![Canary 9:1](screenshots/canary-9-1.png)
+
+> **Note:** The 9:1 Pod ratio is used as an approximate traffic distribution model for this lab. A Kubernetes Service does not guarantee an exact 90/10 request split.
 
 ---
 
