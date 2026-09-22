@@ -1,0 +1,18 @@
+name: Path Filter Example
+
+on:
+  push:
+    paths:
+      - 'src/**'
+      - 'tests/**'
+      - 'Dockerfile'
+    paths-ignore:
+      - 'docs/**'
+      - '**.md'
+
+jobs:
+  selective-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Triggered by code changes
+        run: echo "Code paths modified. Running build and test suite."

@@ -1,0 +1,23 @@
+name: GitHub Container Registry Token Example
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  publish-to-ghcr:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Authenticate to GitHub Container Registry using GITHUB_TOKEN
+        run: |
+          echo "[INFO] Using automated GITHUB_TOKEN to authenticate with ghcr.io"
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+          echo "[PASS] Authenticated successfully with ghcr.io"

@@ -1,0 +1,21 @@
+name: Multi-OS Runner Matrix
+
+on: push
+
+jobs:
+  cross-platform:
+    name: Build on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Print OS runner information
+        shell: bash
+        run: |
+          echo "Running on OS: ${{ matrix.os }}"
+          uname -a || ver
