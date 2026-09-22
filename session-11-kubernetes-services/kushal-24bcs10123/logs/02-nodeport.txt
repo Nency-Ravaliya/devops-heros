@@ -1,0 +1,61 @@
+
+$ kubectl apply -f 02-nodeport/app-deployment.yaml
+deployment.apps/web-app-nodeport created
+
+$ kubectl rollout status deployment/web-app-nodeport
+Waiting for deployment "web-app-nodeport" rollout to finish: 0 of 2 updated replicas are available...
+Waiting for deployment "web-app-nodeport" rollout to finish: 1 of 2 updated replicas are available...
+deployment "web-app-nodeport" successfully rolled out
+
+$ kubectl get pods -l app=web-nodeport -o wide
+NAME                              READY   STATUS    RESTARTS   AGE   IP            NODE                 NOMINATED NODE   READINESS GATES
+web-app-nodeport-6c8f48bd-k8sv9   1/1     Running   0          1s    10.244.3.58   kushal-lab-worker    <none>           <none>
+web-app-nodeport-6c8f48bd-tjhtz   1/1     Running   0          1s    10.244.1.57   kushal-lab-worker2   <none>           <none>
+
+$ kubectl apply -f 02-nodeport/service.yaml
+service/web-service-nodeport created
+
+$ kubectl get svc web-service-nodeport
+NAME                   TYPE       CLUSTER-IP    EXTERNAL-IP   PORT(S)        AGE
+web-service-nodeport   NodePort   10.96.8.112   <none>        80:30080/TCP   0s
+
+$ kubectl get nodes -o wide | awk '{print $1, $6}'
+NAME INTERNAL-IP
+kushal-lab-control-plane 172.18.0.2
+kushal-lab-worker 172.18.0.3
+kushal-lab-worker2 172.18.0.4
+
+############ From the Mac (kind maps the control-plane's 30080 to localhost:30080, like minikube ip:30080) ############
+
+$ curl -s http://localhost:30080 | grep -o '<title>.*</title>'
+<title>Welcome to nginx!</title>
+
+$ curl -sI http://localhost:30080 | head -2
+HTTP/1.1 200 OK
+Server: nginx/1.25.5
+
+############ Every node answers on 30080 - even one that runs no pod of this app ############
+
+$ docker run --rm --network kind curlimages/curl:8.5.0 -s -m 5 -o /dev/null -w "kushal-lab-control-plane (172.18.0.2):30080 -> HTTP %{http_code}\n" http://172.18.0.2:30080
+kushal-lab-control-plane (172.18.0.2):30080 -> HTTP 200
+
+$ docker run --rm --network kind curlimages/curl:8.5.0 -s -m 5 -o /dev/null -w "kushal-lab-worker (172.18.0.3):30080 -> HTTP %{http_code}\n" http://172.18.0.3:30080
+kushal-lab-worker (172.18.0.3):30080 -> HTTP 200
+
+$ docker run --rm --network kind curlimages/curl:8.5.0 -s -m 5 -o /dev/null -w "kushal-lab-worker2 (172.18.0.4):30080 -> HTTP %{http_code}\n" http://172.18.0.4:30080
+kushal-lab-worker2 (172.18.0.4):30080 -> HTTP 200
+
+$ docker exec kushal-lab-control-plane iptables -t nat -S KUBE-NODEPORTS | grep 30080
+-A KUBE-NODEPORTS -d 127.0.0.0/8 -p tcp -m comment --comment "default/web-service-nodeport:http" -m tcp --dport 30080 -m nfacct --nfacct-name  localhost_nps_accepted_pkts -j KUBE-EXT-542ZUKRJYISRKQCS
+-A KUBE-NODEPORTS -p tcp -m comment --comment "default/web-service-nodeport:http" -m tcp --dport 30080 -j KUBE-EXT-542ZUKRJYISRKQCS
+
+############ The three ports of a NodePort service ############
+
+$ kubectl get svc web-service-nodeport -o jsonpath='port={.spec.ports[0].port} targetPort={.spec.ports[0].targetPort} nodePort={.spec.ports[0].nodePort} clusterIP={.spec.clusterIP}{"\n"}'
+port=80 targetPort=80 nodePort=30080 clusterIP=10.96.8.112
+
+############ Cleanup ############
+
+$ kubectl delete -f 02-nodeport/service.yaml -f 02-nodeport/app-deployment.yaml
+service "web-service-nodeport" deleted from default namespace
+deployment.apps "web-app-nodeport" deleted from default namespace

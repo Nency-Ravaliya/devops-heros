@@ -1,0 +1,100 @@
+
+$ kubectl apply -f 05-headless/service.yaml
+service/web-service-headless created
+
+$ kubectl apply -f 05-headless/app-statefulset.yaml
+statefulset.apps/web-stateful created
+
+$ kubectl apply -f 05-headless/client-pod.yaml
+pod/headless-dns-client created
+
+$ kubectl rollout status statefulset/web-stateful
+Waiting for 3 pods to be ready...
+Waiting for 2 pods to be ready...
+Waiting for 2 pods to be ready...
+Waiting for 1 pods to be ready...
+Waiting for 1 pods to be ready...
+partitioned roll out complete: 3 new pods have been updated...
+
+$ kubectl wait --for=condition=Ready pod/headless-dns-client --timeout=120s
+pod/headless-dns-client condition met
+
+$ kubectl get svc web-service-headless          # CLUSTER-IP is None
+NAME                   TYPE        CLUSTER-IP   EXTERNAL-IP   PORT(S)   AGE
+web-service-headless   ClusterIP   None         <none>        80/TCP    2s
+
+$ kubectl get pods -l app=web-headless -o wide
+NAME             READY   STATUS    RESTARTS   AGE   IP            NODE                 NOMINATED NODE   READINESS GATES
+web-stateful-0   1/1     Running   0          2s    10.244.3.77   kushal-lab-worker    <none>           <none>
+web-stateful-1   1/1     Running   0          2s    10.244.1.74   kushal-lab-worker2   <none>           <none>
+web-stateful-2   1/1     Running   0          1s    10.244.3.78   kushal-lab-worker    <none>           <none>
+
+############ Service name -> ALL pod IPs (no VIP in between) ############
+
+$ kubectl exec headless-dns-client -- nslookup web-service-headless 2>/dev/null | grep -E '^Address: 10\.' | sort -u
+Address: 10.244.1.74
+Address: 10.244.3.77
+Address: 10.244.3.78
+
+############ Each pod has its own stable DNS name ############
+
+$ kubectl exec headless-dns-client -- nslookup web-stateful-0.web-service-headless.default.svc.cluster.local 2>/dev/null | grep -E '^(Name|Address: 10)'
+Name:	web-stateful-0.web-service-headless.default.svc.cluster.local
+Address: 10.244.3.77
+
+$ kubectl exec headless-dns-client -- nslookup web-stateful-2.web-service-headless.default.svc.cluster.local 2>/dev/null | grep -E '^(Name|Address: 10)'
+Name:	web-stateful-2.web-service-headless.default.svc.cluster.local
+Address: 10.244.3.78
+
+$ kubectl exec headless-dns-client -- curl -s http://web-stateful-0.web-service-headless:80
+hello from web-stateful-0
+
+$ kubectl exec headless-dns-client -- curl -s http://web-stateful-1.web-service-headless:80
+hello from web-stateful-1
+
+$ kubectl exec headless-dns-client -- curl -s http://web-stateful-2.web-service-headless:80
+hello from web-stateful-2
+
+$ for i in 1 2 3 4 5 6; do kubectl exec headless-dns-client -- curl -s http://web-service-headless:80; done | sort | uniq -c   # client-side choice, not kube-proxy
+   3 hello from web-stateful-0
+   1 hello from web-stateful-1
+   2 hello from web-stateful-2
+
+############ A pod comes back with the same name and DNS entry ############
+
+$ kubectl delete pod web-stateful-1 && kubectl rollout status statefulset/web-stateful
+pod "web-stateful-1" deleted from default namespace
+Waiting for 1 pods to be ready...
+partitioned roll out complete: 3 new pods have been updated...
+
+$ kubectl get pod web-stateful-1 -o wide
+NAME             READY   STATUS    RESTARTS   AGE   IP            NODE                 NOMINATED NODE   READINESS GATES
+web-stateful-1   1/1     Running   0          0s    10.244.1.75   kushal-lab-worker2   <none>           <none>
+
+$ kubectl exec headless-dns-client -- nslookup web-stateful-1.web-service-headless.default.svc.cluster.local 2>/dev/null | grep -E '^(Name|Address: 10)'   # same name, new IP
+Name:	web-stateful-1.web-service-headless.default.svc.cluster.local
+Address: 10.244.1.75
+
+############ Compare with a normal ClusterIP service on the same pods ############
+
+$ kubectl create service clusterip web-service-normal --tcp=80 && kubectl set selector svc web-service-normal app=web-headless
+service/web-service-normal created
+service/web-service-normal selector updated
+
+$ sleep 2; kubectl exec headless-dns-client -- nslookup web-service-normal 2>/dev/null | grep -E '^Address: 10'        # one virtual IP for the same 3 pods
+Address: 10.96.223.52
+
+$ kubectl get svc web-service-headless web-service-normal
+NAME                   TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)   AGE
+web-service-headless   ClusterIP   None           <none>        80/TCP    7s
+web-service-normal     ClusterIP   10.96.223.52   <none>        80/TCP    3s
+
+############ Cleanup ############
+
+$ kubectl delete svc web-service-normal
+service "web-service-normal" deleted from default namespace
+
+$ kubectl delete -f 05-headless/client-pod.yaml -f 05-headless/app-statefulset.yaml -f 05-headless/service.yaml
+pod "headless-dns-client" deleted from default namespace
+statefulset.apps "web-stateful" deleted from default namespace
+service "web-service-headless" deleted from default namespace

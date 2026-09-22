@@ -1,0 +1,3 @@
+Application running
+SIGTERM received; cleaning up...
+Cleanup complete

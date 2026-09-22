@@ -1,0 +1,151 @@
+
+############ CLUSTER AND NODES ############
+
+$ kubectl cluster-info
+Kubernetes control plane is running at https://127.0.0.1:50863
+CoreDNS is running at https://127.0.0.1:50863/api/v1/namespaces/kube-system/services/kube-dns:dns/proxy
+
+To further debug and diagnose cluster problems, use 'kubectl cluster-info dump'.
+
+$ kubectl get nodes -o wide
+NAME                       STATUS   ROLES           AGE    VERSION   INTERNAL-IP   EXTERNAL-IP   OS-IMAGE                       KERNEL-VERSION             CONTAINER-RUNTIME
+kushal-lab-control-plane   Ready    control-plane   109s   v1.37.0   172.18.0.3    <none>        Debian GNU/Linux 13 (trixie)   6.12.54-linuxkit (arm64)   containerd://2.3.4
+kushal-lab-worker          Ready    <none>          94s    v1.37.0   172.18.0.4    <none>        Debian GNU/Linux 13 (trixie)   6.12.54-linuxkit (arm64)   containerd://2.3.4
+kushal-lab-worker2         Ready    <none>          94s    v1.37.0   172.18.0.2    <none>        Debian GNU/Linux 13 (trixie)   6.12.54-linuxkit (arm64)   containerd://2.3.4
+
+$ kubectl describe node kushal-lab-control-plane | sed -n '/^Labels:/,/^Annotations:/p' | grep -E 'Labels|role|ingress'
+Labels:             beta.kubernetes.io/arch=arm64
+                    ingress-ready=true
+                    node-role.kubernetes.io/control-plane=
+
+$ kubectl describe node kushal-lab-control-plane | grep -A1 '^Taints:'
+Taints:             node-role.kubernetes.io/control-plane:NoSchedule
+Unschedulable:      false
+
+$ kubectl describe node kushal-lab-worker | grep -A6 '^Capacity:'
+Capacity:
+  cpu:                6
+  ephemeral-storage:  134681202688
+  hugepages-1Gi:      0
+  hugepages-2Mi:      0
+  hugepages-32Mi:     0
+  hugepages-64Ki:     0
+
+############ CONTROL PLANE COMPONENTS (run as pods in kube-system) ############
+
+$ kubectl get pods -n kube-system -o wide
+NAME                                               READY   STATUS    RESTARTS   AGE    IP           NODE                       NOMINATED NODE   READINESS GATES
+coredns-559f6c778d-5gr9q                           1/1     Running   0          100s   10.244.0.3   kushal-lab-control-plane   <none>           <none>
+coredns-559f6c778d-rk8fg                           1/1     Running   0          100s   10.244.0.4   kushal-lab-control-plane   <none>           <none>
+etcd-kushal-lab-control-plane                      1/1     Running   0          108s   172.18.0.3   kushal-lab-control-plane   <none>           <none>
+kindnet-dvds7                                      1/1     Running   0          94s    172.18.0.2   kushal-lab-worker2         <none>           <none>
+kindnet-ff7q6                                      1/1     Running   0          100s   172.18.0.3   kushal-lab-control-plane   <none>           <none>
+kindnet-ktxnx                                      1/1     Running   0          94s    172.18.0.4   kushal-lab-worker          <none>           <none>
+kube-apiserver-kushal-lab-control-plane            1/1     Running   0          108s   172.18.0.3   kushal-lab-control-plane   <none>           <none>
+kube-controller-manager-kushal-lab-control-plane   1/1     Running   0          108s   172.18.0.3   kushal-lab-control-plane   <none>           <none>
+kube-proxy-g6pcp                                   1/1     Running   0          94s    172.18.0.4   kushal-lab-worker          <none>           <none>
+kube-proxy-jj27f                                   1/1     Running   0          100s   172.18.0.3   kushal-lab-control-plane   <none>           <none>
+kube-proxy-nnnhg                                   1/1     Running   0          94s    172.18.0.2   kushal-lab-worker2         <none>           <none>
+kube-scheduler-kushal-lab-control-plane            1/1     Running   0          108s   172.18.0.3   kushal-lab-control-plane   <none>           <none>
+
+$ docker exec kushal-lab-control-plane ls /etc/kubernetes/manifests
+etcd.yaml
+kube-apiserver.yaml
+kube-controller-manager.yaml
+kube-scheduler.yaml
+
+$ docker exec kushal-lab-control-plane crictl ps --quiet --name 'kube-apiserver|etcd|kube-scheduler|kube-controller-manager' | wc -l
+       4
+
+$ kubectl get --raw='/livez?verbose' | head -12
+[+]ping ok
+[+]log ok
+[+]loopback-serving-certificate ok
+[+]etcd ok
+[+]poststarthook/start-apiserver-admission-initializer ok
+[+]poststarthook/generic-apiserver-start-informers ok
+[+]poststarthook/priority-and-fairness-config-consumer ok
+[+]poststarthook/priority-and-fairness-filter ok
+[+]poststarthook/storage-object-count-tracker-hook ok
+[+]poststarthook/start-apiextensions-informers ok
+[+]poststarthook/start-apiextensions-controllers ok
+[+]poststarthook/crd-informer-synced ok
+
+############ kube-apiserver: the only component everyone talks to ############
+
+$ kubectl config view --minify -o jsonpath='{.clusters[0].cluster.server}'; echo
+https://127.0.0.1:50863
+
+$ kubectl api-resources --namespaced=true | head -12
+NAME                        SHORTNAMES   APIVERSION                     NAMESPACED   KIND
+bindings                                 v1                             true         Binding
+configmaps                  cm           v1                             true         ConfigMap
+endpoints                   ep           v1                             true         Endpoints
+events                      ev           v1                             true         Event
+limitranges                 limits       v1                             true         LimitRange
+persistentvolumeclaims      pvc          v1                             true         PersistentVolumeClaim
+pods                        po           v1                             true         Pod
+podtemplates                             v1                             true         PodTemplate
+replicationcontrollers      rc           v1                             true         ReplicationController
+resourcequotas              quota        v1                             true         ResourceQuota
+secrets                                  v1                             true         Secret
+
+$ kubectl api-resources | wc -l
+      72
+
+############ etcd: the cluster database ############
+
+$ $ETCD endpoint status -w table
+┌────────────────────────┬──────────────────┬─────────┬─────────────────┬─────────┬────────┬───────────────────────┬────────┬───────────┬────────────┬───────────┬────────────┬────────────────────┬────────┬──────────────────────────┬───────────────────┐
+│        ENDPOINT        │        ID        │ VERSION │ STORAGE VERSION │ DB SIZE │ IN USE │ PERCENTAGE NOT IN USE │ QUOTA  │ IS LEADER │ IS LEARNER │ RAFT TERM │ RAFT INDEX │ RAFT APPLIED INDEX │ ERRORS │ DOWNGRADE TARGET VERSION │ DOWNGRADE ENABLED │
+├────────────────────────┼──────────────────┼─────────┼─────────────────┼─────────┼────────┼───────────────────────┼────────┼───────────┼────────────┼───────────┼────────────┼────────────────────┼────────┼──────────────────────────┼───────────────────┤
+│ https://127.0.0.1:2379 │ 23da9c3f2594532a │   3.7.0 │           3.7.0 │  1.5 MB │ 1.5 MB │                    0% │ 2.1 GB │      true │      false │         2 │        791 │                791 │        │                          │             false │
+└────────────────────────┴──────────────────┴─────────┴─────────────────┴─────────┴────────┴───────────────────────┴────────┴───────────┴────────────┴───────────┴────────────┴────────────────────┴────────┴──────────────────────────┴───────────────────┘
+
+$ $ETCD get /registry/namespaces --prefix --keys-only
+/registry/namespaces/default
+
+/registry/namespaces/kube-node-lease
+
+/registry/namespaces/kube-public
+
+/registry/namespaces/kube-system
+
+/registry/namespaces/local-path-storage
+
+
+$ $ETCD get /registry --prefix --keys-only | wc -l      # every object in the cluster is a key here
+     818
+
+############ kube-scheduler and kube-controller-manager (single active leader each, via Lease objects) ############
+
+$ kubectl -n kube-system get leases
+NAME                                   HOLDER                                                                      AGE
+apiserver-6lsmatxstvbimbsxazxmxgoj7a   apiserver-6lsmatxstvbimbsxazxmxgoj7a_6d7a0c69-c782-49ec-8cfd-767d87783bd8   110s
+kube-controller-manager                kushal-lab-control-plane_e19e4ac1-2a43-45ba-8ea9-906af6643814               107s
+kube-scheduler                         kushal-lab-control-plane_f3d22c22-57b4-4884-a99e-d1ad56c81295               107s
+
+############ NODE COMPONENTS: kubelet, kube-proxy, container runtime, CNI ############
+
+$ docker exec kushal-lab-worker systemctl is-active kubelet containerd
+active
+active
+
+$ docker exec kushal-lab-worker containerd --version
+containerd github.com/containerd/containerd/v2 v2.3.4 db8809540e1a7a9da5d518876894933ff55692ab
+
+$ kubectl get daemonset -n kube-system
+NAME         DESIRED   CURRENT   READY   UP-TO-DATE   AVAILABLE   NODE SELECTOR            AGE
+kindnet      3         3         3       3            3           kubernetes.io/os=linux   107s
+kube-proxy   3         3         3       3            3           kubernetes.io/os=linux   108s
+
+$ kubectl -n kube-system get cm kube-proxy -o jsonpath='{.data.config\.conf}' | grep -E '^mode'
+mode: iptables
+
+$ kubectl -n kube-system get svc kube-dns
+NAME       TYPE        CLUSTER-IP   EXTERNAL-IP   PORT(S)                  AGE
+kube-dns   ClusterIP   10.96.0.10   <none>        53/UDP,53/TCP,9153/TCP   108s
+
+$ kubectl -n kube-system get cm coredns -o jsonpath='{.data.Corefile}' | grep -E 'kubernetes|forward'
+    kubernetes cluster.local in-addr.arpa ip6.arpa {
+    forward . /etc/resolv.conf {

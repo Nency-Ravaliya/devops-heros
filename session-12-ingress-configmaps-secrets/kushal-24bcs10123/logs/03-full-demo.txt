@@ -1,0 +1,189 @@
+
+############ Part 1: ConfigMap ############
+
+$ kubectl apply -f configmap.yaml
+configmap/yatri-app-config created
+
+$ kubectl get configmap yatri-app-config
+NAME               DATA   AGE
+yatri-app-config   5      0s
+
+$ kubectl get configmap yatri-app-config -o jsonpath='{.data.ENVIRONMENT}'; echo
+production
+
+############ Part 2: Secret ############
+
+$ kubectl apply -f secret.yaml
+secret/yatri-db-secret created
+
+$ kubectl get secret yatri-db-secret
+NAME              TYPE     DATA   AGE
+yatri-db-secret   Opaque   3      0s
+
+$ kubectl describe secret yatri-db-secret | sed -n '/^Data/,$p'
+Data
+====
+POSTGRES_DB:        19 bytes
+POSTGRES_PASSWORD:  14 bytes
+POSTGRES_USER:      11 bytes
+
+$ kubectl get secret yatri-db-secret -o jsonpath='{.data.POSTGRES_PASSWORD}' | base64 --decode; echo
+secretpassword
+
+############ Part 3: backend reads both as environment variables ############
+
+$ kubectl apply -f backend.yaml
+deployment.apps/yatri-backend created
+service/yatri-backend-service created
+
+$ kubectl rollout status deployment/yatri-backend --timeout=180s
+Waiting for deployment "yatri-backend" rollout to finish: 0 of 2 updated replicas are available...
+Waiting for deployment "yatri-backend" rollout to finish: 1 of 2 updated replicas are available...
+deployment "yatri-backend" successfully rolled out
+
+$ kubectl get pods -l app=yatri-backend
+NAME                             READY   STATUS    RESTARTS   AGE
+yatri-backend-6c58cb99c7-nd4lc   1/1     Running   0          1s
+yatri-backend-6c58cb99c7-skq7d   1/1     Running   0          1s
+
+$ kubectl exec deployment/yatri-backend -- env | grep -E 'ENVIRONMENT|LOG_LEVEL|APP_PORT|DEFAULT_CURRENCY|MAX_BOOKING_DAYS|POSTGRES' | sort
+APP_PORT=5000
+DEFAULT_CURRENCY=INR
+ENVIRONMENT=production
+LOG_LEVEL=INFO
+MAX_BOOKING_DAYS=30
+POSTGRES_DB=yatri_production_db
+POSTGRES_PASSWORD=secretpassword
+POSTGRES_USER=yatri_admin
+
+############ Part 4: frontend ############
+
+$ kubectl apply -f frontend.yaml
+deployment.apps/yatri-frontend created
+service/yatri-frontend-service created
+
+$ kubectl rollout status deployment/yatri-frontend --timeout=180s
+Waiting for deployment "yatri-frontend" rollout to finish: 0 of 2 updated replicas are available...
+Waiting for deployment "yatri-frontend" rollout to finish: 1 of 2 updated replicas are available...
+deployment "yatri-frontend" successfully rolled out
+
+$ kubectl get svc yatri-frontend-service yatri-backend-service
+NAME                     TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)   AGE
+yatri-frontend-service   ClusterIP   10.96.211.153   <none>        80/TCP    1s
+yatri-backend-service    ClusterIP   10.96.235.175   <none>        80/TCP    2s
+
+############ Part 5: Ingress ############
+
+$ kubectl get pods -n ingress-nginx
+NAME                                        READY   STATUS      RESTARTS   AGE
+ingress-nginx-admission-create-gmr2j        0/1     Completed   0          34m
+ingress-nginx-admission-patch-bb9df         0/1     Completed   0          34m
+ingress-nginx-controller-56f5db4996-xz5qj   1/1     Running     0          34m
+
+$ kubectl apply -f ingress.yaml
+ingress.networking.k8s.io/yatri-ingress created
+
+$ kubectl get ingress yatri-ingress
+NAME            CLASS   HOSTS         ADDRESS     PORTS   AGE
+yatri-ingress   nginx   yatri.local   localhost   80      8s
+
+$ kubectl describe ingress yatri-ingress | sed -n '/^Rules/,/^Annotations/p'
+Rules:
+  Host         Path  Backends
+  ----         ----  --------
+  yatri.local  
+               /api(/|$)(.*)   yatri-backend-service:80 (10.244.3.182:5000,10.244.1.155:5000)
+               /               yatri-frontend-service:80 (10.244.1.156:80,10.244.3.183:80)
+Annotations:   nginx.ingress.kubernetes.io/rewrite-target: /$2
+
+############ Part 6: test the routing ############
+
+$ curl -s --resolve yatri.local:80:127.0.0.1 http://yatri.local/ | grep -i '<title>'
+<title>Welcome to nginx!</title>
+
+$ curl -s --resolve yatri.local:80:127.0.0.1 http://yatri.local/api/
+Yatri Backend API
+=================
+ENVIRONMENT     : production
+LOG_LEVEL       : INFO
+DEFAULT_CURRENCY: INR
+POSTGRES_USER   : yatri_admin
+POSTGRES_DB     : yatri_production_db
+
+$ curl -s --resolve yatri.local:80:127.0.0.1 -o /dev/null -w 'wrong host header -> HTTP %{http_code}\n' -H 'Host: nobody.local' http://127.0.0.1/
+wrong host header -> HTTP 404
+
+$ curl -s -o /dev/null -w 'no host header  -> HTTP %{http_code}\n' http://localhost/
+no host header  -> HTTP 404
+
+############ Part 7: everything at once ############
+
+$ kubectl get configmap yatri-app-config; kubectl get secret yatri-db-secret; kubectl get pods -l app=yatri-frontend; kubectl get pods -l app=yatri-backend; kubectl get svc yatri-frontend-service yatri-backend-service; kubectl get ingress yatri-ingress
+NAME               DATA   AGE
+yatri-app-config   5      11s
+NAME              TYPE     DATA   AGE
+yatri-db-secret   Opaque   3      11s
+NAME                             READY   STATUS    RESTARTS   AGE
+yatri-frontend-ddcfc4b5f-5w9kp   1/1     Running   0          10s
+yatri-frontend-ddcfc4b5f-b8hrt   1/1     Running   0          10s
+NAME                             READY   STATUS    RESTARTS   AGE
+yatri-backend-6c58cb99c7-nd4lc   1/1     Running   0          11s
+yatri-backend-6c58cb99c7-skq7d   1/1     Running   0          11s
+NAME                     TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)   AGE
+yatri-frontend-service   ClusterIP   10.96.211.153   <none>        80/TCP    10s
+yatri-backend-service    ClusterIP   10.96.235.175   <none>        80/TCP    11s
+NAME            CLASS   HOSTS         ADDRESS     PORTS   AGE
+yatri-ingress   nginx   yatri.local   localhost   80      9s
+
+############ Part 8: the newline bug ############
+
+$ echo 'secretpassword' | base64
+c2VjcmV0cGFzc3dvcmQK
+
+$ echo 'c2VjcmV0cGFzc3dvcmQK' | base64 --decode | wc -c
+      15
+
+$ echo -n 'secretpassword' | base64
+c2VjcmV0cGFzc3dvcmQ=
+
+$ echo 'c2VjcmV0cGFzc3dvcmQ=' | base64 --decode | wc -c
+      14
+
+############ Part 9: updating a ConfigMap does not change a running pod's env ############
+
+$ kubectl patch configmap yatri-app-config --type merge -p '{"data":{"ENVIRONMENT":"staging"}}'
+configmap/yatri-app-config patched
+
+$ kubectl get configmap yatri-app-config -o jsonpath='{.data.ENVIRONMENT}'; echo
+staging
+
+$ kubectl exec deployment/yatri-backend -- env | grep ENVIRONMENT
+ENVIRONMENT=production
+
+$ curl -s --resolve yatri.local:80:127.0.0.1 http://yatri.local/api/ | grep ENVIRONMENT
+ENVIRONMENT     : production
+
+$ kubectl rollout restart deployment/yatri-backend && kubectl rollout status deployment/yatri-backend
+deployment.apps/yatri-backend restarted
+Waiting for deployment "yatri-backend" rollout to finish: 1 out of 2 new replicas have been updated...
+Waiting for deployment "yatri-backend" rollout to finish: 1 out of 2 new replicas have been updated...
+Waiting for deployment "yatri-backend" rollout to finish: 1 out of 2 new replicas have been updated...
+Waiting for deployment "yatri-backend" rollout to finish: 1 old replicas are pending termination...
+Waiting for deployment "yatri-backend" rollout to finish: 1 old replicas are pending termination...
+deployment "yatri-backend" successfully rolled out
+
+$ kubectl exec deployment/yatri-backend -- env | grep ENVIRONMENT
+ENVIRONMENT=staging
+
+$ for i in 1 2 3 4; do curl -s --resolve yatri.local:80:127.0.0.1 http://yatri.local/api/ | grep ENVIRONMENT; done | sort | uniq -c
+   4 ENVIRONMENT     : staging
+
+$ kubectl patch configmap yatri-app-config --type merge -p '{"data":{"ENVIRONMENT":"production"}}' && kubectl rollout restart deployment/yatri-backend && kubectl rollout status deployment/yatri-backend
+configmap/yatri-app-config patched
+deployment.apps/yatri-backend restarted
+Waiting for deployment "yatri-backend" rollout to finish: 1 out of 2 new replicas have been updated...
+Waiting for deployment "yatri-backend" rollout to finish: 1 out of 2 new replicas have been updated...
+Waiting for deployment "yatri-backend" rollout to finish: 1 out of 2 new replicas have been updated...
+Waiting for deployment "yatri-backend" rollout to finish: 1 old replicas are pending termination...
+Waiting for deployment "yatri-backend" rollout to finish: 1 old replicas are pending termination...
+deployment "yatri-backend" successfully rolled out
