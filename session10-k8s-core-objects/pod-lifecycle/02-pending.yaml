@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: lifecycle-pending
+spec:
+  containers:
+    - name: impossible-resource
+      image: nginx:1.25
+      imagePullPolicy: IfNotPresent
+      resources:
+        requests:
+          cpu: "100"
+          memory: "999Gi"

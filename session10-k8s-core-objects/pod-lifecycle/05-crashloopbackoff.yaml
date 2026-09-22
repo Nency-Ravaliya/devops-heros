@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: lifecycle-crashloop
+spec:
+  containers:
+    - name: crashing-app
+      image: busybox:latest
+      imagePullPolicy: IfNotPresent
+      command: ["sh", "-c", "echo 'Application started'; sleep 2; echo 'Application crashed'; exit 1"]

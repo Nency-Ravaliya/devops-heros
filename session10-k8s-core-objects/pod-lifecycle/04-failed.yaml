@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: lifecycle-failed
+spec:
+  restartPolicy: Never
+  containers:
+    - name: task
+      image: busybox:latest
+      imagePullPolicy: IfNotPresent
+      command: ["sh", "-c", "echo 'Task started'; sleep 2; echo 'Task failed'; exit 1"]
