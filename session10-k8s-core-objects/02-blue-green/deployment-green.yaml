@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-green
+  labels:
+    app: app-blue-green
+    version: green
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: app-blue-green
+      version: green
+  template:
+    metadata:
+      labels:
+        app: app-blue-green
+        version: green
+    spec:
+      containers:
+        - name: web
+          image: nginx:1.25-alpine
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 80
