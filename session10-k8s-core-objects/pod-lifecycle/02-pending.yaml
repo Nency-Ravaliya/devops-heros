@@ -5,9 +5,8 @@ metadata:
 spec:
   containers:
     - name: impossible-resource
-      image: nginx:1.25
-      imagePullPolicy: IfNotPresent
+      image: nginx:1.27
       resources:
         requests:
-          cpu: "100"
-          memory: "999Gi"
+          cpu: "1"
+          memory: "9Gi"

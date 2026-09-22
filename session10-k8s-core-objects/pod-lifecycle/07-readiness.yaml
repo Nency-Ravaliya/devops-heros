@@ -5,8 +5,7 @@ metadata:
 spec:
   containers:
     - name: nginx
-      image: nginx:1.25
-      imagePullPolicy: IfNotPresent
+      image: nginx:1.27
       readinessProbe:
         httpGet:
           path: /

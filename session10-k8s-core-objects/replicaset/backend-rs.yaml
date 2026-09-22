@@ -17,7 +17,6 @@ spec:
       containers:
         - name: backend
           image: python:3.11-alpine
-          imagePullPolicy: IfNotPresent
           command: ["python3", "-c", "import http.server; http.server.test(HandlerClass=http.server.SimpleHTTPRequestHandler, port=5000)"]
           ports:
             - containerPort: 5000

@@ -9,6 +9,5 @@ spec:
 
   containers:
     - name: hello
-      image: busybox:latest
-      imagePullPolicy: IfNotPresent
+      image: busybox
       command: ["sh", "-c", "echo Hello Kubernetes"]

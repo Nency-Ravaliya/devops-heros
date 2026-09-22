@@ -6,6 +6,5 @@ spec:
   restartPolicy: Never
   containers:
     - name: task
-      image: busybox:latest
-      imagePullPolicy: IfNotPresent
-      command: ["sh", "-c", "echo 'Task started'; sleep 2; echo 'Task completed successfully'; exit 0"]
+      image: busybox:1.36
+      command: ["sh", "-c", "echo 'Task started'; sleep 5; echo 'Task completed successfully'; exit 0"]

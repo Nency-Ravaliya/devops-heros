@@ -6,12 +6,11 @@ spec:
   terminationGracePeriodSeconds: 20
   containers:
     - name: graceful-app
-      image: busybox:latest
-      imagePullPolicy: IfNotPresent
+      image: busybox:1.36
       command:
         - sh
         - -c
         - |
-          trap 'echo "SIGTERM received; cleaning up..."; sleep 5; echo "Cleanup complete"; exit 0' TERM
+          trap 'echo "SIGTERM received; cleaning up..."; sleep 10; echo "Cleanup complete"; exit 0' TERM
           echo "Application running"
           while true; do sleep 2; done

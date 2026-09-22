@@ -15,8 +15,7 @@ spec:
     spec:
       containers:
         - name: fluent-logger
-          image: busybox:latest
-          imagePullPolicy: IfNotPresent
+          image: busybox:1.36
           command: ["sh", "-c", "while true; do echo \"[$(date)] Collecting host system metrics on $(hostname)\"; sleep 10; done"]
           resources:
             requests:

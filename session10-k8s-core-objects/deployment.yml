@@ -1,5 +1,4 @@
 apiVersion: apps/v1
-
 kind: Deployment
 
 metadata:
@@ -10,17 +9,16 @@ spec:
 
   selector:
     matchLabels:
-      app: nginx-deployment
+      app: nginx
 
   template:
     metadata:
       labels:
-        app: nginx-deployment
+        app: nginx
 
     spec:
       containers:
         - name: nginx
           image: nginx:1.25
-          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 80

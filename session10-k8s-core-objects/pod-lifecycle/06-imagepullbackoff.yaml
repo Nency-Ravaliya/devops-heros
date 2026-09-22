@@ -5,4 +5,4 @@ metadata:
 spec:
   containers:
     - name: broken-image
-      image: non-existent-registry.invalid/non-existent-image:invalid-tag
+      image: jakwehrgkaejw:kahsdfgkhj

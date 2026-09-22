@@ -14,6 +14,5 @@ spec:
       containers:
         - name: node-exporter
           image: prom/node-exporter
-          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 9100

@@ -5,8 +5,7 @@ metadata:
 spec:
   containers:
     - name: app
-      image: busybox:latest
-      imagePullPolicy: IfNotPresent
+      image: busybox:1.36
       command: ["sh", "-c", "echo 'App started'; touch /tmp/healthy; sleep 20; rm /tmp/healthy; echo 'Health file removed'; sleep 300"]
       livenessProbe:
         exec:

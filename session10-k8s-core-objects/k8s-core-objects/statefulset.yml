@@ -16,7 +16,6 @@ spec:
       containers:
         - name: mysql
           image: mysql:5.7
-          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 3306
           env:
