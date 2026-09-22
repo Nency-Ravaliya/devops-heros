@@ -187,9 +187,9 @@ Maintains two identical environments (Blue=Live, Green=New). Switch traffic via 
   ```bash
   kubectl set selector service app-blue-green-service version=green
   ```
-- **Observed Result**: Instantaneous traffic shift from Blue (v1.24) to Green (v1.25).
+- **Observed Result**: Service selector updated to `version=green`, shifting NodePort `30020` traffic to the Green pods.
 - **Evidence**:
-  - `MISSING EVIDENCE — screenshot still required`
+  - ![Blue-Green Cutover](screenshots/blue-green-cutover.png)
 
 ---
 
@@ -278,6 +278,6 @@ Terminates the existing Pods before creating Pods for the new version. This can 
 | **StatefulSet** | Yes (`statefulset.yml`) | Dry-Run Verified | Pending Screenshot | Manifest Ready / Screenshot Pending |
 | **Pod Lifecycle** | Documented | N/A | Pending Screenshot | Concept Documented / Screenshot Pending |
 | **Rolling Update** | Yes (`01-rolling-update/`) | Deployed (`app-rolling`) | [rolling-update-complete.png](screenshots/rolling-update-complete.png), [rolling-update-service.png](screenshots/rolling-update-service.png) | Completed |
-| **Blue-Green** | Yes (`02-blue-green/`) | Dry-Run Verified | Pending Screenshot | Manifest Ready / Screenshot Pending |
-| **Canary** | Yes (`03-canary/`) | Dry-Run Verified | Pending Screenshot | Manifest Ready / Screenshot Pending |
-| **Recreate** | Yes (`04-recreate/`) | Dry-Run Verified | Pending Screenshot | Manifest Ready / Screenshot Pending |
+| **Blue-Green** | Yes (`02-blue-green/`) | Deployed (`app-blue`/`app-green`) | [blue-green-cutover.png](screenshots/blue-green-cutover.png) | Completed |
+| **Canary** | Yes (`03-canary/`) | Deployed (`9:1`) | [canary-9-1.png](screenshots/canary-9-1.png) | Completed |
+| **Recreate** | Yes (`04-recreate/`) | Deployed (`v1->v2`) | [recreate-v1-v2.png](screenshots/recreate-v1-v2.png) | Completed |
