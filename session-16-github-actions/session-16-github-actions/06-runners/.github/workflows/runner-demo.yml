@@ -1,0 +1,17 @@
+name: Runner Demo
+on:
+  workflow_dispatch:
+jobs:
+  runner-info:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Show hostname
+        run: hostname
+      - name: Show operating system
+        run: uname -a
+      - name: Show current directory
+        run: pwd
+      - name: Show files
+        run: ls -la
+      - name: Show Python version
+        run: python --version
