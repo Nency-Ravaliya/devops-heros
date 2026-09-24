@@ -1,0 +1,12 @@
+apiVersion: v2
+name: my-app
+description: A learning chart for the Chart.yaml topic
+type: application
+version: 0.1.0
+appVersion: "1.0"
+keywords:
+  - nginx
+  - web
+maintainers:
+  - name: Student
+    email: student@example.com
