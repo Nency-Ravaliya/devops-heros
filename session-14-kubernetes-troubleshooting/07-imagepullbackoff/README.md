@@ -176,3 +176,33 @@ ImagePullBackOff
 
 * **Pull an Image from a Private Registry:**  
   https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
+
+---
+
+## Screenshots
+
+Output captured from running the commands above on a local minikube cluster.
+
+**1. Create the broken Pod**
+
+![Create the broken Pod](screenshots/1-apply-broken.png)
+
+**2. Pod status: `ImagePullBackOff`**
+
+![Pod status: ImagePullBackOff](screenshots/2-get-imagepullbackoff.png)
+
+**3. Events from `kubectl describe pod image-demo`**
+
+![Events from kubectl describe pod image-demo](screenshots/3-describe-events.png)
+
+**4. Root cause: the image tag does not exist**
+
+![Root cause: the image tag does not exist](screenshots/4-root-cause.png)
+
+**5. Delete the broken Pod and apply `fixed-pod.yaml`**
+
+![Delete the broken Pod and apply fixed-pod.yaml](screenshots/5-delete-apply-fixed.png)
+
+**6. Verify: Pod is Running**
+
+![Verify: Pod is Running](screenshots/6-verify-running.png)

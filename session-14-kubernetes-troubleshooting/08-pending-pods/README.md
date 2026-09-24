@@ -198,3 +198,37 @@ and especially the **Events** section.
 
 * **Kubernetes Scheduling:**  
   https://kubernetes.io/docs/concepts/scheduling-eviction/kube-scheduler/
+
+---
+
+## Screenshots
+
+Output captured from running the commands above on a local minikube cluster.
+
+**1. Create the broken Pod**
+
+![Create the broken Pod](screenshots/1-apply-broken.png)
+
+**2. Pod status: `Pending`**
+
+![Pod status: Pending](screenshots/2-get-pending.png)
+
+**3. `FailedScheduling` event from `kubectl describe pod pending-demo`**
+
+![FailedScheduling event from kubectl describe pod pending-demo](screenshots/3-describe-events.png)
+
+**4. `kubectl get nodes`: only `minikube` exists**
+
+![kubectl get nodes: only minikube exists](screenshots/4-get-nodes.png)
+
+**5. Root cause: `nodeSelector` points to a node that does not exist**
+
+![Root cause: nodeSelector points to a node that does not exist](screenshots/5-root-cause.png)
+
+**6. Delete the broken Pod and apply `fixed-pod.yaml`**
+
+![Delete the broken Pod and apply fixed-pod.yaml](screenshots/6-delete-apply-fixed.png)
+
+**7. Verify: Pod is Running**
+
+![Verify: Pod is Running](screenshots/7-verify-running.png)
