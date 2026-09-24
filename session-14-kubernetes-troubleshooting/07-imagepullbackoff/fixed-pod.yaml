@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Pod
+
+metadata:
+  name: image-demo
+
+spec:
+  containers:
+    - name: app
+      image: nginx:1.27
