@@ -30,6 +30,6 @@ spec:
     spec:
       containers:
         - name: backend
-          image: yatri-backend:non-existent-tag-v999
+          image: nginx:latest
           ports:
             - containerPort: 5000
