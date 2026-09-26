@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-stable
+  labels:
+    app: myapp-canary
+    version: stable
+spec:
+  replicas: 9
+  selector:
+    matchLabels:
+      app: myapp-canary
+      version: stable
+  template:
+    metadata:
+      labels:
+        app: myapp-canary
+        version: stable
+    spec:
+      containers:
+        - name: app
+          image: nginx:alpine
+          command: ["/bin/sh", "-c", "echo 'STABLE v1' > /usr/share/nginx/html/index.html && exec nginx -g 'daemon off;'"]
+          ports:
+            - containerPort: 80

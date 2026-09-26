@@ -1,0 +1,13 @@
+# Container exits 1 repeatedly with restartPolicy Always => CrashLoopBackOff.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: lifecycle-crashloop
+  labels:
+    demo: lifecycle
+spec:
+  restartPolicy: Always
+  containers:
+    - name: busybox
+      image: busybox
+      command: ["sh", "-c", "echo starting && exit 1"]
