@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: session20-app
+  labels:
+    app: session20-app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: session20-app
+  template:
+    metadata:
+      labels:
+        app: session20-app
+    spec:
+      containers:
+        - name: app
+          image: nginx:1.27-alpine
+          ports:
+            - containerPort: 80
