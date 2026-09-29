@@ -162,3 +162,33 @@ What Kubernetes tried to do and what happened
 
 * **Kubernetes Events API:**  
   https://kubernetes.io/docs/reference/kubernetes-api/cluster-resources/event-v1/
+
+---
+
+## Screenshots
+
+Output captured from running the commands above on a local minikube cluster.
+
+**1. Create the Pod**
+
+![Create the Pod](screenshots/1-apply.png)
+
+**2. `kubectl get events` (latest events)**
+
+![kubectl get events (latest events)](screenshots/2-get-events.png)
+
+**3. `kubectl get events --sort-by=.lastTimestamp`**
+
+![kubectl get events --sort-by=.lastTimestamp](screenshots/3-sort-events.png)
+
+**4. Events section from `kubectl describe pod`**
+
+![Events section from kubectl describe pod](screenshots/4-describe-events.png)
+
+**5. `kubectl events --for pod/events-demo`**
+
+![kubectl events --for pod/events-demo](screenshots/5-events-for-pod.png)
+
+**6. Filter with `--field-selector type=Warning`**
+
+![Filter with --field-selector type=Warning](screenshots/6-warning-events.png)

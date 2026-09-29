@@ -187,3 +187,29 @@ Kubernetes documentation also recommends `kubectl exec` for running commands ins
 
 * **Get a Shell to a Running Container:**  
   https://kubernetes.io/docs/tasks/debug/debug-application/get-shell-running-container/
+
+---
+
+## Screenshots
+
+Output captured from running the commands above on a local minikube cluster.
+
+**1. Create the Pod**
+
+![Create the Pod](screenshots/1-apply.png)
+
+**2. Pod is Running**
+
+![Pod is Running](screenshots/2-get-pod.png)
+
+**3. Run commands inside the container (`ls`, nginx html directory)**
+
+![Run commands inside the container (ls, nginx html directory)](screenshots/3-exec-shell.png)
+
+**4. `curl localhost` from inside the container**
+
+![curl localhost from inside the container](screenshots/4-exec-curl.png)
+
+**5. One-off commands without opening a shell**
+
+![One-off commands without opening a shell](screenshots/5-exec-one-liners.png)

@@ -191,3 +191,29 @@ It gives us the current state of Kubernetes resources.
 
 * **Kubernetes Command Line Tool (kubectl):**  
   https://kubernetes.io/docs/reference/kubectl/
+
+---
+
+## Screenshots
+
+Output captured from running the commands above on a local minikube cluster.
+
+**1. Create the Pod (`kubectl apply -f sample-workload.yaml`)**
+
+![Create the Pod (kubectl apply -f sample-workload.yaml)](screenshots/1-apply.png)
+
+**2. `kubectl get pods`**
+
+![kubectl get pods](screenshots/2-get-pods.png)
+
+**3. `kubectl get pods -o wide`**
+
+![kubectl get pods -o wide](screenshots/3-get-pods-wide.png)
+
+**4. Nodes, Services and Deployments**
+
+![Nodes, Services and Deployments](screenshots/4-get-nodes-services.png)
+
+**5. `kubectl get all`**
+
+![kubectl get all](screenshots/5-get-all.png)
