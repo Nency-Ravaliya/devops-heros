@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: session20-demo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: session20-demo
+  template:
+    metadata:
+      labels:
+        app: session20-demo
+    spec:
+      containers:
+        - name: app
+          image: busybox:1.36
+          command:
+            - /bin/sh
+            - -c
+            - |
+              echo "Session 20 observability demo started"
+              while true; do
+                echo "Request received"
+                echo "Health check OK"
+                sleep 10
+              done
