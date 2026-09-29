@@ -6,5 +6,5 @@ variable "aws_region" {
 variable "bucket_name" {
   type        = string
   description = "Name of the S3 bucket."
-  default     = "yatri1107"
+  default     = "anushika2006"
 }
