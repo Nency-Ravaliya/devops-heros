@@ -1,5 +1,15 @@
 # Kubernetes Troubleshooting
 
+## Assignment evidence
+
+- CrashLoopBackOff investigation and exit code: [`screenshots/crashloop-diagnosis.png`](screenshots/crashloop-diagnosis.png)
+- CrashLoopBackOff corrected and healthy: [`screenshots/crashloop-fixed.png`](screenshots/crashloop-fixed.png)
+- Empty Service endpoints, selector correction, DNS resolution, and HTTP 200: [`screenshots/service-dns-recovery.png`](screenshots/service-dns-recovery.png)
+- Issue runbooks: [`06-crashloopbackoff/`](06-crashloopbackoff/), [`07-imagepullbackoff/`](07-imagepullbackoff/), [`08-pending-pods/`](08-pending-pods/), and [`09-service-dns-troubleshooting/`](09-service-dns-troubleshooting/)
+- Combined troubleshooting mini project: [`mini-project/`](mini-project/)
+
+The repository includes manifests and investigation instructions for the common issues in the assignment. The screenshots above are real Minikube executions for CrashLoopBackOff and Service/DNS recovery; the remaining issue folders are documented exercises and are not represented as captured executions.
+
 The goal is to learn how to answer:
 
 > "My Kubernetes application is not working. How do I find out why?"

@@ -1,5 +1,14 @@
 # Session 15: Helm
 
+## Assignment evidence
+
+- The complete Notes chart and instructions are in [`mini-project/`](mini-project/).
+- Production values produced three ready replicas and HTTP 200: [`screenshots/helm-production-release.png`](screenshots/helm-production-release.png).
+- The release history shows install, upgrades, and rollback to revision 2: [`screenshots/helm-release-history.png`](screenshots/helm-release-history.png).
+- `helm lint` completed with zero failed charts, and the final release was uninstalled after verification.
+
+The mini project README documents chart creation, template rendering, install, upgrade, rollback, and cleanup. The command reference below covers the remaining assignment commands, including repository and search operations.
+
 Managing many Kubernetes YAML files across multiple environments leads to copy-paste errors and configuration drift.
 
 Helm solves this. It is the package manager for Kubernetes.
