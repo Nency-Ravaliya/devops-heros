@@ -27,7 +27,11 @@ With CI/CD, every push to Git triggers automated build, test, and deploy.
 | `07-secrets/` | Storing credentials, using secrets in workflows |
 | `08-artifacts/` | Uploading and downloading build artifacts |
 | `09-build-test-pipeline/` | Full CI pipeline: checkout, build, test, lint |
-| `mini-project/` | Build a complete CI pipeline for a Python app |
+| `10-final-cicd-pipeline/` | Current assignment: test, security, build artifacts, Docker packaging, and delivery artifact |
+
+## Assignment status
+
+The final project contains application source, tests, a Dockerfile, build script, README, and the repository-level GitHub Actions workflow. The workflow implements CI gates and produces both a source artifact and a deployable container-image artifact. Add the successful four-job run screenshot to `screenshots/github-actions-final-cicd.png` after the pushed workflow completes.
 
 ---
 
