@@ -1,0 +1,170 @@
+
+
+========================================
+  Applying: 01-running.yaml
+========================================
+pod/lifecycle-running created
+  Pod: lifecycle-running
+  Status: ContainerCreating
+NAME                READY   STATUS              RESTARTS   AGE
+lifecycle-running   0/1     ContainerCreating   0          3s
+  --- Events ---
+Events:
+  Type    Reason     Age   From               Message
+  ----    ------     ----  ----               -------
+  Normal  Scheduled  3s    default-scheduler  Successfully assigned default/lifecycle-running to minikube
+  Normal  Pulled     1s    kubelet            spec.containers{nginx}: Container image "nginx:1.27" already present on machine and can be accessed by the pod
+pod "lifecycle-running" deleted from default namespace
+
+========================================
+  Applying: 02-pending.yaml
+========================================
+pod/lifecycle-pending created
+  Pod: lifecycle-pending
+  Status: ContainerCreating
+NAME                READY   STATUS              RESTARTS   AGE
+lifecycle-pending   0/1     ContainerCreating   0          3s
+  --- Events ---
+Events:
+  Type    Reason     Age   From               Message
+  ----    ------     ----  ----               -------
+  Normal  Scheduled  3s    default-scheduler  Successfully assigned default/lifecycle-pending to minikube
+  Normal  Pulled     1s    kubelet            spec.containers{impossible-resource}: Container image "nginx:1.27" already present on machine and can be accessed by the pod
+  Normal  Created    0s    kubelet            spec.containers{impossible-resource}: Container created
+pod "lifecycle-pending" deleted from default namespace
+
+========================================
+  Applying: 03-succeeded.yaml
+========================================
+pod/lifecycle-succeeded created
+  Pod: lifecycle-pending
+  Status:
+Error from server (NotFound): pods "lifecycle-pending" not found
+  --- Events ---
+Error from server (NotFound): pods "lifecycle-pending" not found
+pod "lifecycle-succeeded" deleted from default namespace
+
+========================================
+  Applying: 04-failed.yaml
+========================================
+pod/lifecycle-failed created
+  Pod: lifecycle-failed
+  Status: Running
+NAME               READY   STATUS    RESTARTS   AGE
+lifecycle-failed   1/1     Running   0          2s
+pod "lifecycle-failed" deleted from default namespace
+
+========================================
+  Applying: 05-crashloopbackoff.yaml
+========================================
+pod/lifecycle-crashloop created
+  Pod: lifecycle-crashloop
+  Status: ContainerCreating
+NAME                  READY   STATUS              RESTARTS   AGE
+lifecycle-crashloop   0/1     ContainerCreating   0          2s
+  --- Events ---
+Events:
+  Type    Reason     Age   From               Message
+  ----    ------     ----  ----               -------
+  Normal  Scheduled  3s    default-scheduler  Successfully assigned default/lifecycle-crashloop to minikube
+  Normal  Pulled     2s    kubelet            spec.containers{crashing-app}: Container image "busybox:1.36" already present on machine and can be accessed by the pod
+  Normal  Created    1s    kubelet            spec.containers{crashing-app}: Container created
+pod "lifecycle-crashloop" deleted from default namespace
+
+========================================
+  Applying: 06-imagepullbackoff.yaml
+========================================
+pod/lifecycle-image-error created
+  Pod: lifecycle-image-error
+  Status: ContainerCreating
+NAME                    READY   STATUS              RESTARTS   AGE
+lifecycle-image-error   0/1     ContainerCreating   0          5s
+  --- Events ---
+Events:
+  Type    Reason     Age   From               Message
+  ----    ------     ----  ----               -------
+  Normal  Scheduled  2s    default-scheduler  Successfully assigned default/lifecycle-image-error to minikube
+  Normal  Pulling    1s    kubelet            spec.containers{broken-image}: Pulling image "jakwehrgkaejw:kahsdfgkhj"
+pod "lifecycle-image-error" deleted from default namespace
+
+========================================
+  Applying: 07-readiness.yaml
+========================================
+pod/lifecycle-readiness created
+  Pod: lifecycle-image-error
+  Status:
+Error from server (NotFound): pods "lifecycle-image-error" not found
+  --- Events ---
+Error from server (NotFound): pods "lifecycle-image-error" not found
+pod "lifecycle-readiness" deleted from default namespace
+
+========================================
+  Applying: 08-liveness.yaml
+========================================
+pod/lifecycle-liveness created
+  Pod: lifecycle-liveness
+  Status: ContainerCreating
+NAME                 READY   STATUS              RESTARTS   AGE
+lifecycle-liveness   0/1     ContainerCreating   0          2s
+  --- Events ---
+Events:
+  Type    Reason     Age   From               Message
+  ----    ------     ----  ----               -------
+  Normal  Scheduled  2s    default-scheduler  Successfully assigned default/lifecycle-liveness to minikube
+  Normal  Pulled     0s    kubelet            spec.containers{app}: Container image "busybox:1.36" already present on machine and can be accessed by the pod
+pod "lifecycle-liveness" deleted from default namespace
+
+========================================
+  Applying: 09-startup.yaml
+========================================
+pod/lifecycle-startup created
+  Pod: lifecycle-liveness
+  Status:
+Error from server (NotFound): pods "lifecycle-liveness" not found
+  --- Events ---
+Error from server (NotFound): pods "lifecycle-liveness" not found
+pod "lifecycle-startup" deleted from default namespace
+
+========================================
+  Applying: 10-init-container.yaml
+========================================
+pod/lifecycle-init created
+  Pod: lifecycle-init
+  Status: Running
+NAME             READY   STATUS    RESTARTS   AGE
+lifecycle-init   1/1     Running   0          20s
+pod "lifecycle-init" deleted from default namespace
+
+========================================
+  Applying: 11-multi-container.yaml
+========================================
+pod/lifecycle-multi-container created
+  Pod: lifecycle-multi-container
+  Status: ContainerCreating
+NAME                        READY   STATUS              RESTARTS   AGE
+lifecycle-multi-container   0/2     ContainerCreating   0          3s
+  --- Events ---
+Events:
+  Type    Reason     Age   From               Message
+  ----    ------     ----  ----               -------
+  Normal  Scheduled  2s    default-scheduler  Successfully assigned default/lifecycle-multi-container to minikube
+  Normal  Pulled     1s    kubelet            spec.containers{app}: Container image "nginx:1.27" already present on machine and can be accessed by the pod
+  Normal  Created    1s    kubelet            spec.containers{app}: Container created
+  Normal  Started    1s    kubelet            spec.containers{app}: Container started
+  Normal  Pulled     1s    kubelet            spec.containers{sidecar}: Container image "busybox:1.36" already present on machine and can be accessed by the pod
+pod "lifecycle-multi-container" deleted from default namespace
+
+========================================
+  Applying: 12-termination.yaml
+========================================
+pod/lifecycle-termination created
+  Pod: lifecycle-multi-container
+  Status:
+Error from server (NotFound): pods "lifecycle-multi-container" not found
+  --- Events ---
+Error from server (NotFound): pods "lifecycle-multi-container" not found
+pod "lifecycle-termination" deleted from default namespace
+
+========================================
+  All done.
+========================================

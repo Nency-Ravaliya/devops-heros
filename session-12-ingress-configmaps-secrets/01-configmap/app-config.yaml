@@ -6,7 +6,7 @@ metadata:
     app: yatri-backend
 data:
   ENVIRONMENT: "production"
-  LOG_LEVEL: "INFO"
+  LOG_LEVEL: "DEBUG"
   PORT: "5000"
   DEFAULT_CURRENCY: "INR"
   MAX_BOOKING_DAYS: "30"
