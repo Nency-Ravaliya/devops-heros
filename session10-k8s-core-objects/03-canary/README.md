@@ -216,3 +216,9 @@ kubectl delete -f 03-canary/service.yaml
 kubectl delete -f 03-canary/deployment-canary.yaml
 kubectl delete -f 03-canary/deployment-stable.yaml
 ```
+
+## Captured evidence
+
+The real Minikube run kept nine stable replicas and one canary replica behind the same Service. Forty requests produced 36 stable responses and 4 canary responses.
+
+![Canary deployment evidence](../screenshots/canary-deployment.png)

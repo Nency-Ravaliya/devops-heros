@@ -203,3 +203,9 @@ minikube service web-service-loadbalancer
 kubectl delete -f 03-loadbalancer/service.yaml
 kubectl delete -f 03-loadbalancer/app-deployment.yaml
 ```
+
+## 10. Captured Minikube evidence
+
+Minikube has no cloud load-balancer provider, so `EXTERNAL-IP` correctly remains `<pending>`. The captured run still verifies all three ready endpoints and an HTTP 200 from an in-cluster client.
+
+![LoadBalancer Service evidence](../screenshots/service-loadbalancer.png)

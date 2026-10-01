@@ -176,3 +176,7 @@ ImagePullBackOff
 
 * **Pull an Image from a Private Registry:**  
   https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
+
+## Captured evidence
+
+![ErrImagePull and ImagePullBackOff diagnosis and fix](../screenshots/imagepullbackoff-before-after.png)

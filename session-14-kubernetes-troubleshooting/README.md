@@ -4,11 +4,14 @@
 
 - CrashLoopBackOff investigation and exit code: [`screenshots/crashloop-diagnosis.png`](screenshots/crashloop-diagnosis.png)
 - CrashLoopBackOff corrected and healthy: [`screenshots/crashloop-fixed.png`](screenshots/crashloop-fixed.png)
+- ErrImagePull and ImagePullBackOff diagnosis, event message, image correction, and healthy Pod: [`screenshots/imagepullbackoff-before-after.png`](screenshots/imagepullbackoff-before-after.png)
+- Pending Pod scheduling failure, invalid node selector, and corrected scheduling: [`screenshots/pending-before-after.png`](screenshots/pending-before-after.png)
+- ContainerCreating transition with image-pull and container-start events: [`screenshots/containercreating-investigation.png`](screenshots/containercreating-investigation.png)
 - Empty Service endpoints, selector correction, DNS resolution, and HTTP 200: [`screenshots/service-dns-recovery.png`](screenshots/service-dns-recovery.png)
 - Issue runbooks: [`06-crashloopbackoff/`](06-crashloopbackoff/), [`07-imagepullbackoff/`](07-imagepullbackoff/), [`08-pending-pods/`](08-pending-pods/), and [`09-service-dns-troubleshooting/`](09-service-dns-troubleshooting/)
 - Combined troubleshooting mini project: [`mini-project/`](mini-project/)
 
-The repository includes manifests and investigation instructions for the common issues in the assignment. The screenshots above are real Minikube executions for CrashLoopBackOff and Service/DNS recovery; the remaining issue folders are documented exercises and are not represented as captured executions.
+The screenshots above are real Minikube executions covering every issue named in the assignment: CrashLoopBackOff, ErrImagePull/ImagePullBackOff, Pending, ContainerCreating, and Service/DNS configuration recovery.
 
 The goal is to learn how to answer:
 

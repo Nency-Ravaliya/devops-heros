@@ -8,7 +8,7 @@ This index maps every assignment deliverable to its implementation and the termi
 |---|---|---|
 | ClusterIP | [`01-clusterip/`](01-clusterip/) | Deployment `3/3`, EndpointSlice with three Pod IPs, HTTP 200 ([evidence](screenshots/service-clusterip.png)) |
 | NodePort | [`02-nodeport/`](02-nodeport/) | Service exposed on node port `30080`, local tunnel returned HTTP 200 ([evidence](screenshots/service-nodeport.png)) |
-| LoadBalancer | [`03-loadbalancer/`](03-loadbalancer/) | Local Minikube behavior and verification commands documented |
+| LoadBalancer | [`03-loadbalancer/`](03-loadbalancer/) | Deployment `3/3`, three EndpointSlice targets, and HTTP 200; external IP remains pending without a cloud provider ([evidence](screenshots/service-loadbalancer.png)) |
 | ExternalName | [`04-externalname/`](04-externalname/) | Service DNS returned a CNAME for the external target |
 | Headless | [`05-headless/`](05-headless/) | DNS returned the StatefulSet Pod IPs directly and HTTP 200 ([evidence](screenshots/service-dns.png)) |
 

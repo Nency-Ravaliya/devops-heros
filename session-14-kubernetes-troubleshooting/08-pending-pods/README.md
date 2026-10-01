@@ -198,3 +198,9 @@ and especially the **Events** section.
 
 * **Kubernetes Scheduling:**  
   https://kubernetes.io/docs/concepts/scheduling-eviction/kube-scheduler/
+
+## Captured evidence
+
+![Pending Pod diagnosis and fix](../screenshots/pending-before-after.png)
+
+The related ContainerCreating startup investigation is captured in [`../screenshots/containercreating-investigation.png`](../screenshots/containercreating-investigation.png).

@@ -217,3 +217,9 @@ deployment "app-recreate" successfully rolled out
 kubectl delete -f 04-recreate/service.yaml
 kubectl delete -f 04-recreate/deployment-v2.yaml
 ```
+
+## Captured evidence
+
+The real Minikube run shows the v1 Pods, the Recreate rollout, the old ReplicaSet scaled to zero, three v2 Pods, and the upgraded v2 response.
+
+![Recreate deployment evidence](../screenshots/recreate-deployment.png)
