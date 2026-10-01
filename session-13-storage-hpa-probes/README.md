@@ -1,13 +1,17 @@
-# Session 13: Kubernetes Storage, HPA & Probes
+# Session 13 - Storage, HPA and Probes
 
-## Assignment map
+I used the `production-webapp` namespace for this assignment. The mini project combines a PVC, Deployment, Service, HPA, and all three probe types.
 
-| Requirement | Implementation | Evidence |
-|---|---|---|
-| Volume documentation | [`01-kubernetes-volumes/README.md`](01-kubernetes-volumes/README.md) | Includes manifests from the storage exercises |
-| HPA YAML and load generator | [`04-hpa/`](04-hpa/) and [`hpa/load_generator.sh`](hpa/load_generator.sh) | CPU crossed the target and replicas increased from 2 to 3 ([screenshot](screenshots/hpa-scaling.png)) |
-| Persistent data | [`mini-project/pvc.yaml`](mini-project/pvc.yaml) | File survived Pod replacement ([screenshot](screenshots/pvc-persistence.png)) |
-| Health probes | [`05-probes/`](05-probes/) and mini-project Deployment | Startup, readiness, and liveness paths verified ([screenshot](screenshots/probes-service.png)) |
-| Mini project | [`mini-project/`](mini-project/) | PVC, Deployment, Service, HPA, probes, and full README |
+## Storage
 
-The screenshots are real output from the `production-webapp` namespace in Minikube.
+My notes and smaller examples for `emptyDir`, `hostPath`, PV, PVC, StorageClass, and dynamic provisioning are in [`01-kubernetes-volumes/`](01-kubernetes-volumes/). In the mini project I wrote `Student: Anshal Kumar` to the mounted PVC, deleted the Pod, waited for its replacement, and read the same file from the new Pod. That confirmed that the data belonged to the volume rather than the old container: [`pvc-persistence.png`](screenshots/pvc-persistence.png).
+
+## HPA
+
+The HPA files are in [`04-hpa/`](04-hpa/) and the load script is [`hpa/load_generator.sh`](hpa/load_generator.sh). I generated repeated requests, watched CPU rise above the target, and saw the Deployment increase from two replicas to three. I then removed the load generator and restored the original 50% target: [`hpa-scaling.png`](screenshots/hpa-scaling.png).
+
+## Probes and mini project
+
+The Deployment uses startup, readiness, and liveness HTTP probes. All three checked `/`, the Pods stayed ready without restarts, and the Service returned HTTP 200: [`probes-service.png`](screenshots/probes-service.png).
+
+The full project and run instructions are in [`mini-project/`](mini-project/).
