@@ -1,22 +1,15 @@
-# Session 11: Kubernetes Networking & Services
+# Session 11 - Kubernetes Networking and Services
 
-This index maps every assignment deliverable to its implementation and the terminal evidence captured from Minikube.
+I deployed all five Service types in Minikube and tested them from inside or outside the cluster as appropriate.
 
-## Service demonstrations
+| Service | My test result |
+|---|---|
+| ClusterIP | Three ready endpoints and HTTP 200 from an in-cluster client. [Files](01-clusterip/) · [Screenshot](screenshots/service-clusterip.png) |
+| NodePort | Exposed port `30080`; the Minikube tunnel URL returned HTTP 200. [Files](02-nodeport/) · [Screenshot](screenshots/service-nodeport.png) |
+| LoadBalancer | The Service and three endpoints worked inside the cluster. `EXTERNAL-IP` stayed pending because Minikube did not have a cloud load balancer. [Files](03-loadbalancer/) · [Screenshot](screenshots/service-loadbalancer.png) |
+| ExternalName | DNS returned a CNAME for the configured external name. [Files](04-externalname/) |
+| Headless | DNS returned the individual StatefulSet Pod IPs, and the Pod hostname responded with HTTP 200. [Files](05-headless/) · [Screenshot](screenshots/service-dns.png) |
 
-| Service type | YAML and commands | Result |
-|---|---|---|
-| ClusterIP | [`01-clusterip/`](01-clusterip/) | Deployment `3/3`, EndpointSlice with three Pod IPs, HTTP 200 ([evidence](screenshots/service-clusterip.png)) |
-| NodePort | [`02-nodeport/`](02-nodeport/) | Service exposed on node port `30080`, local tunnel returned HTTP 200 ([evidence](screenshots/service-nodeport.png)) |
-| LoadBalancer | [`03-loadbalancer/`](03-loadbalancer/) | Deployment `3/3`, three EndpointSlice targets, and HTTP 200; external IP remains pending without a cloud provider ([evidence](screenshots/service-loadbalancer.png)) |
-| ExternalName | [`04-externalname/`](04-externalname/) | Service DNS returned a CNAME for the external target |
-| Headless | [`05-headless/`](05-headless/) | DNS returned the StatefulSet Pod IPs directly and HTTP 200 ([evidence](screenshots/service-dns.png)) |
+The LoadBalancer result was useful because `<pending>` did not mean the Service itself was broken. It meant my local cluster had no cloud provider to allocate a public address.
 
-## Written deliverables
-
-- [Kubernetes Service guide](service.md)
-- [Deployment, ReplicaSet, DaemonSet, StatefulSet, and Service comparisons](comparisons/README.md)
-- [FQDN and namespace DNS](fqdn/README.md)
-- [CoreDNS and DNS troubleshooting](coredns/README.md)
-
-The Service selector troubleshooting example is in [`troubleshooting/empty-endpoints.yaml`](troubleshooting/empty-endpoints.yaml).
+My written notes are split into the [Service guide](service.md), [object comparisons](comparisons/README.md), [FQDN notes](fqdn/README.md), and [CoreDNS notes](coredns/README.md). I also kept a broken-selector example in [`troubleshooting/`](troubleshooting/) to show why a Service can have no endpoints.
