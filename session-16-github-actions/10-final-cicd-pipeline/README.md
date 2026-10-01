@@ -66,10 +66,6 @@ Expected test result: `5 passed`. The container output must include `Result: 5.0
 
 ## Successful execution evidence
 
-After the workflow runs on GitHub, add its screenshot here:
+The final four-job workflow succeeded on the first run in 58 seconds and published two artifacts. View [GitHub Actions run 36698690536](https://github.com/anshalkumar/devops-heros/actions/runs/36698690536).
 
-```text
-../screenshots/github-actions-final-cicd.png
-```
-
-The existing [`github-actions-success.png`](../screenshots/github-actions-success.png) proves the earlier lint/test project passed. A new screenshot is required for this four-job final pipeline.
+![Successful final CI/CD workflow](../screenshots/github-actions-final-cicd.png)

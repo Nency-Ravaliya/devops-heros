@@ -33,4 +33,6 @@ kubectl rollout restart deployment/yatri-backend
 kubectl rollout status deployment/yatri-backend
 ```
 
-The successful ConfigMap and Secret verification is shown in [`../screenshots/configmap-secret.png`](../screenshots/configmap-secret.png). The before/after terminal screenshot for this isolated failure remains to be captured.
+The successful ConfigMap and Secret verification is shown in [`../screenshots/configmap-secret.png`](../screenshots/configmap-secret.png). The isolated before/after run below proves the broken injected value ended with a newline (`length=15`) and that reapplying the corrected Secret removed it (`length=14`). The password itself is never printed.
+
+![Secret troubleshooting before and after](../screenshots/secret-troubleshooting-before-after.png)

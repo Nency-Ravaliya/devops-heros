@@ -1,5 +1,11 @@
 # Service & DNS
 
+## Captured evidence
+
+The real before/after run shows the broken selector, empty endpoints, DNS/HTTP failure, selector correction, populated EndpointSlice, DNS resolution, and HTTP 200.
+
+![Service and DNS recovery](../screenshots/service-dns-recovery.png)
+
 We will check:
 
 * Pods
