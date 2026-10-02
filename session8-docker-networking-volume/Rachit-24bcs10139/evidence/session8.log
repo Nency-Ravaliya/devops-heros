@@ -1,0 +1,164 @@
++ for c in frontend backend database apache-host nginx-bind overlay-demo
++ docker rm -f frontend
++ for c in frontend backend database apache-host nginx-bind overlay-demo
++ docker rm -f backend
++ for c in frontend backend database apache-host nginx-bind overlay-demo
++ docker rm -f database
++ for c in frontend backend database apache-host nginx-bind overlay-demo
++ docker rm -f apache-host
++ for c in frontend backend database apache-host nginx-bind overlay-demo
++ docker rm -f nginx-bind
++ for c in frontend backend database apache-host nginx-bind overlay-demo
++ docker rm -f overlay-demo
++ for n in frontend-net backend-net db-net my-overlay
++ docker network rm frontend-net
++ true
++ for n in frontend-net backend-net db-net my-overlay
++ docker network rm backend-net
++ true
++ for n in frontend-net backend-net db-net my-overlay
++ docker network rm db-net
++ true
++ for n in frontend-net backend-net db-net my-overlay
++ docker network rm my-overlay
++ true
++ for n in frontend-net backend-net db-net
++ docker network create frontend-net
+070cb6eeff871d83846906ea7bac32bcfb05cb2ddaa3a5366f83bd08e0a2ebe5
++ for n in frontend-net backend-net db-net
++ docker network create backend-net
+33dc24ae9b3bd2b8a29257a0fcb05069a53af9df9400ba50c60394cf682eb1c4
++ for n in frontend-net backend-net db-net
++ docker network create db-net
+5f05841332cc5f6e081ba91444581c46e2b73ef6b76d3376348ed671e907c469
++ docker run -d --name frontend --network frontend-net nginx:alpine
+Unable to find image 'nginx:alpine' locally
+alpine: Pulling from library/nginx
+Digest: sha256:62ff2089abf5a9ed33bd232895bef5e22f7bb4b200675cec49a5ebc48e3d4ac8
+Status: Downloaded newer image for nginx:alpine
+b962dd28dc01e4b5d63115f9a6a179c424b83d565dc13dc033b7eb5237343a70
++ docker run -d --name backend --network backend-net alpine sleep infinity
+Unable to find image 'alpine:latest' locally
+latest: Pulling from library/alpine
+6d0606d1815c: Download complete
+797dd00a0fc7: Download complete
+Digest: sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6
+Status: Downloaded newer image for alpine:latest
+bbd973bf03e50dad65ecc5c678db4d0262885a7ca2b3121ade27ffd33f0ebff7
++ docker run -d --name database --network db-net -e MYSQL_ROOT_PASSWORD=secret mysql:8.0
+Unable to find image 'mysql:8.0' locally
+8.0: Pulling from library/mysql
+96d30d9fbee8: Pulling fs layer
+6ef6c7b50a93: Pulling fs layer
+297d04cfe470: Pulling fs layer
+e3e5d1ac74c1: Pulling fs layer
+edf85873f64e: Pulling fs layer
+0d74d296605b: Pulling fs layer
+4c8a3e0d4e4b: Pulling fs layer
+a63160a5eda1: Pulling fs layer
+7534d1db9f8d: Pulling fs layer
+49ec2dab01d9: Pulling fs layer
+ab24264a27e9: Pulling fs layer
+6ef6c7b50a93: Download complete
+96d30d9fbee8: Download complete
+297d04cfe470: Download complete
+e3e5d1ac74c1: Download complete
+ab24264a27e9: Download complete
+7534d1db9f8d: Download complete
+0d74d296605b: Download complete
+4c8a3e0d4e4b: Download complete
+a63160a5eda1: Download complete
+edf85873f64e: Download complete
+796812c73292: Download complete
+af166387641d: Download complete
+49ec2dab01d9: Download complete
+6ef6c7b50a93: Pull complete
+edf85873f64e: Pull complete
+e3e5d1ac74c1: Pull complete
+297d04cfe470: Pull complete
+0d74d296605b: Pull complete
+4c8a3e0d4e4b: Pull complete
+7534d1db9f8d: Pull complete
+a63160a5eda1: Pull complete
+ab24264a27e9: Pull complete
+49ec2dab01d9: Pull complete
+96d30d9fbee8: Pull complete
+Digest: sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b
+Status: Downloaded newer image for mysql:8.0
+74f357942b8a131be2b7b2178d72c40bb9e73a3a35eb992ca9edae2ef545a437
++ docker network connect db-net backend
++ docker network inspect backend-net --format '{{range .Containers}}{{.Name}} {{end}}'
+backend 
++ docker network inspect db-net --format '{{range .Containers}}{{.Name}} {{end}}'
+database backend 
++ docker exec backend ping -c 2 database
+PING database (172.20.0.2): 56 data bytes
+
+--- database ping statistics ---
+2 packets transmitted, 0 packets received, 100% packet loss
++ docker exec backend getent hosts database
+172.20.0.2        database  database
++ docker exec backend sh -c 'nc -zvw3 database 3306'
+nc: database (172.20.0.2:3306): Operation timed out
++ docker exec frontend getent hosts database
++ echo 'EXPECTED: frontend cannot resolve database across isolated networks'
+EXPECTED: frontend cannot resolve database across isolated networks
++ docker rm -f apache-host
++ docker run -d --name apache-host --network host httpd:latest
+Unable to find image 'httpd:latest' locally
+latest: Pulling from library/httpd
+Digest: sha256:454942557d44332cd7e4ae415e7ec9b4dbbf01b4a042491f423fcaf10a32ce9f
+Status: Downloaded newer image for httpd:latest
+5069603e1f1cde8ba4c2cce76a3a6a5380b904bf1ddecce96ccb1c8ea3c453ec
++ sleep 2
++ curl -fsS http://localhost:80
++ head
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+<title>It works! Apache httpd</title>
+</head>
+<body>
+<p>It works!</p>
+</body>
+</html>
++ docker ps --filter name=apache-host --format '{{.Names}} {{.Status}} {{.Ports}}'
+apache-host Up 2 seconds 
++ docker rm -f nginx-bind
++ mkdir -p /tmp/nginx-content
++ echo 'Hello students'
++ docker run -d --name nginx-bind -p 8080:80 -v /tmp/nginx-content:/usr/share/nginx/html:ro nginx:alpine
+9be2c86fe02d551bea4c919ab737c98d5e52848e3cf0602f2e7d438cc0ed8314
++ sleep 2
++ curl -fsS http://localhost:8080
+curl: (22) The requested URL returned error: 403
++ echo 'Hello students - updated live!'
++ curl -fsS http://localhost:8080
+curl: (22) The requested URL returned error: 403
++ docker ps --filter name=nginx-bind --format '{{.Names}} {{.Status}} {{.Ports}}'
+nginx-bind Up 2 seconds 0.0.0.0:8080->80/tcp, [::]:8080->80/tcp
++ docker swarm init --advertise-addr 127.0.0.1
+Swarm initialized: current node (ko1i2v0n47rurio7dykz49jh2) is now a manager.
+
+To add a worker to this swarm, run the following command:
+
+    docker swarm join --token SWMTKN-1-5hyjzbxntxyivj3a51y0txtctcjculkj9qd8g0bneq4hrpmnuw-5c0usr1jozot2nakrn1z2rp32 127.0.0.1:2377
+
+To add a manager to this swarm, run 'docker swarm join-token manager' and follow the instructions.
++ docker network rm my-overlay
++ true
++ docker network create --driver overlay --attachable my-overlay
+hfcrxiwwpds4ofbwkbocy277p
++ docker network inspect my-overlay --format '{{.Name}} driver={{.Driver}} scope={{.Scope}} attachable={{.Attachable}}'
+my-overlay driver=overlay scope=swarm attachable=true
++ docker network ls
++ grep my-overlay
+hfcrxiwwpds4   my-overlay     overlay   swarm
++ set +x
+SESSION 8 DONE
+===== Task 3 corrected bind mount =====
+c521f9a39b21efcb56b84db68b5fa487e8caaa57dcb0ffdedfc9396fef37f1c2
+Hello students - updated live!
+Hello students - updated live!
+nginx-bind Up 2 seconds 0.0.0.0:8080->80/tcp, [::]:8080->80/tcp
+SESSION 8 VERIFIED DONE
