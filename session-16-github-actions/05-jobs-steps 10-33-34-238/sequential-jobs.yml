@@ -1,0 +1,27 @@
+name: Sequential Jobs Example
+
+on: push
+
+jobs:
+  build:
+    name: Build Stage
+    runs-on: ubuntu-latest
+    steps:
+      - name: Compile application
+        run: echo "Compiling binary..."
+
+  test:
+    name: Test Stage
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run automated test suite
+        run: echo "Executing test suite post-build..."
+
+  deploy:
+    name: Deploy Stage
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to cluster
+        run: echo "Deploying verified build to cluster..."
