@@ -1,0 +1,31 @@
+name: Docker Image Artifact Example
+
+on: push
+
+jobs:
+  build-and-package-image:
+    name: Build and Save Image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create minimal Dockerfile
+        run: |
+          cat << 'EOF' > Dockerfile
+          FROM alpine:3.19
+          CMD ["echo", "Artifact demonstration container running"]
+          EOF
+
+      - name: Build Docker image
+        run: docker build -t pipeline-demo:${{ github.sha }} .
+
+      - name: Save Docker image to tarball archive
+        run: docker save pipeline-demo:${{ github.sha }} > image-bundle.tar
+
+      - name: Upload Docker image tarball as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-image-bundle
+          path: image-bundle.tar
+          retention-days: 1

@@ -118,7 +118,77 @@ NAME            CLASS   HOSTS        ADDRESS        PORTS   AGE
 yatri-ingress   nginx   yatri.local  192.168.49.2   80      12s
 ```
 
+---
+
+## Hands-on: Host-Based Routing and TLS/HTTPS Termination
+
+### Step 1: Generate a Self-Signed TLS Certificate
+To secure your Ingress with HTTPS without paying a third-party certificate authority in local testing, create a local certificate pair:
+
+```bash
+openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+  -keyout tls.key \
+  -out tls.crt \
+  -subj "/CN=campus.local/O=CampusDevOps"
+```
+
+### Step 2: Create a Kubernetes TLS Secret
+Store the public certificate and private key inside Kubernetes as a `kubernetes.io/tls` Secret:
+
+```bash
+kubectl create secret tls campus-tls-cert \
+  --cert=tls.crt \
+  --key=tls.key
+```
+
+Verify secret creation:
+```bash
+kubectl get secret campus-tls-cert
+```
+
+Expected Output:
+```text
+NAME              TYPE                DATA   AGE
+campus-tls-cert   kubernetes.io/tls   2      5s
+```
+
+### Step 3: Apply the Ingress with TLS and Multi-Host Rules
+Inspect `03-ingress/ingress-tls.yaml` and apply it:
+
+```bash
+kubectl apply -f 03-ingress/ingress-tls.yaml
+```
+
+Inspect the applied Ingress:
+```bash
+kubectl get ingress campus-ingress-tls
+```
+
+Expected Output:
+```text
+NAME                 CLASS   HOSTS                                  ADDRESS        PORTS     AGE
+campus-ingress-tls   nginx   portal.campus.local,api.campus.local   192.168.49.2   80, 443   10s
+```
+
+Notice `PORTS` shows `80, 443`, confirming both HTTP and HTTPS are active.
+
+### Step 4: Test Host-Based and TLS Routing with curl
+Map the local domain in `/etc/hosts` or use `curl --resolve`:
+
+```bash
+INGRESS_IP=$(kubectl get ingress campus-ingress-tls -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+
+# Test Host 1: Portal with HTTPS (-k ignores self-signed certificate warning)
+curl -k --resolve portal.campus.local:443:$INGRESS_IP https://portal.campus.local/
+
+# Test Host 2: API with HTTPS
+curl -k --resolve api.campus.local:443:$INGRESS_IP https://api.campus.local/api/health
+```
+
 ### Cleanup
 ```bash
-kubectl delete ingress yatri-ingress
+kubectl delete ingress campus-ingress-tls
+kubectl delete secret campus-tls-cert
+rm -f tls.key tls.crt
 ```
+

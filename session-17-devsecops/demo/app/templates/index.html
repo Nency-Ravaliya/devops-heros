@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="DevSecOps Dashboard — real-time CI/CD pipeline simulator, API playground, and system health monitor built with Flask." />
+  <title>DevSecOps Dashboard | Session 17</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/css/styles.css" />
+</head>
+<body>
+
+  <!-- ── Animated background ── -->
+  <div class="bg-grid"></div>
+  <div class="bg-glow glow-1"></div>
+  <div class="bg-glow glow-2"></div>
+  <div class="bg-glow glow-3"></div>
+
+  <!-- ── Nav ── -->
+  <nav id="navbar">
+    <div class="nav-brand">
+      <span class="nav-logo">⚡</span>
+      <span class="nav-title">DevSecOps<span class="accent"> Hub</span></span>
+    </div>
+    <div class="nav-links">
+      <a href="#status"   class="nav-link">Status</a>
+      <a href="#greet"    class="nav-link">Greet</a>
+      <a href="#calc"     class="nav-link">Calc</a>
+      <a href="#pipeline" class="nav-link">Pipeline</a>
+    </div>
+    <div id="health-badge" class="health-badge">
+      <span class="pulse-dot"></span>
+      <span id="health-label">Checking…</span>
+    </div>
+  </nav>
+
+  <!-- ── Hero ── -->
+  <header class="hero">
+    <div class="hero-content">
+      <div class="hero-tag">🚀 Session 17 · DevSecOps</div>
+      <h1 class="hero-title">
+        Build. Test.<br/><span class="gradient-text">Ship Securely.</span>
+      </h1>
+      <p class="hero-sub">
+        An interactive dashboard for your CI/CD pipelines, API playground,
+        and system health — all powered by Python &amp; Flask.
+      </p>
+      <div class="hero-actions">
+        <button class="btn-primary" onclick="scrollTo('#status')">View Status</button>
+        <button class="btn-ghost"   onclick="scrollTo('#pipeline')">Run Pipeline</button>
+      </div>
+    </div>
+    <div class="hero-visual">
+      <div class="terminal-card">
+        <div class="term-header">
+          <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+          <span class="term-title">flask run</span>
+        </div>
+        <div class="term-body" id="term-body">
+          <div class="term-line"><span class="term-prompt">$</span> python3 app/app.py</div>
+          <div class="term-line dim">* Serving Flask app "app"</div>
+          <div class="term-line dim">* Debug mode: on</div>
+          <div class="term-line success">* Running on http://0.0.0.0:5001</div>
+          <div class="term-line dim">Press CTRL+C to quit</div>
+          <div class="term-line blink">▋</div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- ── Status Cards ── -->
+    <section id="status" class="section">
+      <div class="section-header">
+        <h2>System Status</h2>
+        <button class="btn-sm" id="refresh-status-btn" onclick="loadStatus()">↻ Refresh</button>
+      </div>
+      <div class="cards-grid" id="status-cards">
+        <div class="stat-card skeleton"></div>
+        <div class="stat-card skeleton"></div>
+        <div class="stat-card skeleton"></div>
+        <div class="stat-card skeleton"></div>
+      </div>
+    </section>
+
+    <!-- ── Greet ── -->
+    <section id="greet" class="section">
+      <div class="section-header"><h2>👋 Greeting API</h2></div>
+      <div class="card interactive-card">
+        <p class="card-desc">Enter a name and hit <strong>Greet</strong> to call <code>/api/greet/&lt;name&gt;</code>.</p>
+        <div class="input-row">
+          <input id="greet-input" class="field" type="text" placeholder="Your name…" maxlength="40" />
+          <button class="btn-primary" id="greet-btn" onclick="doGreet()">Greet 👋</button>
+        </div>
+        <div id="greet-result" class="result-box hidden"></div>
+      </div>
+    </section>
+
+    <!-- ── Calculator ── -->
+    <section id="calc" class="section">
+      <div class="section-header"><h2>🧮 Calculator API</h2></div>
+      <div class="card interactive-card">
+        <p class="card-desc">Calls <code>POST /api/calculate</code> — try all six operations.</p>
+        <div class="calc-grid">
+          <input id="calc-a"  class="field" type="number" placeholder="Value A" />
+          <select id="calc-op" class="field select">
+            <option value="add">Add ( + )</option>
+            <option value="subtract">Subtract ( − )</option>
+            <option value="multiply">Multiply ( × )</option>
+            <option value="divide">Divide ( ÷ )</option>
+            <option value="power">Power ( ^ )</option>
+            <option value="modulo">Modulo ( % )</option>
+          </select>
+          <input id="calc-b"  class="field" type="number" placeholder="Value B" />
+          <button class="btn-primary span-full" id="calc-btn" onclick="doCalc()">Calculate</button>
+        </div>
+        <div id="calc-result" class="result-box hidden"></div>
+      </div>
+    </section>
+
+    <!-- ── Pipeline ── -->
+    <section id="pipeline" class="section">
+      <div class="section-header"><h2>☸️ Pipeline Simulator</h2></div>
+      <div class="card pipeline-card">
+        <p class="card-desc">Simulates a full CI/CD pipeline run via <code>POST /api/pipeline/run</code>.</p>
+        <div class="pipe-controls">
+          <div class="field-group">
+            <label for="pipe-branch">Branch</label>
+            <input id="pipe-branch" class="field" type="text" value="main" placeholder="branch name" />
+          </div>
+          <div class="field-group">
+            <label for="pipe-fail">Failure chance <span id="fail-pct">10%</span></label>
+            <input id="pipe-fail" class="slider" type="range" min="0" max="100" value="10"
+              oninput="document.getElementById('fail-pct').textContent = this.value + '%'" />
+          </div>
+          <button class="btn-primary" id="pipe-btn" onclick="runPipeline()">▶ Run Pipeline</button>
+        </div>
+        <div id="pipeline-result" class="pipeline-stages hidden"></div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="footer">
+    <p>⚡ DevSecOps Dashboard · Built with <span class="accent">Flask + Python</span> · Session 17</p>
+  </footer>
+
+  <script src="/static/js/main.js"></script>
+</body>
+</html>
