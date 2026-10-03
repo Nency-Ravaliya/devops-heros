@@ -1,0 +1,10 @@
+frontend:
+  image: ghcr.io/YOUR_ORG/taskboard-frontend
+backend:
+  image: ghcr.io/YOUR_ORG/taskboard-backend
+replicaCount: 2
+ingress:
+  enabled: true
+  host: taskboard.example.com
+hpa:
+  enabled: true
