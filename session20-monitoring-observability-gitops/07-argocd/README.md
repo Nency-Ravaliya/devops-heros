@@ -72,9 +72,6 @@ kubectl create namespace argocd
 
 kubectl apply -n argocd --server-side --force-conflicts -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
 
-# Apply the ApplicationSet CRD separately (required — avoids CrashLoopBackOff)
-curl -sL https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/crds/applicationset-crd.yaml \
-  | kubectl apply --server-side -f -
 ```
 
 Wait for all pods to reach `Running` (takes 2–5 min, images are large):
@@ -431,7 +428,3 @@ kubectl apply -n argocd \
 
 kubectl rollout restart deployment argocd-applicationset-controller -n argocd
 ```
-
-### Port-forward disconnects
-
-Just re-run the port-forward command. Port-forwards are not persistent — they drop if the terminal closes or the pod restarts.
