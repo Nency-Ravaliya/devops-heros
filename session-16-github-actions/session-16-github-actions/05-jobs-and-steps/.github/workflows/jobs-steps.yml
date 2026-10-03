@@ -1,0 +1,24 @@
+name: Jobs and Steps Demo
+on:
+  workflow_dispatch:
+jobs:
+  build:
+    name: Build Job
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+      - name: Build application
+        run: echo "Building application..."
+      - name: Build completed
+        run: echo "Build successful!"
+  test:
+    name: Test Job
+    runs-on: ubuntu-latest
+    steps:
+      - name: Test 1
+        run: echo "Running test 1"
+      - name: Test 2
+        run: echo "Running test 2"
+      - name: Tests completed
+        run: echo "All tests passed!"

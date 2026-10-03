@@ -61,7 +61,7 @@ Client chooses exactly which Pod to contact!
 
 ---
 
-## 4. Real-World Analogy: The Phone Directory vs PBX Switchboard
+## 4. Think of It Like This: The Phone Directory vs Switchboard
 * **Standard Service:** You call the company's 1-800 number. A machine answers and randomly connects you to an available operator.
 * **Headless Service:** You open a company directory list that displays every engineer's personal desk extension (`Alice: ext 101`, `Bob: ext 102`, `Charlie: ext 103`). You dial Alice directly.
 

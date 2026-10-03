@@ -1,8 +1,4 @@
-# Stop: The Trailing Newline Secret Bug: Incident Post-Mortem
-
-This issue causes 80% of database authentication failures when students create their first Kubernetes Secrets.
-
----
+# The Trailing Newline Secret Bug
 
 ## The Incident
 - **Symptom:** PostgreSQL pod rejects application connections with `FATAL: password authentication failed for user "yatri_admin"`.

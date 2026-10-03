@@ -1,0 +1,24 @@
+# Apply this file from your local/admin environment; do not put it under the Git source path.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: session20-mini
+  namespace: argocd
+spec:
+  project: default
+
+  source:
+    repoURL: https://github.com/YOUR_USERNAME/YOUR_GITOPS_REPO.git
+    targetRevision: main
+    path: app
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: session20
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

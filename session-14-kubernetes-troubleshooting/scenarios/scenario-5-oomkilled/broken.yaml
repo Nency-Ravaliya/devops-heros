@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: fail-5-oomkilled-pod
+  labels:
+    tier: triage-gauntlet
+    scenario: oomkilled
+spec:
+  containers:
+    - name: memory-leaker
+      image: python:3.11-alpine
+      command:
+        - "python3"
+        - "-c"
+        - |
+          # BUG: Rapidly allocates 200MB of RAM while limit is 20Mi
+          print("Allocating memory rapidly...")
+          chunks = []
+          for i in range(100):
+              chunks.append(b"x" * (10 * 1024 * 1024))
+      resources:
+        limits:
+          memory: "20Mi"
