@@ -34,8 +34,8 @@ jobs:
           - project: Session 21 EKS
             directory: session21-final-devops-project/terraform
     steps:
-      - uses: actions/checkout@v4
-      - uses: hashicorp/setup-terraform@v3
+      - uses: actions/checkout@v7
+      - uses: hashicorp/setup-terraform@v4
         with:
           terraform_version: "1.10.5"
       - name: Check formatting

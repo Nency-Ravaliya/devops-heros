@@ -27,8 +27,8 @@ jobs:
       run:
         working-directory: ${{ env.PROJECT_DIR }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
           cache: pip
@@ -43,8 +43,8 @@ jobs:
       run:
         working-directory: ${{ env.PROJECT_DIR }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
       - run: pip install bandit
@@ -57,8 +57,8 @@ jobs:
       run:
         working-directory: ${{ env.PROJECT_DIR }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
       - run: pip install pip-audit
@@ -68,7 +68,7 @@ jobs:
     name: Secret Scan - Gitleaks
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Scan assignment files
         run: |
           docker run --rm -v "$PWD:/repo" zricethezav/gitleaks:v8.24.2 \
@@ -79,11 +79,11 @@ jobs:
     needs: [test, sast, sca, secrets]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Build image
         run: docker build -t "$IMAGE_NAME:${GITHUB_SHA}" "$PROJECT_DIR"
       - name: Scan image
-        uses: aquasecurity/trivy-action@0.30.0
+        uses: aquasecurity/trivy-action@0.36.0
         with:
           image-ref: session17-devsecops:${{ github.sha }}
           severity: HIGH,CRITICAL
@@ -91,7 +91,7 @@ jobs:
           exit-code: "1"
       - name: Save delivery artifact
         run: docker save "$IMAGE_NAME:${GITHUB_SHA}" | gzip > session17-image.tar.gz
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: session17-container-image
           path: session17-image.tar.gz
@@ -101,8 +101,8 @@ jobs:
     needs: build_scan
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: helm/kind-action@v1.12.0
+      - uses: actions/checkout@v7
+      - uses: helm/kind-action@v1.15.0
         with:
           cluster_name: session17
       - name: Build and load the tested application

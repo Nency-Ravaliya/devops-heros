@@ -23,8 +23,8 @@ jobs:
     name: Test backend and build frontend
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
           cache: pip
@@ -34,7 +34,7 @@ jobs:
           pip install -r requirements.txt
           pytest -q
         working-directory: ${{ env.PROJECT_DIR }}/backend
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: "22"
           cache: npm
@@ -47,8 +47,8 @@ jobs:
     name: Source and dependency security
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
       - name: Bandit SAST
@@ -66,11 +66,11 @@ jobs:
     name: Lint and render Helm chart
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: azure/setup-helm@v4
+      - uses: actions/checkout@v7
+      - uses: azure/setup-helm@v5
       - run: helm lint "$PROJECT_DIR/helm/taskboard"
       - run: helm template taskboard "$PROJECT_DIR/helm/taskboard" > rendered-taskboard.yaml
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: taskboard-rendered-manifests
           path: rendered-taskboard.yaml
@@ -80,17 +80,17 @@ jobs:
     needs: [test, security]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - run: |
           docker build -t taskboard-backend:${GITHUB_SHA} "$PROJECT_DIR/backend"
           docker build -t taskboard-frontend:${GITHUB_SHA} "$PROJECT_DIR/frontend"
-      - uses: aquasecurity/trivy-action@0.30.0
+      - uses: aquasecurity/trivy-action@0.36.0
         with:
           image-ref: taskboard-backend:${{ github.sha }}
           severity: HIGH,CRITICAL
           ignore-unfixed: true
           exit-code: "1"
-      - uses: aquasecurity/trivy-action@0.30.0
+      - uses: aquasecurity/trivy-action@0.36.0
         with:
           image-ref: taskboard-frontend:${{ github.sha }}
           severity: HIGH,CRITICAL
@@ -102,9 +102,9 @@ jobs:
     needs: [images, helm]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: azure/setup-helm@v4
-      - uses: helm/kind-action@v1.12.0
+      - uses: actions/checkout@v7
+      - uses: azure/setup-helm@v5
+      - uses: helm/kind-action@v1.15.0
         with:
           cluster_name: taskboard
       - name: Build and load images

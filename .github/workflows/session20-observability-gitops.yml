@@ -23,7 +23,7 @@ jobs:
     name: Validate monitoring configuration
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Validate Compose files
         run: |
           docker compose -f "$SESSION_DIR/03-prometheus/docker-compose.yml" config
@@ -40,8 +40,8 @@ jobs:
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: helm/kind-action@v1.12.0
+      - uses: actions/checkout@v7
+      - uses: helm/kind-action@v1.15.0
         with:
           cluster_name: session20
       - name: Install Argo CD
