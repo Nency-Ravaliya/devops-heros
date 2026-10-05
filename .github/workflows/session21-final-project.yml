@@ -84,13 +84,13 @@ jobs:
       - run: |
           docker build -t taskboard-backend:${GITHUB_SHA} "$PROJECT_DIR/backend"
           docker build -t taskboard-frontend:${GITHUB_SHA} "$PROJECT_DIR/frontend"
-      - uses: aquasecurity/trivy-action@0.36.0
+      - uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: taskboard-backend:${{ github.sha }}
           severity: HIGH,CRITICAL
           ignore-unfixed: true
           exit-code: "1"
-      - uses: aquasecurity/trivy-action@0.36.0
+      - uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: taskboard-frontend:${{ github.sha }}
           severity: HIGH,CRITICAL

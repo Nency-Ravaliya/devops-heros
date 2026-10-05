@@ -47,7 +47,8 @@ jobs:
       - name: Install Argo CD
         run: |
           kubectl create namespace argocd
-          kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+          kubectl apply --server-side --force-conflicts -n argocd \
+            -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
           kubectl wait --for=condition=Available deployment --all -n argocd --timeout=240s
       - name: Apply GitOps application
         run: kubectl apply -f "$SESSION_DIR/08-mini-project/argocd-application.yaml"
