@@ -1,0 +1,2 @@
+aws_region    = "ap-south-1"
+bucket_prefix = "anshal-session18-"

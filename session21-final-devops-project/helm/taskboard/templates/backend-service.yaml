@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+  labels: {app: taskboard-backend}
+spec:
+  selector: {app: taskboard-backend}
+  ports:
+    - port: 8000
+      targetPort: 8000
+      name: http

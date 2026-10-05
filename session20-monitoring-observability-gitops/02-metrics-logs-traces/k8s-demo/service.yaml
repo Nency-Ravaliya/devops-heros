@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: session20-demo
+spec:
+  selector:
+    app: session20-demo
+  ports:
+    - port: 8080
+      targetPort: 8080

@@ -1,0 +1,13 @@
+frontend:
+  image: ghcr.io/anshalkumar/taskboard-frontend
+backend:
+  image: ghcr.io/anshalkumar/taskboard-backend
+replicaCount: 2
+ingress:
+  enabled: true
+  host: taskboard.example.com
+hpa:
+  enabled: true
+app:
+  environment: production
+  logLevel: INFO

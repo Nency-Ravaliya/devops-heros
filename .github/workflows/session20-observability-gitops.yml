@@ -1,0 +1,67 @@
+name: Session 20 Observability and GitOps
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "session20-monitoring-observability-gitops/**"
+      - ".github/workflows/session20-observability-gitops.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "session20-monitoring-observability-gitops/**"
+      - ".github/workflows/session20-observability-gitops.yml"
+
+permissions:
+  contents: read
+
+env:
+  SESSION_DIR: session20-monitoring-observability-gitops
+
+jobs:
+  monitoring:
+    name: Validate monitoring configuration
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate Compose files
+        run: |
+          docker compose -f "$SESSION_DIR/03-prometheus/docker-compose.yml" config
+          docker compose -f "$SESSION_DIR/04-grafana/docker-compose.yml" config
+      - name: Validate Prometheus rules
+        run: |
+          docker run --rm \
+            -v "$PWD/$SESSION_DIR/03-prometheus:/etc/prometheus:ro" \
+            --entrypoint promtool prom/prometheus:v3.5.0 \
+            check config /etc/prometheus/prometheus.yml
+
+  gitops:
+    name: Argo CD reconciliation
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: helm/kind-action@v1.12.0
+        with:
+          cluster_name: session20
+      - name: Install Argo CD
+        run: |
+          kubectl create namespace argocd
+          kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+          kubectl wait --for=condition=Available deployment --all -n argocd --timeout=240s
+      - name: Apply GitOps application
+        run: kubectl apply -f "$SESSION_DIR/08-mini-project/argocd-application.yaml"
+      - name: Verify synchronization
+        run: |
+          for attempt in {1..60}; do
+            sync=$(kubectl get application session20-mini -n argocd -o jsonpath='{.status.sync.status}' 2>/dev/null || true)
+            health=$(kubectl get application session20-mini -n argocd -o jsonpath='{.status.health.status}' 2>/dev/null || true)
+            echo "sync=$sync health=$health"
+            if [ "$sync" = "Synced" ] && [ "$health" = "Healthy" ]; then
+              kubectl rollout status deployment/session20-mini -n session20 --timeout=90s
+              exit 0
+            fi
+            sleep 5
+          done
+          kubectl describe application session20-mini -n argocd
+          exit 1

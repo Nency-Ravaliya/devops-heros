@@ -1,0 +1,49 @@
+name: Terraform Assignments
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "session18-terraform-iac/**"
+      - "session19-cloud-terraform/**"
+      - "session21-final-devops-project/terraform/**"
+      - ".github/workflows/session18-19-terraform.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "session18-terraform-iac/**"
+      - "session19-cloud-terraform/**"
+      - "session21-final-devops-project/terraform/**"
+      - ".github/workflows/session18-19-terraform.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  terraform:
+    name: Validate ${{ matrix.project }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - project: Session 18 S3
+            directory: session18-terraform-iac/terraform-s3-demo
+          - project: Session 19 cloud project
+            directory: session19-cloud-terraform/08-mini-project
+          - project: Session 21 EKS
+            directory: session21-final-devops-project/terraform
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.10.5"
+      - name: Check formatting
+        run: terraform fmt -check -recursive
+        working-directory: ${{ matrix.directory }}
+      - name: Initialize without a remote backend
+        run: terraform init -backend=false
+        working-directory: ${{ matrix.directory }}
+      - name: Validate configuration
+        run: terraform validate
+        working-directory: ${{ matrix.directory }}

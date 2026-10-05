@@ -1,0 +1,137 @@
+name: Session 21 Final Project
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "session21-final-devops-project/**"
+      - ".github/workflows/session21-final-project.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "session21-final-devops-project/**"
+      - ".github/workflows/session21-final-project.yml"
+
+permissions:
+  contents: read
+
+env:
+  PROJECT_DIR: session21-final-devops-project
+
+jobs:
+  test:
+    name: Test backend and build frontend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: session21-final-devops-project/backend/requirements.txt
+      - name: Test backend
+        run: |
+          pip install -r requirements.txt
+          pytest -q
+        working-directory: ${{ env.PROJECT_DIR }}/backend
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: session21-final-devops-project/frontend/package-lock.json
+      - name: Build frontend
+        run: npm ci && npm run build
+        working-directory: ${{ env.PROJECT_DIR }}/frontend
+
+  security:
+    name: Source and dependency security
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Bandit SAST
+        run: pip install bandit && bandit -r app -lll
+        working-directory: ${{ env.PROJECT_DIR }}/backend
+      - name: Python SCA
+        run: pip install pip-audit && pip-audit -r requirements.txt
+        working-directory: ${{ env.PROJECT_DIR }}/backend
+      - name: Secret scan
+        run: |
+          docker run --rm -v "$PWD:/repo" zricethezav/gitleaks:v8.24.2 \
+            detect --no-git --redact --source /repo/session21-final-devops-project
+
+  helm:
+    name: Lint and render Helm chart
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/setup-helm@v4
+      - run: helm lint "$PROJECT_DIR/helm/taskboard"
+      - run: helm template taskboard "$PROJECT_DIR/helm/taskboard" > rendered-taskboard.yaml
+      - uses: actions/upload-artifact@v4
+        with:
+          name: taskboard-rendered-manifests
+          path: rendered-taskboard.yaml
+
+  images:
+    name: Build and scan images
+    needs: [test, security]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          docker build -t taskboard-backend:${GITHUB_SHA} "$PROJECT_DIR/backend"
+          docker build -t taskboard-frontend:${GITHUB_SHA} "$PROJECT_DIR/frontend"
+      - uses: aquasecurity/trivy-action@0.30.0
+        with:
+          image-ref: taskboard-backend:${{ github.sha }}
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"
+      - uses: aquasecurity/trivy-action@0.30.0
+        with:
+          image-ref: taskboard-frontend:${{ github.sha }}
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"
+
+  deploy:
+    name: Deploy to Kind and smoke test
+    needs: [images, helm]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/setup-helm@v4
+      - uses: helm/kind-action@v1.12.0
+        with:
+          cluster_name: taskboard
+      - name: Build and load images
+        run: |
+          docker build -t taskboard-backend:ci "$PROJECT_DIR/backend"
+          docker build -t taskboard-frontend:ci "$PROJECT_DIR/frontend"
+          kind load docker-image taskboard-backend:ci taskboard-frontend:ci --name taskboard
+      - name: Install chart
+        run: |
+          helm upgrade --install taskboard "$PROJECT_DIR/helm/taskboard" \
+            --namespace taskboard --create-namespace \
+            --set backend.image=taskboard-backend \
+            --set backend.tag=ci \
+            --set frontend.image=taskboard-frontend \
+            --set frontend.tag=ci \
+            --set hpa.enabled=false \
+            --set monitoring.serviceMonitor.enabled=false \
+            --set postgres.persistence.enabled=false
+          kubectl rollout status deployment/taskboard-postgres -n taskboard --timeout=120s
+          kubectl rollout status deployment/taskboard-taskboard-backend -n taskboard --timeout=120s
+          kubectl rollout status deployment/taskboard-frontend -n taskboard --timeout=120s
+      - name: Smoke test through frontend proxy
+        run: |
+          kubectl port-forward service/frontend -n taskboard 3000:80 >/tmp/taskboard-port-forward.log 2>&1 &
+          for attempt in {1..20}; do
+            curl -fsS http://127.0.0.1:3000/health && exit 0
+            sleep 3
+          done
+          kubectl get all -n taskboard
+          exit 1

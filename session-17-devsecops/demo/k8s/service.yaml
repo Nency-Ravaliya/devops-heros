@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: session17-python
+spec:
+  type: ClusterIP
+  selector:
+    app: session17-python
+  ports:
+    - port: 80
+      targetPort: 5001

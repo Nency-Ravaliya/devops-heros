@@ -1,0 +1,125 @@
+name: Session 17 DevSecOps
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "session-17-devsecops/**"
+      - ".github/workflows/session17-devsecops.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "session-17-devsecops/**"
+      - ".github/workflows/session17-devsecops.yml"
+
+permissions:
+  contents: read
+
+env:
+  PROJECT_DIR: session-17-devsecops/demo
+  IMAGE_NAME: session17-devsecops
+
+jobs:
+  test:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ env.PROJECT_DIR }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: session-17-devsecops/demo/requirements-dev.txt
+      - run: pip install -r requirements-dev.txt
+      - run: pytest -q --cov=app --cov-report=term-missing
+
+  sast:
+    name: SAST - Bandit
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ env.PROJECT_DIR }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install bandit
+      - run: bandit -r app -lll
+
+  sca:
+    name: SCA - pip-audit
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ env.PROJECT_DIR }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pip-audit
+      - run: pip-audit -r requirements.txt
+
+  secrets:
+    name: Secret Scan - Gitleaks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Scan assignment files
+        run: |
+          docker run --rm -v "$PWD:/repo" zricethezav/gitleaks:v8.24.2 \
+            detect --no-git --redact --source /repo/session-17-devsecops
+
+  build_scan:
+    name: Build and Scan Image
+    needs: [test, sast, sca, secrets]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build image
+        run: docker build -t "$IMAGE_NAME:${GITHUB_SHA}" "$PROJECT_DIR"
+      - name: Scan image
+        uses: aquasecurity/trivy-action@0.30.0
+        with:
+          image-ref: session17-devsecops:${{ github.sha }}
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"
+      - name: Save delivery artifact
+        run: docker save "$IMAGE_NAME:${GITHUB_SHA}" | gzip > session17-image.tar.gz
+      - uses: actions/upload-artifact@v4
+        with:
+          name: session17-container-image
+          path: session17-image.tar.gz
+
+  deploy:
+    name: Deploy to Kind
+    needs: build_scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: helm/kind-action@v1.12.0
+        with:
+          cluster_name: session17
+      - name: Build and load the tested application
+        run: |
+          docker build -t session17-devsecops:local "$PROJECT_DIR"
+          kind load docker-image session17-devsecops:local --name session17
+      - name: Apply manifests
+        run: |
+          kubectl apply -f "$PROJECT_DIR/k8s/deployment.yaml"
+          kubectl apply -f "$PROJECT_DIR/k8s/service.yaml"
+          kubectl rollout status deployment/session17-python --timeout=90s
+      - name: Verify the health endpoint
+        run: |
+          kubectl port-forward service/session17-python 5001:80 >/tmp/session17-port-forward.log 2>&1 &
+          for attempt in {1..15}; do
+            curl -fsS http://127.0.0.1:5001/health && exit 0
+            sleep 2
+          done
+          kubectl get pods -o wide
+          exit 1
