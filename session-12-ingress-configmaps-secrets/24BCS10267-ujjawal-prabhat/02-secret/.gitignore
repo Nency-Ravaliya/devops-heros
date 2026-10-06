@@ -1,0 +1,4 @@
+# never commit real secret manifests
+secret.yaml
+*.secret.yaml
+.env
