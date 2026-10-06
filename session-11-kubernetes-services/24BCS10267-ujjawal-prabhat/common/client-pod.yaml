@@ -1,0 +1,22 @@
+# Two client pods: "dnsutils" (dig, nslookup, host) for DNS tests and "curl" for HTTP tests.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: dnsutils
+  namespace: s11
+spec:
+  containers:
+    - name: dnsutils
+      image: registry.k8s.io/e2e-test-images/jessie-dnsutils:1.7
+      command: ["sleep", "infinity"]
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: curl
+  namespace: s11
+spec:
+  containers:
+    - name: curl
+      image: curlimages/curl:8.10.1
+      command: ["sleep", "infinity"]

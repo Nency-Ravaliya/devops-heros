@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: web-clusterip
+  namespace: s11
+spec:
+  type: ClusterIP          # default type: virtual IP reachable only inside the cluster
+  selector:
+    app: web
+  ports:
+    - name: http
+      port: 8080           # port on the ClusterIP
+      targetPort: http     # named container port (80)
