@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: s16-cicd-demo
+  labels:
+    app: s16-cicd-demo
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: s16-cicd-demo
+  template:
+    metadata:
+      labels:
+        app: s16-cicd-demo
+    spec:
+      imagePullSecrets:
+        - name: ghcr-pull
+      containers:
+        - name: app
+          image: __IMAGE__
+          ports:
+            - containerPort: 3000
+          env:
+            - name: APP_VERSION
+              value: "__VERSION__"
+            - name: APP_GREETING
+              valueFrom:
+                secretKeyRef:
+                  name: s16-app-secrets
+                  key: APP_GREETING
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 2
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 250m
+              memory: 128Mi

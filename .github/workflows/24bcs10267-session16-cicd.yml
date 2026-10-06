@@ -1,0 +1,224 @@
+# Session 16 - CI/CD with GitHub Actions
+# Student: Ujjawal Prabhat (24BCS10267)
+# Project: session-16-github-actions/24BCS10267-ujjawal-prabhat
+#
+# Pipeline:  ci (lint + test, matrix)  ->  build (docker image artifact)
+#            ->  deliver (push to GHCR, push only)  ->  deploy (kind + kubectl + smoke test)
+name: "24BCS10267 - Session 16 CI/CD"
+
+on:
+  push:
+    branches: [24BCS10267/session-16]
+    paths:
+      - "session-16-github-actions/24BCS10267-ujjawal-prabhat/**"
+      - ".github/workflows/24bcs10267-session16-cicd.yml"
+      - "!**/*.md" # README-only commits do not trigger the pipeline
+  pull_request:
+    paths:
+      - "session-16-github-actions/24BCS10267-ujjawal-prabhat/**"
+      - ".github/workflows/24bcs10267-session16-cicd.yml"
+      - "!**/*.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: s16-24bcs10267-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  APP_DIR: session-16-github-actions/24BCS10267-ujjawal-prabhat
+  IMAGE_NAME: ghcr.io/ujjawalprabhat/s16-cicd-demo-24bcs10267
+
+defaults:
+  run:
+    working-directory: session-16-github-actions/24BCS10267-ujjawal-prabhat
+
+jobs:
+  # ------------------------------------------------------------------
+  # CI: lint + unit tests on a matrix of runners (OS) and Node versions
+  # ------------------------------------------------------------------
+  ci:
+    name: CI (${{ matrix.os }}, node ${{ matrix.node }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        node: [20, 22]
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js ${{ matrix.node }}
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+          cache-dependency-path: ${{ env.APP_DIR }}/package-lock.json
+
+      - name: Show runner info
+        shell: bash
+        run: |
+          echo "Runner OS: $RUNNER_OS / arch: $RUNNER_ARCH"
+          node --version
+          npm --version
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Unit tests with coverage
+        run: npm test
+
+      - name: Upload test + coverage report
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: test-report-${{ matrix.os }}-node${{ matrix.node }}
+          path: |
+            ${{ env.APP_DIR }}/reports/
+            ${{ env.APP_DIR }}/coverage/
+          retention-days: 14
+
+  # ------------------------------------------------------------------
+  # Build: docker image, container smoke test, save image as artifact
+  # ------------------------------------------------------------------
+  build:
+    name: Build Docker image
+    needs: ci
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v6
+
+      - name: Docker build
+        run: |
+          docker build \
+            --label org.opencontainers.image.source=https://github.com/${{ github.repository }} \
+            --label org.opencontainers.image.revision=${{ github.sha }} \
+            -t s16-cicd-demo:${{ github.sha }} .
+          docker image ls s16-cicd-demo
+
+      - name: Smoke test the container
+        run: |
+          docker run -d --name smoke -p 3000:3000 s16-cicd-demo:${{ github.sha }}
+          for i in $(seq 1 15); do curl -fs http://localhost:3000/health && break; sleep 1; done
+          echo
+          curl -fs "http://localhost:3000/api/multiply?a=6&b=7"
+          echo
+          docker rm -f smoke
+
+      - name: Save image to tarball
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE/dist"
+          docker save s16-cicd-demo:${{ github.sha }} | gzip > "$GITHUB_WORKSPACE/dist/s16-cicd-demo.tar.gz"
+          ls -lh "$GITHUB_WORKSPACE/dist"
+
+      - name: Upload image artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: docker-image
+          path: dist/s16-cicd-demo.tar.gz
+          retention-days: 7
+
+  # ------------------------------------------------------------------
+  # CD (delivery): push the tested image to GHCR - only on push
+  # ------------------------------------------------------------------
+  deliver:
+    name: Push image to GHCR
+    needs: build
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image: ${{ steps.push.outputs.image }}
+    steps:
+      - name: Download image artifact
+        uses: actions/download-artifact@v7
+        with:
+          name: docker-image
+          path: ${{ runner.temp }}/image
+
+      - name: Load image
+        working-directory: ${{ runner.temp }}/image
+        run: docker load -i s16-cicd-demo.tar.gz
+
+      - name: Login to GHCR with GITHUB_TOKEN
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Tag and push
+        id: push
+        working-directory: ${{ runner.temp }}
+        run: |
+          SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+          docker tag s16-cicd-demo:${{ github.sha }} $IMAGE_NAME:$SHORT_SHA
+          docker tag s16-cicd-demo:${{ github.sha }} $IMAGE_NAME:latest
+          docker push $IMAGE_NAME:$SHORT_SHA
+          docker push $IMAGE_NAME:latest
+          echo "image=$IMAGE_NAME:$SHORT_SHA" >> "$GITHUB_OUTPUT"
+
+  # ------------------------------------------------------------------
+  # CD (deployment): ephemeral kind cluster inside the runner
+  # ------------------------------------------------------------------
+  deploy:
+    name: Deploy to Kubernetes (kind)
+    needs: deliver
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v6
+
+      - name: Create kind cluster
+        uses: helm/kind-action@v1
+        with:
+          cluster_name: s16-24bcs10267
+
+      - name: Create Kubernetes secrets (registry + app secret)
+        env:
+          APP_GREETING: ${{ secrets.APP_GREETING }}
+        run: |
+          kubectl create secret docker-registry ghcr-pull \
+            --docker-server=ghcr.io \
+            --docker-username=${{ github.actor }} \
+            --docker-password=${{ secrets.GITHUB_TOKEN }}
+          # value comes from the repo secret; it is never echoed
+          kubectl create secret generic s16-app-secrets \
+            --from-literal=APP_GREETING="$APP_GREETING"
+          kubectl get secrets
+
+      - name: Render manifests and apply
+        run: |
+          sed -i "s|__IMAGE__|${{ needs.deliver.outputs.image }}|; s|__VERSION__|${GITHUB_SHA::7}|" k8s/deployment.yaml
+          grep -n "image:" k8s/deployment.yaml
+          kubectl apply -f k8s/
+
+      - name: Wait for rollout
+        run: |
+          kubectl rollout status deployment/s16-cicd-demo --timeout=180s
+          kubectl get deploy,rs,pods,svc -o wide
+
+      - name: Smoke test through the Service
+        run: |
+          kubectl port-forward service/s16-cicd-demo 8080:80 >/dev/null 2>&1 &
+          for i in $(seq 1 15); do curl -fs http://localhost:8080/health && break; sleep 1; done
+          echo
+          # Verify secret was injected without printing it
+          SOURCE=$(curl -fs http://localhost:8080/ | jq -r .greetingSource)
+          VERSION=$(curl -fs http://localhost:8080/ | jq -r .version)
+          echo "greetingSource=$SOURCE version=$VERSION"
+          test "$SOURCE" = "secret"
+          curl -fs "http://localhost:8080/api/add?a=40&b=2"
+          echo
