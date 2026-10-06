@@ -1,0 +1,10 @@
+# Baseline (healthy) values for the troubleshooting lab namespace final-trouble.
+ingress:
+  host: trouble.stockpilot.local
+hpa:
+  minReplicas: 2
+  maxReplicas: 3
+monitoring:
+  serviceMonitor: {enabled: false}
+  prometheusRule: {enabled: false}
+  grafanaDashboard: {enabled: false}

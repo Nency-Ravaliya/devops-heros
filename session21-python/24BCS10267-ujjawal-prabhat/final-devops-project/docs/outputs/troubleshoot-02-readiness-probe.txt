@@ -1,0 +1,67 @@
+
+############ BREAK: readiness probe path /readyz (app serves /ready) ############
+
+$ helm upgrade stockpilot helm/stockpilot -n final-trouble -f helm/stockpilot/values-dev.yaml -f troubleshooting/values-trouble.yaml --set probes.readiness.path=/readyz | grep -E 'STATUS|REVISION'
+STATUS: deployed
+REVISION: 11
+
+
+############ SYMPTOM ############
+
+$ kubectl -n final-trouble get pods -l app.kubernetes.io/component=api -o wide
+NAME                              READY   STATUS    RESTARTS   AGE     IP             NODE                   NOMINATED NODE   READINESS GATES
+stockpilot-api-6bd9b7b7c7-k89vm   0/1     Running   0          30s     10.244.1.154   devops-heros-worker2   <none>           <none>
+stockpilot-api-8694764fbc-d66ln   1/1     Running   0          3m51s   10.244.2.110   devops-heros-worker    <none>           <none>
+stockpilot-api-8694764fbc-kpxk4   1/1     Running   0          3m51s   10.244.1.140   devops-heros-worker2   <none>           <none>
+
+$ kubectl -n final-trouble get endpointslices -l kubernetes.io/service-name=stockpilot-api -o jsonpath='{range .items[*].endpoints[*]}{.targetRef.name}  {.addresses[0]}  ready={.conditions.ready}{"\n"}{end}'
+stockpilot-api-8694764fbc-kpxk4  10.244.1.140  ready=true
+stockpilot-api-8694764fbc-d66ln  10.244.2.110  ready=true
+stockpilot-api-6bd9b7b7c7-k89vm  10.244.1.154  ready=false
+
+
+############ INVESTIGATE ############
+
+$ kubectl -n final-trouble describe pod -l app.kubernetes.io/component=api | grep -E 'Readiness:|Unhealthy|Ready:' | sort | uniq -c
+   2     Readiness:  http-get http://:http/ready delay=3s timeout=1s period=5s #success=1 #failure=3
+   1     Readiness:  http-get http://:http/readyz delay=3s timeout=1s period=5s #success=1 #failure=3
+   1     Ready:          False
+   2     Ready:          True
+
+$ kubectl -n final-trouble get events --field-selector reason=Unhealthy | grep 'statuscode: 404' | tail -2 | cut -c1-200
+2m3s        Warning   Unhealthy   pod/stockpilot-api-6bd9b7b7c7-x7vvx       Readiness probe failed: HTTP probe failed with statuscode: 404
+63s         Warning   Unhealthy   pod/stockpilot-api-6bd9b7b7c7-zqw2r       Readiness probe failed: HTTP probe failed with statuscode: 404
+
+$ kubectl -n final-trouble exec pod/stockpilot-api-6bd9b7b7c7-k89vm -- python -c "import urllib.request as u
+for p in ('/readyz','/ready'):
+    try: print(p, u.urlopen('http://127.0.0.1:8000'+p).status)
+    except Exception as e: print(p, e)"
+/readyz HTTP Error 404: Not Found
+/ready 200
+
+
+############ ROOT CAUSE: kubelet probes GET /readyz -> 404, so the new pod is never added to the Service endpoints and the rollout stalls. ############
+
+
+
+############ FIX ############
+
+$ helm upgrade stockpilot helm/stockpilot -n final-trouble -f helm/stockpilot/values-dev.yaml -f troubleshooting/values-trouble.yaml --wait --timeout 5m | grep -E 'STATUS|REVISION'
+STATUS: deployed
+REVISION: 12
+
+
+############ VERIFY ############
+
+$ kubectl -n final-trouble get pods -l app.kubernetes.io/component=api
+NAME                              READY   STATUS    RESTARTS   AGE
+stockpilot-api-8694764fbc-d66ln   1/1     Running   0          3m57s
+stockpilot-api-8694764fbc-kpxk4   1/1     Running   0          3m57s
+
+$ kubectl -n final-trouble get endpointslices -l kubernetes.io/service-name=stockpilot-api -o jsonpath='{range .items[*].endpoints[*]}{.targetRef.name}  {.addresses[0]}  ready={.conditions.ready}{"\n"}{end}'
+stockpilot-api-8694764fbc-kpxk4  10.244.1.140  ready=true
+stockpilot-api-8694764fbc-d66ln  10.244.2.110  ready=true
+
+$ curl -s -o /dev/null -w 'HTTP %{http_code}\n' -H 'Host: trouble.stockpilot.local' localhost:8081/ready
+HTTP 200
+

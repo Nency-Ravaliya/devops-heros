@@ -200,7 +200,8 @@ jobs:
             --output type=oci,dest=/tmp/image.oci.tar \
             application
           mkdir -p /tmp/oci && tar -xf /tmp/image.oci.tar -C /tmp/oci
-          python3 -c 'import json;[print("built", m["platform"]["os"]+"/"+m["platform"]["architecture"], m["digest"]) for m in json.load(open("/tmp/oci/index.json"))["manifests"]]'
+          echo "platform manifests in the OCI archive:"
+          python3 scripts/oci_flatten.py /tmp/oci
           gzip /tmp/image.oci.tar
           {
             echo "### Docker build: \`${IMAGE}:${GITHUB_SHA}\`"
@@ -232,6 +233,7 @@ jobs:
         working-directory: ${{ env.PROJECT_DIR }}
         run: |
           mkdir -p /tmp/oci && gunzip -c /tmp/image.oci.tar.gz | tar -xf - -C /tmp/oci
+          python3 scripts/oci_flatten.py /tmp/oci
           count() { python3 -c 'import json,sys;d=json.load(open(sys.argv[1]));print(sum(len(r.get("Vulnerabilities") or []) for r in d.get("Results",[])))' "$1"; }
           total=0
           echo "### Image scan (Trivy)" >> "$GITHUB_STEP_SUMMARY"
