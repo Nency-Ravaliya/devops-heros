@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+data:
+  db_host: postgres-db.s14.svc.cluster.local
+  log_level: info

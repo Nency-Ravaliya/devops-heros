@@ -1,0 +1,20 @@
+# Fix for scenarios/scenario-4-dns-failure/broken.yaml:
+# use the real Service name and the namespace it lives in (s14).
+apiVersion: v1
+kind: Pod
+metadata:
+  name: fail-4-dns-failure-pod
+  labels:
+    tier: triage-gauntlet
+    scenario: dns-failure
+spec:
+  containers:
+    - name: client
+      image: curlimages/curl:8.6.0
+      command: ["sh", "-c"]
+      args:
+        - |
+          echo "Attempting connection to internal database...";
+          curl -s --connect-timeout 3 http://postgres-db.s14.svc.cluster.local:5432 | head -4
+          echo "Process sleeping...";
+          sleep 3600

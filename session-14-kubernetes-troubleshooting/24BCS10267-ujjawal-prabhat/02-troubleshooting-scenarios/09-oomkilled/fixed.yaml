@@ -1,0 +1,26 @@
+# Fix for scenarios/scenario-5-oomkilled/broken.yaml:
+# allocate a bounded amount (50MB) and give the container a limit above it.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: fail-5-oomkilled-pod
+  labels:
+    tier: triage-gauntlet
+    scenario: oomkilled
+spec:
+  containers:
+    - name: memory-leaker
+      image: python:3.11-alpine
+      command:
+        - "python3"
+        - "-c"
+        - |
+          import time
+          chunks = [b"x" * (10 * 1024 * 1024) for _ in range(5)]
+          print("Allocated 50MB, running within limits", flush=True)
+          time.sleep(3600)
+      resources:
+        requests:
+          memory: "64Mi"
+        limits:
+          memory: "128Mi"

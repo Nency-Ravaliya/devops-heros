@@ -1,0 +1,9 @@
+# Fix for mini-project/broken-pod.yaml: use a tag that exists on Docker Hub.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: project-broken-pod
+spec:
+  containers:
+    - name: app
+      image: nginx:1.27
