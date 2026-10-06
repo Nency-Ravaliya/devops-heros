@@ -1,0 +1,27 @@
+$ ls -li
+total 16
+44894611 -rw-r--r--@ 2 bhanageviraj  staff  17 Oct  6 18:35 hardlink.txt
+44894611 -rw-r--r--@ 2 bhanageviraj  staff  17 Oct  6 18:35 original.txt
+44894614 lrwxr-xr-x@ 1 bhanageviraj  staff  12 Oct  6 18:35 softlink.txt -> original.txt
+
+$ cat hardlink.txt
+original content
+$ cat softlink.txt
+original content
+
+$ echo 'updated' >> original.txt
+$ cat hardlink.txt
+original content
+updated
+$ cat softlink.txt
+original content
+updated
+
+$ rm original.txt && ls -li && echo '--- softlink after delete ---' && cat softlink.txt || true
+total 8
+44894611 -rw-r--r--@ 1 bhanageviraj  staff  25 Oct  6 18:35 hardlink.txt
+44894614 lrwxr-xr-x@ 1 bhanageviraj  staff  12 Oct  6 18:35 softlink.txt -> original.txt
+--- cat softlink (expect failure) ---
+--- cat hardlink (still works) ---
+original content
+updated
