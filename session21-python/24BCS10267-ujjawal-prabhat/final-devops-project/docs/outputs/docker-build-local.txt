@@ -1,0 +1,168 @@
+#0 building with "desktop-linux" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 2.32kB done
+#1 DONE 0.0s
+
+#2 resolve image config for docker-image://docker.io/docker/dockerfile:1.7
+#2 ...
+
+#3 [auth] docker/dockerfile:pull token for registry-1.docker.io
+#3 DONE 0.0s
+
+#2 resolve image config for docker-image://docker.io/docker/dockerfile:1.7
+#2 DONE 5.6s
+
+#4 docker-image://docker.io/docker/dockerfile:1.7@sha256:a57df69d0ea827fb7266491f2813635de6f17269be881f696fbfdf2d83dda33e
+#4 resolve docker.io/docker/dockerfile:1.7@sha256:a57df69d0ea827fb7266491f2813635de6f17269be881f696fbfdf2d83dda33e 0.0s done
+#4 sha256:6e230fe0035dc5b9d8d5e65513d1f11ae3b25d14362031fb540a4c23bf862933 0B / 11.24MB 0.2s
+#4 sha256:6e230fe0035dc5b9d8d5e65513d1f11ae3b25d14362031fb540a4c23bf862933 1.05MB / 11.24MB 1.2s
+#4 sha256:6e230fe0035dc5b9d8d5e65513d1f11ae3b25d14362031fb540a4c23bf862933 2.10MB / 11.24MB 1.5s
+#4 sha256:6e230fe0035dc5b9d8d5e65513d1f11ae3b25d14362031fb540a4c23bf862933 3.15MB / 11.24MB 2.0s
+#4 sha256:6e230fe0035dc5b9d8d5e65513d1f11ae3b25d14362031fb540a4c23bf862933 4.19MB / 11.24MB 2.1s
+#4 sha256:6e230fe0035dc5b9d8d5e65513d1f11ae3b25d14362031fb540a4c23bf862933 5.24MB / 11.24MB 2.3s
+#4 sha256:6e230fe0035dc5b9d8d5e65513d1f11ae3b25d14362031fb540a4c23bf862933 6.29MB / 11.24MB 2.6s
+#4 sha256:6e230fe0035dc5b9d8d5e65513d1f11ae3b25d14362031fb540a4c23bf862933 7.34MB / 11.24MB 3.0s
+#4 sha256:6e230fe0035dc5b9d8d5e65513d1f11ae3b25d14362031fb540a4c23bf862933 8.39MB / 11.24MB 3.3s
+#4 sha256:6e230fe0035dc5b9d8d5e65513d1f11ae3b25d14362031fb540a4c23bf862933 9.44MB / 11.24MB 3.5s
+#4 sha256:6e230fe0035dc5b9d8d5e65513d1f11ae3b25d14362031fb540a4c23bf862933 10.49MB / 11.24MB 3.6s
+#4 sha256:6e230fe0035dc5b9d8d5e65513d1f11ae3b25d14362031fb540a4c23bf862933 11.24MB / 11.24MB 3.6s done
+#4 extracting sha256:6e230fe0035dc5b9d8d5e65513d1f11ae3b25d14362031fb540a4c23bf862933 0.1s done
+#4 DONE 3.7s
+
+#5 [internal] load metadata for docker.io/library/python:3.12-slim
+#5 DONE 1.9s
+
+#6 [builder 1/5] FROM docker.io/library/python:3.12-slim@sha256:ddb0207ae1f0356c2b724d740769b0c5f5f51cc54a0525178f721825f78fe74c
+#6 resolve docker.io/library/python:3.12-slim@sha256:ddb0207ae1f0356c2b724d740769b0c5f5f51cc54a0525178f721825f78fe74c done
+#6 CACHED
+
+#7 [internal] load build context
+#7 transferring context: 17.20kB done
+#7 DONE 0.0s
+
+#8 [builder 2/5] WORKDIR /build
+#8 DONE 0.0s
+
+#9 [builder 3/5] RUN python -m venv /opt/venv
+#9 DONE 1.7s
+
+#10 [runtime 2/5] RUN apt-get update && apt-get upgrade -y && rm -rf /var/lib/apt/lists/*  && groupadd --gid 10001 app  && useradd --uid 10001 --gid app --no-create-home --shell /usr/sbin/nologin app
+#10 0.556 Hit:1 http://deb.debian.org/debian trixie InRelease
+#10 0.633 Get:2 http://deb.debian.org/debian trixie-updates InRelease [47.3 kB]
+#10 0.843 Get:3 http://deb.debian.org/debian-security trixie-security InRelease [43.4 kB]
+#10 0.945 Get:4 http://deb.debian.org/debian trixie/main arm64 Packages [9614 kB]
+#10 ...
+
+#11 [builder 4/5] COPY requirements.txt .
+#11 DONE 0.0s
+
+#12 [builder 5/5] RUN pip install --upgrade pip && pip install -r requirements.txt
+#12 0.312 Requirement already satisfied: pip in /opt/venv/lib/python3.12/site-packages (25.0.1)
+#12 0.973 Collecting pip
+#12 1.425   Downloading pip-26.2.1-py3-none-any.whl.metadata (4.6 kB)
+#12 1.498 Downloading pip-26.2.1-py3-none-any.whl (1.8 MB)
+#12 1.926    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.8/1.8 MB 5.4 MB/s eta 0:00:00
+#12 1.933 Installing collected packages: pip
+#12 1.933   Attempting uninstall: pip
+#12 1.933     Found existing installation: pip 25.0.1
+#12 1.946     Uninstalling pip-25.0.1:
+#12 2.061       Successfully uninstalled pip-25.0.1
+#12 2.473 Successfully installed pip-26.2.1
+#12 ...
+
+#10 [runtime 2/5] RUN apt-get update && apt-get upgrade -y && rm -rf /var/lib/apt/lists/*  && groupadd --gid 10001 app  && useradd --uid 10001 --gid app --no-create-home --shell /usr/sbin/nologin app
+#10 2.706 Get:5 http://deb.debian.org/debian trixie-updates/main arm64 Packages [4424 B]
+#10 2.886 Get:6 http://deb.debian.org/debian-security trixie-security/main arm64 Packages [265 kB]
+#10 3.290 Fetched 9974 kB in 3s (3258 kB/s)
+#10 3.290 Reading package lists...
+#10 3.624 Reading package lists...
+#10 3.930 Building dependency tree...
+#10 4.017 Reading state information...
+#10 4.061 Calculating upgrade...
+#10 4.238 0 upgraded, 0 newly installed, 0 to remove and 0 not upgraded.
+#10 DONE 4.4s
+
+#13 [runtime 3/5] WORKDIR /app
+#13 DONE 0.0s
+
+#12 [builder 5/5] RUN pip install --upgrade pip && pip install -r requirements.txt
+#12 3.185 Collecting fastapi==0.142.2 (from -r requirements.txt (line 1))
+#12 3.446   Downloading fastapi-0.142.2-py3-none-any.whl.metadata (27 kB)
+#12 3.618 Collecting uvicorn==0.54.0 (from -r requirements.txt (line 2))
+#12 3.698   Downloading uvicorn-0.54.0-py3-none-any.whl.metadata (6.6 kB)
+#12 4.087 Collecting sqlalchemy==2.1.3 (from -r requirements.txt (line 3))
+#12 4.230   Downloading sqlalchemy-2.1.3-cp312-cp312-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl.metadata (9.7 kB)
+#12 4.463 Collecting psycopg==3.3.6 (from psycopg[binary]==3.3.6->-r requirements.txt (line 4))
+#12 4.586   Downloading psycopg-3.3.6-py3-none-any.whl.metadata (4.4 kB)
+#12 4.825 Collecting pydantic==2.13.5 (from -r requirements.txt (line 5))
+#12 4.946   Downloading pydantic-2.13.5-py3-none-any.whl.metadata (110 kB)
+#12 5.099 Collecting prometheus-client==0.26.0 (from -r requirements.txt (line 6))
+#12 5.179   Downloading prometheus_client-0.26.0-py3-none-any.whl.metadata (2.1 kB)
+#12 5.295 Collecting starlette>=0.46.0 (from fastapi==0.142.2->-r requirements.txt (line 1))
+#12 5.403   Downloading starlette-1.7.0-py3-none-any.whl.metadata (6.6 kB)
+#12 5.509 Collecting typing-extensions>=4.8.0 (from fastapi==0.142.2->-r requirements.txt (line 1))
+#12 5.595   Downloading typing_extensions-4.16.0-py3-none-any.whl.metadata (3.3 kB)
+#12 5.746 Collecting typing-inspection>=0.4.2 (from fastapi==0.142.2->-r requirements.txt (line 1))
+#12 5.934   Downloading typing_inspection-0.4.4-py3-none-any.whl.metadata (2.6 kB)
+#12 6.278 Collecting annotated-doc>=0.0.2 (from fastapi==0.142.2->-r requirements.txt (line 1))
+#12 6.435   Downloading annotated_doc-0.0.5-py3-none-any.whl.metadata (6.5 kB)
+#12 6.616 Collecting opentelemetry-api>=1.44.0 (from fastapi==0.142.2->-r requirements.txt (line 1))
+#12 6.737   Downloading opentelemetry_api-1.45.0-py3-none-any.whl.metadata (1.4 kB)
+#12 6.846 Collecting click>=7.0 (from uvicorn==0.54.0->-r requirements.txt (line 2))
+#12 6.953   Downloading click-8.5.0-py3-none-any.whl.metadata (2.6 kB)
+#12 7.044 Collecting h11>=0.8 (from uvicorn==0.54.0->-r requirements.txt (line 2))
+#12 7.139   Downloading h11-0.16.0-py3-none-any.whl.metadata (8.3 kB)
+#12 7.249 Collecting annotated-types>=0.6.0 (from pydantic==2.13.5->-r requirements.txt (line 5))
+#12 7.332   Downloading annotated_types-0.8.0-py3-none-any.whl.metadata (15 kB)
+#12 7.985 Collecting pydantic-core==2.46.5 (from pydantic==2.13.5->-r requirements.txt (line 5))
+#12 8.166   Downloading pydantic_core-2.46.5-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl.metadata (6.6 kB)
+#12 8.702 Collecting psycopg-binary==3.3.6 (from psycopg[binary]==3.3.6->-r requirements.txt (line 4))
+#12 8.802   Downloading psycopg_binary-3.3.6-cp312-cp312-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl.metadata (2.7 kB)
+#12 8.899 Collecting anyio<5,>=4.0.0 (from starlette>=0.46.0->fastapi==0.142.2->-r requirements.txt (line 1))
+#12 8.998   Downloading anyio-4.15.1-py3-none-any.whl.metadata (4.7 kB)
+#12 9.103 Collecting idna>=2.8 (from anyio<5,>=4.0.0->starlette>=0.46.0->fastapi==0.142.2->-r requirements.txt (line 1))
+#12 9.166   Downloading idna-3.20-py3-none-any.whl.metadata (7.2 kB)
+#12 9.262 Downloading fastapi-0.142.2-py3-none-any.whl (144 kB)
+#12 9.403 Downloading uvicorn-0.54.0-py3-none-any.whl (87 kB)
+#12 9.479 Downloading sqlalchemy-2.1.3-cp312-cp312-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl (4.7 MB)
+#12 10.25    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 4.7/4.7 MB 6.1 MB/s  0:00:00
+#12 10.34 Downloading psycopg-3.3.6-py3-none-any.whl (215 kB)
+#12 10.50 Downloading pydantic-2.13.5-py3-none-any.whl (472 kB)
+#12 10.66 Downloading prometheus_client-0.26.0-py3-none-any.whl (64 kB)
+#12 10.80 Downloading psycopg_binary-3.3.6-cp312-cp312-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl (6.8 MB)
+#12 21.21    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 6.8/6.8 MB 634.2 kB/s  0:00:10
+#12 21.29 Downloading pydantic_core-2.46.5-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl (2.0 MB)
+#12 21.78    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 2.0/2.0 MB 4.2 MB/s  0:00:00
+#12 21.85 Downloading annotated_doc-0.0.5-py3-none-any.whl (5.3 kB)
+#12 21.94 Downloading annotated_types-0.8.0-py3-none-any.whl (13 kB)
+#12 22.03 Downloading click-8.5.0-py3-none-any.whl (125 kB)
+#12 22.17 Downloading h11-0.16.0-py3-none-any.whl (37 kB)
+#12 22.26 Downloading opentelemetry_api-1.45.0-py3-none-any.whl (60 kB)
+#12 22.36 Downloading starlette-1.7.0-py3-none-any.whl (78 kB)
+#12 22.45 Downloading anyio-4.15.1-py3-none-any.whl (132 kB)
+#12 22.56 Downloading idna-3.20-py3-none-any.whl (69 kB)
+#12 22.69 Downloading typing_extensions-4.16.0-py3-none-any.whl (45 kB)
+#12 22.78 Downloading typing_inspection-0.4.4-py3-none-any.whl (14 kB)
+#12 22.84 Installing collected packages: typing-extensions, psycopg-binary, prometheus-client, idna, h11, click, annotated-types, annotated-doc, uvicorn, typing-inspection, sqlalchemy, pydantic-core, psycopg, opentelemetry-api, anyio, starlette, pydantic, fastapi
+#12 24.18 
+#12 24.18 Successfully installed annotated-doc-0.0.5 annotated-types-0.8.0 anyio-4.15.1 click-8.5.0 fastapi-0.142.2 h11-0.16.0 idna-3.20 opentelemetry-api-1.45.0 prometheus-client-0.26.0 psycopg-3.3.6 psycopg-binary-3.3.6 pydantic-2.13.5 pydantic-core-2.46.5 sqlalchemy-2.1.3 starlette-1.7.0 typing-extensions-4.16.0 typing-inspection-0.4.4 uvicorn-0.54.0
+#12 DONE 24.3s
+
+#14 [runtime 4/5] COPY --from=builder /opt/venv /opt/venv
+#14 DONE 0.3s
+
+#15 [runtime 5/5] COPY --chown=10001:10001 app ./app
+#15 DONE 0.0s
+
+#16 exporting to image
+#16 exporting layers
+#16 exporting layers 1.6s done
+#16 exporting manifest sha256:3481305459d0417888a9b9b45deceee2a2f794e9164ef2dcfb06a8184373e73b done
+#16 exporting config sha256:464908875cd1f2984cc5e53f5e7d0c89920be97fba924bbb59ca19404cd540ef done
+#16 exporting attestation manifest sha256:69f68e7cf4d3f523fffcaf598ce434fa34fb5f614b3239e184c9d27867c0e2dc done
+#16 exporting manifest list sha256:1ad6511936177af5dc780e509d1508f8128ffda35e11db5cc23b014c9755111d done
+#16 naming to docker.io/library/stockpilot-api:1.0.0 done
+#16 unpacking to docker.io/library/stockpilot-api:1.0.0
+#16 unpacking to docker.io/library/stockpilot-api:1.0.0 0.4s done
+#16 DONE 2.0s

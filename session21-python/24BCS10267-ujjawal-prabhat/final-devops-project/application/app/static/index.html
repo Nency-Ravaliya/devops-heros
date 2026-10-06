@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>StockPilot Inventory</title>
+  <style>
+    :root { --bg:#f6f7f9; --card:#fff; --ink:#1d2330; --muted:#6b7280; --accent:#2563eb; --warn:#b45309; --warnbg:#fef3c7; }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background:var(--bg); color:var(--ink); }
+    header { background:var(--ink); color:#fff; padding:16px 24px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; }
+    header small { color:#cbd5e1; }
+    main { max-width:1000px; margin:0 auto; padding:16px; }
+    .kpis { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:12px; margin-bottom:16px; }
+    .kpi { background:var(--card); border-radius:10px; padding:14px; box-shadow:0 1px 2px rgba(0,0,0,.06); }
+    .kpi b { display:block; font-size:24px; margin-top:4px; }
+    table { width:100%; border-collapse:collapse; background:var(--card); border-radius:10px; overflow:hidden; }
+    th, td { text-align:left; padding:10px; border-bottom:1px solid #eef0f3; font-size:14px; }
+    th { color:var(--muted); font-weight:600; }
+    .low { background:var(--warnbg); color:var(--warn); padding:2px 8px; border-radius:999px; font-size:12px; }
+    form { display:flex; flex-wrap:wrap; gap:8px; margin:16px 0; }
+    input, button { padding:8px 10px; border:1px solid #d1d5db; border-radius:6px; font:inherit; }
+    button { background:var(--accent); color:#fff; border:none; cursor:pointer; }
+    #err { color:#b91c1c; }
+    @media (max-width:600px){ th:nth-child(3), td:nth-child(3) { display:none; } }
+  </style>
+</head>
+<body>
+<header><strong>StockPilot</strong><small id="env">loading...</small></header>
+<main>
+  <section class="kpis">
+    <div class="kpi">SKUs<b id="k-items">-</b></div>
+    <div class="kpi">Units on hand<b id="k-units">-</b></div>
+    <div class="kpi">Low stock<b id="k-low">-</b></div>
+    <div class="kpi">Inventory value<b id="k-value">-</b></div>
+  </section>
+  <form id="f">
+    <input name="sku" placeholder="SKU (e.g. BOLT-M8)" required>
+    <input name="name" placeholder="Name" required>
+    <input name="quantity" type="number" min="0" placeholder="Qty" required>
+    <input name="unit_price_paise" type="number" min="0" placeholder="Price (paise)">
+    <button>Add item</button>
+  </form>
+  <p id="err"></p>
+  <table>
+    <thead><tr><th>SKU</th><th>Name</th><th>Location</th><th>Qty</th><th></th></tr></thead>
+    <tbody id="rows"></tbody>
+  </table>
+</main>
+<script>
+const $ = (id) => document.getElementById(id);
+async function load() {
+  try {
+    const [info, sum, items] = await Promise.all(["/api/info", "/api/summary", "/api/items"].map(u => fetch(u).then(r => r.json())));
+    $("env").textContent = `${info.env} - v${info.version}`;
+    $("k-items").textContent = sum.total_items;
+    $("k-units").textContent = sum.total_units;
+    $("k-low").textContent = sum.low_stock_items;
+    $("k-value").textContent = "Rs " + (sum.inventory_value_paise / 100).toFixed(2);
+    $("rows").replaceChildren(...items.map(i => {
+      const tr = document.createElement("tr");
+      [i.sku, i.name, i.location, i.quantity].forEach(v => { const td = document.createElement("td"); td.textContent = v; tr.appendChild(td); });
+      const flag = document.createElement("td");
+      if (i.low_stock) { const s = document.createElement("span"); s.className = "low"; s.textContent = "reorder"; flag.appendChild(s); }
+      tr.appendChild(flag);
+      return tr;
+    }));
+  } catch (e) { $("err").textContent = "Backend unavailable: " + e; }
+}
+$("f").addEventListener("submit", async (ev) => {
+  ev.preventDefault();
+  const d = Object.fromEntries(new FormData(ev.target));
+  d.quantity = Number(d.quantity); d.unit_price_paise = Number(d.unit_price_paise || 0);
+  const r = await fetch("/api/items", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(d) });
+  $("err").textContent = r.ok ? "" : (await r.json()).detail;
+  if (r.ok) ev.target.reset();
+  load();
+});
+load();
+</script>
+</body>
+</html>
