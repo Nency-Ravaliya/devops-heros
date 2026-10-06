@@ -28,6 +28,7 @@ env:
   PYTHON_VERSION: "3.12"
   TRIVY_VERSION: "0.75.0"
   GITLEAKS_VERSION: "8.30.1"
+  PLATFORMS: linux/amd64,linux/arm64
 
 jobs:
   # ------------------------------------------------------------------ 1 ----
@@ -183,20 +184,32 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - name: Build image (multi-stage, non-root)
+      # Multi-arch: runners/EKS nodes are amd64, the local kind cluster runs on
+      # Apple Silicon (arm64). An amd64-only image crashes there with
+      # "exec format error" (see troubleshooting issue #5).
+      - uses: docker/setup-qemu-action@v4
+      - uses: docker/setup-buildx-action@v4
+      - name: Build image (multi-stage, non-root, amd64+arm64)
         working-directory: ${{ env.PROJECT_DIR }}
         run: |
-          docker build -f docker/Dockerfile \
+          docker buildx build -f docker/Dockerfile \
+            --platform ${PLATFORMS} \
+            --provenance=false --sbom=false \
             --build-arg APP_VERSION=${GITHUB_SHA::7} \
             --label org.opencontainers.image.revision=${GITHUB_SHA} \
-            -t ${IMAGE}:${GITHUB_SHA} application
-          docker image inspect ${IMAGE}:${GITHUB_SHA} --format 'user={{.Config.User}} size={{.Size}}'
-          docker save ${IMAGE}:${GITHUB_SHA} | gzip > /tmp/image.tar.gz
-          echo "### Docker build: \`${IMAGE}:${GITHUB_SHA}\` ($(du -h /tmp/image.tar.gz | cut -f1) gzipped)" >> "$GITHUB_STEP_SUMMARY"
+            --output type=oci,dest=/tmp/image.oci.tar \
+            application
+          mkdir -p /tmp/oci && tar -xf /tmp/image.oci.tar -C /tmp/oci
+          python3 -c 'import json;[print("built", m["platform"]["os"]+"/"+m["platform"]["architecture"], m["digest"]) for m in json.load(open("/tmp/oci/index.json"))["manifests"]]'
+          gzip /tmp/image.oci.tar
+          {
+            echo "### Docker build: \`${IMAGE}:${GITHUB_SHA}\`"
+            echo "- platforms: ${PLATFORMS}; OCI archive $(du -h /tmp/image.oci.tar.gz | cut -f1) gzipped"
+          } >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v7
         with:
           name: docker-image
-          path: /tmp/image.tar.gz
+          path: /tmp/image.oci.tar.gz
           retention-days: 3
 
   # ------------------------------------------------------------------ 6 ----
@@ -218,21 +231,31 @@ jobs:
         id: scan
         working-directory: ${{ env.PROJECT_DIR }}
         run: |
-          gunzip /tmp/image.tar.gz
-          trivy image --config security/trivy.yaml --input /tmp/image.tar --format sarif --output trivy-image.sarif
-          trivy image --config security/trivy.yaml --input /tmp/image.tar --format json --output trivy-image.json
-          trivy image --config security/trivy.yaml --input /tmp/image.tar --format table
-          n=$(python3 -c 'import json;d=json.load(open("trivy-image.json"));print(sum(len(r.get("Vulnerabilities") or []) for r in d.get("Results",[])))')
-          all=$(trivy image --input /tmp/image.tar --severity HIGH,CRITICAL --scanners vuln --format json --quiet | python3 -c 'import json,sys;d=json.load(sys.stdin);print(sum(len(r.get("Vulnerabilities") or []) for r in d.get("Results",[])))')
-          echo "vulns=$n" >> "$GITHUB_OUTPUT"
-          echo "### Image scan (Trivy): $n fixable HIGH/CRITICAL (blocking); $all HIGH/CRITICAL incl. unfixed (informational)" >> "$GITHUB_STEP_SUMMARY"
+          mkdir -p /tmp/oci && gunzip -c /tmp/image.oci.tar.gz | tar -xf - -C /tmp/oci
+          count() { python3 -c 'import json,sys;d=json.load(open(sys.argv[1]));print(sum(len(r.get("Vulnerabilities") or []) for r in d.get("Results",[])))' "$1"; }
+          total=0
+          echo "### Image scan (Trivy)" >> "$GITHUB_STEP_SUMMARY"
+          for p in ${PLATFORMS//,/ }; do
+            a=${p#linux/}
+            echo "::group::trivy image --platform $p"
+            trivy image --config security/trivy.yaml --platform "$p" --input /tmp/oci --format table
+            echo "::endgroup::"
+            trivy image --config security/trivy.yaml --platform "$p" --input /tmp/oci --format sarif --output trivy-image-$a.sarif --quiet
+            trivy image --config security/trivy.yaml --platform "$p" --input /tmp/oci --format json --output trivy-image-$a.json --quiet
+            trivy image --platform "$p" --input /tmp/oci --severity HIGH,CRITICAL --scanners vuln --format json --output all-$a.json --quiet
+            n=$(count trivy-image-$a.json); all=$(count all-$a.json)
+            echo "$p: $n fixable HIGH/CRITICAL (blocking), $all incl. unfixed (informational)"
+            echo "- \`$p\`: **$n** fixable HIGH/CRITICAL (blocking); $all HIGH/CRITICAL incl. unfixed (informational)" >> "$GITHUB_STEP_SUMMARY"
+            total=$((total + n))
+          done
+          echo "vulns=$total" >> "$GITHUB_OUTPUT"
       - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: trivy-image-sarif
           path: |
-            ${{ env.PROJECT_DIR }}/trivy-image.sarif
-            ${{ env.PROJECT_DIR }}/trivy-image.json
+            ${{ env.PROJECT_DIR }}/trivy-image-*.sarif
+            ${{ env.PROJECT_DIR }}/trivy-image-*.json
 
   # ------------------------------------------------------------------ 7 ----
   security-gate:
@@ -294,13 +317,16 @@ jobs:
         run: |
           command -v skopeo || (sudo apt-get update -q && sudo apt-get install -y -q skopeo)
           echo "$GHCR_TOKEN" | skopeo login ghcr.io -u "${{ github.actor }}" --password-stdin
-          gunzip /tmp/image.tar.gz
-          skopeo copy --quiet docker-archive:/tmp/image.tar docker://${IMAGE}:${GITHUB_SHA}
+          gunzip /tmp/image.oci.tar.gz
+          # --all pushes the multi-arch index plus every platform manifest
+          skopeo copy --all --quiet oci-archive:/tmp/image.oci.tar docker://${IMAGE}:${GITHUB_SHA}
           for t in sha-${GITHUB_SHA::7} session-21-latest; do
-            skopeo copy --quiet docker://${IMAGE}:${GITHUB_SHA} docker://${IMAGE}:$t
+            skopeo copy --all --quiet docker://${IMAGE}:${GITHUB_SHA} docker://${IMAGE}:$t
           done
-          digest=$(skopeo inspect --format '{{.Digest}}' docker://${IMAGE}:${GITHUB_SHA})
+          digest=$(skopeo inspect --raw docker://${IMAGE}:${GITHUB_SHA} | sha256sum | cut -d' ' -f1)
+          skopeo inspect --raw docker://${IMAGE}:${GITHUB_SHA} | python3 -c 'import json,sys;[print("manifest", m["platform"]["os"]+"/"+m["platform"]["architecture"], m["digest"]) for m in json.load(sys.stdin)["manifests"]]'
           skopeo list-tags docker://${IMAGE}
+          digest="sha256:${digest}"
           {
             echo "### Pushed to GHCR"
             echo "- \`${IMAGE}:${GITHUB_SHA}\`"
