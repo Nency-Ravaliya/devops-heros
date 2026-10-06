@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: web-rolling
+  namespace: s10
+spec:
+  selector:
+    app: web-rolling
+  ports:
+    - port: 80
+      targetPort: 5678

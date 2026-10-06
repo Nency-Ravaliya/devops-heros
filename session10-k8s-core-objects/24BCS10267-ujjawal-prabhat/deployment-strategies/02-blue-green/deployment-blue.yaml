@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-blue
+  namespace: s10
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: bg-app
+      slot: blue
+  template:
+    metadata:
+      labels:
+        app: bg-app
+        slot: blue
+        version: v1
+    spec:
+      containers:
+        - name: web
+          image: hashicorp/http-echo:1.0
+          args: ["-listen=:5678", "-text=v1 (BLUE)"]
+          ports:
+            - containerPort: 5678
+          readinessProbe:
+            httpGet: { path: /, port: 5678 }
+            periodSeconds: 2
+          resources:
+            requests: { cpu: 5m, memory: 8Mi }
+            limits:   { cpu: 50m, memory: 32Mi }

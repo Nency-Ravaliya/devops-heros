@@ -1,0 +1,15 @@
+# The "router": all live traffic goes to whichever slot the selector names.
+# Switch:   kubectl -n s10 patch svc bg-app -p '{"spec":{"selector":{"app":"bg-app","slot":"green"}}}'
+# Rollback: kubectl -n s10 patch svc bg-app -p '{"spec":{"selector":{"app":"bg-app","slot":"blue"}}}'
+apiVersion: v1
+kind: Service
+metadata:
+  name: bg-app
+  namespace: s10
+spec:
+  selector:
+    app: bg-app
+    slot: blue
+  ports:
+    - port: 80
+      targetPort: 5678
