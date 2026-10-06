@@ -1,0 +1,44 @@
+$ terraform init -no-color
+Initializing the backend...
+Successfully configured the backend "s3"! Terraform will automatically
+use this backend unless the backend configuration changes.
+Terraform has been successfully initialized!
+If you ever set or change modules or backend configuration for Terraform,
+
+$ terraform apply -auto-approve -no-color   # (A) holds the lock ~25s, started in background
+
+$ aws dynamodb scan --table-name stockpilot-dev-tf-locks   # while (A) is running
+[
+    {
+        "LockID": "stockpilot-dev-artifacts-24bcs10267/tfstate/backend-demo.tfstate",
+        "Info": "{\"ID\":\"0bb14ccc-f0bb-d56d-53ad-6a3fa8eef474\",\"Operation\":\"OperationTypeApply\",\"Info\":\"\",\"Who\":\"ujjawal@Ujjawals-MacBook-Pro.local\",\"Version\":\"1.16.4\",\"Created\":\"2026-10-06T11:27:45.705447Z\",\"Path\":\"stockpilot-dev-art
+    }
+]
+
+$ terraform apply -auto-approve -no-color -lock-timeout=0s   # (B) concurrent apply
+
+Warning: Deprecated Parameter
+
+The parameter "dynamodb_table" is deprecated. Use parameter "use_lockfile"
+instead.
+
+Error: Error acquiring the state lock
+
+Error message: operation error DynamoDB: PutItem, https response error
+StatusCode: 400, RequestID: d94171eb-78d3-459d-8f13-07e1e732a28c,
+ConditionalCheckFailedException: The conditional request failed
+Lock Info:
+  ID:        0bb14ccc-f0bb-d56d-53ad-6a3fa8eef474
+  Path:      stockpilot-dev-artifacts-24bcs10267/tfstate/backend-demo.tfstate
+(B) exit code: 1
+
+--- (A) output ---
+
+Apply complete! Resources: 1 added, 0 changed, 0 destroyed.
+
+Outputs:
+
+marker = "stockpilot-backend-demo"
+
+$ aws s3 ls s3://stockpilot-dev-artifacts-24bcs10267/tfstate/
+2026-10-06 19:28:10        998 backend-demo.tfstate

@@ -60,14 +60,14 @@ jobs:
           print(f"- tests: **{s.get('tests')}**, failures: **{s.get('failures')}**, errors: **{s.get('errors')}**")
           print(f"- line coverage: **{float(r.get('line-rate'))*100:.1f}%**")
           EOF
-      - uses: azure/setup-helm@v4
+      - uses: azure/setup-helm@v5
       - name: Helm lint (all value files)
         working-directory: ${{ env.PROJECT_DIR }}/helm
         run: |
           helm lint stockpilot
           helm lint stockpilot -f stockpilot/values-dev.yaml
           helm lint stockpilot -f stockpilot/values-prod.yaml --set image.tag=ci
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: coverage-report
@@ -98,7 +98,7 @@ jobs:
           n=$(python3 -c 'import json;print(len(json.load(open("semgrep.json"))["results"]))')
           echo "findings=$n" >> "$GITHUB_OUTPUT"
           echo "### SAST (Semgrep): $n finding(s)" >> "$GITHUB_STEP_SUMMARY"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: semgrep-report
@@ -140,7 +140,7 @@ jobs:
           n=$(python3 -c 'import json;d=json.load(open("trivy-fs.json"));print(sum(len(r.get("Vulnerabilities") or []) for r in d.get("Results",[])))')
           echo "vulns=$n" >> "$GITHUB_OUTPUT"
           echo "### SCA: Trivy fs $n HIGH/CRITICAL" >> "$GITHUB_STEP_SUMMARY"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: sca-reports
@@ -170,7 +170,7 @@ jobs:
           n=$(python3 -c 'import json;print(len(json.load(open("gitleaks.json"))))')
           echo "leaks=$n" >> "$GITHUB_OUTPUT"
           echo "### Secret scan (Gitleaks): $n leak(s)" >> "$GITHUB_STEP_SUMMARY"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: gitleaks-report
@@ -193,7 +193,7 @@ jobs:
           docker image inspect ${IMAGE}:${GITHUB_SHA} --format 'user={{.Config.User}} size={{.Size}}'
           docker save ${IMAGE}:${GITHUB_SHA} | gzip > /tmp/image.tar.gz
           echo "### Docker build: \`${IMAGE}:${GITHUB_SHA}\` ($(du -h /tmp/image.tar.gz | cut -f1) gzipped)" >> "$GITHUB_STEP_SUMMARY"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: docker-image
           path: /tmp/image.tar.gz
@@ -208,7 +208,7 @@ jobs:
       vulns: ${{ steps.scan.outputs.vulns }}
     steps:
       - uses: actions/checkout@v5
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: docker-image
           path: /tmp
@@ -226,7 +226,7 @@ jobs:
           all=$(trivy image --input /tmp/image.tar --severity HIGH,CRITICAL --scanners vuln --format json --quiet | python3 -c 'import json,sys;d=json.load(sys.stdin);print(sum(len(r.get("Vulnerabilities") or []) for r in d.get("Results",[])))')
           echo "vulns=$n" >> "$GITHUB_OUTPUT"
           echo "### Image scan (Trivy): $n fixable HIGH/CRITICAL (blocking); $all HIGH/CRITICAL incl. unfixed (informational)" >> "$GITHUB_STEP_SUMMARY"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: trivy-image-sarif
@@ -281,26 +281,32 @@ jobs:
       contents: read
       packages: write
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: docker-image
           path: /tmp
-      - uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Load, tag and push
+      # Push the exact tarball that was scanned (no rebuild). skopeo is used
+      # instead of `docker load && docker push`, which fails with
+      # "unknown blob" on runners using the containerd image store.
+      - name: Push scanned image with skopeo
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          docker load < /tmp/image.tar.gz
-          docker tag ${IMAGE}:${GITHUB_SHA} ${IMAGE}:sha-${GITHUB_SHA::7}
-          docker tag ${IMAGE}:${GITHUB_SHA} ${IMAGE}:session-21-latest
-          docker push ${IMAGE}:${GITHUB_SHA}
-          docker push ${IMAGE}:sha-${GITHUB_SHA::7}
-          docker push ${IMAGE}:session-21-latest
-          digest=$(docker inspect --format '{{index .RepoDigests 0}}' ${IMAGE}:${GITHUB_SHA})
-          echo "### Pushed \`${IMAGE}:${GITHUB_SHA}\`" >> "$GITHUB_STEP_SUMMARY"
-          echo "digest: \`${digest}\`" >> "$GITHUB_STEP_SUMMARY"
+          command -v skopeo || (sudo apt-get update -q && sudo apt-get install -y -q skopeo)
+          echo "$GHCR_TOKEN" | skopeo login ghcr.io -u "${{ github.actor }}" --password-stdin
+          gunzip /tmp/image.tar.gz
+          skopeo copy --quiet docker-archive:/tmp/image.tar docker://${IMAGE}:${GITHUB_SHA}
+          for t in sha-${GITHUB_SHA::7} session-21-latest; do
+            skopeo copy --quiet docker://${IMAGE}:${GITHUB_SHA} docker://${IMAGE}:$t
+          done
+          digest=$(skopeo inspect --format '{{.Digest}}' docker://${IMAGE}:${GITHUB_SHA})
+          skopeo list-tags docker://${IMAGE}
+          {
+            echo "### Pushed to GHCR"
+            echo "- \`${IMAGE}:${GITHUB_SHA}\`"
+            echo "- \`${IMAGE}:sha-${GITHUB_SHA::7}\`, \`${IMAGE}:session-21-latest\`"
+            echo "- digest: \`${digest}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
 
   # ------------------------------------------------------------------ 9 ----
   deploy:
@@ -312,9 +318,9 @@ jobs:
       packages: read
     steps:
       - uses: actions/checkout@v5
-      - uses: azure/setup-helm@v4
+      - uses: azure/setup-helm@v5
       - name: Create kind cluster
-        uses: helm/kind-action@v1
+        uses: helm/kind-action@v1.15.1
         with:
           cluster_name: stockpilot-ci
       - name: GHCR pull secret
