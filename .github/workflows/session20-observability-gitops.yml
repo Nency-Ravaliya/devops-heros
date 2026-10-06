@@ -50,11 +50,17 @@ jobs:
           kubectl apply --server-side --force-conflicts -n argocd \
             -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
           kubectl wait --for=condition=Available deployment --all -n argocd --timeout=240s
+          kubectl patch configmap argocd-cmd-params-cm -n argocd --type=merge \
+            -p '{"data":{"controller.repo.server.timeout.seconds":"360","reposerver.git.request.timeout":"300s"}}'
+          kubectl set env deployment/argocd-repo-server -n argocd ARGOCD_EXEC_TIMEOUT=5m
+          kubectl rollout restart statefulset/argocd-application-controller -n argocd
+          kubectl rollout status statefulset/argocd-application-controller -n argocd --timeout=120s
+          kubectl rollout status deployment/argocd-repo-server -n argocd --timeout=120s
       - name: Apply GitOps application
         run: kubectl apply -f "$SESSION_DIR/08-mini-project/argocd-application.yaml"
       - name: Verify synchronization
         run: |
-          for attempt in {1..60}; do
+          for attempt in {1..90}; do
             sync=$(kubectl get application session20-mini -n argocd -o jsonpath='{.status.sync.status}' 2>/dev/null || true)
             health=$(kubectl get application session20-mini -n argocd -o jsonpath='{.status.health.status}' 2>/dev/null || true)
             echo "sync=$sync health=$health"
