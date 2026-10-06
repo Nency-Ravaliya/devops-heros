@@ -51,6 +51,16 @@ An accepted risk goes in `security/.trivyignore` with the CVE id, the reason,
 an owner and an expiry date, and it's reviewed in a pull request. At the time
 of writing the file is empty: there are no exceptions.
 
+Gitleaks allowlists in `security/gitleaks.toml` are as narrow as possible:
+- the literal placeholder `change-me-placeholder`;
+- `stockpilot-api:<40-hex git SHA>`. The gate blocked CI run
+  [37460645786](https://github.com/UjjawalPrabhat/devops-heros/actions/runs/37460645786)
+  because `generic-api-key` matched the commit-SHA image tag in captured
+  outputs. A commit SHA is public, so only that exact shape is allowed
+  (`regexTarget = "match"`). The same config still reports a real
+  `api_key = "..."` string and a non-hex tag. That was verified locally, and the
+  evidence is in `docs/outputs/ci-run-37460645786-gate-blocked.txt`.
+
 ## Image hardening (`docker/Dockerfile`)
 - Multi-stage build. The runtime image has no compiler, no pip and no setuptools, because the
   system pip vendors `urllib3`/`msgpack`, which Trivy flagged HIGH. That was

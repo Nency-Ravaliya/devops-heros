@@ -1,0 +1,140 @@
+=== [1. Build & unit test] Run pytest with coverage
+    tests/test_api.py::test_health PASSED                                    [  6%]
+    tests/test_api.py::test_ready_checks_database PASSED                     [ 13%]
+    tests/test_api.py::test_index_page_served PASSED                         [ 20%]
+    tests/test_api.py::test_info_reports_env PASSED                          [ 26%]
+    tests/test_api.py::test_create_and_get_item PASSED                       [ 33%]
+    tests/test_api.py::test_duplicate_sku_conflict PASSED                    [ 40%]
+    tests/test_api.py::test_invalid_sku_rejected PASSED                      [ 46%]
+    tests/test_api.py::test_default_reorder_level_from_config PASSED         [ 53%]
+    tests/test_api.py::test_list_and_filter_by_location PASSED               [ 60%]
+    tests/test_api.py::test_update_item PASSED                               [ 66%]
+    tests/test_api.py::test_adjust_stock_in_and_out PASSED                   [ 73%]
+    tests/test_api.py::test_adjust_stock_cannot_go_negative PASSED           [ 80%]
+    tests/test_api.py::test_low_stock_and_summary PASSED                     [ 86%]
+    tests/test_api.py::test_delete_item_and_404 PASSED                       [ 93%]
+    tests/test_api.py::test_metrics_exposed PASSED                           [100%]
+    app/__init__.py       0      0   100%
+    app/config.py        23      8    65%
+    app/db.py            17      0   100%
+    app/main.py         135      0   100%
+    app/metrics.py        7      0   100%
+    app/models.py        16      0   100%
+    app/schemas.py       35      0   100%
+    TOTAL               233      8    97%
+    ======================== 15 passed, 1 warning in 0.57s =========================
+
+=== [1. Build & unit test] Helm lint (all value files)
+    ==> Linting stockpilot
+    1 chart(s) linted, 0 chart(s) failed
+    ==> Linting stockpilot
+    1 chart(s) linted, 0 chart(s) failed
+    ==> Linting stockpilot
+    1 chart(s) linted, 0 chart(s) failed
+
+=== [4. Secret scan (Gitleaks)] Gitleaks (scoped to project folder)
+    11:58AM INF scanned ~255499 bytes (255.50 KB) in 89.5ms
+    11:58AM INF no leaks found
+
+=== [2. SAST (Semgrep)] Semgrep scan
+     • Findings: 0 (0 blocking)
+     • Rules run: 198
+     • Targets scanned: 13
+    Ran 198 rules on 13 files: 0 findings.
+
+=== [5. Docker build] Build image (multi-stage, non-root, amd64+arm64)
+    #21 [linux/amd64 runtime 5/5] COPY --chown=10001:10001 app ./app
+    #26 [linux/arm64 runtime 5/5] COPY --chown=10001:10001 app ./app
+    #27 exporting manifest list sha256:2a2a405032069330000fe2b8443e8646068963a4cbedaf650c9d501ad6cf105e done
+    platform manifests in the OCI archive:
+    linux/amd64  sha256:e2f4ac0063a081ce16bab423875f329df3f80662850e452f8b3e765886aec05f
+    linux/arm64  sha256:a22feb949cf7c0b245ec55cdb022c7934443d104e56249ca285ee398a26655f4
+
+=== [3. SCA (pip-audit + Trivy fs)] pip-audit
+    No known vulnerabilities found
+    No known vulnerabilities found
+
+=== [3. SCA (pip-audit + Trivy fs)] Trivy filesystem scan (dependencies)
+    │ requirements.txt │ pip  │        0        │
+
+=== [6. Image scan (Trivy)] Trivy image scan
+    linux/amd64  sha256:e2f4ac0063a081ce16bab423875f329df3f80662850e452f8b3e765886aec05f
+    linux/arm64  sha256:a22feb949cf7c0b245ec55cdb022c7934443d104e56249ca285ee398a26655f4
+    linux/amd64: 0 fixable HIGH/CRITICAL (blocking), 44 incl. unfixed (informational)
+    linux/arm64: 0 fixable HIGH/CRITICAL (blocking), 44 incl. unfixed (informational)
+
+=== [7. Security gate] Evaluate policy (block on any HIGH/CRITICAL, SAST finding or secret)
+    SAST (Semgrep): 0 -> PASS
+    SCA (pip-audit): 0 -> PASS
+    SCA (Trivy fs (HIGH/CRITICAL)): 0 -> PASS
+    Secrets (Gitleaks): 0 -> PASS
+    Container image (Trivy image (HIGH/CRITICAL, fixable)): 0 -> PASS
+
+=== [8. Push image to GHCR] Push scanned image with skopeo
+    Login Succeeded!
+    manifest linux/amd64 sha256:e2f4ac0063a081ce16bab423875f329df3f80662850e452f8b3e765886aec05f
+    manifest linux/arm64 sha256:a22feb949cf7c0b245ec55cdb022c7934443d104e56249ca285ee398a26655f4
+        "Tags": [
+            "f9d09f1d0cd1a86a20a1711fda2d2d23f3171db5",
+            "sha-f9d09f1",
+            "session-21-latest",
+            "323e26f1d2d5448f6deef9791533367d39ae0949",
+            "sha-323e26f",
+            "ae25d71d53b8cf800ae2502558d1118149f412a8",
+            "sha-ae25d71"
+
+=== [9. Deploy to Kubernetes (kind)] Create kind cluster
+    Creating cluster "stockpilot-ci" ...
+     • Waiting ≤ 1m0s for control-plane = Ready ⏳  ...
+     ✓ Waiting ≤ 1m0s for control-plane = Ready ⏳
+     • Ready after 19s 💚
+    Set kubectl context to "kind-stockpilot-ci"
+
+=== [9. Deploy to Kubernetes (kind)] helm upgrade --install
+    Release "stockpilot" does not exist. Installing it now.
+    STATUS: deployed
+    REVISION: 1
+    StockPilot ghcr.io/ujjawalprabhat/stockpilot-api:ae25d71d53b8cf800ae2502558d1118149f412a8 deployed to namespace final.
+
+=== [9. Deploy to Kubernetes (kind)] Rollout status
+    kubectl -n final rollout status deploy/stockpilot-postgres --timeout=180s
+    kubectl -n final rollout status deploy/stockpilot-api --timeout=180s
+      IMAGE: ghcr.io/ujjawalprabhat/stockpilot-api
+    deployment "stockpilot-postgres" successfully rolled out
+    deployment "stockpilot-api" successfully rolled out
+    NAME                                  READY   UP-TO-DATE   AVAILABLE   AGE   CONTAINERS   IMAGES                                                                           SELECTOR
+    deployment.apps/stockpilot-api        2/2     2            2           22s   api          ghcr.io/ujjawalprabhat/stockpilot-api:ae25d71d53b8cf800ae2502558d1118149f412a8   app.kubernetes.io/component=a
+    deployment.apps/stockpilot-postgres   1/1     1            1           22s   postgres     postgres:17-alpine                                                               app.kubernetes.io/component=d
+    NAME                                      READY   STATUS    RESTARTS   AGE   IP           NODE                          NOMINATED NODE   READINESS GATES
+    pod/stockpilot-api-7589f6ff68-x8tlp       1/1     Running   0          22s   10.244.0.6   stockpilot-ci-control-plane   <none>           <none>
+    pod/stockpilot-api-7589f6ff68-zcp56       1/1     Running   0          22s   10.244.0.5   stockpilot-ci-control-plane   <none>           <none>
+    pod/stockpilot-postgres-8874969c8-v48s6   1/1     Running   0          22s   10.244.0.8   stockpilot-ci-control-plane   <none>           <none>
+    NAME                          TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)    AGE   SELECTOR
+    service/stockpilot-api        ClusterIP   10.96.191.78    <none>        80/TCP     22s   app.kubernetes.io/component=api,app.kubernetes.io/instance=stockpilot,app.kubernetes.io/name=stockpilot
+    service/stockpilot-postgres   ClusterIP   10.96.207.255   <none>        5432/TCP   22s   app.kubernetes.io/component=database,app.kubernetes.io/instance=stockpilot,app.kubernetes.io/name=stockpilot
+    NAME                                   CLASS   HOSTS              ADDRESS   PORTS   AGE
+    NAME                                                 REFERENCE                   TARGETS              MINPODS   MAXPODS   REPLICAS   AGE
+    horizontalpodautoscaler.autoscaling/stockpilot-api   Deployment/stockpilot-api   cpu: <unknown>/60%   2         6         2          22s
+    NAME                                             STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE   VOLUMEMODE
+    persistentvolumeclaim/stockpilot-postgres-data   Bound    pvc-c8aff991-52d0-42e0-8416-9c696d3a6524   1Gi        RWO            standard       <unset>                 22s   Filesystem
+
+=== [9. Deploy to Kubernetes (kind)] Smoke test
+    kubectl -n final port-forward svc/stockpilot-api 8080:80 >/tmp/pf.log 2>&1 &
+    for i in $(seq 1 20); do curl -sf localhost:8080/health && break; sleep 2; done
+    curl -sf localhost:8080/ready
+    curl -sf localhost:8080/api/info | tee /tmp/info.json
+    curl -sf -X POST localhost:8080/api/items -H 'Content-Type: application/json' \
+      -d '{"sku":"CI-SMOKE","name":"smoke test item","quantity":3}'
+    curl -sf localhost:8080/api/items/low-stock | grep -q CI-SMOKE
+    curl -sf localhost:8080/metrics | grep -q stockpilot_http_requests_total
+      curl -s localhost:8080/api/summary
+      IMAGE: ghcr.io/ujjawalprabhat/stockpilot-api
+    + curl -sf localhost:8080/ready
+    {"status":"UP"}
+    + curl -sf localhost:8080/api/info
+    + curl -sf -X POST localhost:8080/api/items -H 'Content-Type: application/json' -d '{"sku":"CI-SMOKE","name":"smoke test item","quantity":3}'
+    + curl -sf localhost:8080/api/items/low-stock
+    + curl -sf localhost:8080/metrics
+    + grep -q stockpilot_http_requests_total
+    {"status":"READY"}{"service":"StockPilot","version":"ae25d71d53b8cf800ae2502558d1118149f412a8","env":"ci"}{"id":1,"sku":"CI-SMOKE","name":"smoke test item","location":"MAIN","quantity":3,"reorder_leve
+

@@ -1,12 +1,23 @@
-# Gitleaks config: default ruleset + allowlist for the documented placeholders.
+# Gitleaks config: default ruleset + narrowly scoped allowlists.
 #   gitleaks dir <project> --config security/gitleaks.toml --redact
 title = "stockpilot gitleaks config"
 
 [extend]
 useDefault = true
 
-[allowlist]
-description = "Documented example placeholders (never real credentials)"
+[[allowlists]]
+description = "Documented example placeholder (never a real credential)"
 regexes = [
   '''change-me-placeholder''',
+]
+
+[[allowlists]]
+# CI run 37460645786 was blocked by the gate: generic-api-key matched the
+# 40-hex git commit SHA used as the image tag (ghcr.io/...:<sha>). A commit SHA
+# is public, not a secret. Only this exact shape is allowed - any other
+# high-entropy string next to "stockpilot-api:" is still reported.
+description = "Git commit SHA used as the container image tag"
+regexTarget = "match"
+regexes = [
+  '''stockpilot-api:[0-9a-f]{40}\b''',
 ]
