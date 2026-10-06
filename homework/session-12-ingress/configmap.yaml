@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+data:
+  APP_ENV: lab
+  APP_MESSAGE: hello-from-configmap
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: configmap-demo
+spec:
+  containers:
+    - name: app
+      image: busybox:1.36
+      command: ["sh", "-c", "echo ENV=$APP_ENV MESSAGE=$APP_MESSAGE; sleep 3600"]
+      envFrom:
+        - configMapRef:
+            name: app-config
