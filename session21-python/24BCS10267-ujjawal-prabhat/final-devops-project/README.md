@@ -575,6 +575,7 @@ Live workflow: [`/.github/workflows/24bcs10267-final-project.yml`](https://githu
 
 | Run | Commit | Result | What it shows |
 |---|---|---|---|
+| [37465190454](https://github.com/UjjawalPrabhat/devops-heros/actions/runs/37465190454) | `528034c` | ✅ **success, all 9 jobs** | latest run on the branch (final code + outputs) |
 | [37462051419](https://github.com/UjjawalPrabhat/devops-heros/actions/runs/37462051419) | `9fa1665` | ✅ **success, all 9 jobs** | same pipeline after the Gitleaks allowlist fix: gate passes again |
 | [37459886248](https://github.com/UjjawalPrabhat/devops-heros/actions/runs/37459886248) | `ae25d71` | ✅ **success, all 9 jobs** | multi-arch build, scan, gate, push, deploy |
 | [37460645786](https://github.com/UjjawalPrabhat/devops-heros/actions/runs/37460645786) | `8330767` | ❌ **blocked by security gate** | Gitleaks found 2 → gate FAIL → push and deploy **skipped** (§10) |
