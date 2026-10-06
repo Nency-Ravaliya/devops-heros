@@ -1,0 +1,14 @@
+# Viraj Bhanage — 24BCS10274
+apiVersion: v1
+kind: Pod
+metadata:
+  name: viraj-hello
+  labels:
+    app: viraj-hello
+    roll: 24bcs10274
+spec:
+  containers:
+    - name: web
+      image: nginx:1.27-alpine
+      ports:
+        - containerPort: 80
