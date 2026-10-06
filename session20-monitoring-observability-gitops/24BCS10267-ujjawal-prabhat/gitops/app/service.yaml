@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: s20-gitops-app
+  namespace: s20-gitops
+spec:
+  selector:
+    app: s20-gitops-app
+  ports:
+    - port: 80
+      targetPort: 80
