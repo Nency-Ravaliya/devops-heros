@@ -1,0 +1,32 @@
+$ hostname
+Virajs-MacBook-Pro-3.local
+
+$ whoami
+bhanageviraj
+
+$ uname -a
+Darwin Virajs-MacBook-Pro-3.local 27.0.0 Darwin Kernel Version 27.0.0 arm64
+
+$ ping -c 3 8.8.8.8
+PING 8.8.8.8 (8.8.8.8): 56 data bytes
+64 bytes from 8.8.8.8: icmp_seq=0 ttl=115 time=24.546 ms
+64 bytes from 8.8.8.8: icmp_seq=1 ttl=115 time=58.606 ms
+64 bytes from 8.8.8.8: icmp_seq=2 ttl=115 time=98.014 ms
+3 packets transmitted, 3 packets received, 0.0% packet loss
+
+$ nslookup github.com
+Server:		192.168.24.1
+Address:	192.168.24.1#53
+Non-authoritative answer:
+Name:	github.com
+Address: 20.205.243.166
+
+$ curl -sI https://example.com | head
+HTTP/2 200
+content-type: text/html; charset=utf-8
+server: cloudflare
+
+$ route get 1.1.1.1
+destination: default
+gateway: 192.168.24.1
+interface: en0
