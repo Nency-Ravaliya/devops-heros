@@ -1,0 +1,14 @@
+**/__pycache__
+**/*.pyc
+.pytest_cache
+.coverage
+reports
+tests
+k8s
+*.md
+.semgrep.yml
+.gitleaks.toml
+trivy.yaml
+.trivyignore
+Dockerfile
+.dockerignore

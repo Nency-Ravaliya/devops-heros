@@ -1,0 +1,434 @@
+# Session 17 - DevSecOps pipeline
+# Student: Ujjawal Prabhat (24BCS10267)
+# Project: session-17-devsecops/24BCS10267-ujjawal-prabhat
+#
+# Build -> Unit Test -> SAST (Semgrep) -> SCA (pip-audit + Trivy fs) -> Secret scan (Gitleaks)
+#   -> Docker build -> Image scan (Trivy) -> SECURITY GATE -> Push (GHCR) -> Deploy (kind)
+#
+# Each scan job always produces a report artifact and exposes `findings` / `result` outputs.
+# The scan jobs themselves do NOT block. The security-gate job decides, and it fails the
+# pipeline if any scan reports HIGH/CRITICAL (or ERROR / leaked secret) findings, or if a
+# scanner did not finish (fail-closed).
+name: "24BCS10267 - Session 17 DevSecOps"
+
+on:
+  push:
+    branches: [24BCS10267/session-17]
+    paths:
+      - "session-17-devsecops/24BCS10267-ujjawal-prabhat/**"
+      - ".github/workflows/24bcs10267-session17-devsecops.yml"
+      - "!**/*.md"
+  pull_request:
+    paths:
+      - "session-17-devsecops/24BCS10267-ujjawal-prabhat/**"
+      - ".github/workflows/24bcs10267-session17-devsecops.yml"
+      - "!**/*.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: s17-24bcs10267-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  APP_DIR: session-17-devsecops/24BCS10267-ujjawal-prabhat
+  IMAGE_NAME: ghcr.io/ujjawalprabhat/s17-devsecops-demo-24bcs10267
+  PYTHON_VERSION: "3.12"
+  SEMGREP_VERSION: "1.179.0"
+  TRIVY_VERSION: "0.75.0"
+  GITLEAKS_VERSION: "8.30.1"
+
+defaults:
+  run:
+    shell: bash
+    working-directory: session-17-devsecops/24BCS10267-ujjawal-prabhat
+
+jobs:
+  # ------------------------------------------------------------------ 1
+  build:
+    name: 1. Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: ${{ env.APP_DIR }}/requirements*.txt
+      - name: Install runtime dependencies
+        run: pip install -r requirements.txt
+      - name: Byte-compile and import check
+        run: |
+          python -m compileall -q app
+          python -c "from app.main import app; print('routes:', sorted(r.rule for r in app.url_map.iter_rules()))"
+
+  # ------------------------------------------------------------------ 2
+  unit-test:
+    name: 2. Unit Test
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: ${{ env.APP_DIR }}/requirements*.txt
+      - name: Install dev dependencies
+        run: pip install -r requirements-dev.txt
+      - name: pytest (coverage >= 80%)
+        run: python -m pytest
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: unit-test-reports
+          path: ${{ env.APP_DIR }}/reports/
+
+  # ------------------------------------------------------------------ 3
+  sast:
+    name: 3. SAST (Semgrep)
+    needs: unit-test
+    runs-on: ubuntu-latest
+    outputs:
+      findings: ${{ steps.scan.outputs.findings }}
+      result: ${{ steps.scan.outputs.result }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Install Semgrep
+        run: pip install "semgrep==${SEMGREP_VERSION}"
+      - name: Semgrep scan (custom rules + p/python)
+        id: scan
+        run: |
+          mkdir -p reports
+          semgrep scan --metrics=off \
+            --config .semgrep.yml --config p/python \
+            --text-output=reports/semgrep.txt \
+            --json-output=reports/semgrep.json \
+            --sarif-output=reports/semgrep.sarif \
+            app tests
+          cat reports/semgrep.txt
+          BLOCKING=$(jq '[.results[] | select(.extra.severity=="ERROR")] | length' reports/semgrep.json)
+          TOTAL=$(jq '.results | length' reports/semgrep.json)
+          echo "Semgrep findings: total=$TOTAL blocking(ERROR)=$BLOCKING"
+          echo "findings=$BLOCKING" >> "$GITHUB_OUTPUT"
+          if [ "$BLOCKING" -gt 0 ]; then
+            echo "result=fail" >> "$GITHUB_OUTPUT"
+            jq -r '.results[] | select(.extra.severity=="ERROR") | "::error file=\(env.APP_DIR)/\(.path),line=\(.start.line)::[\(.check_id)] \(.extra.message)"' reports/semgrep.json
+          else
+            echo "result=pass" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Upload SAST report
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: sast-semgrep-report
+          path: ${{ env.APP_DIR }}/reports/
+
+  # ------------------------------------------------------------------ 4
+  sca:
+    name: 4. SCA (pip-audit + Trivy fs)
+    needs: sast
+    runs-on: ubuntu-latest
+    outputs:
+      findings: ${{ steps.trivy.outputs.findings }}
+      result: ${{ steps.trivy.outputs.result }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: pip-audit (PyPI advisory DB - informational)
+        run: |
+          mkdir -p reports
+          pip install pip-audit
+          set +e
+          pip-audit -r requirements.txt --desc on -f json -o reports/pip-audit.json
+          RC=$?
+          pip-audit -r requirements.txt --desc off
+          set -e
+          [ "$RC" -ne 0 ] && echo "::warning::pip-audit reported known vulnerabilities (see pip-audit.json)" || true
+      - name: Install Trivy ${{ env.TRIVY_VERSION }}
+        working-directory: ${{ runner.temp }}
+        run: |
+          curl -sSfLO "https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz"
+          curl -sSfLO "https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_checksums.txt"
+          grep " trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz$" "trivy_${TRIVY_VERSION}_checksums.txt" | sha256sum -c -
+          tar -xzf "trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz" trivy && sudo mv trivy /usr/local/bin/
+          trivy --version
+      - name: Trivy fs - dependency vulnerabilities (gating)
+        id: trivy
+        run: |
+          trivy fs --config trivy.yaml --exit-code 0 --format json --output reports/trivy-fs.json .
+          trivy convert --format table reports/trivy-fs.json
+          trivy convert --format sarif --output reports/trivy-fs.sarif reports/trivy-fs.json
+          N=$(jq '[.Results[]?.Vulnerabilities[]? | select(.Severity=="HIGH" or .Severity=="CRITICAL")] | length' reports/trivy-fs.json)
+          echo "HIGH/CRITICAL dependency vulnerabilities: $N"
+          echo "findings=$N" >> "$GITHUB_OUTPUT"
+          if [ "$N" -gt 0 ]; then
+            echo "result=fail" >> "$GITHUB_OUTPUT"
+            jq -r '.Results[]? | .Target as $t | .Vulnerabilities[]? | "::error file=\(env.APP_DIR)/\($t)::\(.Severity) \(.VulnerabilityID) in \(.PkgName) \(.InstalledVersion) (fixed in \(.FixedVersion // "n/a"))"' reports/trivy-fs.json
+          else
+            echo "result=pass" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Upload SCA reports
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: sca-reports
+          path: ${{ env.APP_DIR }}/reports/
+
+  # ------------------------------------------------------------------ 5
+  secret-scan:
+    name: 5. Secret Scan (Gitleaks)
+    needs: sca
+    runs-on: ubuntu-latest
+    outputs:
+      findings: ${{ steps.scan.outputs.findings }}
+      result: ${{ steps.scan.outputs.result }}
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install Gitleaks ${{ env.GITLEAKS_VERSION }}
+        working-directory: ${{ runner.temp }}
+        run: |
+          curl -sSfLO "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          curl -sSfLO "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_checksums.txt"
+          grep " gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz$" "gitleaks_${GITLEAKS_VERSION}_checksums.txt" | sha256sum -c -
+          tar -xzf "gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" gitleaks && sudo mv gitleaks /usr/local/bin/
+          gitleaks version
+      - name: Gitleaks - scan only this student's folder
+        id: scan
+        run: |
+          mkdir -p "$RUNNER_TEMP/reports"
+          gitleaks dir . --config .gitleaks.toml --redact --verbose --exit-code 0 \
+            --report-format json --report-path "$RUNNER_TEMP/reports/gitleaks.json"
+          gitleaks dir . --config .gitleaks.toml --redact --exit-code 0 --log-level error \
+            --report-format sarif --report-path "$RUNNER_TEMP/reports/gitleaks.sarif"
+          N=$(jq 'length' "$RUNNER_TEMP/reports/gitleaks.json")
+          echo "Secrets found: $N"
+          echo "findings=$N" >> "$GITHUB_OUTPUT"
+          if [ "$N" -gt 0 ]; then
+            echo "result=fail" >> "$GITHUB_OUTPUT"
+            jq -r '.[] | "::error file=\(env.APP_DIR)/\(.File),line=\(.StartLine)::Gitleaks rule \(.RuleID): \(.Description)"' "$RUNNER_TEMP/reports/gitleaks.json"
+          else
+            echo "result=pass" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Upload secret-scan report
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: secret-scan-report
+          path: ${{ runner.temp }}/reports/
+
+  # ------------------------------------------------------------------ 6
+  docker-build:
+    name: 6. Docker Build
+    needs: secret-scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: docker build
+        run: |
+          docker build \
+            --label org.opencontainers.image.source=https://github.com/${{ github.repository }} \
+            --label org.opencontainers.image.revision=${{ github.sha }} \
+            -t s17-devsecops-demo:${{ github.sha }} .
+          docker image ls s17-devsecops-demo
+          docker image inspect s17-devsecops-demo:${{ github.sha }} --format 'User={{.Config.User}} Cmd={{.Config.Cmd}}'
+      - name: Save image
+        run: |
+          mkdir -p "$RUNNER_TEMP/image"
+          docker save s17-devsecops-demo:${{ github.sha }} | gzip > "$RUNNER_TEMP/image/image.tar.gz"
+          ls -lh "$RUNNER_TEMP/image"
+      - uses: actions/upload-artifact@v6
+        with:
+          name: docker-image
+          path: ${{ runner.temp }}/image/image.tar.gz
+          retention-days: 3
+
+  # ------------------------------------------------------------------ 7
+  image-scan:
+    name: 7. Container Image Scan (Trivy)
+    needs: docker-build
+    runs-on: ubuntu-latest
+    outputs:
+      findings: ${{ steps.scan.outputs.findings }}
+      result: ${{ steps.scan.outputs.result }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/download-artifact@v7
+        with:
+          name: docker-image
+          path: ${{ runner.temp }}/image
+      - name: Load image
+        run: docker load -i "$RUNNER_TEMP/image/image.tar.gz"
+      - name: Install Trivy ${{ env.TRIVY_VERSION }}
+        working-directory: ${{ runner.temp }}
+        run: |
+          curl -sSfLO "https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz"
+          curl -sSfLO "https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_checksums.txt"
+          grep " trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz$" "trivy_${TRIVY_VERSION}_checksums.txt" | sha256sum -c -
+          tar -xzf "trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz" trivy && sudo mv trivy /usr/local/bin/
+      - name: Trivy image scan (HIGH,CRITICAL)
+        id: scan
+        run: |
+          mkdir -p reports
+          trivy image --config trivy.yaml --exit-code 0 --format json --output reports/trivy-image.json \
+            s17-devsecops-demo:${{ github.sha }}
+          trivy convert --format table reports/trivy-image.json | tee reports/trivy-image.txt
+          trivy convert --format sarif --output reports/trivy-image.sarif reports/trivy-image.json
+          N=$(jq '[.Results[]?.Vulnerabilities[]? | select(.Severity=="HIGH" or .Severity=="CRITICAL")] | length' reports/trivy-image.json)
+          echo "HIGH/CRITICAL image vulnerabilities: $N"
+          echo "findings=$N" >> "$GITHUB_OUTPUT"
+          if [ "$N" -gt 0 ]; then
+            echo "result=fail" >> "$GITHUB_OUTPUT"
+            jq -r '.Results[]? | .Target as $t | .Vulnerabilities[]? | "::error::\(.Severity) \(.VulnerabilityID) \(.PkgName) \(.InstalledVersion) in \($t)"' reports/trivy-image.json | head -50
+          else
+            echo "result=pass" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Upload image-scan report
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: image-scan-report
+          path: ${{ env.APP_DIR }}/reports/
+
+  # ------------------------------------------------------------------ 8
+  security-gate:
+    name: 8. Security Gate
+    needs: [sast, sca, secret-scan, image-scan]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Evaluate scan results (fail on HIGH/CRITICAL, ERROR, or any secret)
+        working-directory: .
+        env:
+          SAST_JOB: ${{ needs.sast.result }}
+          SAST_RES: ${{ needs.sast.outputs.result }}
+          SAST_N: ${{ needs.sast.outputs.findings }}
+          SCA_JOB: ${{ needs.sca.result }}
+          SCA_RES: ${{ needs.sca.outputs.result }}
+          SCA_N: ${{ needs.sca.outputs.findings }}
+          SEC_JOB: ${{ needs.secret-scan.result }}
+          SEC_RES: ${{ needs.secret-scan.outputs.result }}
+          SEC_N: ${{ needs.secret-scan.outputs.findings }}
+          IMG_JOB: ${{ needs.image-scan.result }}
+          IMG_RES: ${{ needs.image-scan.outputs.result }}
+          IMG_N: ${{ needs.image-scan.outputs.findings }}
+        run: |
+          FAIL=0
+          {
+            echo "## Security gate - 24BCS10267 session 17"
+            echo
+            echo "| Check | Tool | Policy | Job | Findings | Verdict |"
+            echo "|---|---|---|---|---|---|"
+          } >> "$GITHUB_STEP_SUMMARY"
+          printf '%-14s %-10s %-8s %-9s %s\n' CHECK JOB RESULT FINDINGS VERDICT
+          row() { # name tool policy job result findings
+            local verdict="PASS"
+            if [ "$4" != "success" ] || [ "$5" != "pass" ]; then verdict="FAIL"; FAIL=1; fi
+            printf '%-14s %-10s %-8s %-9s %s\n' "$1" "$4" "${5:-none}" "${6:-?}" "$verdict"
+            echo "| $1 | $2 | $3 | $4 | ${6:-?} | $verdict |" >> "$GITHUB_STEP_SUMMARY"
+          }
+          row "SAST"         "Semgrep"         "0 ERROR findings"      "$SAST_JOB" "$SAST_RES" "$SAST_N"
+          row "SCA"          "Trivy fs"        "0 HIGH/CRITICAL"       "$SCA_JOB"  "$SCA_RES"  "$SCA_N"
+          row "Secrets"      "Gitleaks"        "0 secrets"             "$SEC_JOB"  "$SEC_RES"  "$SEC_N"
+          row "Image"        "Trivy image"     "0 HIGH/CRITICAL"       "$IMG_JOB"  "$IMG_RES"  "$IMG_N"
+          echo
+          if [ "$FAIL" -ne 0 ]; then
+            echo "**GATE: FAILED** - image will NOT be pushed or deployed." >> "$GITHUB_STEP_SUMMARY"
+            echo "::error::Security gate FAILED - push and deploy are blocked"
+            exit 1
+          fi
+          echo "**GATE: PASSED** - image may be pushed and deployed." >> "$GITHUB_STEP_SUMMARY"
+          echo "Security gate PASSED"
+
+  # ------------------------------------------------------------------ 9
+  push:
+    name: 9. Push Image (GHCR)
+    needs: security-gate
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image: ${{ steps.push.outputs.image }}
+    steps:
+      - uses: actions/download-artifact@v7
+        with:
+          name: docker-image
+          path: ${{ runner.temp }}/image
+      - name: Load the exact image that was scanned
+        working-directory: ${{ runner.temp }}
+        run: docker load -i image/image.tar.gz
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Tag and push
+        id: push
+        working-directory: ${{ runner.temp }}
+        run: |
+          TAG="${GITHUB_SHA::7}"
+          docker tag s17-devsecops-demo:${GITHUB_SHA} "$IMAGE_NAME:$TAG"
+          docker push "$IMAGE_NAME:$TAG"
+          DIGEST_REF=$(docker image inspect "$IMAGE_NAME:$TAG" --format '{{index .RepoDigests 0}}')
+          echo "Pushed: $DIGEST_REF"
+          echo "image=$DIGEST_REF" >> "$GITHUB_OUTPUT"
+
+  # ------------------------------------------------------------------ 10
+  deploy:
+    name: 10. Deploy to Kubernetes (kind)
+    needs: push
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - uses: actions/checkout@v6
+      - uses: helm/kind-action@v1
+        with:
+          cluster_name: s17-24bcs10267
+      - name: Registry pull secret
+        run: |
+          kubectl create secret docker-registry ghcr-pull \
+            --docker-server=ghcr.io \
+            --docker-username=${{ github.actor }} \
+            --docker-password=${{ secrets.GITHUB_TOKEN }}
+      - name: Apply manifests (image pinned by digest)
+        run: |
+          sed -i "s|__IMAGE__|${{ needs.push.outputs.image }}|; s|__VERSION__|${GITHUB_SHA::7}|" k8s/deployment.yaml
+          grep -n "image:" k8s/deployment.yaml
+          kubectl apply -f k8s/
+      - name: Rollout status
+        run: |
+          kubectl rollout status deployment/s17-devsecops-demo --timeout=180s
+          kubectl get deploy,pods,svc -o wide
+      - name: Verify runtime hardening
+        run: |
+          POD=$(kubectl get pod -l app=s17-devsecops-demo -o jsonpath='{.items[0].metadata.name}')
+          echo "pod: $POD"
+          kubectl get pod "$POD" -o jsonpath='{.spec.containers[0].securityContext}' | jq .
+          kubectl get pod "$POD" -o jsonpath='{.spec.containers[0].resources}' | jq -c .
+          echo "uid inside container: $(kubectl exec "$POD" -- id)"
+          if kubectl exec "$POD" -- touch /app/should-fail 2>/tmp/err; then
+            echo "::error::root filesystem is writable"; exit 1
+          fi
+          echo "write to /app blocked as expected: $(cat /tmp/err)"
+      - name: Smoke test
+        run: |
+          kubectl port-forward service/s17-devsecops-demo 8080:80 >/dev/null 2>&1 &
+          for i in $(seq 1 15); do curl -fs http://localhost:8080/health && break; sleep 1; done
+          echo
+          curl -fsS http://localhost:8080/
+          echo
+          curl -fsS -X POST http://localhost:8080/api/calc -H 'Content-Type: application/json' -d '{"op":"multiply","a":6,"b":7}'
+          echo
+          curl -fsS -D - -o /dev/null http://localhost:8080/health | grep -iE "x-content-type-options|x-frame-options"
