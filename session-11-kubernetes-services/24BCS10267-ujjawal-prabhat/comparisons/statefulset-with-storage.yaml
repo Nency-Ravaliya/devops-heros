@@ -1,0 +1,47 @@
+# StatefulSet with per-pod persistent storage (volumeClaimTemplates).
+apiVersion: v1
+kind: Service
+metadata:
+  name: db
+  namespace: s11
+spec:
+  clusterIP: None
+  selector:
+    app: db
+  ports:
+    - port: 5432
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: db
+  namespace: s11
+spec:
+  serviceName: db
+  replicas: 2
+  selector:
+    matchLabels:
+      app: db
+  template:
+    metadata:
+      labels:
+        app: db
+    spec:
+      containers:
+        - name: db
+          image: busybox:1.36
+          # writes its identity into its own volume once, then keeps it across restarts
+          command: ["sh", "-c", "[ -f /data/id ] || echo \"created by $(hostname) at $(date +%T)\" > /data/id; sleep infinity"]
+          volumeMounts:
+            - { name: data, mountPath: /data }
+          resources:
+            requests: { cpu: 5m, memory: 8Mi }
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: standard
+        resources:
+          requests:
+            storage: 64Mi

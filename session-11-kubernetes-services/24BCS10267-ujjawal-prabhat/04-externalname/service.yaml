@@ -1,0 +1,19 @@
+# No selector, no endpoints, no ClusterIP: CoreDNS just answers with a CNAME.
+apiVersion: v1
+kind: Service
+metadata:
+  name: external-api
+  namespace: s11
+spec:
+  type: ExternalName
+  externalName: example.com
+---
+# ExternalName can also alias a Service in another namespace (classic migration trick).
+apiVersion: v1
+kind: Service
+metadata:
+  name: cluster-dns-alias
+  namespace: s11
+spec:
+  type: ExternalName
+  externalName: kube-dns.kube-system.svc.cluster.local

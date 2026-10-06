@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: web-loadbalancer
+  namespace: s11
+spec:
+  type: LoadBalancer       # NodePort + an external IP provisioned by a cloud controller
+  selector:                #   (cloud-provider-kind plays the cloud on kind)
+    app: web
+  ports:
+    - name: http
+      port: 80
+      targetPort: http

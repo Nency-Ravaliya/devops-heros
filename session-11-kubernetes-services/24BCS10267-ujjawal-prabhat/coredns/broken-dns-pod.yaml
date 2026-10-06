@@ -1,0 +1,13 @@
+# Troubleshooting drill: dnsPolicy "Default" means the pod inherits the NODE's resolv.conf,
+# NOT CoreDNS -> cluster service names cannot be resolved. Fix: dnsPolicy: ClusterFirst (the default).
+apiVersion: v1
+kind: Pod
+metadata:
+  name: broken-dns
+  namespace: s11
+spec:
+  dnsPolicy: Default
+  containers:
+    - name: dnsutils
+      image: registry.k8s.io/e2e-test-images/jessie-dnsutils:1.7
+      command: ["sleep", "infinity"]

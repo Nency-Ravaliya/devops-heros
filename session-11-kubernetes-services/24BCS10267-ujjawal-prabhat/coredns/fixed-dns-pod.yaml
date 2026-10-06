@@ -1,0 +1,13 @@
+# FIXED version of broken-dns-pod.yaml: dnsPolicy ClusterFirst (the default) points the pod at
+# CoreDNS (10.96.0.10) with the namespace search path, so service names resolve again.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: broken-dns
+  namespace: s11
+spec:
+  dnsPolicy: ClusterFirst
+  containers:
+    - name: dnsutils
+      image: registry.k8s.io/e2e-test-images/jessie-dnsutils:1.7
+      command: ["sleep", "infinity"]

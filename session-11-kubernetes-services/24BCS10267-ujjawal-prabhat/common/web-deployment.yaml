@@ -1,0 +1,31 @@
+# Backend used by the ClusterIP, NodePort and LoadBalancer services.
+# traefik/whoami answers with the pod's hostname and IP, so load-balancing is visible.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web
+  namespace: s11
+  labels:
+    app: web
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: web
+  template:
+    metadata:
+      labels:
+        app: web
+    spec:
+      containers:
+        - name: whoami
+          image: traefik/whoami:v1.10
+          ports:
+            - name: http
+              containerPort: 80
+          readinessProbe:
+            httpGet: { path: /health, port: 80 }
+            periodSeconds: 3
+          resources:
+            requests: { cpu: 10m, memory: 16Mi }
+            limits:   { cpu: 100m, memory: 64Mi }

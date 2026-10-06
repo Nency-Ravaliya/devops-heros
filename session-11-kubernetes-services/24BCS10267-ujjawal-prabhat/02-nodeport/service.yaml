@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: web-nodeport
+  namespace: s11
+spec:
+  type: NodePort           # ClusterIP + a port opened on EVERY node
+  selector:
+    app: web
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+      nodePort: 30080      # kind maps host port 30080 -> control-plane:30080, so http://localhost:30080 works
