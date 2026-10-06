@@ -24,27 +24,12 @@ spec:
     path: session21-python/24BCS10267-ujjawal-prabhat/final-devops-project/helm/stockpilot
     helm:
       releaseName: stockpilot
+      # values-prod.yaml = production defaults, values-gitops.yaml = this
+      # environment (incl. the immutable git-SHA image tag pushed by CI).
+      # Promoting a build = committing a new image.tag to values-gitops.yaml.
       valueFiles:
         - values-prod.yaml
-      # Environment-specific overrides for the shared kind cluster.
-      # image.tag is the immutable git-SHA tag pushed by the CI pipeline
-      # (promote a new build by changing this value in Git).
-      valuesObject:
-        image:
-          tag: f9d09f1d0cd1a86a20a1711fda2d2d23f3171db5
-        config:
-          APP_ENV: gitops
-        ingress:
-          host: stockpilot-gitops.local
-          annotations: {}
-        hpa:
-          minReplicas: 2
-          maxReplicas: 4
-        pdb:
-          minAvailable: 1
-        postgres:
-          storage:
-            size: 1Gi
+        - values-gitops.yaml
   destination:
     server: https://kubernetes.default.svc
     namespace: final-gitops

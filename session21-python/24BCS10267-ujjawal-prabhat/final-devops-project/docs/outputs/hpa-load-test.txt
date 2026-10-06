@@ -95,3 +95,12 @@ Events:
 $ kubectl -n final get deploy stockpilot-api
 NAME             READY   UP-TO-DATE   AVAILABLE   AGE
 stockpilot-api   5/5     5            5           25m
+$ kubectl -n final get hpa stockpilot-api
+NAME             REFERENCE                   TARGETS       MINPODS   MAXPODS   REPLICAS   AGE
+stockpilot-api   Deployment/stockpilot-api   cpu: 7%/50%   2         5         2          50m
+
+$ kubectl -n final describe hpa stockpilot-api | grep SuccessfulRescale
+  Normal   SuccessfulRescale             50m                horizontal-pod-autoscaler  New size: 2; reason: Current number of replicas below Spec.MinReplicas
+  Normal   SuccessfulRescale             27m                horizontal-pod-autoscaler  New size: 5; reason: cpu resource utilization (percentage of request) above target
+  Normal   SuccessfulRescale             23m                horizontal-pod-autoscaler  New size: 2; reason: All metrics below target
+
