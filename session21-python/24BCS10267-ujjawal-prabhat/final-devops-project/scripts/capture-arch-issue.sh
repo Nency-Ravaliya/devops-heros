@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Evidence for troubleshooting issue #5 (found for real during the GitOps rollout).
+# Evidence for troubleshooting issue #8 (found for real during the GitOps rollout).
 set -uo pipefail
 run() { echo "\$ $*"; "$@" 2>&1; echo; }
 run kubectl -n argocd get application final-stockpilot-24bcs10267

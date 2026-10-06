@@ -1,55 +1,53 @@
 $ helm list -n final
 NAME      	NAMESPACE	REVISION	UPDATED                              	STATUS  	CHART           	APP VERSION
-stockpilot	final    	1       	2026-10-06 19:07:33.722197 +0800 WITA	deployed	stockpilot-0.1.0	1.0.0      
+stockpilot	final    	3       	2026-10-06 19:36:57.344539 +0800 WITA	deployed	stockpilot-0.1.0	1.0.1      
 
-$ kubectl get all,cm,secret,ing,hpa,pvc,pdb -n final -o wide
-NAME                                      READY   STATUS    RESTARTS      AGE    IP            NODE                   NOMINATED NODE   READINESS GATES
-pod/stockpilot-api-6884fd678c-lr8m5       1/1     Running   3 (93s ago)   111s   10.244.1.32   devops-heros-worker2   <none>           <none>
-pod/stockpilot-api-6884fd678c-x9tr7       1/1     Running   4 (72s ago)   111s   10.244.2.19   devops-heros-worker    <none>           <none>
-pod/stockpilot-postgres-8874969c8-725bx   1/1     Running   0             111s   10.244.2.21   devops-heros-worker    <none>           <none>
+$ kubectl get all,cm,secret,ing,hpa,pvc,pdb -n final
+NAME                                      READY   STATUS    RESTARTS   AGE
+pod/stockpilot-api-8694764fbc-vd4mf       1/1     Running   0          45m
+pod/stockpilot-api-8694764fbc-w4lzc       1/1     Running   0          65m
+pod/stockpilot-postgres-8874969c8-94584   1/1     Running   0          65m
 
-NAME                          TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)    AGE    SELECTOR
-service/stockpilot-api        ClusterIP   10.96.194.226   <none>        80/TCP     111s   app.kubernetes.io/component=api,app.kubernetes.io/instance=stockpilot,app.kubernetes.io/name=stockpilot
-service/stockpilot-postgres   ClusterIP   10.96.1.113     <none>        5432/TCP   111s   app.kubernetes.io/component=database,app.kubernetes.io/instance=stockpilot,app.kubernetes.io/name=stockpilot
+NAME                          TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)    AGE
+service/stockpilot-api        ClusterIP   10.96.194.226   <none>        80/TCP     68m
+service/stockpilot-postgres   ClusterIP   10.96.1.113     <none>        5432/TCP   68m
 
-NAME                                  READY   UP-TO-DATE   AVAILABLE   AGE    CONTAINERS   IMAGES                 SELECTOR
-deployment.apps/stockpilot-api        2/2     2            2           111s   api          stockpilot-api:1.0.0   app.kubernetes.io/component=api,app.kubernetes.io/instance=stockpilot,app.kubernetes.io/name=stockpilot
-deployment.apps/stockpilot-postgres   1/1     1            1           111s   postgres     postgres:17-alpine     app.kubernetes.io/component=database,app.kubernetes.io/instance=stockpilot,app.kubernetes.io/name=stockpilot
+NAME                                  READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/stockpilot-api        2/2     2            2           68m
+deployment.apps/stockpilot-postgres   1/1     1            1           68m
 
-NAME                                            DESIRED   CURRENT   READY   AGE    CONTAINERS   IMAGES                 SELECTOR
-replicaset.apps/stockpilot-api-6884fd678c       2         2         2       111s   api          stockpilot-api:1.0.0   app.kubernetes.io/component=api,app.kubernetes.io/instance=stockpilot,app.kubernetes.io/name=stockpilot,pod-template-hash=6884fd678c
-replicaset.apps/stockpilot-postgres-8874969c8   1         1         1       111s   postgres     postgres:17-alpine     app.kubernetes.io/component=database,app.kubernetes.io/instance=stockpilot,app.kubernetes.io/name=stockpilot,pod-template-hash=8874969c8
+NAME                                            DESIRED   CURRENT   READY   AGE
+replicaset.apps/stockpilot-api-6884fd678c       0         0         0       68m
+replicaset.apps/stockpilot-api-8694764fbc       2         2         2       66m
+replicaset.apps/stockpilot-postgres-8874969c8   1         1         1       68m
 
 NAME                                                 REFERENCE                   TARGETS       MINPODS   MAXPODS   REPLICAS   AGE
-horizontalpodautoscaler.autoscaling/stockpilot-api   Deployment/stockpilot-api   cpu: 6%/50%   2         5         2          111s
+horizontalpodautoscaler.autoscaling/stockpilot-api   Deployment/stockpilot-api   cpu: 8%/50%   2         5         2          68m
 
 NAME                             DATA   AGE
-configmap/kube-root-ca.crt       1      111s
-configmap/stockpilot-config      7      111s
-configmap/stockpilot-dashboard   1      111s
+configmap/kube-root-ca.crt       1      68m
+configmap/stockpilot-config      7      68m
+configmap/stockpilot-dashboard   1      68m
 
 NAME                                      TYPE                 DATA   AGE
-secret/sh.helm.release.v1.stockpilot.v1   helm.sh/release.v1   1      111s
-secret/stockpilot-db                      Opaque               2      111s
+secret/sh.helm.release.v1.stockpilot.v1   helm.sh/release.v1   1      68m
+secret/sh.helm.release.v1.stockpilot.v2   helm.sh/release.v1   1      66m
+secret/sh.helm.release.v1.stockpilot.v3   helm.sh/release.v1   1      39m
+secret/stockpilot-db                      Opaque               2      68m
 
 NAME                                   CLASS   HOSTS              ADDRESS     PORTS   AGE
-ingress.networking.k8s.io/stockpilot   nginx   stockpilot.local   localhost   80      111s
+ingress.networking.k8s.io/stockpilot   nginx   stockpilot.local   localhost   80      68m
 
-NAME                                             STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE    VOLUMEMODE
-persistentvolumeclaim/stockpilot-postgres-data   Bound    pvc-ea345ebb-e675-4c2e-be51-a1650511282d   1Gi        RWO            standard       <unset>                 111s   Filesystem
+NAME                                             STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE
+persistentvolumeclaim/stockpilot-postgres-data   Bound    pvc-ea345ebb-e675-4c2e-be51-a1650511282d   1Gi        RWO            standard       <unset>                 68m
 
 NAME                                        MIN AVAILABLE   MAX UNAVAILABLE   ALLOWED DISRUPTIONS   AGE
-poddisruptionbudget.policy/stockpilot-api   1               N/A               1                     111s
-
-$ kubectl get endpointslices -n final
-NAME                        ADDRESSTYPE   PORTS   ENDPOINTS                 AGE
-stockpilot-api-j2qdf        IPv4          8000    10.244.2.19,10.244.1.32   112s
-stockpilot-postgres-jdps4   IPv4          5432    10.244.2.21               112s
+poddisruptionbudget.policy/stockpilot-api   1               N/A               1                     68m
 
 $ kubectl get servicemonitor,prometheusrule -n final
 NAME                                                  AGE
-servicemonitor.monitoring.coreos.com/stockpilot-api   111s
+servicemonitor.monitoring.coreos.com/stockpilot-api   68m
 
 NAME                                                     AGE
-prometheusrule.monitoring.coreos.com/stockpilot-alerts   111s
+prometheusrule.monitoring.coreos.com/stockpilot-alerts   68m
 

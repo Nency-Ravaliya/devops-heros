@@ -186,7 +186,7 @@ jobs:
       - uses: actions/checkout@v5
       # Multi-arch: runners/EKS nodes are amd64, the local kind cluster runs on
       # Apple Silicon (arm64). An amd64-only image crashes there with
-      # "exec format error" (see troubleshooting issue #5).
+      # "exec format error" (see README troubleshooting issue #8).
       - uses: docker/setup-qemu-action@v4
       - uses: docker/setup-buildx-action@v4
       - name: Build image (multi-stage, non-root, amd64+arm64)
