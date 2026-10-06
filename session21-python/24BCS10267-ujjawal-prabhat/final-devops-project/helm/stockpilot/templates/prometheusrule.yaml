@@ -1,0 +1,53 @@
+{{- if .Values.monitoring.prometheusRule.enabled }}
+{{- $ns := .Release.Namespace }}
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ include "stockpilot.fullname" . }}-alerts
+  labels:
+    {{- include "stockpilot.labels" . | nindent 4 }}
+    {{- with .Values.monitoring.prometheusRule.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  groups:
+    - name: stockpilot.rules
+      rules:
+        - record: stockpilot:http_requests:rate5m
+          expr: sum by (namespace, route, status) (rate(stockpilot_http_requests_total{namespace="{{ $ns }}"}[5m]))
+        - alert: StockPilotApiDown
+          expr: absent(up{namespace="{{ $ns }}", job=~".*stockpilot.*"} == 1)
+          for: 2m
+          labels: {severity: critical}
+          annotations:
+            summary: "StockPilot API has no healthy scrape targets in {{ $ns }}"
+            description: "Prometheus could not scrape any StockPilot API pod for 2 minutes."
+        - alert: StockPilotHighErrorRate
+          expr: |
+            sum(rate(stockpilot_http_requests_total{namespace="{{ $ns }}", status=~"5.."}[5m]))
+              / clamp_min(sum(rate(stockpilot_http_requests_total{namespace="{{ $ns }}"}[5m])), 1e-9) > 0.05
+          for: 5m
+          labels: {severity: warning}
+          annotations:
+            summary: "StockPilot 5xx error ratio above 5%"
+            description: {{ printf "Error ratio is {{ $value | humanizePercentage }}." | quote }}
+        - alert: StockPilotHighLatencyP95
+          expr: |
+            histogram_quantile(0.95, sum by (le) (rate(stockpilot_http_request_duration_seconds_bucket{namespace="{{ $ns }}"}[5m]))) > 0.5
+          for: 5m
+          labels: {severity: warning}
+          annotations:
+            summary: "StockPilot p95 latency above 500ms"
+        - alert: StockPilotLowStockItems
+          expr: max(stockpilot_low_stock_items{namespace="{{ $ns }}"}) > 0
+          for: 1m
+          labels: {severity: info}
+          annotations:
+            summary: "Some SKUs are at or below their reorder level"
+            description: {{ printf "{{ $value }} SKU(s) need reordering." | quote }}
+        - alert: StockPilotPodRestarting
+          expr: increase(kube_pod_container_status_restarts_total{namespace="{{ $ns }}", container="api"}[15m]) > 3
+          labels: {severity: warning}
+          annotations:
+            summary: "StockPilot API container restarting frequently"
+{{- end }}

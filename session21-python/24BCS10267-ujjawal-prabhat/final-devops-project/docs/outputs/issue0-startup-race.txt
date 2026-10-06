@@ -1,0 +1,44 @@
+$ kubectl -n final logs deploy/stockpilot-api --previous --tail=6
+Found 2 pods, using pod/stockpilot-api-6884fd678c-lr8m5
+    raise last_ex.with_traceback(None)
+sqlalchemy.exc.OperationalError: (psycopg.OperationalError) connection failed: connection to server at "10.96.1.113", port 5432 failed: Connection refused
+	Is the server running on that host and accepting TCP/IP connections?
+(Background on this error at: https://sqlalche.me/e/21/e3q8)
+
+ERROR:    Application startup failed. Exiting.
+
+$ kubectl -n final get events --field-selector involvedObject.kind=Pod --sort-by=.lastTimestamp | grep -E 'stockpilot-api' | grep -E 'BackOff|Unhealthy|Killing' | head -8
+104s        Warning   BackOff     pod/stockpilot-api-6884fd678c-lr8m5       Back-off restarting failed container api in pod stockpilot-api-6884fd678c-lr8m5_final(95ddca96-979b-4a0d-81b2-67f64e8ac27f)
+84s         Warning   BackOff     pod/stockpilot-api-6884fd678c-x9tr7       Back-off restarting failed container api in pod stockpilot-api-6884fd678c-x9tr7_final(d6dcf0d8-1c7b-42ad-83b4-a35fff2e9b79)
+
+$ helm upgrade stockpilot helm/stockpilot -n final -f helm/stockpilot/values-dev.yaml --wait --timeout 5m | head -6
+Release "stockpilot" has been upgraded. Happy Helming!
+NAME: stockpilot
+LAST DEPLOYED: Tue Oct  6 19:10:28 2026
+NAMESPACE: final
+STATUS: deployed
+REVISION: 2
+
+$ kubectl -n final delete pod -l app.kubernetes.io/instance=stockpilot --wait=false
+pod "stockpilot-api-8694764fbc-895mp" deleted from final namespace
+pod "stockpilot-api-8694764fbc-ltg5c" deleted from final namespace
+pod "stockpilot-postgres-8874969c8-725bx" deleted from final namespace
+
+$ kubectl -n final get pods
+NAME                                  READY   STATUS    RESTARTS   AGE
+stockpilot-api-8694764fbc-99pfk       1/1     Running   0          8s
+stockpilot-api-8694764fbc-w4lzc       1/1     Running   0          8s
+stockpilot-postgres-8874969c8-94584   1/1     Running   0          8s
+
+$ kubectl -n final get pods
+NAME                                  READY   STATUS    RESTARTS   AGE
+stockpilot-api-8694764fbc-99pfk       1/1     Running   0          38s
+stockpilot-api-8694764fbc-w4lzc       1/1     Running   0          38s
+stockpilot-postgres-8874969c8-94584   1/1     Running   0          38s
+
+$ kubectl -n final logs -l app.kubernetes.io/component=api --tail=3 --prefix | grep -E 'WARNING|started|Uvicorn running' | cut -c1-230
+[pod/stockpilot-api-8694764fbc-99pfk/api] 2026-10-06 11:10:52,768 INFO stockpilot StockPilot started env=dev version=1.0.1
+[pod/stockpilot-api-8694764fbc-99pfk/api] INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+[pod/stockpilot-api-8694764fbc-w4lzc/api] 2026-10-06 11:10:52,793 INFO stockpilot StockPilot started env=dev version=1.0.1
+[pod/stockpilot-api-8694764fbc-w4lzc/api] INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+

@@ -1,0 +1,9 @@
+apiVersion: v2
+name: stockpilot
+description: StockPilot inventory API + PostgreSQL (24BCS10267 final DevOps project)
+type: application
+version: 0.1.0
+appVersion: "1.0.1"
+keywords: [fastapi, inventory, devops-final]
+maintainers:
+  - name: Ujjawal Prabhat (24BCS10267)

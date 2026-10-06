@@ -22,11 +22,29 @@ log = logging.getLogger("stockpilot")
 STATIC_DIR = Path(__file__).parent / "static"
 
 
+_schema_ready = False
+
+
+def ensure_schema() -> bool:
+    """Create tables once the database is reachable (idempotent).
+
+    Called at start-up *and* from /ready. If PostgreSQL is not up yet the pod
+    stays alive (liveness OK) but un-ready, instead of crash-looping. A larger
+    project would run Alembic migrations as a Helm pre-upgrade hook instead.
+    """
+    global _schema_ready
+    if not _schema_ready:
+        Base.metadata.create_all(bind=engine)
+        _schema_ready = True
+    return _schema_ready
+
+
 @asynccontextmanager
 async def lifespan(_: FastAPI):
-    # Small project: create tables on start-up (idempotent). A larger project
-    # would run Alembic migrations as a Helm pre-upgrade hook instead.
-    Base.metadata.create_all(bind=engine)
+    try:
+        ensure_schema()
+    except Exception as exc:  # pragma: no cover - exercised in k8s only
+        log.warning("database not reachable at start-up, will retry from /ready: %s", exc)
     metrics.BUILD_INFO.info({"version": settings.app_version, "env": settings.app_env})
     log.info("StockPilot started env=%s version=%s", settings.app_env, settings.app_version)
     yield
@@ -91,6 +109,7 @@ def health():
 def ready(response: Response):
     """Readiness: we can reach the database, so we can serve traffic."""
     try:
+        ensure_schema()
         with engine.connect() as conn:
             conn.execute(text("SELECT 1"))
     except Exception as exc:  # pragma: no cover - exercised in k8s only

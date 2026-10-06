@@ -1,0 +1,56 @@
+{
+  "title": "StockPilot API (__NAMESPACE__)",
+  "uid": "stockpilot-__NAMESPACE__",
+  "tags": ["stockpilot", "24bcs10267"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "refresh": "10s",
+  "time": {"from": "now-30m", "to": "now"},
+  "panels": [
+    {
+      "id": 1, "type": "stat", "title": "Healthy API targets",
+      "gridPos": {"h": 4, "w": 6, "x": 0, "y": 0},
+      "targets": [{"expr": "sum(up{namespace=\"__NAMESPACE__\", job=~\".*stockpilot.*\"})", "refId": "A"}]
+    },
+    {
+      "id": 2, "type": "stat", "title": "Request rate (req/s)",
+      "gridPos": {"h": 4, "w": 6, "x": 6, "y": 0},
+      "targets": [{"expr": "sum(rate(stockpilot_http_requests_total{namespace=\"__NAMESPACE__\"}[1m]))", "refId": "A"}]
+    },
+    {
+      "id": 3, "type": "stat", "title": "Low-stock SKUs",
+      "gridPos": {"h": 4, "w": 6, "x": 12, "y": 0},
+      "targets": [{"expr": "max(stockpilot_low_stock_items{namespace=\"__NAMESPACE__\"})", "refId": "A"}]
+    },
+    {
+      "id": 4, "type": "stat", "title": "5xx ratio (5m)",
+      "gridPos": {"h": 4, "w": 6, "x": 18, "y": 0},
+      "fieldConfig": {"defaults": {"unit": "percentunit"}},
+      "targets": [{"expr": "sum(rate(stockpilot_http_requests_total{namespace=\"__NAMESPACE__\",status=~\"5..\"}[5m])) / clamp_min(sum(rate(stockpilot_http_requests_total{namespace=\"__NAMESPACE__\"}[5m])), 1e-9)", "refId": "A"}]
+    },
+    {
+      "id": 5, "type": "timeseries", "title": "Requests per second by route",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 4},
+      "targets": [{"expr": "sum by (route) (rate(stockpilot_http_requests_total{namespace=\"__NAMESPACE__\"}[1m]))", "legendFormat": "{{route}}", "refId": "A"}]
+    },
+    {
+      "id": 6, "type": "timeseries", "title": "Latency p50 / p95",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 4},
+      "fieldConfig": {"defaults": {"unit": "s"}},
+      "targets": [
+        {"expr": "histogram_quantile(0.5, sum by (le) (rate(stockpilot_http_request_duration_seconds_bucket{namespace=\"__NAMESPACE__\"}[5m])))", "legendFormat": "p50", "refId": "A"},
+        {"expr": "histogram_quantile(0.95, sum by (le) (rate(stockpilot_http_request_duration_seconds_bucket{namespace=\"__NAMESPACE__\"}[5m])))", "legendFormat": "p95", "refId": "B"}
+      ]
+    },
+    {
+      "id": 7, "type": "timeseries", "title": "Pod CPU (cores)",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 12},
+      "targets": [{"expr": "sum by (pod) (rate(container_cpu_usage_seconds_total{namespace=\"__NAMESPACE__\", container=\"api\"}[2m]))", "legendFormat": "{{pod}}", "refId": "A"}]
+    },
+    {
+      "id": 8, "type": "timeseries", "title": "Stock movements per minute",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 12},
+      "targets": [{"expr": "sum by (direction) (increase(stockpilot_stock_adjustments_total{namespace=\"__NAMESPACE__\"}[1m]))", "legendFormat": "{{direction}}", "refId": "A"}]
+    }
+  ]
+}

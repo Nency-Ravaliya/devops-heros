@@ -1,0 +1,37 @@
+$ kubectl apply -f kubernetes/
+namespace/final-k8s unchanged
+configmap/stockpilot-config configured
+secret/stockpilot-db configured
+persistentvolumeclaim/stockpilot-postgres-data unchanged
+deployment.apps/stockpilot-postgres unchanged
+service/stockpilot-postgres unchanged
+deployment.apps/stockpilot-api configured
+service/stockpilot-api unchanged
+ingress.networking.k8s.io/stockpilot unchanged
+horizontalpodautoscaler.autoscaling/stockpilot-api unchanged
+
+$ kubectl get deploy,po,svc,ing,hpa,pvc -n final-k8s
+NAME                                  READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/stockpilot-api        2/2     2            2           2m50s
+deployment.apps/stockpilot-postgres   1/1     1            1           2m50s
+
+NAME                                       READY   STATUS    RESTARTS   AGE
+pod/stockpilot-api-9c7498988-2wtqd         1/1     Running   0          56s
+pod/stockpilot-api-9c7498988-x2dfz         1/1     Running   0          51s
+pod/stockpilot-postgres-58875cf57c-v62zt   1/1     Running   0          2m50s
+
+NAME                          TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)    AGE
+service/stockpilot-api        ClusterIP   10.96.46.167    <none>        80/TCP     2m50s
+service/stockpilot-postgres   ClusterIP   10.96.243.141   <none>        5432/TCP   2m50s
+
+NAME                                   CLASS   HOSTS                  ADDRESS     PORTS   AGE
+ingress.networking.k8s.io/stockpilot   nginx   stockpilot-k8s.local   localhost   80      2m50s
+
+NAME                                                 REFERENCE                   TARGETS       MINPODS   MAXPODS   REPLICAS   AGE
+horizontalpodautoscaler.autoscaling/stockpilot-api   Deployment/stockpilot-api   cpu: 7%/60%   2         5         2          2m50s
+
+NAME                                             STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE
+persistentvolumeclaim/stockpilot-postgres-data   Bound    pvc-40b4d0c4-b0f7-4c03-9233-8326eba1b1c1   1Gi        RWO            standard       <unset>                 2m50s
+
+$ curl -s -H 'Host: stockpilot-k8s.local' localhost:8081/api/info
+{"service":"StockPilot","version":"1.0.1","env":"k8s-plain"}

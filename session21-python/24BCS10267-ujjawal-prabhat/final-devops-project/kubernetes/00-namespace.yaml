@@ -1,0 +1,9 @@
+# Plain-manifest variant of the deployment (the Helm chart in ../helm is the
+# primary delivery path). Apply with:  kubectl apply -f kubernetes/
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: final-k8s
+  labels:
+    app.kubernetes.io/part-of: stockpilot
+    owner: 24bcs10267

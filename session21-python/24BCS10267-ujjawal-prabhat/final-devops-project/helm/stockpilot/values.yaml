@@ -1,0 +1,114 @@
+# Default values for the StockPilot chart.
+# Environment overlays: values-dev.yaml, values-prod.yaml
+
+nameOverride: ""
+fullnameOverride: ""
+
+image:
+  repository: ghcr.io/ujjawalprabhat/stockpilot-api
+  tag: ""                 # defaults to .Chart.AppVersion; CI sets the git SHA
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+
+replicaCount: 2
+
+# Non-secret runtime config -> ConfigMap (envFrom)
+config:
+  APP_ENV: default
+  LOG_LEVEL: info
+  DEFAULT_REORDER_LEVEL: "10"
+  DB_NAME: stockpilot
+  DB_PORT: "5432"
+
+# Database credentials -> Secret.
+# EXAMPLE PLACEHOLDERS ONLY. Override with --set / a sealed secret, or point
+# existingSecret at a Secret created out-of-band (see values-prod.yaml).
+database:
+  existingSecret: ""
+  username: stockpilot
+  password: change-me-placeholder
+
+containerPort: 8000
+
+service:
+  type: ClusterIP
+  port: 80
+
+probes:
+  liveness:
+    path: /health
+    initialDelaySeconds: 5
+    periodSeconds: 10
+    failureThreshold: 3
+  readiness:
+    path: /ready
+    initialDelaySeconds: 3
+    periodSeconds: 5
+    failureThreshold: 3
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 96Mi
+  limits:
+    cpu: 500m
+    memory: 256Mi
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 10001
+  runAsGroup: 10001
+  fsGroup: 10001
+  seccompProfile:
+    type: RuntimeDefault
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop: ["ALL"]
+
+ingress:
+  enabled: true
+  className: nginx
+  host: stockpilot.local
+  annotations: {}
+
+hpa:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 6
+  targetCPUUtilizationPercentage: 60
+
+pdb:
+  enabled: true
+  minAvailable: 1
+
+# In-cluster PostgreSQL (single replica + PVC). On AWS this would be RDS.
+postgres:
+  enabled: true
+  image: postgres:17-alpine
+  storage:
+    size: 1Gi
+    storageClassName: ""   # "" = cluster default (kind: standard)
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+monitoring:
+  serviceMonitor:
+    enabled: false
+    interval: 15s
+    labels:
+      release: kps
+  prometheusRule:
+    enabled: false
+    labels:
+      release: kps
+  grafanaDashboard:
+    enabled: false
