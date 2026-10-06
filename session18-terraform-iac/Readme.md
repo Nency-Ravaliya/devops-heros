@@ -32,3 +32,9 @@ The research part is under [`aws-services/`](aws-services/):
 - [DynamoDB and RDS](aws-services/05-dynamodb-rds/README.md)
 
 I validate the configuration before using any AWS credentials. A real `apply` creates a cloud resource and should only be run in an authorized AWS account, followed by `terraform destroy` after verification.
+
+## Result
+
+GitHub Actions ran formatting and validation for this project without using cloud credentials. The workflow also checks the Session 19 Terraform configuration.
+
+![Terraform validation result](evidence/github-actions-terraform-success.png)

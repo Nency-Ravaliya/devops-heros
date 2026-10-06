@@ -45,3 +45,9 @@ kubectl apply --dry-run=client -f 08-mini-project/argocd-application.yaml
 ```
 
 On a cluster with Argo CD installed, I apply the Application, check that it becomes `Synced` and `Healthy`, change the replica count in Git, and verify that Argo CD reconciles the cluster. I also test self-healing by manually scaling the Deployment away from the Git value and watching it return to the declared count.
+
+## Result
+
+The GitHub Actions run validated Prometheus and Alertmanager, installed Argo CD in a temporary Kind cluster, and confirmed that the application reached `Synced` and `Healthy`.
+
+![Session 20 monitoring and GitOps result](evidence/github-actions-success.png)

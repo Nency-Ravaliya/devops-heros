@@ -37,3 +37,9 @@ terraform destroy
 I keep credentials, state, plans, and the real variable file outside Git. Before a real apply, the AMI ID in `terraform.tfvars` must be checked for the selected AWS region. After capturing the resource IDs and web response, I run `terraform destroy` so the learning environment does not keep generating cost.
 
 The earlier folders contain my notes on cloud service models, Regions and Availability Zones, VPCs, routes, Internet Gateways, Security Groups, and the Terraform workflow.
+
+## Result
+
+The shared Terraform workflow completed successfully and validated this configuration. I have kept the real AWS apply as a separate step because it creates billable resources in the account used for the lab.
+
+![Session 19 Terraform validation result](evidence/github-actions-terraform-success.png)

@@ -118,3 +118,9 @@ FastAPI exposes Prometheus metrics at `/metrics`. The Helm chart can create a Se
 ## Troubleshooting
 
 I included one invalid image and one Service with a broken selector. My investigation uses Pod status, `describe`, logs, events, labels, and EndpointSlices before changing the manifest. The diagnosis and fixes are documented in [`troubleshooting/README.md`](troubleshooting/README.md).
+
+## Result
+
+I ran the final project workflow on GitHub Actions. Backend and frontend checks, security scans, image scans, Helm validation, deployment to Kind, and the HTTP smoke test all passed.
+
+![Final project GitHub Actions result](evidence/github-actions-success.png)

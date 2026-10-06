@@ -54,3 +54,9 @@ docker stop session17-demo
 ```
 
 The CI deployment uses a temporary Kind cluster, so it proves the manifests work without storing a personal kubeconfig in GitHub. The smaller folders contain my notes on the registry, Kubernetes deployment, SAST, SCA, secret scanning, image scanning, and security gates.
+
+## Result
+
+I ran the complete workflow on GitHub Actions. The test, security, container scan, and Kubernetes smoke-test jobs all passed.
+
+![Session 17 GitHub Actions result](evidence/github-actions-success.png)
