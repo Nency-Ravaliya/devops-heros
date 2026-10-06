@@ -491,6 +491,12 @@ delete it.
 | Encryption, public access block | emulated: the settings are stored and returned by the API exactly like AWS | enforced by the real service (KMS/S3 storage layer, account-level policy evaluation) |
 | `force_destroy` | convenient for a demo | dangerous in production - deletes all objects and versions |
 
+**Known LocalStack quirk:** provider 6.67.0 sends bucket tags inside the `CreateBucket` request (the newer
+S3 ABAC API). On my very first apply, LocalStack 3.8 didn't store them, and the next `plan` wanted to re-add the tags
+(a second `apply` fixed it with `PutBucketTagging`). I destroyed that run, and the run documented above came out clean
+(`plan -detailed-exitcode` = 0 and the tags confirmed with `get-bucket-tagging`). If you see the tag diff on LocalStack,
+re-apply or limit the provider to `< 6.21` (that's what the Session 19 project does). Real AWS doesn't have this problem.
+
 To run against real AWS: set `use_localstack = false` in `terraform.tfvars`, choose a globally unique
 `bucket_name`, make sure AWS credentials are configured, then run the same commands.
 
