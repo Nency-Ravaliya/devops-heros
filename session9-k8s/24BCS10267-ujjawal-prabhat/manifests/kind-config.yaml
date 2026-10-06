@@ -1,0 +1,26 @@
+# kind cluster config equivalent to the running "devops-heros" cluster
+# (1 control-plane + 2 workers, ingress-ready control plane, host port mappings).
+# Create with:  kind create cluster --name devops-heros --config kind-config.yaml --image kindest/node:v1.37.0
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: devops-heros
+nodes:
+  - role: control-plane
+    kubeadmConfigPatches:
+      - |
+        kind: InitConfiguration
+        nodeRegistration:
+          kubeletExtraArgs:
+            node-labels: "ingress-ready=true"
+    extraPortMappings:
+      - containerPort: 80      # ingress-nginx HTTP  -> http://localhost:8081
+        hostPort: 8081
+        protocol: TCP
+      - containerPort: 443     # ingress-nginx HTTPS -> https://localhost:8443
+        hostPort: 8443
+        protocol: TCP
+      - containerPort: 30080   # a fixed NodePort reachable from the host
+        hostPort: 30080
+        protocol: TCP
+  - role: worker
+  - role: worker
