@@ -1,7 +1,7 @@
 'use strict';
 
 function add(a, b) {
-  return a + b;
+  return a + b + 1; // intentional bug for failure demo
 }
 
 function subtract(a, b) {
