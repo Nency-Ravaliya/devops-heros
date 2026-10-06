@@ -1,0 +1,54 @@
+services:
+  frontend:
+    image: nginx:1.27-alpine
+    ports:
+      - "8082:80"
+    volumes:
+      - ./frontend/index.html:/usr/share/nginx/html/index.html:ro
+      - ./frontend/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - frontend_net
+
+  backend:
+    build: ./backend
+    environment:
+      DB_HOST: database
+      DB_USER: root
+      DB_PASSWORD: root
+      DB_NAME: demo
+    depends_on:
+      database:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:5000/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - frontend_net
+      - backend_net
+
+  database:
+    image: mysql:8.4
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: demo
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-proot"]
+      interval: 5s
+      timeout: 3s
+      retries: 15
+    volumes:
+      - db_data:/var/lib/mysql
+    networks:
+      - backend_net
+
+networks:
+  frontend_net:
+  backend_net:
+
+volumes:
+  db_data:
