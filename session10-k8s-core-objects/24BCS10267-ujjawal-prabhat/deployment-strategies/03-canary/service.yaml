@@ -1,0 +1,13 @@
+# Selects ONLY the shared label, so it load-balances over stable + canary pods.
+# Traffic split is proportional to pod count (9:1).
+apiVersion: v1
+kind: Service
+metadata:
+  name: canary-app
+  namespace: s10
+spec:
+  selector:
+    app: canary-app
+  ports:
+    - port: 80
+      targetPort: 5678

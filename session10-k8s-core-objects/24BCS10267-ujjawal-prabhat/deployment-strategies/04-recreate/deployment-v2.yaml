@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-recreate
+  namespace: s10
+spec:
+  replicas: 3
+  strategy:
+    type: Recreate         # kill ALL old pods first, then create the new ones
+  selector:
+    matchLabels:
+      app: web-recreate
+  template:
+    metadata:
+      labels:
+        app: web-recreate
+        version: v2
+    spec:
+      containers:
+        - name: web
+          image: hashicorp/http-echo:1.0.0
+          args: ["-listen=:5678", "-text=v2"]
+          ports:
+            - containerPort: 5678
+          readinessProbe:
+            httpGet: { path: /, port: 5678 }
+            periodSeconds: 2
+          lifecycle:
+            preStop:
+              sleep:
+                seconds: 5   # keeps pods visibly "Terminating" for a few seconds
+          resources:
+            requests: { cpu: 5m, memory: 8Mi }
+            limits:   { cpu: 50m, memory: 32Mi }

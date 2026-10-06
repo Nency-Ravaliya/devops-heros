@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-canary
+  namespace: s10
+spec:
+  replicas: 1              # 1 of 10 pods -> ~10% of traffic
+  selector:
+    matchLabels:
+      app: canary-app      # same shared label as stable
+      track: canary
+  template:
+    metadata:
+      labels:
+        app: canary-app
+        track: canary
+        version: v2
+    spec:
+      containers:
+        - name: web
+          image: hashicorp/http-echo:1.0.0
+          args: ["-listen=:5678", "-text=v2-canary"]
+          ports:
+            - containerPort: 5678
+          readinessProbe:
+            httpGet: { path: /, port: 5678 }
+            periodSeconds: 2
+          resources:
+            requests: { cpu: 5m, memory: 8Mi }
+            limits:   { cpu: 50m, memory: 32Mi }

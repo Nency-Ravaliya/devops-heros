@@ -1,0 +1,30 @@
+# Extra example (not in the course folder): postStart and preStop container lifecycle hooks.
+# Both hooks write into a shared emptyDir so we can read the order of events from a 2nd container.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: lifecycle-hooks
+  namespace: s10
+spec:
+  terminationGracePeriodSeconds: 15
+  volumes:
+    - name: shared
+      emptyDir: {}
+  containers:
+    - name: app
+      image: busybox:1.36
+      command: ["sh", "-c", "echo \"$(date +%T) main process started\" >> /shared/events.log; while true; do sleep 1; done"]
+      volumeMounts:
+        - { name: shared, mountPath: /shared }
+      lifecycle:
+        postStart:
+          exec:
+            command: ["sh", "-c", "echo \"$(date +%T) postStart hook ran\" >> /shared/events.log"]
+        preStop:
+          exec:
+            command: ["sh", "-c", "echo \"$(date +%T) preStop hook ran (draining)\" >> /shared/events.log; sleep 3"]
+    - name: log-reader
+      image: busybox:1.36
+      command: ["sh", "-c", "touch /shared/events.log; tail -f /shared/events.log"]
+      volumeMounts:
+        - { name: shared, mountPath: /shared }

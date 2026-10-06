@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: web-recreate
+  namespace: s10
+spec:
+  selector:
+    app: web-recreate
+  ports:
+    - port: 80
+      targetPort: 5678
