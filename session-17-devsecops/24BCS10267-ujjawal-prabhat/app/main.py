@@ -78,3 +78,8 @@ def calc():
 @app.errorhandler(404)
 def not_found(_):
     return jsonify(error="not found"), 404
+
+
+if __name__ == "__main__":
+    # INTENTIONALLY INSECURE - security-gate failure demo
+    app.run(host="0.0.0.0", port=8080, debug=True)
