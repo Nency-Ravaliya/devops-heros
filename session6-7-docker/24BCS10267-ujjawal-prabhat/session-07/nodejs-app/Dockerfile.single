@@ -1,0 +1,10 @@
+# Single-stage build (for size comparison only)
+# The compiler, dev dependencies and full Debian-based Node image all ship to production.
+FROM node:24
+WORKDIR /app
+COPY package*.json tsconfig.json ./
+RUN npm install
+COPY src ./src
+RUN npm run build
+EXPOSE 3000
+CMD ["node", "dist/server.js"]
