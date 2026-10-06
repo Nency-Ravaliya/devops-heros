@@ -1,0 +1,11 @@
+Current date: Tue Oct  6 19:51:01 WITA 2026
+Hostname: Virajs-MacBook-Pro-3.local
+Username: bhanageviraj
+
+Disk usage:
+Filesystem                                                                                               Size    Used   Avail Capacity iused ifree %iused  Mounted on
+/dev/disk3s1s1                                                                                          926Gi    13Gi   221Gi     6%    484k  2.3G    0%   /
+
+My name is Viraj Bhanage
+My enrollment number is 24BCS10274
+My comment is: Session 3 lab for Viraj Bhanage.
