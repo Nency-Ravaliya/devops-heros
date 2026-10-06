@@ -1,0 +1,44 @@
+# Viraj Bhanage — 24BCS10274
+apiVersion: v1
+kind: Pod
+metadata:
+  name: lifecycle-running
+spec:
+  containers:
+    - name: web
+      image: nginx:1.27-alpine
+      ports:
+        - containerPort: 80
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: lifecycle-succeeded
+spec:
+  restartPolicy: Never
+  containers:
+    - name: job
+      image: busybox:1.36
+      command: ["echo", "work finished"]
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: lifecycle-failed
+spec:
+  restartPolicy: Never
+  containers:
+    - name: job
+      image: busybox:1.36
+      command: ["sh", "-c", "echo boom; exit 1"]
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: lifecycle-pending
+spec:
+  containers:
+    - name: web
+      image: nginx:1.27-alpine
+  nodeSelector:
+    homework: no-such-node

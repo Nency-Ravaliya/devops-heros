@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: fail-5-oomkilled-pod
+spec:
+  containers:
+    - name: memory-leaker
+      image: python:3.11-alpine
+      command: ["python3", "-c", "print('allocated nothing large'); import time; time.sleep(3600)"]
+      resources:
+        limits:
+          memory: "128Mi"
