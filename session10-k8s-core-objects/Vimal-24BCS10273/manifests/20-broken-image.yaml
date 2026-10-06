@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: campus-badimage
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: campus-badimage
+  template:
+    metadata:
+      labels:
+        app: campus-badimage
+    spec:
+      containers:
+        - name: web
+          image: nginx:1.25-alpine
+          resources:
+            requests:
+              cpu: 25m
+              memory: 32Mi

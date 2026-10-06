@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: campus-api-rs
+  labels:
+    app: campus-api
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: campus-api
+  template:
+    metadata:
+      labels:
+        app: campus-api
+    spec:
+      containers:
+        - name: api
+          image: nginx:1.25-alpine
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              cpu: 25m
+              memory: 32Mi

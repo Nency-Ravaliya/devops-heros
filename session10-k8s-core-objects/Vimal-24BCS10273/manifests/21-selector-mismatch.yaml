@@ -1,0 +1,17 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: campus-selector-error
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: correct-name
+  template:
+    metadata:
+      labels:
+        app: wrong-name
+    spec:
+      containers:
+        - name: web
+          image: nginx:1.25-alpine

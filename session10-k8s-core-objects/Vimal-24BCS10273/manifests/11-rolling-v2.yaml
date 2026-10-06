@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: campus-rolling
+  labels:
+    app: campus-rolling
+spec:
+  replicas: 4
+  selector:
+    matchLabels:
+      app: campus-rolling
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: campus-rolling
+        version: v2
+    spec:
+      containers:
+        - name: web
+          image: nginx:1.25-alpine
+          ports:
+            - containerPort: 80
+          command: ["/bin/sh", "-c"]
+          args:
+            - 'echo "VERSION v2" > /usr/share/nginx/html/index.html && exec nginx -g "daemon off;"'
+          resources:
+            requests:
+              cpu: 25m
+              memory: 32Mi
