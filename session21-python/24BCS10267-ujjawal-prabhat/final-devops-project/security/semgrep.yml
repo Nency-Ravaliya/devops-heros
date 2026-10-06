@@ -1,0 +1,36 @@
+# Project-specific Semgrep rules, run in CI together with the registry packs
+#   semgrep scan --config p/python --config p/secrets --config security/semgrep.yml
+rules:
+  - id: stockpilot-no-raw-sql-fstring
+    languages: [python]
+    severity: ERROR
+    message: >-
+      SQL built with an f-string/format. Use SQLAlchemy expressions or bound
+      parameters (text(...).bindparams) to avoid SQL injection.
+    patterns:
+      - pattern-either:
+          - pattern: sqlalchemy.text(f"...")
+          - pattern: text(f"...")
+          - pattern: $CONN.execute(f"...")
+          - pattern: $CONN.execute("..." % ...)
+          - pattern: $CONN.execute("...".format(...))
+
+  - id: stockpilot-no-debug-uvicorn
+    languages: [python]
+    severity: WARNING
+    message: uvicorn reload/debug must not be enabled in application code.
+    pattern-either:
+      - pattern: uvicorn.run(..., reload=True, ...)
+      - pattern: uvicorn.run(..., debug=True, ...)
+
+  - id: stockpilot-no-wildcard-cors-with-credentials
+    languages: [python]
+    severity: ERROR
+    message: CORS allow_origins=["*"] together with allow_credentials=True is unsafe.
+    pattern: $APP.add_middleware(..., allow_origins=["*"], ..., allow_credentials=True, ...)
+
+  - id: stockpilot-no-hardcoded-db-password
+    languages: [python]
+    severity: ERROR
+    message: Database password must come from the environment (K8s Secret), not source code.
+    pattern-regex: postgresql(\+\w+)?://[^:/\s]+:[^@{\s]+@

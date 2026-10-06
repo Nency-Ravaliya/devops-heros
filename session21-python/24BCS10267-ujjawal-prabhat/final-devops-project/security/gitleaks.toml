@@ -1,0 +1,12 @@
+# Gitleaks config: default ruleset + allowlist for the documented placeholders.
+#   gitleaks dir <project> --config security/gitleaks.toml --redact
+title = "stockpilot gitleaks config"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Documented example placeholders (never real credentials)"
+regexes = [
+  '''change-me-placeholder''',
+]

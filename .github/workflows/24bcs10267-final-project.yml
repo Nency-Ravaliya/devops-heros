@@ -1,0 +1,368 @@
+# StockPilot - final DevOps project of Ujjawal Prabhat (24BCS10267)
+# Source of truth for this file lives at repo root (GitHub only runs workflows
+# from .github/workflows/); a reference copy is kept in
+# session21-python/24BCS10267-ujjawal-prabhat/final-devops-project/.github/workflows/
+name: 24BCS10267 Final Project - StockPilot CI/CD
+
+on:
+  push:
+    branches: ["24BCS10267/session-21"]
+    # `paths` and `paths-ignore` cannot be combined for one event, so the
+    # markdown exclusion is expressed as a negated pattern.
+    paths:
+      - "session21-python/24BCS10267-ujjawal-prabhat/final-devops-project/**"
+      - ".github/workflows/24bcs10267-final-project.yml"
+      - "!**/*.md"
+  workflow_dispatch:
+
+concurrency:
+  group: 24bcs10267-final-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  PROJECT_DIR: session21-python/24BCS10267-ujjawal-prabhat/final-devops-project
+  IMAGE: ghcr.io/ujjawalprabhat/stockpilot-api
+  PYTHON_VERSION: "3.12"
+  TRIVY_VERSION: "0.75.0"
+  GITLEAKS_VERSION: "8.30.1"
+
+jobs:
+  # ------------------------------------------------------------------ 1 ----
+  build-test:
+    name: "1. Build & unit test"
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ env.PROJECT_DIR }}/application
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: ${{ env.PROJECT_DIR }}/application/requirements*.txt
+      - name: Install dependencies
+        run: pip install -r requirements-dev.txt
+      - name: Run pytest with coverage
+        run: pytest -v --cov=app --cov-report=term --cov-report=xml:coverage.xml --junitxml=junit.xml
+      - name: Coverage summary
+        if: always()
+        run: |
+          python - <<'EOF' >> "$GITHUB_STEP_SUMMARY"
+          import xml.etree.ElementTree as ET
+          r = ET.parse("coverage.xml").getroot()
+          j = ET.parse("junit.xml").getroot()
+          s = j if j.tag == "testsuite" else j.find("testsuite")
+          print("### Unit tests")
+          print(f"- tests: **{s.get('tests')}**, failures: **{s.get('failures')}**, errors: **{s.get('errors')}**")
+          print(f"- line coverage: **{float(r.get('line-rate'))*100:.1f}%**")
+          EOF
+      - uses: azure/setup-helm@v4
+      - name: Helm lint (all value files)
+        working-directory: ${{ env.PROJECT_DIR }}/helm
+        run: |
+          helm lint stockpilot
+          helm lint stockpilot -f stockpilot/values-dev.yaml
+          helm lint stockpilot -f stockpilot/values-prod.yaml --set image.tag=ci
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-report
+          path: |
+            ${{ env.PROJECT_DIR }}/application/coverage.xml
+            ${{ env.PROJECT_DIR }}/application/junit.xml
+
+  # ------------------------------------------------------------------ 2 ----
+  sast:
+    name: "2. SAST (Semgrep)"
+    needs: build-test
+    runs-on: ubuntu-latest
+    container: semgrep/semgrep:latest
+    outputs:
+      findings: ${{ steps.scan.outputs.findings }}
+    steps:
+      - uses: actions/checkout@v5
+      - name: Semgrep scan
+        id: scan
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          semgrep scan --metrics=off \
+            --config p/python --config p/secrets --config p/dockerfile \
+            --config security/semgrep.yml \
+            --json --output semgrep.json \
+            --sarif-output semgrep.sarif \
+            application docker
+          n=$(python3 -c 'import json;print(len(json.load(open("semgrep.json"))["results"]))')
+          echo "findings=$n" >> "$GITHUB_OUTPUT"
+          echo "### SAST (Semgrep): $n finding(s)" >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: semgrep-report
+          path: ${{ env.PROJECT_DIR }}/semgrep.*
+
+  # ------------------------------------------------------------------ 3 ----
+  sca:
+    name: "3. SCA (pip-audit + Trivy fs)"
+    needs: build-test
+    runs-on: ubuntu-latest
+    outputs:
+      pip_audit: ${{ steps.pipaudit.outputs.vulns }}
+      trivy_fs: ${{ steps.trivyfs.outputs.vulns }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Install Trivy ${{ env.TRIVY_VERSION }}
+        run: |
+          curl -sSfL "https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz" | tar -xz -C /usr/local/bin trivy
+          trivy --version
+      - name: pip-audit
+        id: pipaudit
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          pip install pip-audit
+          pip-audit -r application/requirements.txt --format json --output pip-audit.json || true
+          pip-audit -r application/requirements.txt || true
+          n=$(python3 -c 'import json;d=json.load(open("pip-audit.json"));print(sum(len(x["vulns"]) for x in d["dependencies"]))')
+          echo "vulns=$n" >> "$GITHUB_OUTPUT"
+          echo "### SCA: pip-audit $n known vulnerable dependency version(s)" >> "$GITHUB_STEP_SUMMARY"
+      - name: Trivy filesystem scan (dependencies)
+        id: trivyfs
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          trivy fs --config security/trivy.yaml --format json --output trivy-fs.json application
+          trivy fs --config security/trivy.yaml application
+          n=$(python3 -c 'import json;d=json.load(open("trivy-fs.json"));print(sum(len(r.get("Vulnerabilities") or []) for r in d.get("Results",[])))')
+          echo "vulns=$n" >> "$GITHUB_OUTPUT"
+          echo "### SCA: Trivy fs $n HIGH/CRITICAL" >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sca-reports
+          path: |
+            ${{ env.PROJECT_DIR }}/pip-audit.json
+            ${{ env.PROJECT_DIR }}/trivy-fs.json
+
+  # ------------------------------------------------------------------ 4 ----
+  secret-scan:
+    name: "4. Secret scan (Gitleaks)"
+    needs: build-test
+    runs-on: ubuntu-latest
+    outputs:
+      leaks: ${{ steps.gitleaks.outputs.leaks }}
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install Gitleaks ${{ env.GITLEAKS_VERSION }}
+        run: |
+          curl -sSfL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" | tar -xz -C /usr/local/bin gitleaks
+          gitleaks version
+      - name: Gitleaks (scoped to project folder)
+        id: gitleaks
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          gitleaks dir . --config security/gitleaks.toml --redact \
+            --report-format json --report-path gitleaks.json --exit-code 0
+          n=$(python3 -c 'import json;print(len(json.load(open("gitleaks.json"))))')
+          echo "leaks=$n" >> "$GITHUB_OUTPUT"
+          echo "### Secret scan (Gitleaks): $n leak(s)" >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: gitleaks-report
+          path: ${{ env.PROJECT_DIR }}/gitleaks.json
+
+  # ------------------------------------------------------------------ 5 ----
+  docker-build:
+    name: "5. Docker build"
+    needs: build-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Build image (multi-stage, non-root)
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          docker build -f docker/Dockerfile \
+            --build-arg APP_VERSION=${GITHUB_SHA::7} \
+            --label org.opencontainers.image.revision=${GITHUB_SHA} \
+            -t ${IMAGE}:${GITHUB_SHA} application
+          docker image inspect ${IMAGE}:${GITHUB_SHA} --format 'user={{.Config.User}} size={{.Size}}'
+          docker save ${IMAGE}:${GITHUB_SHA} | gzip > /tmp/image.tar.gz
+          echo "### Docker build: \`${IMAGE}:${GITHUB_SHA}\` ($(du -h /tmp/image.tar.gz | cut -f1) gzipped)" >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: docker-image
+          path: /tmp/image.tar.gz
+          retention-days: 3
+
+  # ------------------------------------------------------------------ 6 ----
+  image-scan:
+    name: "6. Image scan (Trivy)"
+    needs: docker-build
+    runs-on: ubuntu-latest
+    outputs:
+      vulns: ${{ steps.scan.outputs.vulns }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/download-artifact@v4
+        with:
+          name: docker-image
+          path: /tmp
+      - name: Install Trivy ${{ env.TRIVY_VERSION }}
+        run: curl -sSfL "https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz" | tar -xz -C /usr/local/bin trivy
+      - name: Trivy image scan
+        id: scan
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          gunzip /tmp/image.tar.gz
+          trivy image --config security/trivy.yaml --input /tmp/image.tar --format sarif --output trivy-image.sarif
+          trivy image --config security/trivy.yaml --input /tmp/image.tar --format json --output trivy-image.json
+          trivy image --config security/trivy.yaml --input /tmp/image.tar --format table
+          n=$(python3 -c 'import json;d=json.load(open("trivy-image.json"));print(sum(len(r.get("Vulnerabilities") or []) for r in d.get("Results",[])))')
+          all=$(trivy image --input /tmp/image.tar --severity HIGH,CRITICAL --scanners vuln --format json --quiet | python3 -c 'import json,sys;d=json.load(sys.stdin);print(sum(len(r.get("Vulnerabilities") or []) for r in d.get("Results",[])))')
+          echo "vulns=$n" >> "$GITHUB_OUTPUT"
+          echo "### Image scan (Trivy): $n fixable HIGH/CRITICAL (blocking); $all HIGH/CRITICAL incl. unfixed (informational)" >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: trivy-image-sarif
+          path: |
+            ${{ env.PROJECT_DIR }}/trivy-image.sarif
+            ${{ env.PROJECT_DIR }}/trivy-image.json
+
+  # ------------------------------------------------------------------ 7 ----
+  security-gate:
+    name: "7. Security gate"
+    needs: [build-test, sast, sca, secret-scan, image-scan]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Evaluate policy (block on any HIGH/CRITICAL, SAST finding or secret)
+        env:
+          SAST: ${{ needs.sast.outputs.findings }}
+          PIP_AUDIT: ${{ needs.sca.outputs.pip_audit }}
+          TRIVY_FS: ${{ needs.sca.outputs.trivy_fs }}
+          LEAKS: ${{ needs.secret-scan.outputs.leaks }}
+          IMAGE_VULNS: ${{ needs.image-scan.outputs.vulns }}
+        run: |
+          fail=0
+          {
+            echo "## Security gate"
+            echo "| Check | Tool | Blocking findings | Result |"
+            echo "|---|---|---|---|"
+          } >> "$GITHUB_STEP_SUMMARY"
+          row() {
+            local name="$1" tool="$2" n="$3"
+            if [ -z "$n" ]; then n="missing"; fi
+            if [ "$n" = "0" ]; then r="PASS"; else r="FAIL"; fail=1; fi
+            echo "| $name | $tool | $n | $r |" >> "$GITHUB_STEP_SUMMARY"
+            echo "$name ($tool): $n -> $r"
+          }
+          row "SAST" "Semgrep" "$SAST"
+          row "SCA" "pip-audit" "$PIP_AUDIT"
+          row "SCA" "Trivy fs (HIGH/CRITICAL)" "$TRIVY_FS"
+          row "Secrets" "Gitleaks" "$LEAKS"
+          row "Container image" "Trivy image (HIGH/CRITICAL, fixable)" "$IMAGE_VULNS"
+          if [ "$fail" = 1 ]; then
+            echo "**Gate: FAILED - image will not be pushed**" >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          echo "**Gate: PASSED**" >> "$GITHUB_STEP_SUMMARY"
+
+  # ------------------------------------------------------------------ 8 ----
+  push-image:
+    name: "8. Push image to GHCR"
+    needs: security-gate
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: docker-image
+          path: /tmp
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Load, tag and push
+        run: |
+          docker load < /tmp/image.tar.gz
+          docker tag ${IMAGE}:${GITHUB_SHA} ${IMAGE}:sha-${GITHUB_SHA::7}
+          docker tag ${IMAGE}:${GITHUB_SHA} ${IMAGE}:session-21-latest
+          docker push ${IMAGE}:${GITHUB_SHA}
+          docker push ${IMAGE}:sha-${GITHUB_SHA::7}
+          docker push ${IMAGE}:session-21-latest
+          digest=$(docker inspect --format '{{index .RepoDigests 0}}' ${IMAGE}:${GITHUB_SHA})
+          echo "### Pushed \`${IMAGE}:${GITHUB_SHA}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "digest: \`${digest}\`" >> "$GITHUB_STEP_SUMMARY"
+
+  # ------------------------------------------------------------------ 9 ----
+  deploy:
+    name: "9. Deploy to Kubernetes (kind)"
+    needs: push-image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - uses: actions/checkout@v5
+      - uses: azure/setup-helm@v4
+      - name: Create kind cluster
+        uses: helm/kind-action@v1
+        with:
+          cluster_name: stockpilot-ci
+      - name: GHCR pull secret
+        run: |
+          kubectl create namespace final
+          kubectl -n final create secret docker-registry ghcr-pull \
+            --docker-server=ghcr.io --docker-username="${{ github.actor }}" \
+            --docker-password="${{ secrets.GITHUB_TOKEN }}"
+      - name: helm upgrade --install
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          helm upgrade --install stockpilot helm/stockpilot -n final \
+            --set image.repository=${IMAGE} \
+            --set image.tag=${GITHUB_SHA} \
+            --set "imagePullSecrets[0].name=ghcr-pull" \
+            --set config.APP_ENV=ci \
+            --wait --timeout 5m
+      - name: Rollout status
+        run: |
+          kubectl -n final rollout status deploy/stockpilot-postgres --timeout=180s
+          kubectl -n final rollout status deploy/stockpilot-api --timeout=180s
+          kubectl -n final get deploy,po,svc,ing,hpa,pvc -o wide
+      - name: Smoke test
+        run: |
+          kubectl -n final port-forward svc/stockpilot-api 8080:80 >/tmp/pf.log 2>&1 &
+          for i in $(seq 1 20); do curl -sf localhost:8080/health && break; sleep 2; done
+          echo
+          set -x
+          curl -sf localhost:8080/ready
+          curl -sf localhost:8080/api/info | tee /tmp/info.json
+          grep -q "\"env\":\"ci\"" /tmp/info.json
+          curl -sf -X POST localhost:8080/api/items -H 'Content-Type: application/json' \
+            -d '{"sku":"CI-SMOKE","name":"smoke test item","quantity":3}'
+          curl -sf localhost:8080/api/items/low-stock | grep -q CI-SMOKE
+          curl -sf localhost:8080/metrics | grep -q stockpilot_http_requests_total
+          set +x
+          {
+            echo "### Deploy: kind + Helm"
+            echo '```'
+            kubectl -n final get deploy,po -o wide
+            echo
+            curl -s localhost:8080/api/summary
+            echo
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Debug on failure
+        if: failure()
+        run: |
+          kubectl -n final get all,events
+          kubectl -n final describe pods
+          kubectl -n final logs -l app.kubernetes.io/component=api --tail=100 || true

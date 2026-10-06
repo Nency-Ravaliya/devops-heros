@@ -1,0 +1,15 @@
+# Shared Trivy settings for `trivy fs` (SCA + IaC misconfig) and `trivy image`.
+#   trivy fs --config security/trivy.yaml application/
+#   trivy image --config security/trivy.yaml <image>
+severity:
+  - HIGH
+  - CRITICAL
+scan:
+  scanners:
+    - vuln
+vulnerability:
+  # Only block on vulnerabilities that have a fixed version available. Unfixed
+  # OS CVEs are tracked in the full report but cannot be remediated by us.
+  ignore-unfixed: true
+ignorefile: security/.trivyignore
+exit-code: 0   # the security-gate job decides pass/fail from the JSON reports

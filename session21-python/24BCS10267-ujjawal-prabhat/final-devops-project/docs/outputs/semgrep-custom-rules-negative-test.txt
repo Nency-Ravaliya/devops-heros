@@ -1,0 +1,29 @@
+                   
+                   
+┌─────────────────┐
+│ 3 Code Findings │
+└─────────────────┘
+          
+    bad.py
+   ❯❯❱ Users.ujjawal.SST.devops-heros..claude.worktrees.agent-a8b6cf099664ed625.session21-python.24BCS10267-ujjawal-
+       prabhat.final-devops-project.security.stockpilot-no-raw-sql-fstring                                          
+          ❰❰ Blocking ❱❱
+          SQL built with an f-string/format. Use SQLAlchemy expressions or bound parameters
+          (text(...).bindparams) to avoid SQL injection.                                   
+                                                                                           
+            4┆ conn.execute(text(f"SELECT * FROM items WHERE sku={sku}"))
+   
+   ❯❯❱ Users.ujjawal.SST.devops-heros..claude.worktrees.agent-a8b6cf099664ed625.session21-python.24BCS10267-ujjawal-
+       prabhat.final-devops-project.security.stockpilot-no-hardcoded-db-password                                    
+          ❰❰ Blocking ❱❱
+          Database password must come from the environment (K8s Secret), not source code.
+                                                                                         
+            5┆ URL = "postgresql+psycopg://admin:hunter2@db:5432/x"
+   
+    ❯❱ Users.ujjawal.SST.devops-heros..claude.worktrees.agent-a8b6cf099664ed625.session21-python.24BCS10267-ujjawal-
+       prabhat.final-devops-project.security.stockpilot-no-debug-uvicorn                                            
+          ❰❰ Blocking ❱❱
+          uvicorn reload/debug must not be enabled in application code.
+                                                                       
+            6┆ uvicorn.run("a:b", reload=True)
+
