@@ -1,0 +1,33 @@
+services:
+  frontend:
+    image: alpine:3.20
+    container_name: hw-frontend
+    command: ["sleep", "infinity"]
+    networks:
+      - frontend-net
+
+  backend:
+    image: alpine:3.20
+    container_name: hw-backend
+    command: ["sleep", "infinity"]
+    networks:
+      - frontend-net
+      - backend-net
+
+  database:
+    image: mysql:8.4
+    container_name: hw-database
+    environment:
+      MYSQL_ROOT_PASSWORD: lab-example-only
+      MYSQL_DATABASE: lab
+    networks:
+      - backend-net
+      - db-net
+
+networks:
+  frontend-net:
+    name: hw-frontend-net
+  backend-net:
+    name: hw-backend-net
+  db-net:
+    name: hw-db-net
