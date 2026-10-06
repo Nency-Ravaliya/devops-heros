@@ -1,0 +1,44 @@
+$ curl -s -H 'Host: stockpilot.local' http://localhost:8081/health
+{"status":"UP"}
+
+$ curl -s -H 'Host: stockpilot.local' http://localhost:8081/ready
+{"status":"READY"}
+
+$ curl -s -H 'Host: stockpilot.local' http://localhost:8081/api/info
+{"service":"StockPilot","version":"1.0.1","env":"dev"}
+
+$ curl -s -H 'Host: stockpilot.local' -X POST -H Content-Type: application/json http://localhost:8081/api/items -d {"sku":"BOLT-M8","name":"M8 hex bolt","quantity":120,"reorder_level":50,"unit_price_paise":250}
+{"id":1,"sku":"BOLT-M8","name":"M8 hex bolt","location":"MAIN","quantity":120,"reorder_level":50,"unit_price_paise":250,"low_stock":false,"updated_at":"2026-10-06T11:11:53.243239Z"}
+
+$ curl -s -H 'Host: stockpilot.local' -X POST -H Content-Type: application/json http://localhost:8081/api/items -d {"sku":"BRG-6204","name":"6204 ball bearing","quantity":4,"reorder_level":10,"unit_price_paise":18000,"location":"WH2"}
+{"id":2,"sku":"BRG-6204","name":"6204 ball bearing","location":"WH2","quantity":4,"reorder_level":10,"unit_price_paise":18000,"low_stock":true,"updated_at":"2026-10-06T11:11:53.281763Z"}
+
+$ curl -s -H 'Host: stockpilot.local' -X POST -H Content-Type: application/json http://localhost:8081/api/items/1/adjust -d {"delta":-80,"reason":"order-1001"}
+{"id":1,"sku":"BOLT-M8","name":"M8 hex bolt","location":"MAIN","quantity":40,"reorder_level":50,"unit_price_paise":250,"low_stock":true,"updated_at":"2026-10-06T11:11:53.312715Z"}
+
+$ curl -s -H 'Host: stockpilot.local' http://localhost:8081/api/items/low-stock
+[{"id":2,"sku":"BRG-6204","name":"6204 ball bearing","location":"WH2","quantity":4,"reorder_level":10,"unit_price_paise":18000,"low_stock":true,"updated_at":"2026-10-06T11:11:53.281763Z"},{"id":1,"sku":"BOLT-M8","name":"M8 hex bolt","location":"MAIN","quantity":40,"reorder_level":50,"unit_price_paise":250,"low_stock":true,"updated_at":"2026-10-06T11:11:53.312715Z"}]
+
+$ curl -s -H 'Host: stockpilot.local' http://localhost:8081/api/summary
+{"total_items":2,"total_units":44,"low_stock_items":2,"inventory_value_paise":82000}
+
+$ curl -s -H 'Host: stockpilot.local' -o /dev/null -w %{http_code} %{content_type}\n http://localhost:8081/
+200 text/html; charset=utf-8
+
+
+$ curl -s -H 'Host: stockpilot.local' http://localhost:8081/metrics | grep -E '^stockpilot_' | head -15
+stockpilot_http_requests_total{method="GET",route="/ready",status="200"} 13.0
+stockpilot_http_requests_total{method="GET",route="/health",status="200"} 7.0
+stockpilot_http_requests_total{method="POST",route="/api/items",status="201"} 1.0
+stockpilot_http_requests_total{method="POST",route="/api/items/{item_id}/adjust",status="200"} 1.0
+stockpilot_http_requests_total{method="GET",route="/api/items/low-stock",status="200"} 1.0
+stockpilot_http_requests_total{method="GET",route="/api/summary",status="200"} 1.0
+stockpilot_http_requests_created{method="GET",route="/ready",status="200"} 1.7912850571564262e+09
+stockpilot_http_requests_created{method="GET",route="/health",status="200"} 1.791285061405139e+09
+stockpilot_http_requests_created{method="POST",route="/api/items",status="201"} 1.7912851132926834e+09
+stockpilot_http_requests_created{method="POST",route="/api/items/{item_id}/adjust",status="200"} 1.791285113317518e+09
+stockpilot_http_requests_created{method="GET",route="/api/items/low-stock",status="200"} 1.791285113333498e+09
+stockpilot_http_requests_created{method="GET",route="/api/summary",status="200"} 1.7912851133432705e+09
+stockpilot_http_request_duration_seconds_bucket{le="0.005",method="GET",route="/ready"} 10.0
+stockpilot_http_request_duration_seconds_bucket{le="0.01",method="GET",route="/ready"} 12.0
+stockpilot_http_request_duration_seconds_bucket{le="0.025",method="GET",route="/ready"} 12.0

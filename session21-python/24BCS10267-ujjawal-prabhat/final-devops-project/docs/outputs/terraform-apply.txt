@@ -1,0 +1,57 @@
+$ terraform apply -no-color tfplan
+aws_vpc.main: Creating...
+aws_s3_bucket.artifacts: Creating...
+aws_dynamodb_table.tf_locks: Creating...
+aws_s3_bucket.artifacts: Creation complete after 0s [id=stockpilot-dev-artifacts-24bcs10267]
+aws_dynamodb_table.tf_locks: Creation complete after 0s [id=stockpilot-dev-tf-locks]
+aws_s3_bucket_public_access_block.artifacts: Creating...
+aws_s3_bucket_server_side_encryption_configuration.artifacts: Creating...
+aws_s3_bucket_versioning.artifacts: Creating...
+aws_s3_bucket_public_access_block.artifacts: Creation complete after 0s [id=stockpilot-dev-artifacts-24bcs10267]
+aws_s3_bucket_server_side_encryption_configuration.artifacts: Creation complete after 0s [id=stockpilot-dev-artifacts-24bcs10267]
+aws_s3_bucket_versioning.artifacts: Creation complete after 1s [id=stockpilot-dev-artifacts-24bcs10267]
+aws_vpc.main: Still creating... [00m10s elapsed]
+aws_vpc.main: Creation complete after 10s [id=vpc-53157776]
+aws_internet_gateway.main: Creating...
+aws_subnet.private[1]: Creating...
+aws_subnet.public[0]: Creating...
+aws_subnet.public[1]: Creating...
+aws_subnet.private[0]: Creating...
+aws_security_group.app: Creating...
+aws_subnet.private[0]: Creation complete after 0s [id=subnet-72481b82]
+aws_internet_gateway.main: Creation complete after 0s [id=igw-d0ef5dbf]
+aws_subnet.private[1]: Creation complete after 0s [id=subnet-88bc33ab]
+aws_route_table.public: Creating...
+aws_security_group.app: Creation complete after 0s [id=sg-d5b3e229bf02ecfbc]
+aws_security_group.db: Creating...
+aws_route_table.public: Creation complete after 0s [id=rtb-13cbc152]
+aws_security_group.db: Creation complete after 1s [id=sg-6cb066e4ce7baf4eb]
+aws_subnet.public[0]: Still creating... [00m10s elapsed]
+aws_subnet.public[1]: Still creating... [00m10s elapsed]
+aws_subnet.public[0]: Creation complete after 10s [id=subnet-196116de]
+aws_subnet.public[1]: Creation complete after 10s [id=subnet-e8581ded]
+aws_route_table_association.public[1]: Creating...
+aws_route_table_association.public[0]: Creating...
+aws_route_table_association.public[1]: Creation complete after 0s [id=rtbassoc-8aa47474]
+aws_route_table_association.public[0]: Creation complete after 0s [id=rtbassoc-3b5b11c9]
+
+Apply complete! Resources: 16 added, 0 changed, 0 destroyed.
+
+Outputs:
+
+app_security_group_id = "sg-d5b3e229bf02ecfbc"
+artifacts_bucket = "stockpilot-dev-artifacts-24bcs10267"
+db_security_group_id = "sg-6cb066e4ce7baf4eb"
+ecr_repository_url = "not created (ECR needs LocalStack Pro) - images are in ghcr.io/ujjawalprabhat/stockpilot-api"
+private_subnet_ids = [
+  "subnet-72481b82",
+  "subnet-88bc33ab",
+]
+public_subnet_ids = [
+  "subnet-196116de",
+  "subnet-e8581ded",
+]
+target = "LocalStack (http://localhost:4566)"
+tf_lock_table = "stockpilot-dev-tf-locks"
+vpc_id = "vpc-53157776"
+

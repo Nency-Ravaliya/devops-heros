@@ -1,0 +1,40 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.12.15, pytest-9.1.1, pluggy-1.6.0 -- /private/tmp/claude-501/-Users-ujjawal-SST-devops-heros/8367890b-714b-47ca-8b10-46c1e9ef85c0/scratchpad/venv/bin/python3.12
+cachedir: .pytest_cache
+rootdir: /Users/ujjawal/SST/devops-heros/.claude/worktrees/agent-a8b6cf099664ed625/session21-python/24BCS10267-ujjawal-prabhat/final-devops-project/application
+configfile: pytest.ini
+testpaths: tests
+plugins: cov-7.1.0, platformdirs-4.12.3, anyio-4.15.1
+collecting ... collected 15 items
+
+tests/test_api.py::test_health PASSED                                    [  6%]
+tests/test_api.py::test_ready_checks_database PASSED                     [ 13%]
+tests/test_api.py::test_index_page_served PASSED                         [ 20%]
+tests/test_api.py::test_info_reports_env PASSED                          [ 26%]
+tests/test_api.py::test_create_and_get_item PASSED                       [ 33%]
+tests/test_api.py::test_duplicate_sku_conflict PASSED                    [ 40%]
+tests/test_api.py::test_invalid_sku_rejected PASSED                      [ 46%]
+tests/test_api.py::test_default_reorder_level_from_config PASSED         [ 53%]
+tests/test_api.py::test_list_and_filter_by_location PASSED               [ 60%]
+tests/test_api.py::test_update_item PASSED                               [ 66%]
+tests/test_api.py::test_adjust_stock_in_and_out PASSED                   [ 73%]
+tests/test_api.py::test_adjust_stock_cannot_go_negative PASSED           [ 80%]
+tests/test_api.py::test_low_stock_and_summary PASSED                     [ 86%]
+tests/test_api.py::test_delete_item_and_404 PASSED                       [ 93%]
+tests/test_api.py::test_metrics_exposed PASSED                           [100%]
+
+================================ tests coverage ================================
+______________ coverage: platform darwin, python 3.12.15-final-0 _______________
+
+Name              Stmts   Miss  Cover   Missing
+-----------------------------------------------
+app/__init__.py       0      0   100%
+app/config.py        23      8    65%   15-23
+app/db.py            17      0   100%
+app/main.py         135      0   100%
+app/metrics.py        7      0   100%
+app/models.py        16      0   100%
+app/schemas.py       35      0   100%
+-----------------------------------------------
+TOTAL               233      8    97%
+============================== 15 passed in 0.17s ==============================

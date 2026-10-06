@@ -1,0 +1,8 @@
+# Copy to terraform.tfvars (git-ignored). Never put credentials here -
+# use the AWS credential chain (aws sso login / env vars) on real AWS.
+use_localstack = true
+region         = "ap-south-1"
+environment    = "dev"
+vpc_cidr       = "10.40.0.0/16"
+azs            = ["ap-south-1a", "ap-south-1b"]
+create_ecr     = false

@@ -1,0 +1,49 @@
+# Argo CD Application: continuously reconciles the StockPilot Helm chart from
+# the student fork into namespace final-gitops.
+#
+# Pre-requisite (secrets are NOT stored in Git):
+#   kubectl create namespace final-gitops
+#   kubectl -n final-gitops create secret generic stockpilot-db-prod \
+#     --from-literal=DB_USER=stockpilot --from-literal=DB_PASSWORD="$(openssl rand -hex 16)"
+# Then:
+#   kubectl apply -f gitops/application.yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: final-stockpilot-24bcs10267
+  namespace: argocd
+  labels:
+    owner: 24bcs10267
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/UjjawalPrabhat/devops-heros.git
+    targetRevision: 24BCS10267/session-21
+    path: session21-python/24BCS10267-ujjawal-prabhat/final-devops-project/helm/stockpilot
+    helm:
+      releaseName: stockpilot
+      # values-prod.yaml = production defaults, values-gitops.yaml = this
+      # environment (incl. the immutable git-SHA image tag pushed by CI).
+      # Promoting a build = committing a new image.tag to values-gitops.yaml.
+      valueFiles:
+        - values-prod.yaml
+        - values-gitops.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: final-gitops
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 2m
+  revisionHistoryLimit: 5
