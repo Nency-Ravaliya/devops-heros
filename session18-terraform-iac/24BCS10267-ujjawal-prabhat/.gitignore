@@ -1,0 +1,12 @@
+# Terraform working directories and state (never commit state - it can contain secrets)
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+crash.log
+crash.*.log
+# NOTE: .terraform.lock.hcl IS committed (pins provider versions/checksums)
+
+# The course-level .gitignore ignores terraform.tfvars. The assignment requires it,
+# and this one holds no secrets (LocalStack dummy creds live in provider.tf), so re-include it.
+!terraform.tfvars
