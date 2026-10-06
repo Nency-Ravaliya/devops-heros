@@ -1,0 +1,40 @@
+$ docker ps --filter name=homework-
+NAMES                 IMAGE                       PORTS                                         STATUS
+homework-multistage   homework-multistage:local   0.0.0.0:8080->8080/tcp, [::]:8080->8080/tcp   Up 14 seconds
+homework-nginx        homework-nginx:local        0.0.0.0:8084->80/tcp, [::]:8084->80/tcp       Up 15 seconds
+homework-react        homework-react:local        0.0.0.0:8083->80/tcp, [::]:8083->80/tcp       Up 16 seconds
+homework-apache       homework-apache:local       0.0.0.0:8082->80/tcp, [::]:8082->80/tcp       Up 34 seconds
+homework-java         homework-java:local         0.0.0.0:8081->8080/tcp, [::]:8081->8080/tcp   Up 42 seconds
+homework-python       homework-python:local       0.0.0.0:5001->5000/tcp, [::]:5001->5000/tcp   Up About a minute
+homework-nodejs       homework-nodejs:local       0.0.0.0:3001->3000/tcp, [::]:3001->3000/tcp   Up About a minute
+
+===== Node.js http://localhost:3001 =====
+<h1>Hello World</h1><p>Node.js application running in Docker.</p>
+===== Python http://localhost:5001 =====
+<h1>Hello World</h1><p>Python application running in Docker.</p>
+===== Java http://localhost:8081 =====
+<h1>Hello World</h1><p>Java application running in Docker.</p>
+===== Apache http://localhost:8082 =====
+<h1>Hello World</h1>
+<p>Apache web server running in Docker.</p>
+
+===== React http://localhost:8083 =====
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>React Hello World</title>
+    <script type="module" crossorigin src="/assets/index-CuSqe243.js"></script>
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>
+
+===== Nginx http://localhost:8084 =====
+<h1>Hello World</h1>
+<p>Nginx application running in Docker.</p>
+
+===== multi-stage http://localhost:8080 =====
+<h1>Hello World from Docker multi-stage build</h1>
