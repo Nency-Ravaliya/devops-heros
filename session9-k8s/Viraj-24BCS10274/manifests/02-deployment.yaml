@@ -1,0 +1,23 @@
+# Viraj Bhanage — 24BCS10274
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: viraj-web
+  labels:
+    roll: 24bcs10274
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: viraj-web
+  template:
+    metadata:
+      labels:
+        app: viraj-web
+        roll: 24bcs10274
+    spec:
+      containers:
+        - name: web
+          image: nginx:1.27-alpine
+          ports:
+            - containerPort: 80
