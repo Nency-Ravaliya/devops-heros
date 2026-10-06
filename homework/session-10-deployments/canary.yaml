@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: canary-stable
+spec:
+  replicas: 4
+  selector:
+    matchLabels:
+      app: canary-web
+      track: stable
+  template:
+    metadata:
+      labels:
+        app: canary-web
+        track: stable
+    spec:
+      containers:
+        - name: web
+          image: nginx:1.27-alpine
+          ports:
+            - containerPort: 80
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: canary-new
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: canary-web
+      track: canary
+  template:
+    metadata:
+      labels:
+        app: canary-web
+        track: canary
+    spec:
+      containers:
+        - name: web
+          image: nginx:1.25-alpine
+          ports:
+            - containerPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: canary-web
+spec:
+  selector:
+    app: canary-web
+  ports:
+    - port: 80
+      targetPort: 80
