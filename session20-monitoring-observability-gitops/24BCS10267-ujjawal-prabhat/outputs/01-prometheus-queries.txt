@@ -1,0 +1,46 @@
+# Captured 2026-10-06T11:06:44Z against kube-prometheus-stack
+# (kubectl -n monitoring port-forward svc/kps-kube-prometheus-stack-prometheus 19090:9090)
+
+$ curl -s "http://localhost:19090/api/v1/targets?state=active" | jq -r <s20 targets: job pod scrapeUrl health>
+podinfo	podinfo-6f5c9799d8-mf6hp	http://10.244.1.28:9898/metrics	up
+podinfo	podinfo-6f5c9799d8-64hjb	http://10.244.2.16:9898/metrics	up
+
+$ curl -s http://localhost:19090/api/v1/query --data-urlencode 'query=up{namespace="s20"}' | jq -c '<keep key labels + value>'
+{"__name__":"up","container":"podinfo","job":"podinfo","namespace":"s20","pod":"podinfo-6f5c9799d8-64hjb","value":"1"}
+{"__name__":"up","container":"podinfo","job":"podinfo","namespace":"s20","pod":"podinfo-6f5c9799d8-mf6hp","value":"1"}
+
+$ curl -s http://localhost:19090/api/v1/query --data-urlencode 'query=rate(container_cpu_usage_seconds_total{namespace="s20"}[5m])' | jq -c '<keep key labels + value>'
+{"job":"kubelet","namespace":"s20","pod":"podinfo-6f5c9799d8-64hjb","value":"0"}
+{"job":"kubelet","namespace":"s20","pod":"podinfo-6f5c9799d8-mf6hp","value":"0"}
+{"job":"kubelet","namespace":"s20","pod":"podinfo-6f5c9799d8-mf6hp","value":"0.0006083523172282046"}
+{"job":"kubelet","namespace":"s20","pod":"podinfo-6f5c9799d8-64hjb","value":"0.0003027732528984444"}
+{"container":"podinfo","job":"kubelet","namespace":"s20","pod":"podinfo-6f5c9799d8-mf6hp","value":"0.0005370493665209879"}
+{"container":"podinfo","job":"kubelet","namespace":"s20","pod":"podinfo-6f5c9799d8-64hjb","value":"0.0002231566986970205"}
+
+$ curl -s http://localhost:19090/api/v1/query --data-urlencode 'query=sum by (pod) (rate(container_cpu_usage_seconds_total{namespace="s20", container="podinfo"}[5m]))' | jq -c '<keep key labels + value>'
+{"pod":"podinfo-6f5c9799d8-mf6hp","value":"0.0005370919363368807"}
+{"pod":"podinfo-6f5c9799d8-64hjb","value":"0.00022317484658372305"}
+
+$ curl -s http://localhost:19090/api/v1/query --data-urlencode 'query=container_memory_working_set_bytes{namespace="s20", container="podinfo"}' | jq -c '<keep key labels + value>'
+{"__name__":"container_memory_working_set_bytes","container":"podinfo","job":"kubelet","namespace":"s20","pod":"podinfo-6f5c9799d8-mf6hp","value":"29298688"}
+{"__name__":"container_memory_working_set_bytes","container":"podinfo","job":"kubelet","namespace":"s20","pod":"podinfo-6f5c9799d8-64hjb","value":"19406848"}
+
+$ curl -s http://localhost:19090/api/v1/query --data-urlencode 'query=http_requests_total{namespace="s20"}' | jq -c '<keep key labels + value>'
+{"__name__":"http_requests_total","container":"podinfo","job":"podinfo","namespace":"s20","pod":"podinfo-6f5c9799d8-64hjb","status":"200","value":"45"}
+{"__name__":"http_requests_total","container":"podinfo","job":"podinfo","namespace":"s20","pod":"podinfo-6f5c9799d8-mf6hp","status":"200","value":"207"}
+{"__name__":"http_requests_total","container":"podinfo","job":"podinfo","namespace":"s20","pod":"podinfo-6f5c9799d8-mf6hp","status":"500","value":"60"}
+
+$ curl -s http://localhost:19090/api/v1/query --data-urlencode 'query=sum by (status) (rate(http_request_duration_seconds_count{namespace="s20"}[5m]))' | jq -c '<keep key labels + value>'
+{"status":"200","value":"0.6585846222222222"}
+{"status":"500","value":"0"}
+
+$ curl -s http://localhost:19090/api/v1/query --data-urlencode 'query=histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket{namespace="s20"}[5m])))' | jq -c '<keep key labels + value>'
+{"value":"0.00475"}
+
+$ curl -s http://localhost:19090/api/v1/query --data-urlencode 'query=kube_pod_status_ready{namespace="s20", condition="true"}' | jq -c '<keep key labels + value>'
+{"__name__":"kube_pod_status_ready","condition":"true","container":"kube-state-metrics","job":"kube-state-metrics","namespace":"s20","pod":"podinfo-6f5c9799d8-64hjb","value":"1"}
+{"__name__":"kube_pod_status_ready","condition":"true","container":"kube-state-metrics","job":"kube-state-metrics","namespace":"s20","pod":"podinfo-6f5c9799d8-mf6hp","value":"1"}
+
+$ curl -s http://localhost:19090/api/v1/query --data-urlencode 'query=kube_deployment_status_replicas_available{namespace="s20"}' | jq -c '<keep key labels + value>'
+{"__name__":"kube_deployment_status_replicas_available","container":"kube-state-metrics","job":"kube-state-metrics","namespace":"s20","pod":"kps-kube-state-metrics-747b7b996-g92xn","value":"2"}
+
