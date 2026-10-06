@@ -1,0 +1,17 @@
+# FIXED: key name matches the ConfigMap exactly
+apiVersion: v1
+kind: Pod
+metadata:
+  name: cm-key-demo
+  namespace: s12
+spec:
+  containers:
+    - name: app
+      image: busybox:1.36
+      command: ["sh", "-c", "echo LOG_LEVEL=$LOG_LEVEL; sleep infinity"]
+      env:
+        - name: LOG_LEVEL
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: LOG_LEVEL
