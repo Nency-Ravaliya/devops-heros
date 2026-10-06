@@ -1,0 +1,9 @@
+# Revision 2 (first upgrade): scale to 2 replicas, new message
+replicaCount: 2
+image:
+  tag: "1.24"
+service:
+  type: ClusterIP
+app:
+  environment: staging
+  message: "v2 - scaled to two replicas"

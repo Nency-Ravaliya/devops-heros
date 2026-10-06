@@ -1,0 +1,7 @@
+{{ .Values.app.name }} ({{ .Values.app.environment }}) deployed as release "{{ .Release.Name }}" in namespace "{{ .Release.Namespace }}".
+Image: {{ include "notes-chart.image" . }}   Replicas: {{ .Values.replicaCount }}   Revision: {{ .Release.Revision }}
+
+Check it:
+  kubectl get pods -n {{ .Release.Namespace }} -l app={{ .Release.Name }}
+  kubectl port-forward -n {{ .Release.Namespace }} svc/{{ include "notes-chart.fullname" . }}-svc 8080:{{ .Values.service.port }}
+  curl http://localhost:8080
