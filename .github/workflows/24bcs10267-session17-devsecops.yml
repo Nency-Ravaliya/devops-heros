@@ -39,6 +39,8 @@ env:
   SEMGREP_VERSION: "1.179.0"
   TRIVY_VERSION: "0.75.0"
   GITLEAKS_VERSION: "8.30.1"
+  TRIVY_NO_PROGRESS: "true"
+  TRIVY_DISABLE_VEX_NOTICE: "true"
 
 defaults:
   run:
@@ -165,8 +167,9 @@ jobs:
         id: trivy
         run: |
           trivy fs --config trivy.yaml --exit-code 0 --format json --output reports/trivy-fs.json .
-          trivy convert --format table reports/trivy-fs.json
-          trivy convert --format sarif --output reports/trivy-fs.sarif reports/trivy-fs.json
+          # convert inherits exit-code: 1 from trivy.yaml - override, the gate job decides
+          trivy convert --exit-code 0 --format table reports/trivy-fs.json
+          trivy convert --exit-code 0 --format sarif --output reports/trivy-fs.sarif reports/trivy-fs.json
           N=$(jq '[.Results[]?.Vulnerabilities[]? | select(.Severity=="HIGH" or .Severity=="CRITICAL")] | length' reports/trivy-fs.json)
           echo "HIGH/CRITICAL dependency vulnerabilities: $N"
           echo "findings=$N" >> "$GITHUB_OUTPUT"
@@ -280,8 +283,8 @@ jobs:
           mkdir -p reports
           trivy image --config trivy.yaml --exit-code 0 --format json --output reports/trivy-image.json \
             s17-devsecops-demo:${{ github.sha }}
-          trivy convert --format table reports/trivy-image.json | tee reports/trivy-image.txt
-          trivy convert --format sarif --output reports/trivy-image.sarif reports/trivy-image.json
+          trivy convert --exit-code 0 --format table reports/trivy-image.json | tee reports/trivy-image.txt
+          trivy convert --exit-code 0 --format sarif --output reports/trivy-image.sarif reports/trivy-image.json
           N=$(jq '[.Results[]?.Vulnerabilities[]? | select(.Severity=="HIGH" or .Severity=="CRITICAL")] | length' reports/trivy-image.json)
           echo "HIGH/CRITICAL image vulnerabilities: $N"
           echo "findings=$N" >> "$GITHUB_OUTPUT"
