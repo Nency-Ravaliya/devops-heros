@@ -1,0 +1,36 @@
+# Static provisioning: the admin creates the PV by hand, the PVC binds to it.
+# storageClassName "manual" keeps the default StorageClass from provisioning a new volume.
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: s13-static-pv
+spec:
+  storageClassName: manual
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  hostPath:
+    path: /tmp/24bcs10267-static-pv
+    type: DirectoryOrCreate
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values: ["devops-heros-worker"]
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: static-pvc
+  namespace: s13-storage
+spec:
+  storageClassName: manual
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 500Mi

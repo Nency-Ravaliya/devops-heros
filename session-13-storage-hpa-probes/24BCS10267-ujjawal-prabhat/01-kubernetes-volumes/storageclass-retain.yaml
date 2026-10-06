@@ -1,0 +1,40 @@
+# A custom StorageClass using the same local-path provisioner as "standard",
+# but with reclaimPolicy Retain: the PV (and its data) survives PVC deletion.
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: s13-local-retain
+provisioner: rancher.io/local-path
+reclaimPolicy: Retain
+volumeBindingMode: WaitForFirstConsumer
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: retain-pvc
+  namespace: s13-storage
+spec:
+  storageClassName: s13-local-retain
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 200Mi
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: retain-consumer
+  namespace: s13-storage
+spec:
+  containers:
+    - name: app
+      image: busybox:1.36
+      command: ["/bin/sh", "-c", "echo retained > /data/r.txt; sleep 3600"]
+      volumeMounts:
+        - name: data
+          mountPath: /data
+  volumes:
+    - name: data
+      persistentVolumeClaim:
+        claimName: retain-pvc
