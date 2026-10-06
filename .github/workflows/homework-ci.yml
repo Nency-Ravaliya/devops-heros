@@ -1,0 +1,56 @@
+name: Homework CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  validate:
+    name: Validate homework artifacts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Shell script syntax
+        run: bash -n homework/session-03-shell-scripting/system_info.sh
+
+      - name: Run system information script
+        run: |
+          printf 'bhanage-viraj\n24BCS10274\nCI run\n' | bash homework/session-03-shell-scripting/system_info.sh
+
+      - name: Python syntax
+        run: python3 -m py_compile homework/session-06-07-docker/python-app/app.py
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.9.8"
+
+      - name: Validate Session 18 Terraform
+        working-directory: homework/session-18-terraform/terraform-s3-demo
+        run: |
+          terraform init -backend=false
+          terraform validate
+
+      - name: Validate Session 19 Terraform
+        working-directory: homework/session-19-cloud
+        run: |
+          terraform init -backend=false
+          terraform validate
+
+  docker-images:
+    name: Build Hello World images
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build session 6 and 7 images
+        working-directory: homework/session-06-07-docker
+        run: |
+          docker build -t homework-nodejs:ci nodejs-app
+          docker build -t homework-python:ci python-app
+          docker build -t homework-java:ci java-app
+          docker build -t homework-apache:ci Apache-app
+          docker build -t homework-react:ci React-app
+          docker build -t homework-nginx:ci nginx-app
+          docker build -t homework-multistage:ci multi-stage-app
+          docker images | grep homework-

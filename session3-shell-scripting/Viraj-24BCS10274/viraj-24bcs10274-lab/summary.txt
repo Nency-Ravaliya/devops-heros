@@ -1,0 +1,10 @@
+Name: Viraj Bhanage
+Roll: 24BCS10274
+Comment: Shell lab on my Mac.
+Date: Tue Oct  6 19:59:25 WITA 2026
+Host: Virajs-MacBook-Pro-3.local
+Login: bhanageviraj
+
+Disk:
+Filesystem        Size    Used   Avail Capacity iused ifree %iused  Mounted on
+/dev/disk3s1s1   926Gi    13Gi   217Gi     6%    484k  2.3G    0%   /
