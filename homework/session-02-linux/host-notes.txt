@@ -1,0 +1,8 @@
+$ command -v useradd || true
+useradd: not installed (typical on macOS; it exists on Ubuntu/Debian)
+$ command -v adduser || true
+adduser: not installed (typical on macOS; it exists on Ubuntu/Debian)
+$ command -v journalctl || true
+journalctl: not installed (systemd journals are a Linux feature)
+
+uname: Darwin Virajs-MacBook-Pro-3.local 27.0.0 Darwin Kernel Version 27.0.0: Tue Aug 11 21:02:59 PDT 2026; root:xnu-13432.1.9~1/RELEASE_ARM64_T8142 arm64
