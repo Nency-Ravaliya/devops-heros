@@ -1,0 +1,28 @@
+# Rendered from helm/stockpilot (values-dev.yaml, namespace final) - the chart is the source of truth.
+---
+# Source: stockpilot/templates/servicemonitor.yaml
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: stockpilot-api
+  labels:
+    helm.sh/chart: stockpilot-0.1.0
+    app.kubernetes.io/name: stockpilot
+    app.kubernetes.io/instance: stockpilot
+    app.kubernetes.io/version: "1.0.1"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: stockpilot
+    release: kps
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: stockpilot
+      app.kubernetes.io/instance: stockpilot
+      app.kubernetes.io/component: api
+  namespaceSelector:
+    matchNames: [final]
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 15s
+

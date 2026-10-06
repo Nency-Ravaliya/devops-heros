@@ -26,7 +26,7 @@
       "id": 4, "type": "stat", "title": "5xx ratio (5m)",
       "gridPos": {"h": 4, "w": 6, "x": 18, "y": 0},
       "fieldConfig": {"defaults": {"unit": "percentunit"}},
-      "targets": [{"expr": "sum(rate(stockpilot_http_requests_total{namespace=\"__NAMESPACE__\",status=~\"5..\"}[5m])) / clamp_min(sum(rate(stockpilot_http_requests_total{namespace=\"__NAMESPACE__\"}[5m])), 1e-9)", "refId": "A"}]
+      "targets": [{"expr": "(sum(rate(stockpilot_http_requests_total{namespace=\"__NAMESPACE__\",status=~\"5..\"}[5m])) or vector(0)) / clamp_min(sum(rate(stockpilot_http_requests_total{namespace=\"__NAMESPACE__\"}[5m])), 1e-9)", "refId": "A"}]
     },
     {
       "id": 5, "type": "timeseries", "title": "Requests per second by route",
