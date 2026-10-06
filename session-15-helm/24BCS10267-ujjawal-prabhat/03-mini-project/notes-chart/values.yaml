@@ -1,0 +1,33 @@
+# Default (development) values for notes-chart.
+
+replicaCount: 1
+
+image:
+  repository: nginx
+  tag: "1.24"
+  pullPolicy: IfNotPresent
+
+service:
+  # NodePort (as in the course spec) or ClusterIP
+  type: NodePort
+  port: 80
+  # only used when type is NodePort; leave empty to let Kubernetes pick one
+  nodePort: 30090
+
+app:
+  name: notes-app
+  environment: development
+  # rendered into the ConfigMap and served by nginx as index.html
+  message: "Welcome to the Notes app"
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 32Mi
+  limits:
+    cpu: 200m
+    memory: 128Mi
+
+probes:
+  enabled: true
+  path: /
