@@ -1,12 +1,12 @@
-![alt text](linuxtask11.png)
+![alt text](screenshots/linuxtask11.png) 
 
-![alt text](linuxtask12.png)
+![alt text](screenshots/linuxtask12.png) 
 
-![alt text](linuxtask21.png)
+![alt text](screenshots/linuxtask21.png) 
 
-![alt text](linuxtask22.png)
+![alt text](screenshots/linuxtask22.png) 
 
-![alt text](linuxtask31.png)
+![alt text](screenshots/linuxtask31.png)
 
 ## The Linux commands used.
 

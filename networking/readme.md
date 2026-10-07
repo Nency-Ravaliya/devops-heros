@@ -1,18 +1,18 @@
-![alt text](<Screenshot 2026-09-04 at 9.38.33 PM.png>)
+![alt text](<screenshots/Screenshot 2026-09-04 at 9.38.33 PM.png>) 
 
-![alt text](<Screenshot 2026-09-04 at 9.39.01 PM.png>)
+![alt text](<screenshots/Screenshot 2026-09-04 at 9.39.01 PM.png>) 
 
-![alt text](<Screenshot 2026-09-04 at 9.39.54 PM.png>) 
+![alt text](<screenshots/Screenshot 2026-09-04 at 9.39.54 PM.png>)
 
-![alt text](<Screenshot 2026-09-04 at 9.41.28 PM.png>) 
+![alt text](<screenshots/Screenshot 2026-09-04 at 9.41.28 PM.png>) 
 
-![alt text](<Screenshot 2026-09-04 at 9.43.10 PM.png>) 
+![alt text](<screenshots/Screenshot 2026-09-04 at 9.43.10 PM.png>)
 
-![alt text](<Screenshot 2026-09-04 at 9.43.41 PM.png>) 
+![alt text](<screenshots/Screenshot 2026-09-04 at 9.43.41 PM.png>) 
 
-![alt text](<Screenshot 2026-09-04 at 9.44.52 PM.png>) 
-
-![alt text](<Screenshot 2026-09-04 at 9.45.53 PM.png>)
+![alt text](<screenshots/Screenshot 2026-09-04 at 9.44.52 PM.png>)
+ 
+![alt text](<screenshots/Screenshot 2026-09-04 at 9.45.53 PM.png>)
 
 ## Summary
 
