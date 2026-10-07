@@ -1,0 +1,48 @@
+########## 1. BREAK ##########
+$ kubectl apply -f 09-configuration/configmap-broken.yaml -f 09-configuration/deployment.yaml
+configmap/gateway-nginx created
+deployment.apps/gateway created
+
+########## 2. INVESTIGATE ##########
+$ kubectl get pods -l app=gateway
+NAME                       READY   STATUS   RESTARTS      AGE
+gateway-85fd4bf5c5-2tjdk   0/1     Error    3 (27s ago)   40s
+
+$ kubectl logs deploy/gateway --tail=3
+/docker-entrypoint.sh: Configuration complete; ready for start up
+2026/10/07 19:53:14 [emerg] 1#1: unexpected "}" in /etc/nginx/conf.d/default.conf:5
+nginx: [emerg] unexpected "}" in /etc/nginx/conf.d/default.conf:5
+
+$ kubectl get configmap gateway-nginx -o jsonpath='{.data.default\.conf}'
+server {
+    listen 80;
+    location / {
+        return 200 'gateway up\n'      # BUG: missing ;
+    }
+}
+
+# ROOT CAUSE: the nginx config injected from the ConfigMap has a syntax error (missing ";" after return) -> nginx refuses to start -> CrashLoopBackOff
+########## 3. FIX ##########
+$ diff 09-configuration/configmap-broken.yaml 09-configuration/configmap-fixed.yaml
+10c10
+<             return 200 'gateway up\n'      # BUG: missing ;
+---
+>             return 200 'gateway up\n';
+
+$ kubectl apply -f 09-configuration/configmap-fixed.yaml && kubectl rollout restart deploy/gateway && kubectl rollout status deploy/gateway --timeout=120s
+configmap/gateway-nginx configured
+deployment.apps/gateway restarted
+Waiting for deployment "gateway" rollout to finish: 1 old replicas are pending termination...
+Waiting for deployment "gateway" rollout to finish: 1 old replicas are pending termination...
+Waiting for deployment "gateway" rollout to finish: 1 old replicas are pending termination...
+deployment "gateway" successfully rolled out
+
+########## 4. VERIFY ##########
+$ kubectl get pods -l app=gateway
+NAME                       READY   STATUS    RESTARTS      AGE
+gateway-544f649db4-szkgp   1/1     Running   0             1s
+gateway-85fd4bf5c5-2tjdk   0/1     Error     3 (30s ago)   43s
+
+$ kubectl exec curl -- curl -s http://10.244.0.49
+gateway up
+

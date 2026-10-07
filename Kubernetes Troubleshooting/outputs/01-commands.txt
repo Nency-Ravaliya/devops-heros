@@ -1,0 +1,258 @@
+################ kubectl get ################
+$ kubectl get pods
+NAME                             READY   STATUS    RESTARTS      AGE
+curl                             1/1     Running   1 (12m ago)   60m
+demo-web-7c8cc9c99b-c59mx        1/1     Running   0             39s
+demo-web-7c8cc9c99b-rm8d9        1/1     Running   0             39s
+dns                              1/1     Running   1 (12m ago)   52m
+web-86bb596c4d-h6s54             1/1     Running   1 (12m ago)   43m
+web-86bb596c4d-nknrw             1/1     Running   1 (12m ago)   52m
+web-86bb596c4d-xhfvv             1/1     Running   1 (12m ago)   52m
+yatri-backend-7bfd6d9f7c-2pnnh   1/1     Running   0             8m53s
+yatri-backend-7bfd6d9f7c-48qtg   1/1     Running   0             7m53s
+yatri-backend-7bfd6d9f7c-656k7   1/1     Running   0             12m
+yatri-backend-7bfd6d9f7c-88hll   1/1     Running   0             7m53s
+yatri-backend-7bfd6d9f7c-f64qz   1/1     Running   0             8m53s
+yatri-backend-7bfd6d9f7c-fvlgq   1/1     Running   0             12m
+yatri-backend-7bfd6d9f7c-hmgrc   1/1     Running   0             9m53s
+yatri-backend-7bfd6d9f7c-k45lf   1/1     Running   0             9m38s
+yatri-backend-7bfd6d9f7c-nf74x   1/1     Running   0             7m53s
+yatri-backend-7bfd6d9f7c-vtxsb   1/1     Running   0             9m53s
+
+$ kubectl get deploy,rs,svc -l app=demo-web
+NAME                                  DESIRED   CURRENT   READY   AGE
+replicaset.apps/demo-web-7c8cc9c99b   2         2         2       39s
+
+$ kubectl get pods -l app=demo-web --show-labels
+NAME                        READY   STATUS    RESTARTS   AGE   LABELS
+demo-web-7c8cc9c99b-c59mx   1/1     Running   0          39s   app=demo-web,pod-template-hash=7c8cc9c99b
+demo-web-7c8cc9c99b-rm8d9   1/1     Running   0          39s   app=demo-web,pod-template-hash=7c8cc9c99b
+
+$ kubectl get pod demo-web-7c8cc9c99b-c59mx -o jsonpath='{.status.phase} {.status.podIP} {.spec.nodeName}{"\n"}'
+Running 10.244.0.26 minikube
+
+################ kubectl get -o wide ################
+$ kubectl get pods -o wide -l app=demo-web
+NAME                        READY   STATUS    RESTARTS   AGE   IP            NODE       NOMINATED NODE   READINESS GATES
+demo-web-7c8cc9c99b-c59mx   1/1     Running   0          40s   10.244.0.26   minikube   <none>           <none>
+demo-web-7c8cc9c99b-rm8d9   1/1     Running   0          40s   10.244.0.27   minikube   <none>           <none>
+
+$ kubectl get nodes -o wide
+NAME       STATUS   ROLES           AGE   VERSION   INTERNAL-IP    EXTERNAL-IP   OS-IMAGE                         KERNEL-VERSION                             CONTAINER-RUNTIME
+minikube   Ready    control-plane   68m   v1.37.0   192.168.49.2   <none>        Debian GNU/Linux 12 (bookworm)   6.6.87.2-microsoft-standard-WSL2 (amd64)   containerd://2.3.4
+
+################ kubectl describe ################
+$ kubectl describe pod demo-web-7c8cc9c99b-c59mx
+Name:             demo-web-7c8cc9c99b-c59mx
+Namespace:        default
+Priority:         0
+Service Account:  default
+Node:             minikube/192.168.49.2
+Start Time:       Thu, 08 Oct 2026 01:17:24 +0530
+Labels:           app=demo-web
+                  pod-template-hash=7c8cc9c99b
+Annotations:      <none>
+Status:           Running
+IP:               10.244.0.26
+IPs:
+  IP:           10.244.0.26
+Controlled By:  ReplicaSet/demo-web-7c8cc9c99b
+Containers:
+  nginx:
+    Container ID:   containerd://9b8bd1861d06d4b26aacec6b4841a68290cacb220d94316c4d192ce907aeb58c
+    Image:          nginx:1.27
+    Image ID:       docker.io/library/nginx@sha256:6784fb0834aa7dbbe12e3d7471e69c290df3e6ba810dc38b34ae33d3c1c05f7d
+    Port:           80/TCP
+    Host Port:      0/TCP
+    State:          Running
+      Started:      Thu, 08 Oct 2026 01:17:24 +0530
+    Ready:          True
+    Restart Count:  0
+    Limits:
+      cpu:     200m
+      memory:  64Mi
+    Requests:
+      cpu:        50m
+      memory:     32Mi
+    Environment:  <none>
+    Mounts:
+      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-pqgzb (ro)
+Conditions:
+  Type                        Status
+  PodReadyToStartContainers   True 
+  Initialized                 True 
+  Ready                       True 
+  ContainersReady             True 
+  PodScheduled                True 
+Volumes:
+  kube-api-access-pqgzb:
+    Type:                    Projected (a volume that contains injected data from multiple sources)
+    TokenExpirationSeconds:  3607
+    ConfigMapName:           kube-root-ca.crt
+    Optional:                false
+    DownwardAPI:             true
+QoS Class:                   Burstable
+Node-Selectors:              <none>
+Tolerations:                 node.kubernetes.io/not-ready:NoExecute op=Exists for 300s
+                             node.kubernetes.io/unreachable:NoExecute op=Exists for 300s
+Events:
+  Type    Reason     Age   From               Message
+  ----    ------     ----  ----               -------
+  Normal  Scheduled  40s   default-scheduler  Successfully assigned default/demo-web-7c8cc9c99b-c59mx to minikube
+  Normal  Pulled     40s   kubelet            Container image "nginx:1.27" already present on machine and can be accessed by the pod
+  Normal  Created    40s   kubelet            Container created
+  Normal  Started    40s   kubelet            Container started
+
+$ kubectl describe svc demo-web
+Name:                     demo-web
+Namespace:                default
+Labels:                   <none>
+Annotations:              <none>
+Selector:                 app=demo-web
+Type:                     ClusterIP
+IP Family Policy:         SingleStack
+IP Families:              IPv4
+IP:                       10.96.83.153
+IPs:                      10.96.83.153
+Port:                     <unset>  80/TCP
+TargetPort:               80/TCP
+Endpoints:                10.244.0.27:80,10.244.0.26:80
+Session Affinity:         None
+Internal Traffic Policy:  Cluster
+Events:                   <none>
+
+################ kubectl logs ################
+$ kubectl logs demo-web-7c8cc9c99b-c59mx --tail=5
+2026/10/07 19:47:25 [notice] 1#1: start worker process 48
+2026/10/07 19:47:25 [notice] 1#1: start worker process 49
+2026/10/07 19:47:25 [notice] 1#1: start worker process 50
+2026/10/07 19:47:25 [notice] 1#1: start worker process 51
+2026/10/07 19:47:25 [notice] 1#1: start worker process 52
+
+$ kubectl logs deploy/demo-web --tail=3 --timestamps
+Found 2 pods, using pod/demo-web-7c8cc9c99b-c59mx
+2026-10-07T19:47:25.306266254Z 2026/10/07 19:47:25 [notice] 1#1: start worker process 50
+2026-10-07T19:47:25.306977195Z 2026/10/07 19:47:25 [notice] 1#1: start worker process 51
+2026-10-07T19:47:25.307614747Z 2026/10/07 19:47:25 [notice] 1#1: start worker process 52
+
+$ kubectl logs -l app=demo-web --prefix --tail=2
+[pod/demo-web-7c8cc9c99b-c59mx/nginx] 2026/10/07 19:47:25 [notice] 1#1: start worker process 51
+[pod/demo-web-7c8cc9c99b-c59mx/nginx] 2026/10/07 19:47:25 [notice] 1#1: start worker process 52
+[pod/demo-web-7c8cc9c99b-rm8d9/nginx] 2026/10/07 19:47:25 [notice] 1#1: start worker process 52
+[pod/demo-web-7c8cc9c99b-rm8d9/nginx] 10.244.0.5 - - [07/Oct/2026:19:48:03 +0000] "GET / HTTP/1.1" 200 615 "-" "curl/8.10.1" "-"
+
+################ kubectl exec ################
+$ kubectl exec demo-web-7c8cc9c99b-c59mx -- nginx -v
+nginx version: nginx/1.27.5
+
+$ kubectl exec demo-web-7c8cc9c99b-c59mx -- sh -c 'head -3 /etc/os-release'
+PRETTY_NAME="Debian GNU/Linux 12 (bookworm)"
+NAME="Debian GNU/Linux"
+VERSION_ID="12"
+
+$ kubectl exec demo-web-7c8cc9c99b-c59mx -- sh -c 'curl -s -o /dev/null -w "HTTP %{http_code}\n" localhost'
+HTTP 200
+
+$ kubectl exec demo-web-7c8cc9c99b-c59mx -- sh -c 'env | grep -E "DEMO_WEB_SERVICE|KUBERNETES_SERVICE_HOST"'
+DEMO_WEB_SERVICE_HOST=10.96.83.153
+DEMO_WEB_SERVICE_PORT=80
+KUBERNETES_SERVICE_HOST=10.96.0.1
+
+################ kubectl events ################
+$ kubectl events --for deployment/demo-web
+LAST SEEN   TYPE     REASON              OBJECT                MESSAGE
+42s         Normal   ScalingReplicaSet   Deployment/demo-web   Scaled up replica set demo-web-7c8cc9c99b from 0 to 2
+
+$ kubectl events --types=Warning -A | tail -8
+default         10m (x7 over 12m)    Warning   FailedComputeMetricsReplicas   HorizontalPodAutoscaler/yatri-backend-hpa      invalid metrics (1 invalid out of 1), first error is: failed to get cpu resource metric value: failed to get cpu utilization: unable to get metrics for resource cpu: unable to fetch metrics from resource metrics API: the server is currently unable to handle the request (get pods.metrics.k8s.io)
+default         9m53s                Warning   Unhealthy                      Pod/yatri-backend-7bfd6d9f7c-hmgrc             Readiness probe failed: Get "http://10.244.0.18:80/": dial tcp 10.244.0.18:80: connect: connection refused
+default         9m53s                Warning   Unhealthy                      Pod/yatri-backend-7bfd6d9f7c-vtxsb             Readiness probe failed: Get "http://10.244.0.19:80/": dial tcp 10.244.0.19:80: connect: connection refused
+default         8m54s                Warning   Unhealthy                      Pod/yatri-backend-7bfd6d9f7c-2pnnh             Readiness probe failed: Get "http://10.244.0.21:80/": dial tcp 10.244.0.21:80: connect: connection refused
+default         8m53s                Warning   Unhealthy                      Pod/yatri-backend-7bfd6d9f7c-f64qz             Readiness probe failed: Get "http://10.244.0.22:80/": dial tcp 10.244.0.22:80: connect: connection refused
+default         7m54s                Warning   Unhealthy                      Pod/yatri-backend-7bfd6d9f7c-88hll             Readiness probe failed: Get "http://10.244.0.24:80/": dial tcp 10.244.0.24:80: connect: connection refused
+default         7m53s                Warning   Unhealthy                      Pod/yatri-backend-7bfd6d9f7c-nf74x             Readiness probe failed: Get "http://10.244.0.23:80/": dial tcp 10.244.0.23:80: connect: connection refused
+default         7m52s                Warning   Unhealthy                      Pod/yatri-backend-7bfd6d9f7c-48qtg             Readiness probe failed: Get "http://10.244.0.25:80/": dial tcp 10.244.0.25:80: connect: connection refused
+
+$ kubectl get events --sort-by=.lastTimestamp -A | tail -8
+default         43s         Normal    Scheduled                      pod/demo-web-7c8cc9c99b-c59mx                   Successfully assigned default/demo-web-7c8cc9c99b-c59mx to minikube
+default         43s         Normal    SuccessfulCreate               replicaset/demo-web-7c8cc9c99b                  Created pod: demo-web-7c8cc9c99b-rm8d9
+default         43s         Normal    Created                        pod/demo-web-7c8cc9c99b-c59mx                   Container created
+default         43s         Normal    Pulled                         pod/demo-web-7c8cc9c99b-c59mx                   Container image "nginx:1.27" already present on machine and can be accessed by the pod
+default         43s         Normal    Created                        pod/demo-web-7c8cc9c99b-rm8d9                   Container created
+default         43s         Normal    Started                        pod/demo-web-7c8cc9c99b-rm8d9                   Container started
+default         43s         Normal    SuccessfulCreate               replicaset/demo-web-7c8cc9c99b                  Created pod: demo-web-7c8cc9c99b-c59mx
+default         43s         Normal    ScalingReplicaSet              deployment/demo-web                             Scaled up replica set demo-web-7c8cc9c99b from 0 to 2
+
+################ kubectl explain ################
+$ kubectl explain pod.spec.containers.livenessProbe | head -25
+KIND:       Pod
+VERSION:    v1
+
+FIELD: livenessProbe <Probe>
+
+
+DESCRIPTION:
+    Periodic probe of container liveness. Container will be restarted if the
+    probe fails. Cannot be updated. More info:
+    https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes
+    Probe describes a health check to be performed against a container to
+    determine whether it is alive or ready to receive traffic.
+    
+FIELDS:
+  exec	<ExecAction>
+    Exec specifies a command to execute in the container.
+
+  failureThreshold	<integer>
+    Minimum consecutive failures for the probe to be considered failed after
+    having succeeded. Defaults to 3. Minimum value is 1.
+
+  grpc	<GRPCAction>
+    GRPC specifies a GRPC HealthCheckRequest.
+
+  httpGet	<HTTPGetAction>
+
+$ kubectl explain deployment.spec.strategy.rollingUpdate.maxSurge
+GROUP:      apps
+KIND:       Deployment
+VERSION:    v1
+
+FIELD: maxSurge <IntOrString>
+
+
+DESCRIPTION:
+    The maximum number of pods that can be scheduled above the desired number of
+    pods. Value can be an absolute number (ex: 5) or a percentage of desired
+    pods (ex: 10%). This can not be 0 if MaxUnavailable is 0. Absolute number is
+    calculated from percentage by rounding up. Defaults to 25%. Example: when
+    this is set to 30%, the new ReplicaSet can be scaled up immediately when the
+    rolling update starts, such that the total number of old and new pods do not
+    exceed 130% of desired pods. Once old pods have been killed, new ReplicaSet
+    can be scaled up further, ensuring that total number of pods running at any
+    time during the update is at most 130% of desired pods.
+    IntOrString is a type that can hold an int32 or a string.  When used in JSON
+    or YAML marshalling and unmarshalling, it produces or consumes the inner
+    type.  This allows you to have, for example, a JSON field that can accept a
+    name or number.
+    
+
+
+################ kubectl top ################
+$ kubectl top nodes
+NAME       CPU(cores)   CPU(%)   MEMORY(bytes)   MEMORY(%)   
+minikube   281m         1%       1441Mi          12%         
+
+$ kubectl top pods -A --sort-by=cpu | head -8
+NAMESPACE       NAME                                       CPU(cores)   MEMORY(bytes)   
+kube-system     kube-apiserver-minikube                    41m          243Mi           
+kube-system     etcd-minikube                              23m          65Mi            
+kube-system     kube-controller-manager-minikube           19m          57Mi            
+default         yatri-backend-7bfd6d9f7c-fvlgq             9m           14Mi            
+default         yatri-backend-7bfd6d9f7c-88hll             9m           13Mi            
+default         yatri-backend-7bfd6d9f7c-vtxsb             9m           14Mi            
+default         yatri-backend-7bfd6d9f7c-nf74x             9m           14Mi            
+
+$ kubectl top pod -l app=demo-web --containers
+POD                         NAME    CPU(cores)   MEMORY(bytes)   
+demo-web-7c8cc9c99b-c59mx   nginx   3m           18Mi            
+demo-web-7c8cc9c99b-rm8d9   nginx   3m           22Mi            
+

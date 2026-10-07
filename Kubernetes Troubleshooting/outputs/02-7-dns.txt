@@ -1,0 +1,55 @@
+########## 1. BREAK ##########
+$ kubectl apply -f 07-dns/setup.yaml -f 07-dns/client-broken.yaml
+namespace/inventory unchanged
+deployment.apps/stock unchanged
+service/stock unchanged
+pod/frontend created
+
+########## 2. INVESTIGATE ##########
+$ kubectl logs frontend --tail=3
+19:51:56 ERROR calling http://stock
+19:52:04 ERROR calling http://stock
+
+$ kubectl exec frontend -- nslookup stock 2>&1 | tail -4; true
+
+** server can't find stock.svc.cluster.local: NXDOMAIN
+
+command terminated with exit code 1
+
+$ kubectl exec frontend -- cat /etc/resolv.conf
+search default.svc.cluster.local svc.cluster.local cluster.local
+nameserver 10.96.0.10
+options ndots:5
+
+$ kubectl get svc -A | grep -E 'NAMESPACE|stock'
+NAMESPACE           NAME                                 TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)                      AGE
+inventory           stock                                ClusterIP   10.101.136.78    <none>        80/TCP                       15s
+
+$ kubectl exec frontend -- nslookup stock.inventory.svc.cluster.local 2>&1 | tail -3
+Name:	stock.inventory.svc.cluster.local
+Address: 10.101.136.78
+
+
+$ kubectl -n kube-system get pods -l k8s-app=kube-dns
+NAME                       READY   STATUS    RESTARTS      AGE
+coredns-559f6c778d-tdpsg   1/1     Running   1 (16m ago)   47m
+
+# ROOT CAUSE: CoreDNS is healthy; the Service lives in namespace "inventory" but the client (namespace "default") uses the short name "stock", which the search path expands to stock.default.svc.cluster.local -> NXDOMAIN
+########## 3. FIX ##########
+$ diff 07-dns/client-broken.yaml 07-dns/client-fixed.yaml
+12c12
+<           value: http://stock          # BUG: short name only resolves inside the same namespace
+---
+>           value: http://stock.inventory.svc.cluster.local
+
+$ kubectl delete pod frontend --now && kubectl apply -f 07-dns/client-fixed.yaml && kubectl wait --for=condition=Ready pod/frontend --timeout=60s
+pod "frontend" deleted from default namespace
+pod/frontend created
+pod/frontend condition met
+
+########## 4. VERIFY ##########
+$ kubectl logs frontend --tail=3
+stock service
+stock service
+stock service
+

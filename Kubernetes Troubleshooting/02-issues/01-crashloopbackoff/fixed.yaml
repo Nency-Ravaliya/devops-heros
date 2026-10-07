@@ -1,0 +1,13 @@
+# FIXED: provide the required DB_HOST env var
+apiVersion: v1
+kind: Pod
+metadata:
+  name: payment-api
+spec:
+  containers:
+    - name: app
+      image: busybox:1.36
+      command: ["sh", "-c", "if [ -z \"$DB_HOST\" ]; then echo 'FATAL: DB_HOST is not set'; exit 1; fi; echo \"connected to $DB_HOST\"; sleep 3600"]
+      env:
+        - name: DB_HOST
+          value: postgres.default.svc.cluster.local

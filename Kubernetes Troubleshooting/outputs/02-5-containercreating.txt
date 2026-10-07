@@ -1,0 +1,36 @@
+########## 1. BREAK ##########
+$ kubectl apply -f 05-containercreating/pod.yaml
+pod/report-app created
+
+########## 2. INVESTIGATE ##########
+$ kubectl get pod report-app
+NAME         READY   STATUS              RESTARTS   AGE
+report-app   0/1     ContainerCreating   0          20s
+
+$ kubectl describe pod report-app | sed -n '/^Events:/,$p'
+Events:
+  Type     Reason       Age               From               Message
+  ----     ------       ----              ----               -------
+  Normal   Scheduled    20s               default-scheduler  Successfully assigned default/report-app to minikube
+  Warning  FailedMount  4s (x6 over 20s)  kubelet            MountVolume.SetUp failed for volume "config" : configmap "report-config" not found
+
+$ kubectl get configmap report-config
+Error from server (NotFound): configmaps "report-config" not found
+
+# ROOT CAUSE: the Pod mounts ConfigMap report-config which does not exist -> kubelet cannot set up the volume (FailedMount), container never starts
+########## 3. FIX ##########
+$ kubectl apply -f 05-containercreating/fix-configmap.yaml
+configmap/report-config created
+
+$ kubectl wait --for=condition=Ready pod/report-app --timeout=180s
+pod/report-app condition met
+
+########## 4. VERIFY ##########
+$ kubectl get pod report-app
+NAME         READY   STATUS    RESTARTS   AGE
+report-app   1/1     Running   0          32s
+
+$ kubectl exec report-app -- cat /etc/report/report.conf
+schedule=daily
+format=pdf
+

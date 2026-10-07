@@ -1,0 +1,18 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: orders
+spec:
+  replicas: 2
+  selector:
+    matchLabels: { app: orders }
+  template:
+    metadata:
+      labels: { app: orders }
+    spec:
+      containers:
+        - name: orders
+          image: hashicorp/http-echo:1.0
+          args: ["-text=orders OK", "-listen=:5678"]
+          ports:
+            - containerPort: 5678
