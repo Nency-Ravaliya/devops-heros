@@ -1,0 +1,11 @@
+apiVersion: 1
+
+providers:
+  - name: Session 20
+    orgId: 1
+    folder: DevOps Course
+    type: file
+    disableDeletion: true
+    updateIntervalSeconds: 10
+    options:
+      path: /var/lib/grafana/dashboards

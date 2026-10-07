@@ -104,3 +104,28 @@ jobs:
           name: calculator-container-image
           path: session-16-github-actions/10-final-cicd-pipeline/calculator-image.tar.gz
           retention-days: 7
+
+  deploy:
+    name: Deploy to Kind
+    needs: delivery
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v6
+
+      - name: Create test Kubernetes cluster
+        uses: helm/kind-action@v1.15.0
+        with:
+          cluster_name: session16
+
+      - name: Build and load image
+        run: |
+          docker build --tag session16-calculator:ci .
+          kind load docker-image session16-calculator:ci --name session16
+
+      - name: Deploy and verify the Job
+        run: |
+          kubectl apply -f k8s/job.yaml
+          kubectl wait --for=condition=complete job/session16-calculator --timeout=90s
+          kubectl logs job/session16-calculator | tee /tmp/session16-deployment.log
+          grep -q "Result: 5.0" /tmp/session16-deployment.log

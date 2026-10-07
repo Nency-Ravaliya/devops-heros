@@ -14,6 +14,7 @@ on:
 
 permissions:
   contents: read
+  packages: write
 
 env:
   PROJECT_DIR: session-17-devsecops/demo
@@ -89,6 +90,19 @@ jobs:
           severity: HIGH,CRITICAL
           ignore-unfixed: true
           exit-code: "1"
+      - name: Log in to GitHub Container Registry
+        if: github.event_name == 'push'
+        run: echo "$GITHUB_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Push tested image to GHCR
+        if: github.event_name == 'push'
+        run: |
+          registry_image="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/session17-devsecops"
+          docker tag "$IMAGE_NAME:${GITHUB_SHA}" "$registry_image:${GITHUB_SHA}"
+          docker tag "$IMAGE_NAME:${GITHUB_SHA}" "$registry_image:latest"
+          docker push "$registry_image:${GITHUB_SHA}"
+          docker push "$registry_image:latest"
       - name: Save delivery artifact
         run: docker save "$IMAGE_NAME:${GITHUB_SHA}" | gzip > session17-image.tar.gz
       - uses: actions/upload-artifact@v7

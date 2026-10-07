@@ -42,11 +42,19 @@ I installed the chart as the `notes-dev` release. For the production-style run I
 
 ![Production release](screenshots/helm-production-release.png)
 
+I also reran the full chart flow in the `session15-proof` namespace. This screenshot shows the real install, release status, values, rendered manifest, and two running Pods after the upgrade.
+
+![Helm install, values, manifest, and live resources](screenshots/helm-install-and-values.png)
+
 ## Upgrade and rollback
 
 I performed an install, two upgrades, and then rolled the release back to revision 2. `helm history` showed revisions 1-3 as superseded and revision 4 as the deployed rollback.
 
 ![Install, upgrade and rollback history](screenshots/helm-release-history.png)
+
+The final rerun also covered the chart repository commands and cleanup. Revision 4 is the successful rollback to revision 2, and the Bitnami repository search returned the available Nginx charts.
+
+![Helm upgrade, rollback, repository search, and uninstall](screenshots/helm-upgrade-rollback-repository.png)
 
 This made the difference between a chart and a release clearer to me: the chart is the reusable package in Git, while `notes-dev` is one installed history of that chart in the cluster.
 

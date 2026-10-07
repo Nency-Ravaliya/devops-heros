@@ -23,10 +23,6 @@ The important part of my output was:
 
 The hard link and original file had the same inode. The symbolic link had a different inode and stored the path to the original file. After I deleted `original.txt`, the hard link still contained the data, while the symbolic link became broken. This was the clearest practical difference between them.
 
-This is the output from my link test. It shows the matching inode numbers before I removed the original file, followed by the hard link still returning the saved text.
-
-![Linux hard-link and symbolic-link test](screenshots/linux-links-proof.png)
-
 | Check | Hard link | Symbolic link |
 |---|---|---|
 | Command | `ln target link` | `ln -s target link` |
@@ -59,22 +55,17 @@ adduser --disabled-password --gecos "" testuser2
 
 ## `journalctl`
 
-`journalctl` reads logs stored by systemd. macOS does not use systemd, and the Ubuntu container used for this assignment did not run systemd as its init process, so I could not produce a genuine service journal on this machine. These are the commands I would use on an Ubuntu VM:
+`journalctl` reads logs stored by systemd. macOS does not use systemd, so I used the Linux node created by Minikube. That node runs systemd and gave me real `kubelet` and `containerd` service logs.
 
 ```bash
-journalctl
-journalctl -e
-journalctl -f
-journalctl -u nginx.service
-journalctl -u nginx.service -f
-journalctl --since "1 hour ago"
-journalctl -p err
-journalctl -b
-journalctl -k
-journalctl --disk-usage
+minikube ssh -- systemctl is-system-running
+minikube ssh -- journalctl -u kubelet --no-pager -n 35
+minikube ssh -- journalctl -u containerd --no-pager -n 20
 ```
 
-For example, `sudo journalctl -u docker.service -f` would let me watch Docker daemon errors while reproducing a startup problem.
+The screenshot below is from that live run. It shows systemd reporting `running` and recent kubelet messages, including real pod startup failures that were useful during Kubernetes troubleshooting.
+
+![Live journalctl service logs from the Minikube Linux node](screenshots/journalctl-service-logs.png)
 
 ## Commands I practiced
 

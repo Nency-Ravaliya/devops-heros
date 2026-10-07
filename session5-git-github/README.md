@@ -55,6 +55,6 @@ The Git references I used are listed in [`resources.md`](resources.md).
 
 ## Proof of the Git practice
 
-The screenshot shows both exercises: the difference between `git commit -m` and `git commit -a -m`, and the single commit copied to `main` with `git cherry-pick`.
+I reran both exercises in a temporary Git repository before submission. The screenshot shows the difference between `git commit -m` and `git commit -a -m`, followed by the single commit copied to `main` with `git cherry-pick`.
 
-![Git commit and cherry-pick output](screenshots/git-commands-proof.png)
+![Live Git commit and cherry-pick output](screenshots/git-practice-live.png)

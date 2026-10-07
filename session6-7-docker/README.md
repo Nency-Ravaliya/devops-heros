@@ -63,6 +63,6 @@ The Node.js, Python, and Java containers satisfy the final deployment task. I ra
 
 ## Proof of the Docker runs
 
-This screenshot shows the images and running containers, followed by the HTTP response from every application and the multi-stage build.
+I rebuilt all seven images from the Dockerfiles and started the containers again before submission. This live Terminal screenshot shows the running containers and an HTTP response from every application, including the multi-stage image.
 
-![Docker images, containers, and HTTP checks](screenshots/docker-apps-proof.png)
+![Live Docker containers and HTTP checks](screenshots/docker-apps-live.png)

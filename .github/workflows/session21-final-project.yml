@@ -14,6 +14,7 @@ on:
 
 permissions:
   contents: read
+  packages: write
 
 env:
   PROJECT_DIR: session21-final-devops-project
@@ -96,6 +97,24 @@ jobs:
           severity: HIGH,CRITICAL
           ignore-unfixed: true
           exit-code: "1"
+      - name: Log in to GitHub Container Registry
+        if: github.event_name == 'push'
+        run: echo "$GITHUB_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Push tested images to GHCR
+        if: github.event_name == 'push'
+        run: |
+          backend="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/taskboard-backend"
+          frontend="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/taskboard-frontend"
+          docker tag "taskboard-backend:${GITHUB_SHA}" "$backend:${GITHUB_SHA}"
+          docker tag "taskboard-backend:${GITHUB_SHA}" "$backend:latest"
+          docker tag "taskboard-frontend:${GITHUB_SHA}" "$frontend:${GITHUB_SHA}"
+          docker tag "taskboard-frontend:${GITHUB_SHA}" "$frontend:latest"
+          docker push "$backend:${GITHUB_SHA}"
+          docker push "$backend:latest"
+          docker push "$frontend:${GITHUB_SHA}"
+          docker push "$frontend:latest"
 
   deploy:
     name: Deploy to Kind and smoke test

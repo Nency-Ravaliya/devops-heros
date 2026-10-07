@@ -1,0 +1,19 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: session16-calculator
+spec:
+  backoffLimit: 1
+  template:
+    metadata:
+      labels:
+        app: session16-calculator
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: calculator
+          image: session16-calculator:ci
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/sh", "-c"]
+          args:
+            - "printf '2 + 3\nquit\n' | python -m app.calculator"

@@ -16,14 +16,14 @@ Python tests
              ↓
       Trivy image scan
              ↓
-   Docker artifact upload
+      GHCR push and artifact upload
              ↓
     Kind Kubernetes deploy
              ↓
        HTTP health check
 ```
 
-The image is saved as a workflow artifact after the security gates pass. The registry notes in [`02-container-registry/`](02-container-registry/) show how the same image can be tagged and pushed to GHCR without committing a password.
+After the security gates pass, the workflow pushes the tested image to GitHub Container Registry with both the commit SHA and `latest` tags. It also saves the same image as a downloadable workflow artifact. Authentication uses GitHub's short-lived `GITHUB_TOKEN`, so no registry password is committed.
 
 ## Security gates
 
@@ -57,6 +57,6 @@ The CI deployment uses a temporary Kind cluster, so it proves the manifests work
 
 ## Result
 
-I ran the complete workflow on GitHub Actions. The test, security, container scan, and Kubernetes smoke-test jobs all passed.
+I ran the complete workflow on GitHub Actions. The test, security, container scan, registry push, and Kubernetes smoke-test jobs all passed.
 
 ![Session 17 GitHub Actions result](evidence/github-actions-success.png)

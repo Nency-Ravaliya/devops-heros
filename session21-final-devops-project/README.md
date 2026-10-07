@@ -5,7 +5,7 @@ For my final project I used the instructor's TaskBoard application and connected
 ## Architecture
 
 ```text
-Developer → GitHub → CI and security gates → container artifacts
+Developer → GitHub → CI and security gates → GHCR images
                                                    |
                                                    v
 Terraform → AWS VPC/EKS                         Kubernetes
@@ -26,7 +26,7 @@ Terraform → AWS VPC/EKS                         Kubernetes
 | [`docker-compose.yml`](docker-compose.yml) | Local three-container environment |
 | [`helm/taskboard/`](helm/taskboard/) | Kubernetes package with ConfigMap, Secret, Ingress, HPA, probes, and PVC |
 | [`terraform/`](terraform/) | VPC and EKS infrastructure definition |
-| [`monitoring/`](monitoring/) | Prometheus/Grafana values |
+| [`monitoring/`](monitoring/) | Prometheus/Grafana values and a runnable local dashboard |
 | [`gitops/`](gitops/) | Argo CD Application watching the Helm chart |
 | [`security/`](security/) | Security gates and decisions |
 | [`troubleshooting/`](troubleshooting/) | Broken image and broken Service exercises |
@@ -61,6 +61,10 @@ docker compose down
 
 I added a PostgreSQL health check so the backend waits for the database instead of racing it during startup.
 
+This is the application from the live Docker Compose run. I created a task through the API before taking the screenshot, so the dashboard is showing data from the running backend and PostgreSQL database.
+
+![Live TaskBoard application](evidence/taskboard-live-application.png)
+
 ## Kubernetes and Helm
 
 ```bash
@@ -91,7 +95,7 @@ The password in the default values is only for local learning. A real environmen
 
 ## CI/CD and DevSecOps
 
-The repository workflow runs backend tests, builds the frontend, scans Python with Bandit and pip-audit, checks the assignment files with Gitleaks, lints the Helm chart, builds both images, scans them with Trivy, and deploys the chart to a temporary Kind cluster for an HTTP smoke test.
+The repository workflow runs backend tests, builds the frontend, scans Python with Bandit and pip-audit, checks the assignment files with Gitleaks, lints the Helm chart, builds both images, scans them with Trivy, pushes the tested images to GHCR, and deploys the chart to a temporary Kind cluster for an HTTP smoke test.
 
 The pipeline stops before delivery when a quality or security gate fails. The details are in [`security/README.md`](security/README.md).
 
@@ -111,9 +115,28 @@ VPC, NAT Gateway, EKS, and worker nodes can generate charges, so I review the pl
 
 ## Monitoring and GitOps
 
-FastAPI exposes Prometheus metrics at `/metrics`. The Helm chart can create a ServiceMonitor for kube-prometheus-stack, and [`monitoring/prometheus-values.yaml`](monitoring/prometheus-values.yaml) contains the monitoring values.
+FastAPI exposes Prometheus metrics at `/metrics`. The Helm chart can create a ServiceMonitor for kube-prometheus-stack, and [`monitoring/prometheus-values.yaml`](monitoring/prometheus-values.yaml) contains the Kubernetes monitoring values.
+
+I also added a small Docker Compose monitoring stack under [`monitoring/`](monitoring/) so I could test the dashboard locally without a paid cloud account:
+
+```bash
+cd monitoring
+docker compose up -d
+curl -fsS http://localhost:9091/-/ready
+curl -fsS http://localhost:3001/api/health
+```
+
+Prometheus scraped the live TaskBoard backend on `/metrics`. Grafana loaded the data source and dashboard from the provisioning files in this repository. I generated test requests and confirmed health, request rate, memory, latency, and response status data on the dashboard.
+
+![Live TaskBoard Grafana dashboard](evidence/taskboard-grafana-dashboard.png)
+
+I checked the container state and tailed the application, database, Prometheus, and Grafana logs from the same run.
+
+![Live TaskBoard and monitoring container logs](evidence/taskboard-container-logs.png)
 
 [`gitops/application.yaml`](gitops/application.yaml) tells Argo CD to reconcile the production Helm values from this repository. Automated pruning and self-healing keep the cluster close to the Git declaration.
+
+For the local Minikube proof, the Application disables the Ingress, ServiceMonitor, and PostgreSQL PVC. Those resources need add-ons that are outside the GitOps exercise. Argo CD still renders the chart from this Git repository and reconciles the application Deployments and Services.
 
 ## Troubleshooting
 

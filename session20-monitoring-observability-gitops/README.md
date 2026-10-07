@@ -4,7 +4,7 @@ I completed this session in three parts: a small monitoring stack, notes and exa
 
 ## Monitoring
 
-The Prometheus example is in [`03-prometheus/`](03-prometheus/), and the Prometheus/Grafana stack is in [`04-grafana/`](04-grafana/). I configured a five-second scrape interval and a target-down alert rule.
+The Prometheus example is in [`03-prometheus/`](03-prometheus/), and the Prometheus/Grafana stack is in [`04-grafana/`](04-grafana/). I configured a five-second scrape interval, a provisioned Grafana data source and dashboard, and a target-down alert rule.
 
 ```bash
 cd session20-monitoring-observability-gitops/04-grafana
@@ -14,6 +14,18 @@ curl -fsS http://localhost:9090/-/ready
 curl -fsS http://localhost:3000/api/health
 docker compose down
 ```
+
+I ran this stack locally before submission. Grafana loaded the provisioned dashboard from Git, Prometheus reported itself healthy, and the intentionally unreachable demo target triggered the configured alert.
+
+![Live Grafana dashboard backed by Prometheus](evidence/grafana-dashboard.png)
+
+![Live Prometheus target status](evidence/prometheus-targets.png)
+
+![Live Prometheus firing alert](evidence/prometheus-alert.png)
+
+I also checked the container status and tailed both services. These are the actual Prometheus and Grafana logs from the same run.
+
+![Live Prometheus and Grafana container logs](evidence/monitoring-container-logs.png)
 
 CPU, memory, request rate, errors, and application health are the first signals I would place on a service dashboard. Metrics show trends, logs explain individual events, and traces follow one request across services. My notes and Kubernetes logging example are in [`02-metrics-logs-traces/`](02-metrics-logs-traces/).
 

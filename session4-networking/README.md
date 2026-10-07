@@ -60,6 +60,6 @@ I now troubleshoot from the simplest check outward: resolve the hostname, test r
 
 ## Proof of the checks
 
-This screenshot brings together the successful ping, DNS lookup, HTTP response, and TCP port checks from my saved command output.
+I reran the commands before submission. This Terminal screenshot shows the live ping, DNS lookup, HTTP response, and TCP port check.
 
-![Networking command results](screenshots/network-checks-proof.png)
+![Live networking command results](screenshots/network-checks-live.png)

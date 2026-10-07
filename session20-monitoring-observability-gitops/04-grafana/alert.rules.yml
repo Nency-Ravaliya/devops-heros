@@ -1,0 +1,11 @@
+groups:
+  - name: availability
+    rules:
+      - alert: PrometheusTargetMissing
+        expr: up == 0
+        for: 30s
+        labels:
+          severity: warning
+        annotations:
+          summary: "Prometheus target is unavailable"
+          description: "{{ $labels.instance }} has been unavailable for 30 seconds."

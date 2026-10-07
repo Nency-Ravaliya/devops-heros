@@ -12,6 +12,13 @@ spec:
     helm:
       valueFiles:
         - values-prod.yaml
+      parameters:
+        - name: ingress.enabled
+          value: "false"
+        - name: monitoring.serviceMonitor.enabled
+          value: "false"
+        - name: postgres.persistence.enabled
+          value: "false"
   destination:
     server: https://kubernetes.default.svc
     namespace: taskboard

@@ -1,0 +1,70 @@
+{
+  "annotations": {"list": []},
+  "editable": false,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {"defaults": {"color": {"mode": "thresholds"}, "mappings": [{"options": {"0": {"color": "red", "text": "DOWN"}, "1": {"color": "green", "text": "UP"}}, "type": "value"}], "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "green", "value": 1}]}}, "overrides": []},
+      "gridPos": {"h": 8, "w": 6, "x": 0, "y": 0},
+      "id": 1,
+      "options": {"colorMode": "background", "graphMode": "area", "justifyMode": "center", "orientation": "auto", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "textMode": "auto", "wideLayout": true},
+      "targets": [{"editorMode": "code", "expr": "up{job=\"prometheus\"}", "legendFormat": "Prometheus", "range": true, "refId": "A"}],
+      "title": "Application health",
+      "type": "stat"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {"defaults": {"color": {"mode": "palette-classic"}, "unit": "percentunit"}, "overrides": []},
+      "gridPos": {"h": 8, "w": 9, "x": 6, "y": 0},
+      "id": 2,
+      "options": {"legend": {"calcs": ["lastNotNull"], "displayMode": "table", "placement": "bottom", "showLegend": true}, "tooltip": {"mode": "single", "sort": "none"}},
+      "targets": [{"editorMode": "code", "expr": "rate(process_cpu_seconds_total{job=\"prometheus\"}[1m])", "legendFormat": "Prometheus CPU", "range": true, "refId": "A"}],
+      "title": "CPU utilization",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {"defaults": {"color": {"mode": "palette-classic"}, "unit": "bytes"}, "overrides": []},
+      "gridPos": {"h": 8, "w": 9, "x": 15, "y": 0},
+      "id": 3,
+      "options": {"legend": {"calcs": ["lastNotNull"], "displayMode": "table", "placement": "bottom", "showLegend": true}, "tooltip": {"mode": "single", "sort": "none"}},
+      "targets": [{"editorMode": "code", "expr": "process_resident_memory_bytes{job=\"prometheus\"}", "legendFormat": "Prometheus memory", "range": true, "refId": "A"}],
+      "title": "Memory utilization",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {"defaults": {"color": {"mode": "palette-classic"}, "unit": "reqps"}, "overrides": []},
+      "gridPos": {"h": 9, "w": 12, "x": 0, "y": 8},
+      "id": 4,
+      "options": {"legend": {"calcs": ["lastNotNull"], "displayMode": "table", "placement": "bottom", "showLegend": true}, "tooltip": {"mode": "multi", "sort": "desc"}},
+      "targets": [{"editorMode": "code", "expr": "sum(rate(prometheus_http_requests_total[1m])) by (handler)", "legendFormat": "{{handler}}", "range": true, "refId": "A"}],
+      "title": "Prometheus request rate",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {"defaults": {"color": {"mode": "thresholds"}, "mappings": [], "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "red", "value": 1}]}}, "overrides": []},
+      "gridPos": {"h": 9, "w": 12, "x": 12, "y": 8},
+      "id": 5,
+      "options": {"colorMode": "background", "graphMode": "area", "justifyMode": "center", "orientation": "auto", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "textMode": "auto", "wideLayout": true},
+      "targets": [{"editorMode": "code", "expr": "count(ALERTS{alertstate=\"firing\"})", "legendFormat": "Firing alerts", "range": true, "refId": "A"}],
+      "title": "Firing alerts",
+      "type": "stat"
+    }
+  ],
+  "refresh": "5s",
+  "schemaVersion": 41,
+  "tags": ["session20", "prometheus", "grafana"],
+  "templating": {"list": []},
+  "time": {"from": "now-15m", "to": "now"},
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Session 20 - Local Monitoring",
+  "uid": "session20-local",
+  "version": 1
+}

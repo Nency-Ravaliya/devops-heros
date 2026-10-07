@@ -27,7 +27,20 @@ docker run -d --name apache-host-c --network host httpd
 curl http://localhost:80
 ```
 
-Apache started inside the container, but the request from macOS returned connection refused. Docker Desktop runs the Linux engine inside a VM, so the container joined the VM's host network rather than the Mac's network. The same command behaves differently on a native Linux host. I recorded this result instead of presenting it as a successful localhost test.
+Apache started inside the container, but the request from macOS returned connection refused. Docker Desktop runs the Linux engine inside a VM, so the container joined the VM's host network rather than the Mac's network.
+
+To verify the Linux behavior without pretending the macOS result succeeded, I ran Apache with `hostNetwork: true` on the Minikube Linux node. I temporarily disabled the ingress add-on because it already occupied port 80, then created the pod and tested the node directly:
+
+```bash
+kubectl -n session8-hostnet get pod apache-host-network -o wide
+minikube ip
+minikube ssh -- curl -I http://127.0.0.1:80
+minikube ssh -- sudo ss -ltnp | grep :80
+```
+
+The pod IP matched the node IP, Apache listened on the node's port 80, and the request returned `HTTP/1.1 200 OK`.
+
+![Live host-network test on the Minikube Linux node](screenshots/host-network-live-test.png)
 
 ## Bind mount
 
@@ -59,8 +72,4 @@ An overlay network is intended for containers running on different Docker hosts.
 
 Reference: [Docker network drivers](https://docs.docker.com/engine/network/drivers/).
 
-## Proof of the exercises
-
-This screenshot shows the container connectivity rules, the live bind-mount update, and the overlay network created in Swarm mode.
-
-![Docker networking, bind mount, and overlay results](screenshots/docker-networking-proof.png)
+The raw output for the Docker network, bind-mount, and overlay exercises remains in each task folder so the commands and results can be checked directly.

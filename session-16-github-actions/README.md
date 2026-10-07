@@ -27,11 +27,11 @@ With CI/CD, every push to Git triggers automated build, test, and deploy.
 | `07-secrets/` | Storing credentials, using secrets in workflows |
 | `08-artifacts/` | Uploading and downloading build artifacts |
 | `09-build-test-pipeline/` | Full CI pipeline: checkout, build, test, lint |
-| `10-final-cicd-pipeline/` | Current assignment: test, security, build artifacts, Docker packaging, and delivery artifact |
+| `10-final-cicd-pipeline/` | Current assignment: test, security, build artifacts, Docker packaging, and deployment to Kubernetes |
 
 ## What I completed
 
-I created the application, tests, Dockerfile, build script, and GitHub Actions workflow. The workflow checks out the code, installs dependencies, runs linting and tests, scans the project, builds the application, packages the container image, and uploads the requested artifacts.
+I created the application, tests, Dockerfile, build script, Kubernetes Job, and GitHub Actions workflow. The workflow checks out the code, installs dependencies, runs the tests and security check, builds the application, packages the container image, uploads the requested artifacts, and deploys the image to a temporary Kind cluster. The deployment job waits for the calculator Job to finish and checks its logs for `Result: 5.0`.
 
 The first screenshot shows the basic lint-and-test pipeline. The second shows the completed final CI/CD pipeline with all four jobs passing.
 

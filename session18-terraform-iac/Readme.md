@@ -33,8 +33,12 @@ The research part is under [`aws-services/`](aws-services/):
 
 I validate the configuration before using any AWS credentials. A real `apply` creates a cloud resource and should only be run in an authorized AWS account, followed by `terraform destroy` after verification.
 
+I reran the free local checks with the official Terraform container. `init -backend=false`, `fmt -check`, and `validate` all completed successfully without creating an AWS resource.
+
+![Live Terraform initialization and validation](evidence/terraform-local-validation.png)
+
 ## Result
 
-GitHub Actions ran formatting and validation for this project without using cloud credentials. The workflow also checks the Session 19 Terraform configuration.
+GitHub Actions also ran formatting and validation for this project without using cloud credentials. The workflow checks the Session 19 Terraform configuration as well.
 
 ![Terraform validation result](evidence/github-actions-terraform-success.png)

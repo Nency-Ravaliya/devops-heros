@@ -58,4 +58,4 @@ I also kept my smaller practice scripts in this folder: [`condition.sh`](conditi
 
 This screenshot shows the details I entered and the report created by the script. It also confirms that the process output was written to a separate file.
 
-![Shell script system report](screenshots/system-report-proof.png)
+![Live shell script system report](screenshots/system-report-live.png)
