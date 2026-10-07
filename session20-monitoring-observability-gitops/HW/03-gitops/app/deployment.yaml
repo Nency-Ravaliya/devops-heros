@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: session20-mini
+  namespace: p20-gitops
+  labels:
+    app: session20-mini
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: session20-mini
+  template:
+    metadata:
+      labels:
+        app: session20-mini
+    spec:
+      containers:
+        - name: app
+          image: nginx:1.27-alpine
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+            limits:
+              memory: 64Mi
