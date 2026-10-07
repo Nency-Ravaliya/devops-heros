@@ -119,7 +119,7 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           rm -f "${{ matrix.project.dir }}/outputs/.status.bak"; git add "${{ matrix.project.dir }}/outputs" "${{ matrix.project.dir }}/.terraform.lock.hcl" || true
           git commit -m "CI: Terraform outputs for ${{ matrix.project.name }} [skip ci]" || exit 0
-          for i in 1 2 3; do git pull --rebase -q && git push -q && break; sleep 5; done
+          for i in 1 2 3; do git pull --rebase --autostash -q && git push -q && break; sleep 5; done
 
       - name: Result
         run: exit $(cat outputs/.status 2>/dev/null || echo 1)

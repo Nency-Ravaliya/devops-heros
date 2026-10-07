@@ -161,6 +161,8 @@ jobs:
           echo "GitHub Actions run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID (image tag $TAG)" > $PROJECT/outputs/00-run.txt
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add $PROJECT/outputs
+          git status --short
+          git add -A $PROJECT/outputs $PROJECT/terraform/.terraform.lock.hcl
           git commit -m "CI: final project outputs [skip ci]" || exit 0
-          for i in 1 2 3; do git pull --rebase -q origin main && git push -q origin HEAD:main && break; sleep 5; done
+          for i in 1 2 3; do git pull --rebase --autostash origin main && git push origin HEAD:main && exit 0; sleep 5; done
+          exit 1
