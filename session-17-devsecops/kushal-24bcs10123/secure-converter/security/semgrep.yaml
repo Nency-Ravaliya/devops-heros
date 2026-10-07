@@ -1,0 +1,16 @@
+# custom semgrep rules used in addition to the registry packs p/python and p/owasp-top-ten
+rules:
+  - id: no-debug-mode-in-uvicorn
+    pattern: uvicorn.run(..., reload=True, ...)
+    message: uvicorn reload/debug mode must not be enabled in application code
+    languages: [python]
+    severity: ERROR
+  - id: no-hardcoded-history-size-secret
+    patterns:
+      - pattern: $X = "..."
+      - metavariable-regex:
+          metavariable: $X
+          regex: (?i).*(password|secret|token|api_key).*
+    message: looks like a hard-coded credential, read it from an environment variable or a Secret
+    languages: [python]
+    severity: ERROR
