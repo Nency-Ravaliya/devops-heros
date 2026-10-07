@@ -1,0 +1,4 @@
+# Trivy Container Image Scanner Ignore Policy
+# Format: CVE-ID or Vulnerability ID followed by optional justification note
+# Example:
+# CVE-2023-0001: Mitigated by non-root execution policy in container runtime

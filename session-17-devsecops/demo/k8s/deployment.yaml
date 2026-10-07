@@ -2,6 +2,10 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: session17-python
+  labels:
+    app: session17-python
+    tier: backend
+    env: production
 spec:
   replicas: 2
   selector:
@@ -14,7 +18,31 @@ spec:
     spec:
       containers:
         - name: session17-python
-          image: nensiravaliya28/hey-cicd:__IMAGE_TAG__
-          imagePullPolicy: Always           # pull from Docker Hub
+          image: sahasraa1807/hey-cicd:__IMAGE_TAG__
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 5001
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "256Mi"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 5001
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 5001
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          securityContext:
+            readOnlyRootFilesystem: false
+            runAsNonRoot: true
+            runAsUser: 10001
+            allowPrivilegeEscalation: false

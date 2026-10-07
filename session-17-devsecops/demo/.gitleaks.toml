@@ -1,0 +1,29 @@
+# Gitleaks Secret Scanner Configuration
+title = "DevSecOps Secret Scanning Policy"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Global allowlist for non-sensitive sample tests"
+paths = [
+    '''tests/.*''',
+    '''README.md''',
+    '''\.git/.*'''
+]
+regexes = [
+    '''demo-secret-value''',
+    '''replace-with-test-value'''
+]
+
+[[rules]]
+id = "generic-api-key"
+description = "Detected Generic API Key or Token"
+regex = '''(?i)(?:key|api|token|secret|password|passwd)[\s]*[=:][\s]*['"][0-9a-zA-Z\-_]{16,}['"]'''
+entropy = 3.5
+keywords = [
+    "api",
+    "token",
+    "secret",
+    "password"
+]
