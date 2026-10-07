@@ -2,14 +2,14 @@ $ terraform show
 # aws_s3_bucket.demo:
 resource "aws_s3_bucket" "demo" {
     acceleration_status         = null
-    arn                         = "arn:aws:s3:::tejas-devops-heros-9286a039"
-    bucket                      = "tejas-devops-heros-9286a039"
-    bucket_domain_name          = "tejas-devops-heros-9286a039.s3.amazonaws.com"
+    arn                         = "arn:aws:s3:::tejas-devops-heros-d7bdd73e"
+    bucket                      = "tejas-devops-heros-d7bdd73e"
+    bucket_domain_name          = "tejas-devops-heros-d7bdd73e.s3.amazonaws.com"
     bucket_prefix               = null
-    bucket_regional_domain_name = "tejas-devops-heros-9286a039.s3.ap-south-1.amazonaws.com"
+    bucket_regional_domain_name = "tejas-devops-heros-d7bdd73e.s3.ap-south-1.amazonaws.com"
     force_destroy               = true
     hosted_zone_id              = "Z11RGJOFQNVJUP"
-    id                          = "tejas-devops-heros-9286a039"
+    id                          = "tejas-devops-heros-d7bdd73e"
     object_lock_enabled         = false
     policy                      = null
     region                      = "ap-south-1"
@@ -17,12 +17,12 @@ resource "aws_s3_bucket" "demo" {
     tags                        = {
         "Environment" = "dev"
         "ManagedBy"   = "terraform"
-        "Name"        = "tejas-devops-heros-9286a039"
+        "Name"        = "tejas-devops-heros-d7bdd73e"
     }
     tags_all                    = {
         "Environment" = "dev"
         "ManagedBy"   = "terraform"
-        "Name"        = "tejas-devops-heros-9286a039"
+        "Name"        = "tejas-devops-heros-d7bdd73e"
     }
 
     grant {
@@ -44,17 +44,17 @@ resource "aws_s3_bucket" "demo" {
 resource "aws_s3_bucket_public_access_block" "demo" {
     block_public_acls       = true
     block_public_policy     = true
-    bucket                  = "tejas-devops-heros-9286a039"
-    id                      = "tejas-devops-heros-9286a039"
+    bucket                  = "tejas-devops-heros-d7bdd73e"
+    id                      = "tejas-devops-heros-d7bdd73e"
     ignore_public_acls      = true
     restrict_public_buckets = true
 }
 
 # aws_s3_bucket_server_side_encryption_configuration.demo:
 resource "aws_s3_bucket_server_side_encryption_configuration" "demo" {
-    bucket                = "tejas-devops-heros-9286a039"
+    bucket                = "tejas-devops-heros-d7bdd73e"
     expected_bucket_owner = null
-    id                    = "tejas-devops-heros-9286a039"
+    id                    = "tejas-devops-heros-d7bdd73e"
 
     rule {
         apply_server_side_encryption_by_default {
@@ -66,9 +66,9 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "demo" {
 
 # aws_s3_bucket_versioning.demo:
 resource "aws_s3_bucket_versioning" "demo" {
-    bucket                = "tejas-devops-heros-9286a039"
+    bucket                = "tejas-devops-heros-d7bdd73e"
     expected_bucket_owner = null
-    id                    = "tejas-devops-heros-9286a039"
+    id                    = "tejas-devops-heros-d7bdd73e"
 
     versioning_configuration {
         mfa_delete = null
@@ -78,18 +78,18 @@ resource "aws_s3_bucket_versioning" "demo" {
 
 # random_id.suffix:
 resource "random_id" "suffix" {
-    b64_std     = "koagOQ=="
-    b64_url     = "koagOQ"
+    b64_std     = "173XPg=="
+    b64_url     = "173XPg"
     byte_length = 4
-    dec         = "2458296377"
-    hex         = "9286a039"
-    id          = "koagOQ"
+    dec         = "3619542846"
+    hex         = "d7bdd73e"
+    id          = "173XPg"
 }
 
 
 Outputs:
 
-bucket_arn = "arn:aws:s3:::tejas-devops-heros-9286a039"
-bucket_name = "tejas-devops-heros-9286a039"
+bucket_arn = "arn:aws:s3:::tejas-devops-heros-d7bdd73e"
+bucket_name = "tejas-devops-heros-d7bdd73e"
 bucket_region = "ap-south-1"
 [exit code: 0]
