@@ -1,0 +1,6 @@
+replicaCount: 2
+
+image:
+  tag: "1.27-alpine"
+
+message: "Hello from version 2"

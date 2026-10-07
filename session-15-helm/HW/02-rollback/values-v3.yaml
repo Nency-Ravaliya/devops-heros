@@ -1,0 +1,6 @@
+replicaCount: 3
+
+image:
+  tag: "1.28-alpine"
+
+message: "Hello from version 3"

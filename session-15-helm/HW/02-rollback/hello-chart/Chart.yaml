@@ -1,0 +1,6 @@
+apiVersion: v2
+name: hello-chart
+description: Small nginx app that serves a message, used to practise upgrade and rollback
+type: application
+version: 0.1.0
+appVersion: "1.0"
