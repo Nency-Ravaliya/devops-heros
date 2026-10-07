@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# 01: run every security tool of the pipeline locally with the same config files.
+. "$(dirname "$0")/lib.sh"
+cd secure-converter
+hr "unit tests"
+x "pytest -q"
+hr "SAST - bandit"
+x "bandit --version | head -1"
+x "bandit -c security/bandit.yaml -r app -ll -ii -f txt"
+hr "SAST - semgrep (registry packs + my own rules)"
+x "semgrep --version"
+x "semgrep scan --config p/python --config p/owasp-top-ten --config security/semgrep.yaml --error --metrics=off app 2>&1 | grep -vE '^\s*$'"
+hr "SCA - pip-audit"
+x "pip-audit -r requirements.txt --strict --desc"
+hr "SCA - trivy fs"
+x "trivy fs --config security/trivy.yaml --scanners vuln . 2>&1 | grep -vE 'B / |KiB|MiB'"
+hr "secret scan - gitleaks"
+x "gitleaks version"
+x "gitleaks dir . --config security/gitleaks.toml --exit-code 1 --redact --no-banner 2>&1; echo exit=\$?"
+hr "misconfiguration - trivy config on Dockerfile + k8s manifests"
+x "trivy config --config security/trivy.yaml --ignorefile security/.trivyignore . 2>&1 | grep -vE 'B / |KiB|MiB'"

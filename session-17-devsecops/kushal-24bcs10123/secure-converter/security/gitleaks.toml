@@ -1,0 +1,12 @@
+# gitleaks (secret scanning) - extends the built-in rule set
+title = "secure-converter gitleaks config"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "paths that never hold real credentials"
+paths = [
+  '''tests/.*''',
+  '''security/gitleaks\.toml''',
+]

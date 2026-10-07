@@ -1,0 +1,170 @@
+# Session 16 homework - Kushal Talati (24BCS10123)
+# CI/CD pipeline for session-16-github-actions/kushal-24bcs10123/unit-converter
+#
+#   push ──> test (matrix 3.11 / 3.12) ──> build (artifact) ──> docker (GHCR) ──> cd (deploy smoke test)
+#            \_______________ CI _______________________________/   \__________ CD __________/
+name: 24bcs10123 session16 ci-cd
+
+on:
+  push:
+    branches: ["ci-kushal-*", "sessions-13-21-kushal"]
+    paths:
+      - "session-16-github-actions/kushal-24bcs10123/**"
+      - ".github/workflows/24bcs10123-session16-ci-cd.yml"
+  workflow_dispatch:          # lets me start the pipeline by hand from the Actions tab
+
+env:
+  APP_DIR: session-16-github-actions/kushal-24bcs10123/unit-converter
+  IMAGE: ghcr.io/${{ github.repository_owner }}/unit-converter
+
+jobs:
+  # ------------------------------------------------------------------ CI: test
+  test:
+    name: test (python ${{ matrix.python }})
+    runs-on: ubuntu-latest                 # GitHub-hosted runner, fresh VM per job
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.11", "3.12"]           # same steps on two interpreters = two parallel runners
+    defaults:
+      run:
+        working-directory: ${{ env.APP_DIR }}
+    steps:
+      - name: checkout source
+        uses: actions/checkout@v4
+      - name: set up python ${{ matrix.python }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+          cache-dependency-path: ${{ env.APP_DIR }}/requirements-dev.txt
+      - name: install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+      - name: run unit tests
+        run: pytest -v --junitxml=test-report-${{ matrix.python }}.xml
+      - name: upload test report            # artifact: survives after the runner is destroyed
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-report-python-${{ matrix.python }}
+          path: ${{ env.APP_DIR }}/test-report-${{ matrix.python }}.xml
+
+  # ----------------------------------------------------------------- CI: build
+  build:
+    name: build
+    needs: test                            # runs only when BOTH matrix legs passed
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ env.APP_DIR }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - name: build application bundle
+        run: ./build.sh
+      - name: upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-converter-build-${{ github.run_number }}
+          path: ${{ env.APP_DIR }}/build/
+          retention-days: 7
+
+  # ---------------------------------------------------------------- CD: docker
+  docker:
+    name: docker image -> GHCR
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write                      # lets the automatic GITHUB_TOKEN push to ghcr.io
+    outputs:
+      tag: ${{ steps.meta.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: download build artifact (just to prove jobs share files only via artifacts)
+        uses: actions/download-artifact@v4
+        with:
+          name: unit-converter-build-${{ github.run_number }}
+          path: downloaded-build
+      - run: cat downloaded-build/build-info.txt
+      - name: compute image tag
+        id: meta
+        run: echo "tag=sha-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+      - name: log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}   # built-in secret, never printed
+      - name: show how GitHub masks secrets in logs
+        run: |
+          echo "the token has ${#TOKEN} characters"
+          echo "printing it on purpose: $TOKEN"     # GitHub replaces the value with ***
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: build and push image
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ env.APP_DIR }}
+          push: true
+          tags: |
+            ${{ env.IMAGE }}:${{ steps.meta.outputs.tag }}
+            ${{ env.IMAGE }}:latest
+          build-args: |
+            GIT_SHA=${{ github.sha }}
+            BUILD_NUMBER=${{ github.run_number }}
+
+  # -------------------------------------------------------------------- CD: cd
+  cd:
+    name: cd - deploy smoke test
+    needs: docker
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+    defaults:
+      run:
+        working-directory: ${{ env.APP_DIR }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: pull the image that was just pushed and run it
+        run: |
+          docker pull "$IMAGE:${{ needs.docker.outputs.tag }}"
+          docker run -d --name uc -p 8000:8000 "$IMAGE:${{ needs.docker.outputs.tag }}"
+          for i in $(seq 1 20); do curl -fs localhost:8000/health && break; sleep 1; done
+          echo; curl -fs localhost:8000/info; echo
+          curl -fs "localhost:8000/convert/length?value=5&from_unit=km&to_unit=mi"; echo
+          echo "container runs as:"; docker exec uc id
+          docker logs uc | tail -5
+          docker rm -f uc
+      - name: create a kind cluster on the runner (stand-in for the real cluster, which is my laptop)
+        uses: helm/kind-action@v1
+        with: { cluster_name: ci }
+      - name: deploy the pushed image to kubernetes
+        run: |
+          kind load docker-image "$IMAGE:${{ needs.docker.outputs.tag }}" --name ci
+          sed -i "s|:latest|:${{ needs.docker.outputs.tag }}|" k8s/deployment.yaml
+          kubectl create namespace unit-converter
+          kubectl -n unit-converter apply -f k8s/
+          kubectl -n unit-converter rollout status deploy/unit-converter --timeout=120s
+          kubectl -n unit-converter get pods -o wide
+          kubectl -n unit-converter port-forward svc/unit-converter 8080:80 >/dev/null 2>&1 &
+          sleep 3
+          curl -fs localhost:8080/health; echo
+          curl -fs "localhost:8080/convert/weight?value=1&from_unit=kg&to_unit=lb"; echo
+      - name: deployment summary
+        run: |
+          {
+            echo "## unit-converter deployed"
+            echo "- image: \`$IMAGE:${{ needs.docker.outputs.tag }}\`"
+            echo "- run: #${{ github.run_number }} on \`${{ github.ref_name }}\`"
+            echo "- deployed to a kind cluster on the runner; the same manifests are applied on my laptop cluster (README)"
+          } >> "$GITHUB_STEP_SUMMARY"

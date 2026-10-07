@@ -1,0 +1,65 @@
+
+$ kubectl config current-context
+kind-kushal-lab
+Status: Downloaded newer image for ghcr.io/kushaltalati/secure-converter:sha-a6dc7c2
+ghcr.io/kushaltalati/secure-converter:sha-a6dc7c2
+pulled ghcr.io/kushaltalati/secure-converter:sha-a6dc7c2 from GHCR
+
+$ kind load docker-image ghcr.io/kushaltalati/secure-converter:sha-a6dc7c2 --name kushal-lab 2>&1 | tail -3
+Image: "ghcr.io/kushaltalati/secure-converter:sha-a6dc7c2" with ID "sha256:4c7d2ee2e1257034cbae5f95cfae022d3280e57da60fe53e2e096dbdb7483726" not yet present on node "kushal-lab-control-plane", loading...
+Image: "ghcr.io/kushaltalati/secure-converter:sha-a6dc7c2" with ID "sha256:4c7d2ee2e1257034cbae5f95cfae022d3280e57da60fe53e2e096dbdb7483726" not yet present on node "kushal-lab-worker2", loading...
+Image: "ghcr.io/kushaltalati/secure-converter:sha-a6dc7c2" with ID "sha256:4c7d2ee2e1257034cbae5f95cfae022d3280e57da60fe53e2e096dbdb7483726" not yet present on node "kushal-lab-worker", loading...
+
+############ deploy with the hardened manifests ############
+
+$ kubectl create namespace s17-devsecops --dry-run=client -o yaml | kubectl apply -f -
+namespace/s17-devsecops created
+
+$ sed "s|:latest|:sha-a6dc7c2|" secure-converter/k8s/deployment.yaml | kubectl -n s17-devsecops apply -f -
+deployment.apps/secure-converter created
+
+$ kubectl -n s17-devsecops apply -f secure-converter/k8s/service.yaml
+service/secure-converter created
+
+$ kubectl -n s17-devsecops rollout status deploy/secure-converter --timeout=120s
+Waiting for deployment "secure-converter" rollout to finish: 0 of 2 updated replicas are available...
+Waiting for deployment "secure-converter" rollout to finish: 1 of 2 updated replicas are available...
+deployment "secure-converter" successfully rolled out
+
+$ kubectl -n s17-devsecops get pods -o wide
+NAME                                READY   STATUS    RESTARTS   AGE   IP            NODE                 NOMINATED NODE   READINESS GATES
+secure-converter-67bb8d5c5c-m628j   1/1     Running   0          6s    10.244.1.40   kushal-lab-worker2   <none>           <none>
+secure-converter-67bb8d5c5c-x5ngd   1/1     Running   0          6s    10.244.3.58   kushal-lab-worker    <none>           <none>
+
+############ prove the hardening is real ############
+
+$ kubectl -n s17-devsecops exec deploy/secure-converter -- id
+uid=10001(app) gid=10001 groups=10001
+
+$ kubectl -n s17-devsecops exec deploy/secure-converter -- touch /app/x 2>&1 || echo '-> read-only root filesystem blocks writes'
+touch: cannot touch '/app/x': Read-only file system
+command terminated with exit code 1
+-> read-only root filesystem blocks writes
+
+$ kubectl -n s17-devsecops exec deploy/secure-converter -- sh -c 'ls /var/run/secrets/kubernetes.io 2>&1 || echo no-serviceaccount-token-mounted'
+ls: cannot access '/var/run/secrets/kubernetes.io': No such file or directory
+no-serviceaccount-token-mounted
+
+$ kubectl -n s17-devsecops get pod -l app=secure-converter -o jsonpath='{.items[0].spec.containers[0].securityContext}'; echo
+{"allowPrivilegeEscalation":false,"capabilities":{"drop":["ALL"]},"readOnlyRootFilesystem":true}
+
+############ smoke test through the Service ############
+
+$ curl -s localhost:20081/health; echo
+{"status":"ok","version":"2.0.0","uptime_seconds":4.6}
+
+$ curl -s -X POST localhost:20081/convert -H 'content-type: application/json' -d '{"category":"length","value":10,"from_unit":"km","to_unit":"mi"}'; echo
+{"category":"length","value":10.0,"from_unit":"km","to_unit":"mi","result":6.213712}
+
+$ curl -s localhost:20081/history; echo
+[{"category":"length","value":10.0,"from_unit":"km","to_unit":"mi","result":6.213712}]
+
+############ cleanup ############
+
+$ kubectl delete namespace s17-devsecops --wait=false
+namespace "s17-devsecops" deleted
