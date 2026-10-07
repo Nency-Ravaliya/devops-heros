@@ -114,6 +114,8 @@ Block Public Access overrides anything that would make the bucket public.
 
 ## Trying it on LocalStack
 
+![Trying it on LocalStack](03-s3-trying-it-on-localstack.png)
+
 I tried versioning, storage classes, lifecycle rules and default encryption against the
 bucket from my [Terraform S3 demo](../../terraform-s3-demo/), running on **LocalStack**
 (a local AWS emulator, not a real AWS account). LocalStack only stores the settings: a

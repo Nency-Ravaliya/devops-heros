@@ -120,6 +120,8 @@ the OS; the Internet Gateway does 1:1 NAT to the private IP.
 
 ## Quick check on LocalStack
 
+![Quick check on LocalStack](02-ec2-quick-check-on-localstack.png)
+
 EC2 on LocalStack (a local AWS emulator, not a real AWS account) is **mocked**: the API
 answers and records resources, but no real VM boots. Useful only to practise the CLI:
 

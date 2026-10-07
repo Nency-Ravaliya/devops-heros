@@ -69,6 +69,8 @@ DynamoDB is a fully managed, **serverless NoSQL** database. "NoSQL" here means:
 
 ### Trying it on LocalStack
 
+![Trying it on LocalStack](05-dynamodb-rds-trying-it-on-localstack.png)
+
 DynamoDB works well on LocalStack (a local AWS emulator, not a real AWS account), so I
 built a small `Orders` table with partition key `customer_id` and sort key `order_date`:
 
@@ -187,6 +189,8 @@ failover; you handle schema, queries, indexes and tuning. You cannot SSH to the 
 - Backend for CMS like WordPress, or reporting with read replicas.
 
 ### On LocalStack
+
+![On LocalStack](05-dynamodb-rds-on-localstack.png)
 
 RDS is not part of the free LocalStack community edition, so I couldn't try it locally:
 

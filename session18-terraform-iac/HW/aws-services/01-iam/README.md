@@ -129,6 +129,8 @@ not `AdministratorAccess`.
 
 ## Quick check on LocalStack
 
+![Quick check on LocalStack](01-iam-quick-check-on-localstack.png)
+
 LocalStack (a local AWS emulator, not a real AWS account) accepts IAM calls, which is
 handy to practise the CLI. It does **not** enforce IAM permissions by default, so this
 only shows the API shape:

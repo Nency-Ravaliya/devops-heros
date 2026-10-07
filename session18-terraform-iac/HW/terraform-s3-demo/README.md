@@ -46,6 +46,8 @@ on darwin_arm64
 
 ## 1. `terraform init`
 
+![1. `terraform init`](terraform-s3-demo-1-terraform-init.png)
+
 Downloads the AWS provider into `.terraform/` and writes `.terraform.lock.hcl`.
 
 ```text
@@ -75,6 +77,8 @@ commands will detect it and remind you to do so if necessary.
 
 ## 2. `terraform fmt`
 
+![2. `terraform fmt`](terraform-s3-demo-2-terraform-fmt.png)
+
 Rewrites the files to the canonical style. Nothing printed and exit code 0 means the
 files were already formatted.
 
@@ -86,6 +90,8 @@ $ terraform fmt
 
 ## 3. `terraform validate`
 
+![3. `terraform validate`](terraform-s3-demo-3-terraform-validate.png)
+
 Checks syntax and references without calling AWS.
 
 ```text
@@ -94,6 +100,8 @@ Success! The configuration is valid.
 ```
 
 ## 4. `terraform plan`
+
+![4. `terraform plan`](terraform-s3-demo-4-terraform-plan.png)
 
 Shows what would change. I saved the plan to a file so `apply` does exactly this.
 
@@ -190,6 +198,8 @@ To perform exactly these actions, run the following command to apply:
 
 ## 5. `terraform apply`
 
+![5. `terraform apply`](terraform-s3-demo-5-terraform-apply.png)
+
 Terraform created the bucket first and then the versioning resource, because
 `aws_s3_bucket_versioning.demo` references `aws_s3_bucket.demo.id` (implicit dependency).
 
@@ -217,6 +227,8 @@ versioning_status = "Enabled"
 
 ### Verify with the AWS CLI (against LocalStack)
 
+![Verify with the AWS CLI (against LocalStack)](terraform-s3-demo-verify-with-the-aws-cli-against-localstack.png)
+
 ```text
 $ aws --endpoint-url=http://localhost:4566 s3 ls
 2026-10-07 21:25:01 piyush-session18-tf-demo
@@ -227,6 +239,8 @@ $ aws --endpoint-url=http://localhost:4566 s3api get-bucket-versioning --bucket 
 ```
 
 ## 6. `terraform show`
+
+![6. `terraform show`](terraform-s3-demo-6-terraform-show.png)
 
 Reads the state file and prints every attribute Terraform knows about.
 
@@ -310,6 +324,8 @@ Two things I noticed here:
 
 ## 7. `terraform output`
 
+![7. `terraform output`](terraform-s3-demo-7-terraform-output.png)
+
 ```text
 $ terraform output
 bucket_arn = "arn:aws:s3:::piyush-session18-tf-demo"
@@ -324,6 +340,8 @@ aws_s3_bucket_versioning.demo
 ```
 
 ## A real drift: tags missing after the first apply
+
+![A real drift: tags missing after the first apply](terraform-s3-demo-a-real-drift-tags-missing-after-the-first.png)
 
 `terraform show` had `tags = {}`, so I checked the bucket directly:
 
@@ -408,6 +426,8 @@ $ aws --endpoint-url=http://localhost:4566 s3 ls s3://piyush-session18-tf-demo/
 ```
 
 ## 8. `terraform destroy`
+
+![8. `terraform destroy`](terraform-s3-demo-8-terraform-destroy.png)
 
 The bucket was not empty, but `force_destroy = true` lets Terraform delete the objects
 too. Destroy order is the reverse of create: versioning first, then the bucket. The plan

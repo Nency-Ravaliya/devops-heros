@@ -125,6 +125,8 @@ RDS in private (isolated) subnets with no internet route at all.
 
 ## Quick check on LocalStack
 
+![Quick check on LocalStack](04-vpc-quick-check-on-localstack.png)
+
 Created a VPC, a public subnet, an IGW and a route on **LocalStack** (a local AWS
 emulator, not a real AWS account). The API objects are created, but there is no real
 network behind them. Session 19's homework builds the same thing with Terraform.
