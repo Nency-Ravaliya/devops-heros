@@ -1,0 +1,26 @@
+# Stronger load generator: ApacheBench (ab) from the httpd image.
+# ab keeps connections open (-k) and runs 20 requests in parallel, so almost
+# all CPU goes to nginx instead of to starting new wget processes.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: load-generator-ab
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: load-generator-ab
+  template:
+    metadata:
+      labels:
+        app: load-generator-ab
+    spec:
+      containers:
+        - name: ab
+          image: httpd:2.4-alpine
+          command: ["sh", "-c"]
+          args:
+            - while true; do ab -k -q -c 20 -t 600 -n 100000000 http://hpa-demo-service/ > /dev/null 2>&1; done
+          resources:
+            requests: { cpu: 50m, memory: 16Mi }
+            limits: { cpu: 500m, memory: 64Mi }

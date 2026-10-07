@@ -1,0 +1,51 @@
+# Static provisioning: I create the PV myself, then a PVC that binds to it.
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: p13-student-pv
+  labels:
+    owner: p13
+spec:
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: ""          # no class, so only a PVC asking for "" can bind
+  hostPath:
+    path: /tmp/p13-student-data
+    type: DirectoryOrCreate
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: student-pvc
+  namespace: p13-vol
+spec:
+  storageClassName: ""          # without this the default StorageClass would provision a new volume
+  volumeName: p13-student-pv
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 500Mi
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: storage-demo
+  namespace: p13-vol
+spec:
+  containers:
+    - name: app
+      image: busybox:1.36
+      command: ["sh", "-c", "sleep 3600"]
+      resources:
+        requests: { cpu: 10m, memory: 16Mi }
+      volumeMounts:
+        - name: persistent-storage
+          mountPath: /data
+  volumes:
+    - name: persistent-storage
+      persistentVolumeClaim:
+        claimName: student-pvc
