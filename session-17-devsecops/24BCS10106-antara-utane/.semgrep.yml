@@ -1,0 +1,62 @@
+# Custom Semgrep (SAST) rules for the Session 17 project.
+# Run together with the community ruleset:  semgrep scan --config .semgrep.yml --config p/python
+# Gate policy: any finding with severity ERROR fails the security gate.
+rules:
+  - id: s17-flask-debug-enabled
+    languages: [python]
+    severity: ERROR
+    message: >-
+      Flask debug mode exposes the Werkzeug interactive debugger (remote code execution).
+      Never enable debug in code that ships; use FLASK_DEBUG locally instead.
+    pattern-either:
+      - pattern: $APP.run(..., debug=True, ...)
+      - pattern: $APP.debug = True
+      - pattern: $APP.config["DEBUG"] = True
+    metadata:
+      cwe: "CWE-489: Active Debug Code"
+      owasp: "A05:2021 - Security Misconfiguration"
+
+  - id: s17-subprocess-shell-true
+    languages: [python]
+    severity: ERROR
+    message: subprocess called with shell=True - command injection risk. Pass an argument list instead.
+    pattern-either:
+      - pattern: subprocess.$FUNC(..., shell=True, ...)
+      - pattern: os.system(...)
+    metadata:
+      cwe: "CWE-78: OS Command Injection"
+
+  - id: s17-unsafe-yaml-load
+    languages: [python]
+    severity: ERROR
+    message: yaml.load without SafeLoader can construct arbitrary Python objects. Use yaml.safe_load.
+    patterns:
+      - pattern: yaml.load(...)
+      - pattern-not: yaml.load(..., Loader=yaml.SafeLoader, ...)
+    metadata:
+      cwe: "CWE-502: Deserialization of Untrusted Data"
+
+  - id: s17-eval-exec
+    languages: [python]
+    severity: ERROR
+    message: eval/exec on dynamic input allows code injection.
+    pattern-either:
+      - pattern: eval(...)
+      - pattern: exec(...)
+    metadata:
+      cwe: "CWE-95: Eval Injection"
+
+  - id: s17-hardcoded-credential
+    languages: [python]
+    severity: WARNING
+    message: Possible hard-coded credential; load it from an environment variable / Kubernetes Secret.
+    patterns:
+      - pattern: $NAME = "$VALUE"
+      - metavariable-regex:
+          metavariable: $NAME
+          regex: (?i).*(password|passwd|secret|token|api_key|apikey).*
+      - metavariable-regex:
+          metavariable: $VALUE
+          regex: .{8,}
+    metadata:
+      cwe: "CWE-798: Use of Hard-coded Credentials"
