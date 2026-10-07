@@ -1,0 +1,46 @@
+# Two containers sharing an emptyDir: "app" writes a log file, "log-shipper" tails it.
+# Used to practise `kubectl logs -c` and `kubectl exec -c` on multi-container Pods.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: logger
+  namespace: task1
+  labels:
+    app: logger
+spec:
+  volumes:
+    - name: logs
+      emptyDir: {}
+  containers:
+    - name: app
+      image: busybox:1.36
+      command:
+        - sh
+        - -c
+        - |
+          i=0
+          while true; do
+            i=$((i+1))
+            if [ $((i % 5)) -eq 0 ]; then lvl=ERROR; elif [ $((i % 3)) -eq 0 ]; then lvl=WARN; else lvl=INFO; fi
+            msg="$(date -u +%H:%M:%S) $lvl order-service processed request id=$i"
+            echo "$msg"
+            echo "$msg" >> /var/log/app/app.log
+            sleep 2
+          done
+      volumeMounts:
+        - name: logs
+          mountPath: /var/log/app
+      resources:
+        requests:
+          cpu: 10m
+          memory: 8Mi
+    - name: log-shipper
+      image: busybox:1.36
+      command: ["sh", "-c", "touch /var/log/app/app.log; tail -n+1 -f /var/log/app/app.log | while read line; do echo \"[shipped] $line\"; done"]
+      volumeMounts:
+        - name: logs
+          mountPath: /var/log/app
+      resources:
+        requests:
+          cpu: 10m
+          memory: 8Mi

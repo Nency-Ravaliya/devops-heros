@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: notification-config
+  namespace: task2
+data:
+  # BUG: keys are lower-case, but the Deployment references SMTP_HOST / SMTP_PORT (keys are case-sensitive)
+  smtp_host: smtp.mailtrap.io
+  smtp_port: "2525"

@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: orders
+  namespace: task2
+spec:
+  selector:
+    app: orders       # FIX 1: matches the Pod labels
+  ports:
+    - port: 80
+      targetPort: 5678  # FIX 2: matches containerPort

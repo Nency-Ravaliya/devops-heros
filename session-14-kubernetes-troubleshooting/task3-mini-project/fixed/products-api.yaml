@@ -1,0 +1,51 @@
+# products-api: backend tier of the ShopEasy store
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: products-api
+  namespace: shopeasy
+  labels:
+    app: products-api
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: products-api
+  template:
+    metadata:
+      labels:
+        app: products-api
+    spec:
+      containers:
+        - name: api
+          image: hashicorp/http-echo:1.0     # FIX 1: published tag
+          args:
+            - -listen=:5678
+            - '-text={"products":["mechanical-keyboard","wireless-mouse","4k-monitor"],"served_by":"products-api"}'
+          ports:
+            - name: api
+              containerPort: 5678
+          readinessProbe:
+            tcpSocket:
+              port: api                   # FIX 2: probe the real port (named "api" = 5678)
+            periodSeconds: 5
+            failureThreshold: 2
+          resources:
+            requests:
+              cpu: 20m
+              memory: 16Mi
+            limits:
+              cpu: 100m
+              memory: 32Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: products-api
+  namespace: shopeasy
+spec:
+  selector:
+    app: products-api
+  ports:
+    - port: 80
+      targetPort: api                  # FIX 4: matches the container port name

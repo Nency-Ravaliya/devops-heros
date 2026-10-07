@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: task2
+---
+# Second namespace used by the DNS scenario (service lives in a different namespace than its client)
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: task2-backend

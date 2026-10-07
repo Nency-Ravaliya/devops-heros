@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: inventory-service
+  namespace: task2
+  labels:
+    app: inventory-service
+spec:
+  containers:
+    - name: inventory
+      # BUG: repository does not exist (or is private and no imagePullSecret is configured)
+      image: devopsheros/inventory-service:2.0
+      args: ["-text=inventory-service OK", "-listen=:5678"]
+      ports:
+        - containerPort: 5678
