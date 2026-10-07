@@ -1,0 +1,5 @@
+apiVersion: v2
+name: taskboard
+description: TaskBoard full-stack DevOps capstone
+version: 1.0.0
+appVersion: "1.0.0"

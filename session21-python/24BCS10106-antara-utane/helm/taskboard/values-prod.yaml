@@ -1,0 +1,10 @@
+frontend:
+  image: ghcr.io/Aana-1025/taskboard-frontend
+backend:
+  image: ghcr.io/Aana-1025/taskboard-backend
+replicaCount: 2
+ingress:
+  enabled: true
+  host: taskboard.example.com
+hpa:
+  enabled: true
