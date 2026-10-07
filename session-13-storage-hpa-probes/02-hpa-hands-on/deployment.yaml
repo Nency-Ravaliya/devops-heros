@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hpa-demo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hpa-demo
+  template:
+    metadata:
+      labels:
+        app: hpa-demo
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:1.27
+          resources:
+            requests:
+              cpu: 100m   # HPA computes utilization as usage / request
+            limits:
+              cpu: 200m
+          ports:
+            - containerPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hpa-demo-service
+spec:
+  selector:
+    app: hpa-demo
+  ports:
+    - port: 80
+      targetPort: 80
+  type: ClusterIP

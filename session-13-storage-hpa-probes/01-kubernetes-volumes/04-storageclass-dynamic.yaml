@@ -1,0 +1,38 @@
+# Dynamic provisioning: a custom StorageClass + a PVC that references it.
+# No PV is written by hand - the provisioner creates one on demand.
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: fast-local
+provisioner: k8s.io/minikube-hostpath
+reclaimPolicy: Delete
+volumeBindingMode: Immediate
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: dynamic-pvc
+spec:
+  storageClassName: fast-local
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 200Mi
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: dynamic-demo
+spec:
+  containers:
+    - name: app
+      image: busybox:1.36
+      command: ["/bin/sh", "-c", "echo 'written via dynamic PV' > /data/proof.txt; sleep 3600"]
+      volumeMounts:
+        - name: data
+          mountPath: /data
+  volumes:
+    - name: data
+      persistentVolumeClaim:
+        claimName: dynamic-pvc

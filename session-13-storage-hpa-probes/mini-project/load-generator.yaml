@@ -1,0 +1,28 @@
+# Traffic generator for the HPA test, using ApacheBench (ab) from the httpd image.
+# ab is a single process holding a fixed number of concurrent connections (-c), so it
+# drives far more requests per CPU than a busybox `while true; do wget ...` loop, which
+# forks a new process per request and can saturate a small Minikube node on its own.
+# Target is $WEB_SERVICE_SERVICE_HOST (Service ClusterIP injected as an env var), which
+# avoids one DNS lookup per request.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: load-generator
+  namespace: production-webapp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: load-generator
+  template:
+    metadata:
+      labels:
+        app: load-generator
+    spec:
+      containers:
+        - name: ab
+          image: httpd:2.4-alpine
+          command: ["/bin/sh", "-c", "while true; do ab -q -k -c 20 -t 600 -n 100000000 http://$WEB_SERVICE_SERVICE_HOST/ | grep -E 'Requests per second|Failed requests'; done"]
+          resources:
+            limits:
+              cpu: 500m   # keep the generator from starving the node
