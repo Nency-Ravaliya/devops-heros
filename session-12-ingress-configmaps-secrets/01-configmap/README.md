@@ -97,7 +97,16 @@ Output:
 INFO
 ```
 
+---
+
+## Execution Output Screenshot
+
+![ConfigMap Demo](../screenshots/01-configmap-demo.png)
+
+---
+
 ### Cleanup
 ```bash
 kubectl delete configmap yatri-app-config
 ```
+

@@ -185,10 +185,19 @@ curl -k --resolve portal.campus.local:443:$INGRESS_IP https://portal.campus.loca
 curl -k --resolve api.campus.local:443:$INGRESS_IP https://api.campus.local/api/health
 ```
 
+---
+
+## Execution Output Screenshot
+
+![Ingress Demo](../screenshots/03-ingress-demo.png)
+
+---
+
 ### Cleanup
 ```bash
 kubectl delete ingress campus-ingress-tls
 kubectl delete secret campus-tls-cert
 rm -f tls.key tls.crt
 ```
+
 

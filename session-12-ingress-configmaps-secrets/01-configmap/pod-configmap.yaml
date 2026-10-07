@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-configmap-demo
+  labels:
+    app: configmap-demo
+spec:
+  containers:
+    - name: test-container
+      image: busybox:1.36
+      command: ["sh", "-c", "echo 'ConfigMap values loaded'; sleep 3600"]
+      # Inject ALL keys from ConfigMap as environment variables
+      envFrom:
+        - configMapRef:
+            name: yatri-app-config
+      resources:
+        requests:
+          cpu: "20m"
+          memory: "32Mi"

@@ -1,0 +1,36 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: troubleshoot-auth-pod
+  labels:
+    app: troubleshoot-demo
+spec:
+  containers:
+    - name: client
+      image: busybox:1.36
+      command:
+        - "sh"
+        - "-c"
+        - |
+          EXPECTED="mypassword"
+          echo "Comparing injected DB_PASSWORD to expected password..."
+          if [ "$DB_PASSWORD" = "$EXPECTED" ]; then
+            echo "[SUCCESS] Password matches perfectly! Authentication successful."
+            exit 0
+          else
+            echo "[FATAL] password authentication failed for user $DB_USER"
+            echo "Expected length: ${#EXPECTED}, Received length: ${#DB_PASSWORD}"
+            exit 1
+          fi
+      env:
+        - name: DB_USER
+          valueFrom:
+            secretKeyRef:
+              name: troubleshoot-db-secret
+              key: DB_USER
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: troubleshoot-db-secret
+              key: DB_PASSWORD
+      restartPolicy: Never

@@ -102,7 +102,16 @@ Output:
 secretpassword
 ```
 
+---
+
+## Execution Output Screenshot
+
+![Secret Demo](../screenshots/02-secret-demo.png)
+
+---
+
 ### Cleanup
 ```bash
 kubectl delete secret yatri-db-secret
 ```
+
