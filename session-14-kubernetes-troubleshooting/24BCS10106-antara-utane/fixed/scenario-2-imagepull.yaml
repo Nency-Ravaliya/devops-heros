@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: fail-2-imagepull-pod
+spec:
+  containers:
+    - name: web-app
+      image: nginx:1.27-alpine
