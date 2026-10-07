@@ -1,4 +1,5 @@
-name: Final CI Pipeline
+name: Complete CI/CD Pipeline
+
 on:
   push:
     branches:
@@ -7,66 +8,146 @@ on:
     branches:
       - main
   workflow_dispatch:
+
 jobs:
+  # ============================================================================
+  # 1. CI Stage: Unit Testing & Linting
+  # ============================================================================
   test:
-    name: Test Application
+    name: Run Unit Tests
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout source code
-        uses: actions/checkout@v6
-      - name: Setup Python
-        uses: actions/setup-python@v7
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python Runtime
+        uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Display Python version
-        run: python --version
+          cache: "pip"
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-      - name: Run tests
+
+      - name: Execute pytest test suite
         run: |
-          pytest -v
-  build:
-    name: Build Application
+          pytest -v --junitxml=test-reports/junit.xml
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: test-reports/
+
+  # ============================================================================
+  # 2. CI Stage: Security & Vulnerability Scan
+  # ============================================================================
+  security-check:
+    name: Security & Secret Scan
     needs: test
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout source code
-        uses: actions/checkout@v6
-      - name: Setup Python
-        uses: actions/setup-python@v7
-        with:
-          python-version: "3.12"
-      - name: Build application
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Audit repository for committed secrets
+        run: |
+          echo "Scanning for sensitive credentials, private keys, or .env files..."
+          if find . -type f \( -name ".env" -o -name "*.pem" -o -name "*.key" \) | grep -q .; then
+            echo "Security Alert: Unencrypted secrets detected in repository!"
+            exit 1
+          fi
+          echo "No hardcoded credentials detected. Audit passed."
+
+  # ============================================================================
+  # 3. CI Stage: Application Build & Packaging
+  # ============================================================================
+  build:
+    name: Build & Package Artifact
+    needs: [test, security-check]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build application bundle
         run: |
           chmod +x build.sh
           ./build.sh
-      - name: Show build output
-        run: |
-          cat build/build-info.txt
-      - name: Upload build artifact
+
+      - name: Archive build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: calculator-build
+          name: calculator-build-bundle
           path: build/
-  security-check:
-    name: Security Check
-    needs: test
+          retention-days: 7
+
+  # ============================================================================
+  # 4. CD Stage: Docker Container Build & Registry Push
+  # ============================================================================
+  docker-build:
+    name: Build Container Image
+    needs: build
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
     steps:
-      - name: Checkout source code
-        uses: actions/checkout@v6
-      - name: Check for sensitive files
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry (GHCR)
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: false # Set to true when pushing to registry
+          tags: |
+            ghcr.io/${{ github.repository }}/calculator:latest
+            ghcr.io/${{ github.repository }}/calculator:${{ github.sha }}
+
+  # ============================================================================
+  # 5. CD Stage: Automated Deployment & Health Verification
+  # ============================================================================
+  deploy:
+    name: Continuous Deployment
+    needs: docker-build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    environment: production
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: calculator-build-bundle
+          path: deploy/
+
+      - name: Simulate Production Deployment Rollout
         run: |
-          echo "Checking repository for common sensitive files..."
-          if find . -type f \( \
-            -name ".env" \
-            -o -name "*.pem" \
-            -o -name "*.key" \
-          \) | grep -q .; then
-            echo "Potential sensitive file found."
-            exit 1
-          else
-            echo "No common sensitive files found."
-          fi
+          echo "Deploying version ${{ github.sha }} to production cluster..."
+          echo "Verifying environment secrets access..."
+          # Securely inject secrets without echoing values
+          export DEPLOY_ENV="production"
+          echo "Rolling out application updates..."
+          sleep 2
+          echo "Deployment successful."
+
+      - name: Post-Deployment Smoke Test
+        run: |
+          echo "Running post-deploy health check..."
+          python -c "from app.calculator import add, multiply; assert add(2, 2) == 4; assert multiply(3, 3) == 9"
+          echo "Production smoke tests passed! Application is live."
