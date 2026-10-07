@@ -1,0 +1,18 @@
+# Terraform working directory (provider binaries, ~600 MB)
+.terraform/
+# State - contains resource ids and can contain secrets, never commit
+*.tfstate
+*.tfstate.*
+*.tfstate.backup
+# Saved plans
+*.tfplan
+tfplan
+# Crash logs
+crash.log
+crash.*.log
+# Override files
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.DS_Store

@@ -1,0 +1,66 @@
+
+############ TOOLS ############
+
+$ terraform version
+Terraform v1.16.4
+on darwin_arm64
+
+Your version of Terraform is out of date! The latest version
+is 1.16.5. You can update by downloading from https://developer.hashicorp.com/terraform/install
+
+$ aws --version
+aws-cli/2.32.14 Python/3.13.11 Darwin/25.5.0 source/arm64
+
+$ docker version --format 'Docker {{.Server.Version}} ({{.Server.Os}}/{{.Server.Arch}})'
+Docker 29.0.1 (linux/arm64)
+
+############ REAL AWS: the credentials in ~/.aws/credentials are rejected ############
+
+$ sed -E 's/(aws_access_key_id *= *)(....).*/\1\2................/; s/(aws_secret_access_key *= *).*/\1<hidden>/' ~/.aws/credentials
+[default]
+aws_access_key_id = AKIA................
+aws_secret_access_key = <hidden>
+
+$ env -u AWS_ACCESS_KEY_ID -u AWS_SECRET_ACCESS_KEY aws sts get-caller-identity --region ap-south-1
+
+An error occurred (InvalidClientTokenId) when calling the GetCallerIdentity operation: The security token included in the request is invalid.
+
+############ REAL AWS: terraform plan fails for the same reason (no -var-file, so the provider talks to amazonaws.com) ############
+
+$ cd terraform-s3-demo && env -u AWS_ACCESS_KEY_ID -u AWS_SECRET_ACCESS_KEY terraform init -input=false -no-color | tail -3; env -u AWS_ACCESS_KEY_ID -u AWS_SECRET_ACCESS_KEY terraform plan -input=false -no-color 2>&1 | tail -12; cd ..
+If you ever set or change modules or backend configuration for Terraform,
+rerun this command to reinitialize your working directory. If you forget, other
+commands will detect it and remind you to do so if necessary.
+Acquiring state lock. This may take a few moments...
+
+Planning failed. Terraform encountered an error while generating this plan.
+
+
+Error: Retrieving AWS account details: validating provider credentials: retrieving caller identity from STS: operation error STS: GetCallerIdentity, https response error StatusCode: 403, RequestID: bdcf1909-f395-4e1f-b6ab-1d30caf30668, api error InvalidClientTokenId: The security token included in the request is invalid.
+
+  with provider["registry.terraform.io/hashicorp/aws"],
+  on provider.tf line 6, in provider "aws":
+   6: provider "aws" {
+
+
+############ LOCALSTACK: the AWS API emulator I use instead ############
+
+$ docker ps --filter name=localstack-kushal --format 'table {{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}'
+NAMES               IMAGE                         STATUS                   PORTS
+localstack-kushal   localstack/localstack:4.0.3   Up 6 minutes (healthy)   0.0.0.0:4566->4566/tcp, [::]:4566->4566/tcp
+
+$ curl -s http://localhost:4566/_localstack/health | python3 -m json.tool | grep -E 'version|edition|"(s3|ec2|iam|sts|dynamodb|rds)"'
+        "dynamodb": "running",
+        "ec2": "running",
+        "iam": "running",
+        "s3": "running",
+        "sts": "running",
+    "edition": "community",
+    "version": "4.0.3"
+
+$ awsl sts get-caller-identity
+{
+    "UserId": "AKIAIOSFODNN7EXAMPLE",
+    "Account": "000000000000",
+    "Arn": "arn:aws:iam::000000000000:root"
+}
