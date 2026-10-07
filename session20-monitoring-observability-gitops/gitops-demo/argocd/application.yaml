@@ -1,0 +1,29 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: gitops-webapp-app
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+
+  # Source of Truth: Git Repository containing declarative manifests
+  source:
+    repoURL: https://github.com/sahasraa1807/devops-heros.git
+    targetRevision: devops-homework
+    path: session20-monitoring-observability-gitops/gitops-demo/k8s
+
+  # Destination: Target Kubernetes Cluster
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: gitops-prod
+
+  # Continuous Reconciliation & Self-Healing Sync Policy
+  syncPolicy:
+    automated:
+      prune: true      # Automatically delete resources removed from Git
+      selfHeal: true   # Automatically revert unauthorized manual cluster modifications
+    syncOptions:
+      - CreateNamespace=true
+      - ApplyOutOfSyncOnly=true

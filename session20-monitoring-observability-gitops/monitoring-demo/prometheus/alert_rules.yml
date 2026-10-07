@@ -1,0 +1,38 @@
+groups:
+  - name: application_alerts
+    rules:
+      - alert: ServiceDown
+        expr: up{job="observable-app"} == 0
+        for: 15s
+        labels:
+          severity: critical
+        annotations:
+          summary: "Observable application service is down"
+          description: "Service instance {{ $labels.instance }} has been unreachable for more than 15 seconds."
+
+      - alert: HighCpuUtilization
+        expr: app_cpu_utilization_percent > 80
+        for: 30s
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU Utilization Detected"
+          description: "Application process CPU utilization is {{ $value }}% which exceeds the 80% threshold."
+
+      - alert: HighMemoryConsumption
+        expr: app_memory_utilization_bytes > 200000000 # 200MB
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High Memory Consumption Warning"
+          description: "Application memory consumption has climbed above 200MB."
+
+      - alert: HealthCheckDegraded
+        expr: app_health_status == 0
+        for: 10s
+        labels:
+          severity: critical
+        annotations:
+          summary: "Application Health Probes Reporting Failure"
+          description: "Application /health status gauge indicates service degradation."
