@@ -1,9 +1,9 @@
 $ terraform destroy -input=false -auto-approve
-random_id.suffix: Refreshing state... [id=173XPg]
-aws_s3_bucket.demo: Refreshing state... [id=tejas-devops-heros-d7bdd73e]
-aws_s3_bucket_versioning.demo: Refreshing state... [id=tejas-devops-heros-d7bdd73e]
-aws_s3_bucket_public_access_block.demo: Refreshing state... [id=tejas-devops-heros-d7bdd73e]
-aws_s3_bucket_server_side_encryption_configuration.demo: Refreshing state... [id=tejas-devops-heros-d7bdd73e]
+random_id.suffix: Refreshing state... [id=dSKRtQ]
+aws_s3_bucket.demo: Refreshing state... [id=tejas-devops-heros-752291b5]
+aws_s3_bucket_versioning.demo: Refreshing state... [id=tejas-devops-heros-752291b5]
+aws_s3_bucket_public_access_block.demo: Refreshing state... [id=tejas-devops-heros-752291b5]
+aws_s3_bucket_server_side_encryption_configuration.demo: Refreshing state... [id=tejas-devops-heros-752291b5]
 
 Terraform used the selected providers to generate the following execution
 plan. Resource actions are indicated with the following symbols:
@@ -13,24 +13,24 @@ Terraform will perform the following actions:
 
   # aws_s3_bucket.demo will be destroyed
   - resource "aws_s3_bucket" "demo" {
-      - arn                         = "arn:aws:s3:::tejas-devops-heros-d7bdd73e" -> null
-      - bucket                      = "tejas-devops-heros-d7bdd73e" -> null
-      - bucket_domain_name          = "tejas-devops-heros-d7bdd73e.s3.amazonaws.com" -> null
-      - bucket_regional_domain_name = "tejas-devops-heros-d7bdd73e.s3.ap-south-1.amazonaws.com" -> null
+      - arn                         = "arn:aws:s3:::tejas-devops-heros-752291b5" -> null
+      - bucket                      = "tejas-devops-heros-752291b5" -> null
+      - bucket_domain_name          = "tejas-devops-heros-752291b5.s3.amazonaws.com" -> null
+      - bucket_regional_domain_name = "tejas-devops-heros-752291b5.s3.ap-south-1.amazonaws.com" -> null
       - force_destroy               = true -> null
       - hosted_zone_id              = "Z11RGJOFQNVJUP" -> null
-      - id                          = "tejas-devops-heros-d7bdd73e" -> null
+      - id                          = "tejas-devops-heros-752291b5" -> null
       - object_lock_enabled         = false -> null
       - region                      = "ap-south-1" -> null
       - tags                        = {
           - "Environment" = "dev"
           - "ManagedBy"   = "terraform"
-          - "Name"        = "tejas-devops-heros-d7bdd73e"
+          - "Name"        = "tejas-devops-heros-752291b5"
         } -> null
       - tags_all                    = {
           - "Environment" = "dev"
           - "ManagedBy"   = "terraform"
-          - "Name"        = "tejas-devops-heros-d7bdd73e"
+          - "Name"        = "tejas-devops-heros-752291b5"
         } -> null
         # (4 unchanged attributes hidden)
 
@@ -64,16 +64,16 @@ Terraform will perform the following actions:
   - resource "aws_s3_bucket_public_access_block" "demo" {
       - block_public_acls       = true -> null
       - block_public_policy     = true -> null
-      - bucket                  = "tejas-devops-heros-d7bdd73e" -> null
-      - id                      = "tejas-devops-heros-d7bdd73e" -> null
+      - bucket                  = "tejas-devops-heros-752291b5" -> null
+      - id                      = "tejas-devops-heros-752291b5" -> null
       - ignore_public_acls      = true -> null
       - restrict_public_buckets = true -> null
     }
 
   # aws_s3_bucket_server_side_encryption_configuration.demo will be destroyed
   - resource "aws_s3_bucket_server_side_encryption_configuration" "demo" {
-      - bucket                = "tejas-devops-heros-d7bdd73e" -> null
-      - id                    = "tejas-devops-heros-d7bdd73e" -> null
+      - bucket                = "tejas-devops-heros-752291b5" -> null
+      - id                    = "tejas-devops-heros-752291b5" -> null
         # (1 unchanged attribute hidden)
 
       - rule {
@@ -88,8 +88,8 @@ Terraform will perform the following actions:
 
   # aws_s3_bucket_versioning.demo will be destroyed
   - resource "aws_s3_bucket_versioning" "demo" {
-      - bucket                = "tejas-devops-heros-d7bdd73e" -> null
-      - id                    = "tejas-devops-heros-d7bdd73e" -> null
+      - bucket                = "tejas-devops-heros-752291b5" -> null
+      - id                    = "tejas-devops-heros-752291b5" -> null
         # (1 unchanged attribute hidden)
 
       - versioning_configuration {
@@ -100,29 +100,29 @@ Terraform will perform the following actions:
 
   # random_id.suffix will be destroyed
   - resource "random_id" "suffix" {
-      - b64_std     = "173XPg==" -> null
-      - b64_url     = "173XPg" -> null
+      - b64_std     = "dSKRtQ==" -> null
+      - b64_url     = "dSKRtQ" -> null
       - byte_length = 4 -> null
-      - dec         = "3619542846" -> null
-      - hex         = "d7bdd73e" -> null
-      - id          = "173XPg" -> null
+      - dec         = "1965199797" -> null
+      - hex         = "752291b5" -> null
+      - id          = "dSKRtQ" -> null
     }
 
 Plan: 0 to add, 0 to change, 5 to destroy.
 
 Changes to Outputs:
-  - bucket_arn    = "arn:aws:s3:::tejas-devops-heros-d7bdd73e" -> null
-  - bucket_name   = "tejas-devops-heros-d7bdd73e" -> null
+  - bucket_arn    = "arn:aws:s3:::tejas-devops-heros-752291b5" -> null
+  - bucket_name   = "tejas-devops-heros-752291b5" -> null
   - bucket_region = "ap-south-1" -> null
-aws_s3_bucket_public_access_block.demo: Destroying... [id=tejas-devops-heros-d7bdd73e]
-aws_s3_bucket_versioning.demo: Destroying... [id=tejas-devops-heros-d7bdd73e]
-aws_s3_bucket_server_side_encryption_configuration.demo: Destroying... [id=tejas-devops-heros-d7bdd73e]
-aws_s3_bucket_server_side_encryption_configuration.demo: Destruction complete after 0s
+aws_s3_bucket_versioning.demo: Destroying... [id=tejas-devops-heros-752291b5]
+aws_s3_bucket_public_access_block.demo: Destroying... [id=tejas-devops-heros-752291b5]
+aws_s3_bucket_server_side_encryption_configuration.demo: Destroying... [id=tejas-devops-heros-752291b5]
 aws_s3_bucket_versioning.demo: Destruction complete after 0s
+aws_s3_bucket_server_side_encryption_configuration.demo: Destruction complete after 0s
 aws_s3_bucket_public_access_block.demo: Destruction complete after 0s
-aws_s3_bucket.demo: Destroying... [id=tejas-devops-heros-d7bdd73e]
-aws_s3_bucket.demo: Destruction complete after 1s
-random_id.suffix: Destroying... [id=173XPg]
+aws_s3_bucket.demo: Destroying... [id=tejas-devops-heros-752291b5]
+aws_s3_bucket.demo: Destruction complete after 0s
+random_id.suffix: Destroying... [id=dSKRtQ]
 random_id.suffix: Destruction complete after 0s
 
 Destroy complete! Resources: 5 destroyed.
