@@ -10,11 +10,11 @@ I ran out of time, so this is honest about what is done and what is not:
 |------|--------|
 | Application (FastAPI backend + React frontend), unit tests | Done, tests run locally (output below) |
 | Docker (backend + frontend Dockerfiles, docker compose) | Done, backend image built locally (output below); both images built in CI |
-| Kubernetes plain manifests (`kubernetes/`) | Written; applied by the CI pipeline in a kind cluster |
-| Helm chart (`helm/taskboard`) | Done, `helm lint` / `helm template` run locally (output below); installed by CI |
-| CI/CD + DevSecOps (GitHub Actions) | Workflow written and pushed; first run was **still running when I opened the PR** - see the run link below for the real result |
-| Monitoring (Prometheus + `/metrics` + alerts, `kubectl top`, HPA) | Manifests written; executed inside the CI deploy job |
-| GitOps (Argo CD Application) | Manifest written; CI job installs Argo CD core in kind and waits for Synced/Healthy |
+| Kubernetes plain manifests (`kubernetes/`) | Written; validated with `kubectl apply --dry-run=client`. **Not deployed yet** (CI deploy job was skipped, see below) |
+| Helm chart (`helm/taskboard`) | `helm lint` / `helm template` run locally (output below). **Not installed yet** (CI deploy job was skipped) |
+| CI/CD + DevSecOps (GitHub Actions) | First run: jobs 1–6 green (build/test, SAST, SCA, Gitleaks, Docker build, Trivy image scan); **job 7 security gate failed**, so push, deploy and GitOps jobs were skipped. [Run](https://github.com/PiyushhBansal/devops-heros/actions/runs/37665802478) |
+| Monitoring (Prometheus + `/metrics` + alerts, `kubectl top`, HPA) | Manifests written. **Not run yet** (part of the skipped deploy job) |
+| GitOps (Argo CD Application) | Manifest written. **Not run yet** (the GitOps job was skipped after the gate failed) |
 | Terraform | **Not done.** I did not get to write/run the Terraform part (planned: VPC/subnets/S3 against LocalStack, not real AWS) |
 | Final Troubleshooting Challenge | **Not done.** I did not get to break/fix the deployment and capture the output |
 
