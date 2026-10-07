@@ -1,0 +1,71 @@
+# FIXED: Ingress backend port = Service port 8000
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api
+  namespace: tb-debug
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: api}
+  template:
+    metadata:
+      labels: {app: api}
+    spec:
+      securityContext: {runAsNonRoot: true, runAsUser: 10001}
+      containers:
+        - name: api
+          image: taskboard-backend:1.0.0
+          imagePullPolicy: IfNotPresent
+          ports: [{name: http, containerPort: 8000}]
+          env:
+            - name: DB_HOST
+              valueFrom: {configMapKeyRef: {name: api-config, key: DB_HOST}}
+            - name: DB_PORT
+              valueFrom: {configMapKeyRef: {name: api-config, key: DB_PORT}}
+            - name: DB_NAME
+              valueFrom: {configMapKeyRef: {name: api-config, key: DB_NAME}}
+            - name: DB_USER
+              valueFrom: {secretKeyRef: {name: api-db, key: DB_USER}}
+            - name: DB_PASSWORD
+              valueFrom: {secretKeyRef: {name: api-db, key: DB_PASSWORD}}
+            - name: DATABASE_URL
+              value: postgresql+psycopg://$(DB_USER):$(DB_PASSWORD)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)
+          readinessProbe:
+            httpGet: {path: /ready, port: http}
+            periodSeconds: 5
+            timeoutSeconds: 5
+          livenessProbe:
+            httpGet: {path: /health, port: http}
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            timeoutSeconds: 5
+          resources:
+            requests: {cpu: 50m, memory: 96Mi}
+            limits: {cpu: 300m, memory: 256Mi}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: api
+  namespace: tb-debug
+spec:
+  selector: {app: api}
+  ports:
+    - {name: http, port: 8000, targetPort: http}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: api
+  namespace: tb-debug
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: debug.taskboard.local
+      http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service: {name: api, port: {number: 8000}}

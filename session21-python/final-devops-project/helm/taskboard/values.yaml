@@ -1,0 +1,102 @@
+# Default values = local minikube (images built into the cluster, ingress host taskboard.local).
+# Override per environment with values-dev.yaml / values-prod.yaml.
+
+nameOverride: ""
+fullnameOverride: ""
+imagePullSecrets: []
+
+# ---------------------------------------------------------------- application config
+config:
+  appName: "TaskBoard API"
+  logLevel: "info"
+
+# ---------------------------------------------------------------- backend (FastAPI)
+backend:
+  image:
+    repository: taskboard-backend
+    tag: ""                 # defaults to .Chart.AppVersion
+    pullPolicy: IfNotPresent
+  replicaCount: 1           # ignored when autoscaling.enabled=true
+  service:
+    # The frontend nginx proxies /api to http://backend:8000, so keep this name
+    # unless you also change application/frontend/nginx.conf.
+    name: backend
+    port: 8000
+  podAnnotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "8000"
+    prometheus.io/path: /metrics
+  resources:
+    requests: {cpu: 100m, memory: 128Mi}
+    limits: {cpu: 500m, memory: 256Mi}
+  probes:
+    startup:   {path: /health, periodSeconds: 5,  failureThreshold: 24}
+    liveness:  {path: /health, periodSeconds: 15, timeoutSeconds: 5, failureThreshold: 4}
+    readiness: {path: /ready,  periodSeconds: 10, timeoutSeconds: 5, failureThreshold: 3}
+  waitForDb: true           # initContainer that blocks until Postgres accepts connections
+
+# ---------------------------------------------------------------- frontend (nginx)
+frontend:
+  image:
+    repository: taskboard-frontend
+    tag: ""                 # defaults to .Chart.AppVersion
+    pullPolicy: IfNotPresent
+  replicaCount: 1
+  containerPort: 8080       # nginx-unprivileged
+  service:
+    port: 80
+  resources:
+    requests: {cpu: 25m, memory: 32Mi}
+    limits: {cpu: 200m, memory: 128Mi}
+
+# ---------------------------------------------------------------- PostgreSQL
+postgres:
+  enabled: true             # false -> use an external DB at postgres.host
+  host: ""                  # only used when enabled=false
+  port: 5432
+  image: postgres:16-alpine
+  database: taskboard
+  auth:
+    username: taskboard
+    password: taskboard-dev-password   # demo only - use existingSecret in real envs
+    existingSecret: ""                 # Secret with keys DB_USER / DB_PASSWORD
+  persistence:
+    size: 1Gi
+    storageClass: ""        # "" = cluster default
+  resources:
+    requests: {cpu: 50m, memory: 128Mi}
+    limits: {cpu: 500m, memory: 256Mi}
+
+# ---------------------------------------------------------------- ingress
+ingress:
+  enabled: true
+  className: nginx
+  host: taskboard.local
+  annotations: {}
+  tls: []                   # [{secretName: taskboard-tls, hosts: [taskboard.example.com]}]
+
+# ---------------------------------------------------------------- autoscaling (backend)
+autoscaling:
+  enabled: true
+  minReplicas: 1
+  maxReplicas: 3
+  targetCPUUtilizationPercentage: 50
+
+# ---------------------------------------------------------------- security
+podSecurityContext:
+  runAsNonRoot: true
+  seccompProfile: {type: RuntimeDefault}
+containerSecurityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities: {drop: ["ALL"]}
+
+# ---------------------------------------------------------------- monitoring (needs prometheus-operator CRDs)
+serviceMonitor:
+  enabled: false
+  interval: 15s
+  labels: {}                # e.g. {release: monitoring} if your Prometheus selects by label
+prometheusRule:
+  enabled: false
+  labels: {}
+  errorRateThreshold: 0.05  # 5% of requests returning 5xx

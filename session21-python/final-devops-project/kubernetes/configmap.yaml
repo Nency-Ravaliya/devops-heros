@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: taskboard-config
+  namespace: taskboard
+  labels:
+    app.kubernetes.io/part-of: taskboard
+data:
+  APP_NAME: "TaskBoard API"
+  DB_HOST: "postgres"
+  DB_PORT: "5432"
+  DB_NAME: "taskboard"
+  LOG_LEVEL: "info"

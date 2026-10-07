@@ -1,0 +1,13 @@
+# Grafana dashboard provisioning: kubectl apply -k monitoring/
+# The Grafana k8s-sidecar picks up any ConfigMap labelled grafana_dashboard=1.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: monitoring
+generatorOptions:
+  disableNameSuffixHash: true
+  labels:
+    grafana_dashboard: "1"
+configMapGenerator:
+  - name: taskboard-grafana-dashboard
+    files:
+      - dashboards/taskboard-dashboard.json

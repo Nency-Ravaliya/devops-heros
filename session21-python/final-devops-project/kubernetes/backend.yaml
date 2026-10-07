@@ -1,0 +1,94 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: taskboard
+  labels: {app: backend, app.kubernetes.io/part-of: taskboard}
+spec:
+  replicas: 1
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels: {app: backend}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate: {maxSurge: 1, maxUnavailable: 0}
+  template:
+    metadata:
+      labels: {app: backend, app.kubernetes.io/part-of: taskboard}
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8000"
+        prometheus.io/path: /metrics
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        seccompProfile: {type: RuntimeDefault}
+      initContainers:
+        - name: wait-for-db        # avoid CrashLoopBackOff while Postgres is still starting
+          image: postgres:16-alpine
+          command: ["sh", "-c", "until pg_isready -U probe -h \"$DB_HOST\" -p \"$DB_PORT\"; do echo waiting for postgres; sleep 2; done"]
+          envFrom:
+            - configMapRef: {name: taskboard-config}
+          resources:
+            requests: {cpu: 10m, memory: 16Mi}
+            limits: {cpu: 100m, memory: 64Mi}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: ["ALL"]}
+      containers:
+        - name: backend
+          image: taskboard-backend:1.0.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - {name: http, containerPort: 8000}
+          envFrom:
+            - configMapRef: {name: taskboard-config}
+          env:
+            - name: DB_USER
+              valueFrom: {secretKeyRef: {name: taskboard-db, key: DB_USER}}
+            - name: DB_PASSWORD
+              valueFrom: {secretKeyRef: {name: taskboard-db, key: DB_PASSWORD}}
+            # pydantic-settings reads DATABASE_URL; built from ConfigMap + Secret values
+            - name: DATABASE_URL
+              value: "postgresql+psycopg://$(DB_USER):$(DB_PASSWORD)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)"
+          startupProbe:            # gives alembic migrations time before liveness kicks in
+            httpGet: {path: /health, port: http}
+            periodSeconds: 5
+            failureThreshold: 24
+          livenessProbe:
+            httpGet: {path: /health, port: http}
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:          # /ready runs a DB query -> pod leaves the Service if DB is down
+            httpGet: {path: /ready, port: http}
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          resources:
+            requests: {cpu: 100m, memory: 128Mi}
+            limits: {cpu: 500m, memory: 256Mi}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: ["ALL"]}
+          volumeMounts:
+            - {name: tmp, mountPath: /tmp}
+      volumes:
+        - name: tmp
+          emptyDir: {sizeLimit: 64Mi}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend               # the frontend nginx proxies /api to http://backend:8000
+  namespace: taskboard
+  labels: {app: backend, app.kubernetes.io/part-of: taskboard}
+spec:
+  selector: {app: backend}
+  ports:
+    - {name: http, port: 8000, targetPort: http}

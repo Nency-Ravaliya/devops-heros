@@ -1,0 +1,91 @@
+# Lean Prometheus (prometheus-community/prometheus chart, server only) for a 2-CPU minikube node.
+#   helm upgrade --install prometheus prometheus-community/prometheus -n monitoring \
+#     --create-namespace -f monitoring/prometheus-values.yaml
+# Why not kube-prometheus-stack? It was tried first: operator + webhooks + node-exporter +
+# kube-state-metrics + Grafana sidecars saturated the 2 vCPUs (API server timeouts). This chart
+# runs ONE pod (prometheus-server + config-reloader) and discovers targets via annotations.
+
+alertmanager: {enabled: false}
+kube-state-metrics: {enabled: false}
+prometheus-node-exporter: {enabled: false}
+prometheus-pushgateway: {enabled: false}
+
+configmapReload:
+  prometheus:
+    resources:
+      requests: {cpu: 10m, memory: 24Mi}
+      limits: {cpu: 100m, memory: 64Mi}   # 50m/32Mi was too tight: probe timeouts
+
+server:
+  retention: 6h
+  global:
+    scrape_interval: 15s
+    evaluation_interval: 15s
+  persistentVolume:
+    enabled: false          # demo: emptyDir is enough for 6h of data
+  resources:
+    requests: {cpu: 50m, memory: 192Mi}
+    limits: {cpu: 500m, memory: 512Mi}
+
+# ---- scrape jobs: keep only what the TaskBoard dashboard needs ----
+scrapeConfigs:
+  kubernetes-api-servers: {enabled: false}
+  kubernetes-nodes: {enabled: false}
+  kubernetes-nodes-cadvisor: {enabled: false}      # replaced by the trimmed job below
+  kubernetes-service-endpoints: {enabled: false}
+  kubernetes-service-endpoints-slow: {enabled: false}
+  kubernetes-services: {enabled: false}
+  kubernetes-pods-slow: {enabled: false}
+  prometheus-pushgateway: {enabled: false}
+  # kubernetes-pods (default ON): scrapes every pod annotated prometheus.io/scrape="true"
+  #   -> the TaskBoard backend (/metrics from prometheus-fastapi-instrumentator)
+  cadvisor-taskboard:
+    job_name: cadvisor
+    scheme: https
+    tls_config:
+      ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+      insecure_skip_verify: true
+    bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+    metrics_path: /metrics/cadvisor
+    scrape_interval: 30s
+    kubernetes_sd_configs:
+      - role: node
+    metric_relabel_configs:
+      # keep only pod CPU / memory series (cAdvisor exposes thousands of others)
+      - source_labels: [__name__]
+        regex: container_cpu_usage_seconds_total|container_memory_working_set_bytes|container_spec_memory_limit_bytes
+        action: keep
+      - source_labels: [container]
+        regex: ""
+        action: drop
+
+# ---- alerting rules (Prometheus evaluates them; Alertmanager is disabled to save memory,
+#      so firing alerts are visible at /api/v1/alerts and in Grafana) ----
+serverFiles:
+  alerting_rules.yml:
+    groups:
+      - name: taskboard.rules
+        rules:
+          - alert: TaskBoardBackendDown
+            expr: sum(up{job="kubernetes-pods", namespace="taskboard", app_kubernetes_io_component="backend"}) < 1 or absent(up{job="kubernetes-pods", namespace="taskboard", app_kubernetes_io_component="backend"})
+            for: 1m
+            labels: {severity: critical}
+            annotations:
+              summary: TaskBoard backend is down
+              description: No TaskBoard backend pod has been successfully scraped for 1 minute.
+          - alert: TaskBoardHighErrorRate
+            expr: |
+              (sum(rate(http_requests_total{namespace="taskboard", status="5xx"}[2m])) or vector(0))
+                / clamp_min(sum(rate(http_requests_total{namespace="taskboard"}[2m])), 1e-9) > 0.05
+            for: 1m
+            labels: {severity: warning}
+            annotations:
+              summary: TaskBoard backend 5xx error rate above 5%
+              description: "{{ $value | humanizePercentage }} of requests are failing."
+          - alert: TaskBoardHighLatencyP95
+            expr: |
+              histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket{namespace="taskboard"}[5m]))) > 0.5
+            for: 5m
+            labels: {severity: warning}
+            annotations:
+              summary: TaskBoard p95 latency above 500ms

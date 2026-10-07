@@ -1,0 +1,29 @@
+# FIXED: use an existing StorageClass (minikube: standard). PVC spec is immutable -> delete + recreate
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: scratch-data
+  namespace: tb-debug
+spec:
+  accessModes: [ReadWriteOnce]
+  storageClassName: standard
+  resources:
+    requests: {storage: 256Mi}
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: writer
+  namespace: tb-debug
+spec:
+  containers:
+    - name: writer
+      image: busybox:1.36
+      command: ["sh", "-c", "date > /data/hello.txt && cat /data/hello.txt && sleep 3600"]
+      resources:
+        requests: {cpu: 5m, memory: 8Mi}
+        limits: {cpu: 50m, memory: 16Mi}
+      volumeMounts: [{name: data, mountPath: /data}]
+  volumes:
+    - name: data
+      persistentVolumeClaim: {claimName: scratch-data}

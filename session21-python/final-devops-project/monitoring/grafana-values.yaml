@@ -1,0 +1,42 @@
+# Minimal Grafana (grafana/grafana chart).
+#   helm upgrade --install grafana grafana/grafana -n monitoring -f monitoring/grafana-values.yaml
+adminUser: admin
+adminPassword: taskboard-admin     # demo only
+persistence: {enabled: false}
+testFramework: {enabled: false}
+resources:
+  requests: {cpu: 25m, memory: 96Mi}
+  limits: {cpu: 300m, memory: 256Mi}
+
+datasources:
+  datasources.yaml:
+    apiVersion: 1
+    datasources:
+      - name: Prometheus
+        uid: prometheus
+        type: prometheus
+        access: proxy
+        url: http://prometheus-server.monitoring.svc
+        isDefault: true
+
+# The k8s-sidecar loads every ConfigMap labelled grafana_dashboard=1 as a dashboard
+# (see monitoring/grafana-dashboard-configmap.yaml).
+sidecar:
+  resources:
+    requests: {cpu: 5m, memory: 32Mi}
+    limits: {cpu: 50m, memory: 96Mi}
+  dashboards:
+    enabled: true
+    label: grafana_dashboard
+    labelValue: "1"
+    searchNamespace: ALL
+    folder: /tmp/dashboards
+  datasources:
+    enabled: false
+
+# Local demo convenience: read-only anonymous viewer so the dashboard can be opened
+# (and screenshotted headless) without logging in. Do not do this on a shared cluster.
+grafana.ini:
+  auth.anonymous:
+    enabled: true
+    org_role: Viewer

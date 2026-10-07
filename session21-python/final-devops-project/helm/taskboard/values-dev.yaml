@@ -1,0 +1,14 @@
+# Dev: smallest footprint, fixed single replicas, no HPA.
+backend:
+  replicaCount: 1
+  resources:
+    requests: {cpu: 50m, memory: 96Mi}
+    limits: {cpu: 300m, memory: 256Mi}
+frontend:
+  replicaCount: 1
+autoscaling:
+  enabled: false
+ingress:
+  host: taskboard.local
+config:
+  logLevel: debug

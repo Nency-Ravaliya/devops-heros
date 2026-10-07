@@ -1,0 +1,108 @@
+{{- $sel := dict "ctx" . "component" "backend" }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "taskboard.fullname" . }}-backend
+  labels:
+    {{- include "taskboard.labels" . | nindent 4 }}
+    app.kubernetes.io/component: backend
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.backend.replicaCount }}
+  {{- end }}
+  revisionHistoryLimit: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate: {maxSurge: 1, maxUnavailable: 0}
+  selector:
+    matchLabels:
+      {{- include "taskboard.selectorLabels" $sel | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "taskboard.selectorLabels" $sel | nindent 8 }}
+      annotations:
+        # roll the pods automatically when config or credentials change
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        checksum/secret: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
+        {{- with .Values.backend.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      automountServiceAccountToken: false
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        runAsUser: 10001
+        runAsGroup: 10001
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- if and .Values.backend.waitForDb .Values.postgres.enabled }}
+      initContainers:
+        - name: wait-for-db
+          image: {{ .Values.postgres.image }}
+          command: ["sh", "-c", "until pg_isready -U probe -h \"$DB_HOST\" -p \"$DB_PORT\"; do echo waiting for postgres; sleep 2; done"]
+          envFrom:
+            - configMapRef: {name: {{ include "taskboard.fullname" . }}-config}
+          resources:
+            requests: {cpu: 10m, memory: 16Mi}
+            limits: {cpu: 100m, memory: 64Mi}
+          securityContext:
+            {{- toYaml .Values.containerSecurityContext | nindent 12 }}
+      {{- end }}
+      containers:
+        - name: backend
+          image: {{ include "taskboard.backendImage" . | quote }}
+          imagePullPolicy: {{ .Values.backend.image.pullPolicy }}
+          ports:
+            - {name: http, containerPort: 8000}
+          envFrom:
+            - configMapRef: {name: {{ include "taskboard.fullname" . }}-config}
+          env:
+            - name: DB_USER
+              valueFrom: {secretKeyRef: {name: {{ include "taskboard.secretName" . }}, key: DB_USER}}
+            - name: DB_PASSWORD
+              valueFrom: {secretKeyRef: {name: {{ include "taskboard.secretName" . }}, key: DB_PASSWORD}}
+            - name: DATABASE_URL
+              value: "postgresql+psycopg://$(DB_USER):$(DB_PASSWORD)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)"
+          {{- with .Values.backend.probes }}
+          startupProbe:
+            httpGet: {path: {{ .startup.path }}, port: http}
+            periodSeconds: {{ .startup.periodSeconds }}
+            failureThreshold: {{ .startup.failureThreshold }}
+          livenessProbe:
+            httpGet: {path: {{ .liveness.path }}, port: http}
+            periodSeconds: {{ .liveness.periodSeconds }}
+            timeoutSeconds: {{ .liveness.timeoutSeconds }}
+            failureThreshold: {{ .liveness.failureThreshold }}
+          readinessProbe:
+            httpGet: {path: {{ .readiness.path }}, port: http}
+            periodSeconds: {{ .readiness.periodSeconds }}
+            timeoutSeconds: {{ .readiness.timeoutSeconds }}
+            failureThreshold: {{ .readiness.failureThreshold }}
+          {{- end }}
+          resources:
+            {{- toYaml .Values.backend.resources | nindent 12 }}
+          securityContext:
+            {{- toYaml .Values.containerSecurityContext | nindent 12 }}
+          volumeMounts:
+            - {name: tmp, mountPath: /tmp}
+      volumes:
+        - name: tmp
+          emptyDir: {sizeLimit: 64Mi}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.backend.service.name }}
+  labels:
+    {{- include "taskboard.labels" . | nindent 4 }}
+    app.kubernetes.io/component: backend
+spec:
+  selector:
+    {{- include "taskboard.selectorLabels" $sel | nindent 4 }}
+  ports:
+    - name: http
+      port: {{ .Values.backend.service.port }}
+      targetPort: http

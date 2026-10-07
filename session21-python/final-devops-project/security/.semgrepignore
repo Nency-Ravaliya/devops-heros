@@ -1,0 +1,9 @@
+# Paths Semgrep must not scan (turned into --exclude flags by run-security-scans.sh)
+node_modules
+.venv
+dist
+build
+reports
+screenshots
+*.min.js
+tests
