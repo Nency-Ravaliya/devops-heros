@@ -2,19 +2,73 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: session17-python
+  namespace: devsecops
+  labels:
+    app: session17-python
 spec:
   replicas: 2
+  revisionHistoryLimit: 3
   selector:
     matchLabels:
       app: session17-python
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
   template:
     metadata:
       labels:
         app: session17-python
     spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: session17-python
-          image: nensiravaliya28/hey-cicd:__IMAGE_TAG__
-          imagePullPolicy: Always           # pull from Docker Hub
+          # Tag is replaced by the pipeline with the commit SHA (kustomize edit set image)
+          image: ghcr.io/jenyyy4/session17-devsecops:latest
+          imagePullPolicy: IfNotPresent
           ports:
-            - containerPort: 5001
+            - name: http
+              containerPort: 5001
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 250m
+              memory: 192Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            privileged: false
+            capabilities:
+              drop: ["ALL"]
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 3
+            periodSeconds: 5
+            timeoutSeconds: 2
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 2
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir:
+            medium: Memory
+            sizeLimit: 16Mi

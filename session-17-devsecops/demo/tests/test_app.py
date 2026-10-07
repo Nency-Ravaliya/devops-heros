@@ -95,3 +95,31 @@ def test_status(client):
     assert data["status"] == "running"
     assert "python_version" in data
     assert "uptime" in data
+
+# ── Test 9: Calculator — unknown operation returns 400 ─
+
+def test_calculator_unknown_operation(client):
+    response = client.post(
+        "/api/calculate",
+        json={"a": 1, "b": 2, "operation": "sqrt"}
+    )
+    assert response.status_code == 400
+
+
+# ── Test 10: Pipeline simulator — no failures when fail_chance is 0 ─
+
+def test_pipeline_run_all_passed(client):
+    response = client.post("/api/pipeline/run", json={"fail_chance": 0})
+    assert response.status_code == 200
+
+    data = response.get_json()
+    assert data["overall_status"] == "passed"
+    assert len(data["stages"]) == 8
+
+
+# ── Test 11: Unknown route returns JSON 404 ────────────
+
+def test_not_found(client):
+    response = client.get("/does-not-exist")
+    assert response.status_code == 404
+    assert response.get_json()["code"] == 404
