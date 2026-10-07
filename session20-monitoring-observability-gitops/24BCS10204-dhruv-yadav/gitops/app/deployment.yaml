@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: s20-gitops-app
+  namespace: s20-gitops
+  labels:
+    app: s20-gitops-app
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: s20-gitops-app
+  template:
+    metadata:
+      labels:
+        app: s20-gitops-app
+    spec:
+      containers:
+        - name: app
+          image: nginx:1.28-alpine
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+            limits:
+              cpu: 100m
+              memory: 64Mi
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            periodSeconds: 5

@@ -1,0 +1,20 @@
+# Tells the Prometheus Operator: scrape every Service in ns s20 with label app=podinfo,
+# on the port named "http", path /metrics, every 15s.
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: podinfo
+  namespace: s20
+  labels:
+    app: podinfo
+spec:
+  selector:
+    matchLabels:
+      app: podinfo
+  namespaceSelector:
+    matchNames:
+      - s20
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 15s
