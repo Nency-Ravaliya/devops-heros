@@ -1,0 +1,40 @@
+$ curl -s localhost:3000/api/health
+{
+  "database": "ok",
+  "version": "13.2.3",
+  "commit": "90ffed056f0884267356c12a0eeb72a022af53f1"
+}
+$ curl -s -u admin:demo-only-not-secret localhost:3000/api/datasources | jq -r '.[] | "\(.name) \(.type) \(.url)"'
+Alertmanager alertmanager http://kps-alertmanager.monitoring:9093/
+Prometheus prometheus http://kps-prometheus.monitoring:9090/
+
+$ curl -s -u admin:demo-only-not-secret 'localhost:3000/api/search?type=dash-db' | jq -r '.[].title' | sort | head -40
+Alertmanager / Overview
+CoreDNS
+Grafana Overview
+Kubernetes / API server
+Kubernetes / Compute Resources /  Multi-Cluster
+Kubernetes / Compute Resources / Cluster
+Kubernetes / Compute Resources / Namespace (Pods)
+Kubernetes / Compute Resources / Namespace (Workloads)
+Kubernetes / Compute Resources / Node (Pods)
+Kubernetes / Compute Resources / Nodes Overview
+Kubernetes / Compute Resources / Pod
+Kubernetes / Compute Resources / Workload
+Kubernetes / Kubelet
+Kubernetes / Networking / Cluster
+Kubernetes / Networking / Namespace (Pods)
+Kubernetes / Networking / Namespace (Workload)
+Kubernetes / Networking / Pod
+Kubernetes / Networking / Workload
+Kubernetes / Persistent Volumes
+Node Exporter / AIX
+Node Exporter / MacOS
+Node Exporter / Nodes
+Node Exporter / USE Method / Cluster
+Node Exporter / USE Method / Node
+Prometheus / Overview
+
+screenshot grafana-namespace-pods.png <- dashboard 'Kubernetes / Compute Resources / Namespace (Pods)' (uid=85a562078cdf77779eaa1add43ccec1e)
+screenshot grafana-cluster.png <- dashboard 'Kubernetes / Compute Resources / Cluster' (uid=efa86fd1d0c121a26444b636a3f509a8)
+screenshot grafana-node-exporter.png <- dashboard 'Node Exporter / Nodes' (uid=7d57716318ee0dddbac5a7f451fb7753)
