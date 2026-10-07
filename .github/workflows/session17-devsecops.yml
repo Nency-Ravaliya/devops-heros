@@ -109,14 +109,14 @@ jobs:
       - name: 5. Docker build
         run: docker build -t ${{ steps.tag.outputs.image }} "$APP_DIR"
       - name: 6. Container image scan - Trivy (report all HIGH/CRITICAL)
-        uses: aquasecurity/trivy-action@0.33.1
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: ${{ steps.tag.outputs.image }}
           severity: HIGH,CRITICAL
           format: table
           exit-code: "0"
       - name: 7. Security gate - block CRITICAL vulnerabilities that have a fix
-        uses: aquasecurity/trivy-action@0.33.1
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: ${{ steps.tag.outputs.image }}
           severity: CRITICAL
