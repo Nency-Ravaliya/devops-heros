@@ -1,0 +1,212 @@
+name: Session 16 - CI/CD (Piyush)
+
+# Workflow = this whole file. It runs on push to my submission branch (only when my HW
+# folder or this file changes) and can also be started by hand from the Actions tab.
+on:
+  push:
+    branches:
+      - submission/piyush-session-16
+    paths:
+      - "session-16-github-actions/HW/**"
+      - ".github/workflows/piyush-session16-cicd.yml"
+  workflow_dispatch:
+
+# GITHUB_TOKEN gets only what it needs. Jobs that push images ask for packages: write.
+permissions:
+  contents: read
+
+env:
+  APP_DIR: session-16-github-actions/HW
+  IMAGE_NAME: ghcr.io/piyushhbansal/session16-calculator
+
+jobs:
+  # ---------------------------------------------------------------- CI ----
+  test:
+    name: CI - Lint & Unit Test (py ${{ matrix.python-version }})
+    runs-on: ubuntu-latest          # GitHub-hosted runner
+    strategy:
+      matrix:
+        python-version: ["3.12", "3.13"]
+    defaults:
+      run:
+        working-directory: ${{ env.APP_DIR }}
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Show runner info
+        run: |
+          echo "Runner OS: $RUNNER_OS / arch: $RUNNER_ARCH / name: $RUNNER_NAME"
+          python --version
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+
+      - name: Lint (flake8)
+        run: flake8 app tests
+
+      - name: Run unit tests
+        run: |
+          mkdir -p reports
+          python -m pytest -v \
+            --junitxml=reports/junit.xml \
+            --cov=app --cov-report=term-missing --cov-report=xml:reports/coverage.xml
+
+      - name: Upload test report artifact
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-report-py${{ matrix.python-version }}
+          path: ${{ env.APP_DIR }}/reports/
+          retention-days: 7
+
+  build:
+    name: CI - Build package
+    needs: test                      # only runs if every test job passed
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ env.APP_DIR }}
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v7
+
+      - name: Build application
+        run: |
+          chmod +x build.sh
+          ./build.sh "0.1.${{ github.run_number }}"
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: calculator-build
+          path: ${{ env.APP_DIR }}/build/
+          retention-days: 7
+
+  docker:
+    name: CI - Docker build & container test
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v7
+
+      - name: Build image
+        run: |
+          docker build \
+            --build-arg APP_VERSION=${{ github.sha }} \
+            -t calculator:ci "$APP_DIR"
+          docker image ls calculator:ci
+
+      - name: Run container and smoke test it
+        run: |
+          docker run -d --name calc -p 8080:8080 calculator:ci
+          for i in $(seq 1 15); do curl -fs localhost:8080/health && break; sleep 1; done
+          echo
+          curl -fs localhost:8080/
+          echo
+          test "$(curl -fs 'localhost:8080/api/add?a=2&b=3' | jq .result)" = "5.0"
+          echo "smoke test passed"
+          docker logs calc
+
+  # ---------------------------------------------------------------- CD ----
+  publish:
+    name: CD - Push image to GHCR
+    needs: [build, docker]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write                # lets GITHUB_TOKEN push to ghcr.io
+    outputs:
+      image: ${{ steps.meta.outputs.image }}
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v7
+
+      - name: Image tags
+        id: meta
+        run: |
+          SHORT_SHA="${GITHUB_SHA::7}"
+          echo "image=${IMAGE_NAME}:${SHORT_SHA}" >> "$GITHUB_OUTPUT"
+          echo "Will push ${IMAGE_NAME}:${SHORT_SHA} and ${IMAGE_NAME}:latest"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Log in to GHCR with GITHUB_TOKEN (secret)
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v7
+        with:
+          context: ${{ env.APP_DIR }}
+          push: true
+          build-args: APP_VERSION=${{ github.sha }}
+          tags: |
+            ${{ steps.meta.outputs.image }}
+            ${{ env.IMAGE_NAME }}:latest
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+
+  deploy:
+    name: CD - Deploy to Kubernetes (kind) & smoke test
+    needs: publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read                 # lets the cluster pull the private image
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v7
+
+      - name: Create kind cluster on the runner
+        uses: helm/kind-action@v1.15.1
+        with:
+          cluster_name: s16
+
+      - name: Create namespace and GHCR pull secret from GITHUB_TOKEN
+        run: |
+          kubectl create namespace s16-cicd --dry-run=client -o yaml | kubectl apply -f -
+          kubectl -n s16-cicd create secret docker-registry ghcr-pull \
+            --docker-server=ghcr.io \
+            --docker-username="${{ github.actor }}" \
+            --docker-password="${{ secrets.GITHUB_TOKEN }}" \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Deploy the image that was just pushed
+        run: |
+          IMAGE="${{ needs.publish.outputs.image }}"
+          echo "Deploying $IMAGE"
+          sed "s|IMAGE_PLACEHOLDER|${IMAGE}|" "$APP_DIR/k8s/deployment.yaml" | kubectl apply -f -
+          kubectl -n s16-cicd rollout status deployment/calculator --timeout=180s
+          kubectl -n s16-cicd get deploy,pods,svc -o wide
+
+      - name: Smoke test through the Service
+        run: |
+          kubectl -n s16-cicd port-forward svc/calculator 8080:80 >/tmp/pf.log 2>&1 &
+          for i in $(seq 1 15); do curl -fs localhost:8080/health && break; sleep 1; done
+          echo
+          curl -fs localhost:8080/
+          echo
+          RESULT=$(curl -fs 'localhost:8080/api/multiply?a=6&b=7' | jq .result)
+          echo "6 x 7 = $RESULT"
+          test "$RESULT" = "42.0"
+          echo "Deployment smoke test passed"
+
+      - name: Show pod events on failure
+        if: failure()
+        run: |
+          kubectl -n s16-cicd describe pods || true
+          kubectl -n s16-cicd get events --sort-by=.lastTimestamp || true

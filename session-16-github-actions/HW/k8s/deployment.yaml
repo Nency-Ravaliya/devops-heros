@@ -1,0 +1,61 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: s16-cicd
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: calculator
+  namespace: s16-cicd
+  labels:
+    app: calculator
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: calculator
+  template:
+    metadata:
+      labels:
+        app: calculator
+    spec:
+      # pull secret is created by the CD job from GITHUB_TOKEN (see workflow)
+      imagePullSecrets:
+        - name: ghcr-pull
+      containers:
+        - name: calculator
+          image: IMAGE_PLACEHOLDER
+          ports:
+            - containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 2
+            periodSeconds: 3
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 250m
+              memory: 128Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: calculator
+  namespace: s16-cicd
+spec:
+  selector:
+    app: calculator
+  ports:
+    - port: 80
+      targetPort: 8080
