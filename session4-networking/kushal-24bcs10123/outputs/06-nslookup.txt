@@ -1,0 +1,8 @@
+$ nslookup github.com
+Server:		1.1.1.1
+Address:	1.1.1.1#53
+
+Non-authoritative answer:
+Name:	github.com
+Address: 20.207.73.82
+

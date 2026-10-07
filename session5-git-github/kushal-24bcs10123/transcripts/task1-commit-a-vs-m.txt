@@ -1,0 +1,87 @@
+############ TASK 1: git commit -m vs git commit -a -m ############
+$ git init -q -b main commit-flags-demo && cd commit-flags-demo && pwd
+~/lab/gitdemo/commit-flags-demo
+
+(eval):cd:6: no such file or directory: commit-flags-demo
+$ echo 'version 1' > notes.txt
+
+$ git add notes.txt
+
+$ git commit -m 'Add notes.txt'
+[main (root-commit) b8bfbbe] Add notes.txt
+ 1 file changed, 1 insertion(+)
+ create mode 100644 notes.txt
+
+--- modify a TRACKED file, then try plain -m without staging
+$ echo 'version 2' >> notes.txt
+
+$ git status --short
+ M notes.txt
+
+$ git commit -m 'Update notes (plain -m, nothing staged)'
+On branch main
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   notes.txt
+
+no changes added to commit (use "git add" and/or "git commit -a")
+
+$ git log --oneline
+b8bfbbe Add notes.txt
+
+--- now -a -m: auto-stages modified tracked files and commits in one go
+$ git commit -a -m 'Update notes (with -a)'
+[main 8c33a42] Update notes (with -a)
+ 1 file changed, 1 insertion(+)
+
+$ git log --oneline
+8c33a42 Update notes (with -a)
+b8bfbbe Add notes.txt
+
+$ git show --stat HEAD | tail -3
+
+ notes.txt | 1 +
+ 1 file changed, 1 insertion(+)
+
+--- limits of -a: brand-new (untracked) files are NOT picked up
+$ echo 'brand new' > todo.txt
+
+$ echo 'version 3' >> notes.txt
+
+$ git status --short
+ M notes.txt
+?? todo.txt
+
+$ git commit -a -m 'Try to commit both files with -a'
+[main db3b290] Try to commit both files with -a
+ 1 file changed, 1 insertion(+)
+
+$ git status --short
+?? todo.txt
+
+$ git show --stat HEAD | tail -2
+ notes.txt | 1 +
+ 1 file changed, 1 insertion(+)
+
+--- untracked file still needs an explicit add
+$ git add todo.txt && git commit -m 'Add todo.txt'
+[main 8988931] Add todo.txt
+ 1 file changed, 1 insertion(+)
+ create mode 100644 todo.txt
+
+$ git log --oneline
+8988931 Add todo.txt
+db3b290 Try to commit both files with -a
+8c33a42 Update notes (with -a)
+b8bfbbe Add notes.txt
+
+--- -a also picks up deletions of tracked files
+$ rm todo.txt && git commit -a -m 'Remove todo.txt' && git show --stat HEAD | tail -2
+[main 7f1a04a] Remove todo.txt
+ 1 file changed, 1 deletion(-)
+ delete mode 100644 todo.txt
+ todo.txt | 1 -
+ 1 file changed, 1 deletion(-)
+
+

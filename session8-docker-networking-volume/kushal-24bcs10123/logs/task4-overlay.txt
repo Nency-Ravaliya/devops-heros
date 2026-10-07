@@ -1,0 +1,44 @@
+############ TASK 4: overlay network (single-node swarm demo) ############
+$ docker swarm init 2>&1 | head -2
+Swarm initialized: current node (8d8o31f1rftf6n6j0bizq1s15) is now a manager.
+
+
+$ docker network create -d overlay --attachable app-overlay
+4tc8ozy30caosdy9hpdqozpkk
+
+$ docker network ls --filter driver=overlay --format 'table {{.Name}}	{{.Driver}}	{{.Scope}}'
+NAME          DRIVER    SCOPE
+app-overlay   overlay   swarm
+ingress       overlay   swarm
+
+$ docker network inspect -f 'driver={{.Driver}} scope={{.Scope}} subnet={{(index .IPAM.Config 0).Subnet}} vxlan-id={{index .Options "com.docker.network.driver.overlay.vxlanid_list"}}' app-overlay
+driver=overlay scope=swarm subnet=10.0.1.0/24 vxlan-id=4097
+
+$ docker service create -d --name web-svc --network app-overlay --replicas 2 nginx:alpine >/dev/null && sleep 6 && docker service ls --format 'table {{.Name}}	{{.Mode}}	{{.Replicas}}	{{.Image}}'
+
+NAME      MODE         REPLICAS   IMAGE
+web-svc   replicated   2/2        nginx:alpine
+
+$ docker service ps web-svc --format 'table {{.Name}}	{{.Node}}	{{.CurrentState}}'
+NAME        NODE             CURRENT STATE
+web-svc.1   docker-desktop   Running 5 seconds ago
+web-svc.2   docker-desktop   Running 5 seconds ago
+
+$ docker run --rm --network app-overlay alpine:3.20 sh -c 'nslookup web-svc 2>/dev/null | tail -2; nslookup tasks.web-svc 2>/dev/null | grep Address | tail -2; wget -qO- --timeout=3 http://web-svc | grep -o "<h1>.*</h1>"'
+Address: 10.0.1.2
+
+Address: 10.0.1.3
+Address: 10.0.1.4
+<h1>Welcome to nginx!</h1>
+
+$ docker node ls --format 'table {{.Hostname}}	{{.Status}}	{{.Availability}}	{{.ManagerStatus}}'
+HOSTNAME         STATUS    AVAILABILITY   MANAGER STATUS
+docker-desktop   Ready     Active         Leader
+
+$ docker service rm web-svc && docker network rm app-overlay
+web-svc
+app-overlay
+
+$ docker swarm leave --force
+Node left the swarm.
+

@@ -1,0 +1,45 @@
+
+================ SYSTEM INFORMATION ================
+Label            : homework run on my MacBook
+Date             : Thursday, 03 September 2026 21:08:56 IST
+Hostname         : Kushals-MacBook-Pro.local
+Logged-in user   : kushalscaler
+Kernel           : Darwin 25.5.0 arm64
+Running processes: 653
+
+---------------- DISK USAGE (df -h) ----------------
+Filesystem        Size    Used   Avail Capacity iused ifree %iused  Mounted on
+/dev/disk3s1s1   460Gi    16Gi    11Gi    59%    459k  119M    0%   /
+devfs            212Ki   212Ki     0Bi   100%     746     0  100%   /dev
+/dev/disk3s6     460Gi   1.0Gi    11Gi     9%       1  119M    0%   /System/Volumes/VM
+/dev/disk3s2     460Gi    17Gi    11Gi    60%    2.2k  119M    0%   /System/Volumes/Preboot
+/dev/disk3s4     460Gi   764Mi    11Gi     7%     501  119M    0%   /System/Volumes/Update
+/dev/disk2s2     500Mi   6.0Mi   480Mi     2%       1  4.9M    0%   /System/Volumes/xarts
+/dev/disk2s1     500Mi   5.6Mi   480Mi     2%      36  4.9M    0%   /System/Volumes/iSCPreboot
+/dev/disk2s3     500Mi   3.5Mi   480Mi     1%      94  4.9M    0%   /System/Volumes/Hardware
+/dev/disk3s5     460Gi   412Gi    11Gi    98%    3.6M  119M    3%   /System/Volumes/Data
+map auto_home      0Bi     0Bi     0Bi   100%       0     0     -   /System/Volumes/Data/home
+/dev/disk3s1     460Gi    16Gi    11Gi    59%    459k  119M    0%   /System/Volumes/Update/mnt1
+
+------------- RUNNING PROCESSES (top 15 by CPU) -------------
+  PID USER              %CPU %MEM COMM
+  650 kushalscaler      43.5  0.4 /Applications/Wallspace.app/Contents/MacOS/Wallspace
+ 8932 root              40.7  0.2 /System/Library/PrivateFrameworks/XprotectFramework.framework/Versions/A/XPCServices/XprotectService.xpc/Contents/MacOS/XprotectService
+  405 _windowserver     22.4  0.3 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  361 root              16.2  0.2 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mds
+  753 kushalscaler      14.1  0.7 /Applications/Arc.app/Contents/Frameworks/ArcCore.framework/Helpers/Browser Helper.app/Contents/MacOS/Browser Helper
+  499 _mds_stores       10.9  2.1 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mds_stores
+  414 _coreaudiod        9.6  0.3 /usr/sbin/coreaudiod
+  657 kushalscaler       8.2  0.1 /System/Library/CoreServices/Dock.app/Contents/MacOS/Dock
+ 1633 kushalscaler       8.1  0.2 /System/Library/Frameworks/VideoToolbox.framework/Versions/A/XPCServices/VTDecoderXPCService.xpc/Contents/MacOS/VTDecoderXPCService
+ 5867 kushalscaler       5.3  1.1 /Applications/Arc.app/Contents/Frameworks/ArcCore.framework/Helpers/Browser Helper (Renderer).app/Contents/MacOS/Browser Helper (Renderer)
+ 6269 kushalscaler       5.1  1.6 /Applications/Arc.app/Contents/Frameworks/ArcCore.framework/Helpers/Browser Helper (Renderer).app/Contents/MacOS/Browser Helper (Renderer)
+ 8853 kushalscaler       3.9  2.1 claude
+  643 kushalscaler       3.8  0.6 /System/Applications/Utilities/Terminal.app/Contents/MacOS/Terminal
+  646 kushalscaler       3.0  1.0 /Applications/Spotify (old).app/Contents/MacOS/Spotify
+10945 kushalscaler       3.0  0.1 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mdworker_shared
+
+Full process list (653 processes) written to: sysinfo-report/processes.txt
+Report folder contents:
+total 296
+-rw-r--r--@ 1 kushalscaler  staff  151551 Sep  3 21:08 processes.txt

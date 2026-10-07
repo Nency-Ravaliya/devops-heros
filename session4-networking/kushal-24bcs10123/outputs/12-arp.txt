@@ -1,0 +1,9 @@
+$ arp -a | head -8
+wifi.height8tech.com (100.129.160.1) at f4:1e:57:xx:xx:xx on en0 ifscope [ethernet]
+? (100.129.160.21) at 8a:e6:76:xx:xx:xx on en0 ifscope [ethernet]
+? (100.129.160.31) at 12:92:bd:xx:xx:xx on en0 ifscope [ethernet]
+? (100.129.160.53) at 8e:37:ba:xx:xx:xx on en0 ifscope [ethernet]
+? (100.129.160.54) at c6:b2:8b:xx:xx:xx on en0 ifscope [ethernet]
+? (100.129.160.70) at e6:6e:9:xx:xx:xx on en0 ifscope [ethernet]
+? (100.129.160.82) at aa:d:70:xx:xx:xx on en0 ifscope [ethernet]
+? (100.129.160.97) at 9e:d9:53:xx:xx:xx on en0 ifscope [ethernet]

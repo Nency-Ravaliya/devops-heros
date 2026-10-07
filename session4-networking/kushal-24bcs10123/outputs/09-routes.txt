@@ -1,0 +1,16 @@
+$ netstat -rn -f inet | head -15
+Routing tables
+
+Internet:
+Destination        Gateway            Flags               Netif Expire
+default            100.129.160.1      UGScg                 en0       
+100.129.160/20     link#17            UCS                   en0      !
+100.129.160.1/32   link#17            UCS                   en0      !
+100.129.160.1      f4:1e:57:xx:xx:xx  UHLWIir               en0   1191
+100.129.160.21     8a:e6:76:xx:xx:xx  UHLWI                 en0   1035
+100.129.160.31     12:92:bd:xx:xx:xx  UHLWI                 en0    889
+100.129.160.53     8e:37:ba:xx:xx:xx   UHLWI                 en0    607
+100.129.160.54     c6:b2:8b:xx:xx:xx  UHLWI                 en0    898
+100.129.160.70     e6:6e:9:xx:xx:xx   UHLWI                 en0    681
+100.129.160.82     aa:d:70:xx:xx:xx   UHLWI                 en0   1124
+100.129.160.97     9e:d9:53:xx:xx:xx   UHLWI                 en0   1027

@@ -1,0 +1,37 @@
+############ TASK 3: bind mount into nginx ############
+$ mkdir -p ./site && printf '<h1>Hello students</h1>
+' > ./site/index.html && cat ./site/index.html
+<h1>Hello students</h1>
+
+$ docker run -d --name nginx-bind -p 8085:80 -v $(pwd)/site:/usr/share/nginx/html:ro nginx:alpine
+a5824a363f495de215ec590307471826d68ec9afbba8a600ac47b9aa8d4da121
+
+$ sleep 2
+
+$ docker inspect -f '{{range .Mounts}}type={{.Type}} src={{.Source}} dst={{.Destination}} rw={{.RW}}{{end}}' nginx-bind
+type=bind src=~/docker-lab/site dst=/usr/share/nginx/html rw=false
+
+$ curl -s http://localhost:8085
+<h1>Hello students</h1>
+
+--- edit the file on the host; container is NOT restarted
+$ printf '<h1>Hello students</h1>
+<p>edited on the host at %s - no container restart</p>
+' "$(date +%T)" > ./site/index.html
+
+$ curl -s http://localhost:8085
+<h1>Hello students</h1>
+
+$ docker ps --filter name=nginx-bind --format '{{.Names}} {{.Status}}'
+nginx-bind Up 2 seconds
+
+$ docker exec nginx-bind cat /usr/share/nginx/html/index.html
+<h1>Hello students</h1>
+<p>edited on the host at 21:16:56 - no container restart</p>
+
+$ docker exec nginx-bind sh -c 'echo hack > /usr/share/nginx/html/index.html'
+sh: can't create /usr/share/nginx/html/index.html: Read-only file system
+
+$ docker rm -f nginx-bind
+nginx-bind
+

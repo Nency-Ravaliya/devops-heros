@@ -1,0 +1,6 @@
+$ hostname; echo; hostname -f; echo; scutil --get LocalHostName
+Kushals-MacBook-Pro.local
+
+Kushals-MacBook-Pro.local
+
+Kushals-MacBook-Pro

@@ -1,0 +1,14 @@
+$ dig github.com +noall +answer +stats; echo; dig google.com MX +short; echo; dig -x 8.8.8.8 +short
+
+; <<>> DiG 9.10.6 <<>> github.com +noall +answer +stats
+;; global options: +cmd
+github.com.		1	IN	A	20.207.73.82
+;; Query time: 12 msec
+;; SERVER: 8.8.8.8#53(8.8.8.8)
+;; WHEN: Thu Sep 03 21:04:04 IST 2026
+;; MSG SIZE  rcvd: 379
+
+
+10 smtp.google.com.
+
+dns.google.

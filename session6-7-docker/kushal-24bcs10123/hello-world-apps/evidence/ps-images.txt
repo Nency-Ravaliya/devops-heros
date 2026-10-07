@@ -1,0 +1,17 @@
+$ docker images --filter "reference=hello-*"
+REPOSITORY         TAG       SIZE      CREATED
+hello-nginx-app    latest    75.9MB    5 seconds ago
+hello-react-app    latest    76.1MB    6 seconds ago
+hello-apache-app   latest    105MB     26 seconds ago
+hello-java-app     latest    286MB     37 seconds ago
+hello-python-app   latest    87.8MB    About a minute ago
+hello-nodejs-app   latest    228MB     About a minute ago
+
+$ docker ps --filter "name=hello-"
+NAMES              IMAGE              STATUS         PORTS
+hello-nginx-app    hello-nginx-app    Up 4 seconds   0.0.0.0:8083->80/tcp, [::]:8083->80/tcp
+hello-react-app    hello-react-app    Up 4 seconds   0.0.0.0:8082->80/tcp, [::]:8082->80/tcp
+hello-apache-app   hello-apache-app   Up 4 seconds   0.0.0.0:8081->80/tcp, [::]:8081->80/tcp
+hello-java-app     hello-java-app     Up 4 seconds   0.0.0.0:8080->8080/tcp, [::]:8080->8080/tcp
+hello-python-app   hello-python-app   Up 4 seconds   0.0.0.0:5000->5000/tcp, [::]:5000->5000/tcp
+hello-nodejs-app   hello-nodejs-app   Up 4 seconds   0.0.0.0:3000->3000/tcp, [::]:3000->3000/tcp

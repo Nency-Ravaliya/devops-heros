@@ -1,0 +1,107 @@
+############ TASK 2: git cherry-pick ############
+$ git init -q -b main cherry-pick-demo && cd cherry-pick-demo && pwd
+~/lab/gitdemo/cherry-pick-demo
+
+(eval):cd:35: no such file or directory: cherry-pick-demo
+--- 3 commits on main
+$ echo '# Recipe Book' > README.md && git add . && git commit -q -m 'Initial commit: README' && echo ok
+ok
+
+$ echo 'pasta: boil, sauce, serve' > pasta.txt && git add . && git commit -q -m 'Add pasta recipe' && echo ok
+ok
+
+$ echo 'salad: chop, toss, eat' > salad.txt && git add . && git commit -q -m 'Add salad recipe' && echo ok
+ok
+
+$ git log --oneline
+93bd124 Add salad recipe
+2aeb14a Add pasta recipe
+7dfba10 Initial commit: README
+
+--- new branch with 3 commits
+$ git switch -c feature/desserts
+Switched to a new branch 'feature/desserts'
+
+$ echo 'cake: mix, bake, frost' > cake.txt && git add . && git commit -q -m 'Add cake recipe' && echo ok
+ok
+
+$ sed -i '' 's/serve/serve hot/' pasta.txt && git commit -q -a -m 'Fix pasta recipe: serve hot' && echo ok
+ok
+
+$ echo 'icecream: churn, freeze' > icecream.txt && git add . && git commit -q -m 'Add ice cream recipe' && echo ok
+ok
+
+$ git log --oneline
+594d423 Add ice cream recipe
+ab07a67 Fix pasta recipe: serve hot
+3ab68fd Add cake recipe
+93bd124 Add salad recipe
+2aeb14a Add pasta recipe
+7dfba10 Initial commit: README
+
+$ git log --oneline main..feature/desserts
+594d423 Add ice cream recipe
+ab07a67 Fix pasta recipe: serve hot
+3ab68fd Add cake recipe
+
+--- pick ONLY the pasta fix and bring it to main
+(commit chosen: ab07a67)
+$ git switch main
+Switched to branch 'main'
+
+$ cat pasta.txt
+pasta: boil, sauce, serve
+
+$ ls
+pasta.txt
+README.md
+salad.txt
+
+$ git cherry-pick ab07a67
+[main 14c9e0f] Fix pasta recipe: serve hot
+ Date: Thu Sep 3 21:08:36 2026 +0530
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+$ git log --oneline
+14c9e0f Fix pasta recipe: serve hot
+93bd124 Add salad recipe
+2aeb14a Add pasta recipe
+7dfba10 Initial commit: README
+
+$ cat pasta.txt
+pasta: boil, sauce, serve hot
+
+$ ls
+pasta.txt
+README.md
+salad.txt
+
+$ git diff main feature/desserts --stat
+ cake.txt     | 1 +
+ icecream.txt | 1 +
+ 2 files changed, 2 insertions(+)
+
+$ git log --oneline --graph --all --decorate
+* 594d423 (feature/desserts) Add ice cream recipe
+* ab07a67 Fix pasta recipe: serve hot
+* 3ab68fd Add cake recipe
+| * 14c9e0f (HEAD -> main) Fix pasta recipe: serve hot
+|/  
+* 93bd124 Add salad recipe
+* 2aeb14a Add pasta recipe
+* 7dfba10 Initial commit: README
+
+$ git show --stat HEAD | head -8
+commit 14c9e0fd9cfc3c2b858872f871a58ff1121d1df5
+Author: Kushal Talati <kushal.24bcs10123@sst.scaler.com>
+Date:   Thu Sep 3 21:08:36 2026 +0530
+
+    Fix pasta recipe: serve hot
+
+ pasta.txt | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+$ git log --format='%h %s' feature/desserts | grep 'Fix pasta'; git log --format='%h %s' main | grep 'Fix pasta'
+ab07a67 Fix pasta recipe: serve hot
+14c9e0f Fix pasta recipe: serve hot
+

@@ -1,0 +1,10 @@
+$ host scaler.com
+scaler.com has address 18.172.78.47
+scaler.com has address 18.172.78.107
+scaler.com has address 18.172.78.67
+scaler.com has address 18.172.78.88
+scaler.com mail is handled by 10 aspmx3.googlemail.com.
+scaler.com mail is handled by 5 alt1.aspmx.l.google.com.
+scaler.com mail is handled by 5 alt2.aspmx.l.google.com.
+scaler.com mail is handled by 1 aspmx.l.google.com.
+scaler.com mail is handled by 10 aspmx2.googlemail.com.
