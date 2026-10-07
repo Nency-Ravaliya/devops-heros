@@ -3,7 +3,7 @@
 ---
 
 ## 👤 Student Information
-- **Name:** Sahasra Rambati
+- **Name:** Sahasra ambati
 - **Enrollment Number:** sahasra10241
 - **Course / Track:** DevOps & Cloud Engineering
 - **Assignment:** Session 6-7 Docker Multi-Stage Build & Containerized Applications Deployment
