@@ -1,0 +1,134 @@
+
+$ kubectl apply -f 03-loadbalancer/app-deployment.yaml
+deployment.apps/web-app-loadbalancer created
+
+$ kubectl apply -f 03-loadbalancer/service.yaml
+service/web-service-loadbalancer created
+
+$ kubectl rollout status deployment/web-app-loadbalancer
+Waiting for deployment "web-app-loadbalancer" rollout to finish: 0 of 3 updated replicas are available...
+Waiting for deployment "web-app-loadbalancer" rollout to finish: 1 of 3 updated replicas are available...
+Waiting for deployment "web-app-loadbalancer" rollout to finish: 2 of 3 updated replicas are available...
+deployment "web-app-loadbalancer" successfully rolled out
+
+$ kubectl get pods -l app=web-loadbalancer
+NAME                                   READY   STATUS    RESTARTS   AGE
+web-app-loadbalancer-5db87c7b9-ktxch   1/1     Running   0          0s
+web-app-loadbalancer-5db87c7b9-pbgzk   1/1     Running   0          0s
+web-app-loadbalancer-5db87c7b9-whgl8   1/1     Running   0          0s
+
+############ Without a load-balancer provider the EXTERNAL-IP stays <pending> forever ############
+
+$ sleep 5; kubectl get svc web-service-loadbalancer
+NAME                       TYPE           CLUSTER-IP     EXTERNAL-IP   PORT(S)        AGE
+web-service-loadbalancer   LoadBalancer   10.96.10.110   <pending>     80:31422/TCP   5s
+
+$ kubectl get svc web-service-loadbalancer -o jsonpath='a LoadBalancer is also a NodePort underneath: nodePort={.spec.ports[0].nodePort}{"\n"}'
+a LoadBalancer is also a NodePort underneath: nodePort=31422
+
+$ curl -s -m 3 -o /dev/null -w 'via the auto-allocated NodePort on a node: HTTP %{http_code}\n' http://localhost:$(kubectl get svc web-service-loadbalancer -o jsonpath='{.spec.ports[0].nodePort}') || echo '(that NodePort is not one of the ports kind maps to the Mac, expected)'
+via the auto-allocated NodePort on a node: HTTP 000
+(that NodePort is not one of the ports kind maps to the Mac, expected)
+
+############ Install MetalLB and give it a pool of IPs from the docker 'kind' network ############
+
+$ docker network inspect kind -f '{{range .IPAM.Config}}{{.Subnet}} {{end}}'
+fc00:f853:ccd:e793::/64 172.18.0.0/16 
+
+$ kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.15.3/config/manifests/metallb-native.yaml | tail -3
+deployment.apps/controller created
+daemonset.apps/speaker created
+validatingwebhookconfiguration.admissionregistration.k8s.io/metallb-webhook-configuration created
+
+$ kubectl wait -n metallb-system --for=condition=ready pod --selector=app=metallb --timeout=240s
+pod/controller-6fb545d477-tsnw7 condition met
+pod/speaker-6gst2 condition met
+pod/speaker-cl5td condition met
+pod/speaker-qlzks condition met
+
+$ kubectl get pods -n metallb-system -o wide
+NAME                          READY   STATUS    RESTARTS   AGE   IP            NODE                       NOMINATED NODE   READINESS GATES
+controller-6fb545d477-tsnw7   1/1     Running   0          51s   10.244.3.67   kushal-lab-worker          <none>           <none>
+speaker-6gst2                 1/1     Running   0          51s   172.18.0.3    kushal-lab-worker          <none>           <none>
+speaker-cl5td                 1/1     Running   0          51s   172.18.0.4    kushal-lab-worker2         <none>           <none>
+speaker-qlzks                 1/1     Running   0          51s   172.18.0.2    kushal-lab-control-plane   <none>           <none>
+
+$ cat kushal-24bcs10123/metallb-pool.yaml
+# MetalLB configuration for the kind cluster: hand out LoadBalancer IPs from the top of the
+# docker "kind" network (172.18.0.0/16) and announce them with L2 (ARP), like a bare-metal cluster would.
+apiVersion: metallb.io/v1beta1
+kind: IPAddressPool
+metadata:
+  name: kind-pool
+  namespace: metallb-system
+spec:
+  addresses:
+    - 172.18.255.200-172.18.255.250
+---
+apiVersion: metallb.io/v1beta1
+kind: L2Advertisement
+metadata:
+  name: kind-l2
+  namespace: metallb-system
+spec:
+  ipAddressPools:
+    - kind-pool
+
+$ kubectl apply -f kushal-24bcs10123/metallb-pool.yaml
+ipaddresspool.metallb.io/kind-pool created
+l2advertisement.metallb.io/kind-l2 created
+
+############ Now the same Service gets an EXTERNAL-IP ############
+
+$ kubectl get svc web-service-loadbalancer
+NAME                       TYPE           CLUSTER-IP     EXTERNAL-IP      PORT(S)        AGE
+web-service-loadbalancer   LoadBalancer   10.96.10.110   172.18.255.200   80:31422/TCP   57s
+
+$ kubectl describe svc web-service-loadbalancer | grep -E '^(Type|IP|LoadBalancer Ingress|Port|NodePort|Endpoints)'
+Type:                     LoadBalancer
+IP Family Policy:         SingleStack
+IP Families:              IPv4
+IP:                       10.96.10.110
+IPs:                      10.96.10.110
+LoadBalancer Ingress:     172.18.255.200 (VIP)
+Port:                     http  80/TCP
+NodePort:                 http  31422/TCP
+Endpoints:                10.244.1.67:80,10.244.3.65:80,10.244.3.66:80
+
+$ kubectl get events --field-selector involvedObject.name=web-service-loadbalancer -o custom-columns='REASON:.reason,MESSAGE:.message'
+REASON         MESSAGE
+IPAllocated    Assigned IP ["172.18.255.200"]
+nodeAssigned   announcing from node "kushal-lab-worker2" with protocol "layer2"
+
+############ Reach the app on the load balancer IP from outside the cluster (another container on the docker network = 'the office LAN') ############
+
+$ docker run --rm --network kind curlimages/curl:8.5.0 -s -m 5 http://172.18.255.200 | grep -o '<title>.*</title>'
+<title>Welcome to nginx!</title>
+
+$ for i in 1 2 3; do docker run --rm --network kind curlimages/curl:8.5.0 -s -m 5 -o /dev/null -w 'http://172.18.255.200 -> HTTP %{http_code}\n' http://172.18.255.200; done
+http://172.18.255.200 -> HTTP 200
+http://172.18.255.200 -> HTTP 200
+http://172.18.255.200 -> HTTP 200
+
+$ docker run --rm --network kind alpine:3.20 sh -c 'apk add -q iproute2 >/dev/null 2>&1; ping -c1 -W1 172.18.255.200 >/dev/null; ip neigh show 172.18.255.200'   # which node's MAC answers ARP for the LB IP
+172.18.255.200 dev eth0 lladdr 4e:2e:c2:26:87:33 REACHABLE 
+
+$ kubectl get nodes -o wide | awk '{print $1, $6}'
+NAME INTERNAL-IP
+kushal-lab-control-plane 172.18.0.2
+kushal-lab-worker 172.18.0.3
+kushal-lab-worker2 172.18.0.4
+
+############ Cleanup ############
+
+$ kubectl delete -f 03-loadbalancer/service.yaml -f 03-loadbalancer/app-deployment.yaml
+service "web-service-loadbalancer" deleted from default namespace
+deployment.apps "web-app-loadbalancer" deleted from default namespace
+
+$ kubectl delete -f kushal-24bcs10123/metallb-pool.yaml
+ipaddresspool.metallb.io "kind-pool" deleted from metallb-system namespace
+l2advertisement.metallb.io "kind-l2" deleted from metallb-system namespace
+
+$ kubectl delete -f https://raw.githubusercontent.com/metallb/metallb/v0.15.3/config/manifests/metallb-native.yaml --ignore-not-found | tail -2
+daemonset.apps "speaker" deleted from metallb-system namespace
+validatingwebhookconfiguration.admissionregistration.k8s.io "metallb-webhook-configuration" deleted

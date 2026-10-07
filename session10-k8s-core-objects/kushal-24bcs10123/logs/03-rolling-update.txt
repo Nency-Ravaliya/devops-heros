@@ -1,0 +1,220 @@
+
+############ Step 1-2: deploy v1 and reach it on NodePort 30010 ############
+
+$ kubectl apply -f 01-rolling-update/deployment-v1.yaml
+deployment.apps/app-rolling created
+
+$ kubectl apply -f 01-rolling-update/service.yaml
+service/app-rolling-service created
+
+$ kubectl rollout status deployment/app-rolling
+Waiting for deployment "app-rolling" rollout to finish: 0 of 4 updated replicas are available...
+Waiting for deployment "app-rolling" rollout to finish: 1 of 4 updated replicas are available...
+Waiting for deployment "app-rolling" rollout to finish: 2 of 4 updated replicas are available...
+Waiting for deployment "app-rolling" rollout to finish: 3 of 4 updated replicas are available...
+deployment "app-rolling" successfully rolled out
+
+$ kubectl get pods -l app=app-rolling --show-labels
+NAME                           READY   STATUS    RESTARTS   AGE   LABELS
+app-rolling-86d7d44d5b-49lbh   1/1     Running   0          8s    app=app-rolling,pod-template-hash=86d7d44d5b,version=v1
+app-rolling-86d7d44d5b-5qw2v   1/1     Running   0          8s    app=app-rolling,pod-template-hash=86d7d44d5b,version=v1
+app-rolling-86d7d44d5b-89pcq   1/1     Running   0          8s    app=app-rolling,pod-template-hash=86d7d44d5b,version=v1
+app-rolling-86d7d44d5b-pbj2r   1/1     Running   0          8s    app=app-rolling,pod-template-hash=86d7d44d5b,version=v1
+
+$ kubectl get svc app-rolling-service
+NAME                  TYPE       CLUSTER-IP     EXTERNAL-IP   PORT(S)        AGE
+app-rolling-service   NodePort   10.96.117.54   <none>        80:30010/TCP   8s
+
+$ curl -s http://localhost:30010 | grep -o 'VERSION: v[0-9]'
+VERSION: v1
+
+$ kubectl get deployment app-rolling -o jsonpath='strategy={.spec.strategy.type} maxSurge={.spec.strategy.rollingUpdate.maxSurge} maxUnavailable={.spec.strategy.rollingUpdate.maxUnavailable}{"\n"}'
+strategy=RollingUpdate maxSurge=1 maxUnavailable=0
+
+############ Step 3-5: roll to v2 while curling continuously ############
+
+$ kubectl apply -f 01-rolling-update/deployment-v2.yaml
+deployment.apps/app-rolling configured
+
+$ sleep 4; kubectl get pods -l app=app-rolling            # mid-rollout: 4 desired + 1 surge = 5 pods
+NAME                           READY   STATUS    RESTARTS   AGE
+app-rolling-56bff6d88c-kd2k6   0/1     Running   0          4s
+app-rolling-86d7d44d5b-49lbh   1/1     Running   0          13s
+app-rolling-86d7d44d5b-5qw2v   1/1     Running   0          13s
+app-rolling-86d7d44d5b-89pcq   1/1     Running   0          13s
+app-rolling-86d7d44d5b-pbj2r   1/1     Running   0          13s
+
+$ kubectl rollout status deployment/app-rolling
+Waiting for deployment "app-rolling" rollout to finish: 1 out of 4 new replicas have been updated...
+Waiting for deployment "app-rolling" rollout to finish: 1 out of 4 new replicas have been updated...
+Waiting for deployment "app-rolling" rollout to finish: 1 out of 4 new replicas have been updated...
+Waiting for deployment "app-rolling" rollout to finish: 2 out of 4 new replicas have been updated...
+Waiting for deployment "app-rolling" rollout to finish: 2 out of 4 new replicas have been updated...
+Waiting for deployment "app-rolling" rollout to finish: 2 out of 4 new replicas have been updated...
+Waiting for deployment "app-rolling" rollout to finish: 2 out of 4 new replicas have been updated...
+Waiting for deployment "app-rolling" rollout to finish: 3 out of 4 new replicas have been updated...
+Waiting for deployment "app-rolling" rollout to finish: 3 out of 4 new replicas have been updated...
+Waiting for deployment "app-rolling" rollout to finish: 3 out of 4 new replicas have been updated...
+Waiting for deployment "app-rolling" rollout to finish: 3 out of 4 new replicas have been updated...
+Waiting for deployment "app-rolling" rollout to finish: 1 old replicas are pending termination...
+Waiting for deployment "app-rolling" rollout to finish: 1 old replicas are pending termination...
+Waiting for deployment "app-rolling" rollout to finish: 1 old replicas are pending termination...
+deployment "app-rolling" successfully rolled out
+
+$ kubectl get pods -l app=app-rolling --show-labels
+NAME                           READY   STATUS    RESTARTS   AGE   LABELS
+app-rolling-56bff6d88c-2tdkk   1/1     Running   0          35s   app=app-rolling,pod-template-hash=56bff6d88c,version=v2
+app-rolling-56bff6d88c-jm8wf   1/1     Running   0          41s   app=app-rolling,pod-template-hash=56bff6d88c,version=v2
+app-rolling-56bff6d88c-kd2k6   1/1     Running   0          47s   app=app-rolling,pod-template-hash=56bff6d88c,version=v2
+app-rolling-56bff6d88c-tb8wk   1/1     Running   0          29s   app=app-rolling,pod-template-hash=56bff6d88c,version=v2
+
+$ curl -s http://localhost:30010 | grep -o 'VERSION: v[0-9]'
+VERSION: v2
+
+############ what the curl loop saw during the rollout (80 requests, 0.5s apart) ############
+
+$ cat '/Users/kushalscaler/devops-heros/session10-k8s-core-objects/kushal-24bcs10123/logs/03-rolling-curl.txt' | uniq -c
+  13 VERSION: v1
+   1 VERSION: v2
+   1 VERSION: v1
+   1 VERSION: v2
+   1 VERSION: v1
+   1 VERSION: v2
+   6 VERSION: v1
+   3 VERSION: v2
+   1 VERSION: v1
+   1 VERSION: v2
+   2 VERSION: v1
+   1 VERSION: v2
+   1 VERSION: v1
+   1 VERSION: v2
+   2 VERSION: v1
+   1 VERSION: v2
+   1 VERSION: v1
+   5 VERSION: v2
+   1 VERSION: v1
+   3 VERSION: v2
+   1 FAIL (no response)
+  32 VERSION: v2
+
+$ sort '/Users/kushalscaler/devops-heros/session10-k8s-core-objects/kushal-24bcs10123/logs/03-rolling-curl.txt' | uniq -c
+   1 FAIL (no response)
+  29 VERSION: v1
+  50 VERSION: v2
+
+############ pod watch during the rollout ############
+
+$ cat '/Users/kushalscaler/devops-heros/session10-k8s-core-objects/kushal-24bcs10123/logs/03-rolling-watch.txt'
+NAME                           READY   STATUS    RESTARTS   AGE
+app-rolling-86d7d44d5b-49lbh   1/1     Running   0          8s
+app-rolling-86d7d44d5b-5qw2v   1/1     Running   0          8s
+app-rolling-86d7d44d5b-89pcq   1/1     Running   0          8s
+app-rolling-86d7d44d5b-pbj2r   1/1     Running   0          8s
+app-rolling-56bff6d88c-kd2k6   0/1     Pending   0          0s
+app-rolling-56bff6d88c-kd2k6   0/1     Pending   0          0s
+app-rolling-56bff6d88c-kd2k6   0/1     ContainerCreating   0          0s
+app-rolling-56bff6d88c-kd2k6   0/1     ContainerCreating   0          1s
+app-rolling-56bff6d88c-kd2k6   0/1     Running             0          1s
+app-rolling-56bff6d88c-kd2k6   1/1     Running             0          6s
+app-rolling-56bff6d88c-kd2k6   1/1     Running             0          6s
+app-rolling-86d7d44d5b-5qw2v   1/1     Terminating         0          15s
+app-rolling-86d7d44d5b-5qw2v   1/1     Terminating         0          15s
+app-rolling-56bff6d88c-jm8wf   0/1     Pending             0          0s
+app-rolling-56bff6d88c-jm8wf   0/1     Pending             0          0s
+app-rolling-56bff6d88c-jm8wf   0/1     ContainerCreating   0          0s
+app-rolling-86d7d44d5b-5qw2v   0/1     Completed           0          16s
+app-rolling-56bff6d88c-jm8wf   0/1     ContainerCreating   0          1s
+app-rolling-56bff6d88c-jm8wf   0/1     Running             0          1s
+app-rolling-86d7d44d5b-5qw2v   0/1     Completed           0          16s
+app-rolling-86d7d44d5b-5qw2v   0/1     Completed           0          16s
+app-rolling-56bff6d88c-jm8wf   1/1     Running             0          6s
+app-rolling-86d7d44d5b-pbj2r   1/1     Terminating         0          21s
+app-rolling-86d7d44d5b-pbj2r   1/1     Terminating         0          21s
+app-rolling-56bff6d88c-2tdkk   0/1     Pending             0          0s
+app-rolling-56bff6d88c-2tdkk   0/1     Pending             0          0s
+app-rolling-56bff6d88c-2tdkk   0/1     ContainerCreating   0          0s
+app-rolling-86d7d44d5b-pbj2r   0/1     Completed           0          21s
+app-rolling-56bff6d88c-2tdkk   0/1     ContainerCreating   0          1s
+app-rolling-56bff6d88c-2tdkk   0/1     Running             0          1s
+app-rolling-86d7d44d5b-pbj2r   0/1     Completed           0          22s
+app-rolling-86d7d44d5b-pbj2r   0/1     Completed           0          22s
+app-rolling-86d7d44d5b-pbj2r   0/1     Completed           0          22s
+app-rolling-56bff6d88c-2tdkk   1/1     Running             0          6s
+app-rolling-56bff6d88c-2tdkk   1/1     Running             0          6s
+app-rolling-86d7d44d5b-89pcq   1/1     Terminating         0          27s
+app-rolling-56bff6d88c-tb8wk   0/1     Pending             0          0s
+app-rolling-86d7d44d5b-89pcq   1/1     Terminating         0          27s
+app-rolling-56bff6d88c-tb8wk   0/1     Pending             0          0s
+app-rolling-56bff6d88c-tb8wk   0/1     ContainerCreating   0          0s
+app-rolling-86d7d44d5b-89pcq   0/1     Completed           0          28s
+app-rolling-56bff6d88c-tb8wk   0/1     ContainerCreating   0          1s
+app-rolling-86d7d44d5b-89pcq   0/1     Completed           0          28s
+app-rolling-86d7d44d5b-89pcq   0/1     Completed           0          28s
+app-rolling-56bff6d88c-tb8wk   0/1     Running             0          1s
+app-rolling-56bff6d88c-tb8wk   1/1     Running             0          7s
+app-rolling-56bff6d88c-tb8wk   1/1     Running             0          7s
+app-rolling-86d7d44d5b-49lbh   1/1     Terminating         0          34s
+app-rolling-86d7d44d5b-49lbh   1/1     Terminating         0          34s
+app-rolling-86d7d44d5b-49lbh   0/1     Completed           0          34s
+app-rolling-86d7d44d5b-49lbh   0/1     Completed           0          35s
+app-rolling-86d7d44d5b-49lbh   0/1     Completed           0          35s
+
+$ kubectl rollout history deployment/app-rolling
+deployment.apps/app-rolling 
+REVISION  CHANGE-CAUSE
+1         <none>
+2         <none>
+
+
+$ kubectl get rs -l app=app-rolling
+NAME                     DESIRED   CURRENT   READY   AGE
+app-rolling-56bff6d88c   4         4         4       48s
+app-rolling-86d7d44d5b   0         0         0       57s
+
+############ Step 7: rollback ############
+
+$ kubectl rollout undo deployment/app-rolling
+deployment.apps/app-rolling rolled back
+
+$ kubectl rollout status deployment/app-rolling
+Waiting for deployment "app-rolling" rollout to finish: 1 out of 4 new replicas have been updated...
+Waiting for deployment "app-rolling" rollout to finish: 1 out of 4 new replicas have been updated...
+Waiting for deployment "app-rolling" rollout to finish: 1 out of 4 new replicas have been updated...
+Waiting for deployment "app-rolling" rollout to finish: 2 out of 4 new replicas have been updated...
+Waiting for deployment "app-rolling" rollout to finish: 2 out of 4 new replicas have been updated...
+Waiting for deployment "app-rolling" rollout to finish: 2 out of 4 new replicas have been updated...
+Waiting for deployment "app-rolling" rollout to finish: 2 out of 4 new replicas have been updated...
+Waiting for deployment "app-rolling" rollout to finish: 3 out of 4 new replicas have been updated...
+Waiting for deployment "app-rolling" rollout to finish: 3 out of 4 new replicas have been updated...
+Waiting for deployment "app-rolling" rollout to finish: 3 out of 4 new replicas have been updated...
+Waiting for deployment "app-rolling" rollout to finish: 3 out of 4 new replicas have been updated...
+Waiting for deployment "app-rolling" rollout to finish: 1 old replicas are pending termination...
+Waiting for deployment "app-rolling" rollout to finish: 1 old replicas are pending termination...
+Waiting for deployment "app-rolling" rollout to finish: 1 old replicas are pending termination...
+deployment "app-rolling" successfully rolled out
+
+$ kubectl get pods -l app=app-rolling --show-labels
+NAME                           READY   STATUS        RESTARTS   AGE   LABELS
+app-rolling-56bff6d88c-kd2k6   1/1     Terminating   0          73s   app=app-rolling,pod-template-hash=56bff6d88c,version=v2
+app-rolling-86d7d44d5b-jsh5v   1/1     Running       0          7s    app=app-rolling,pod-template-hash=86d7d44d5b,version=v1
+app-rolling-86d7d44d5b-qwgl9   1/1     Running       0          20s   app=app-rolling,pod-template-hash=86d7d44d5b,version=v1
+app-rolling-86d7d44d5b-szsrr   1/1     Running       0          25s   app=app-rolling,pod-template-hash=86d7d44d5b,version=v1
+app-rolling-86d7d44d5b-xksgh   1/1     Running       0          13s   app=app-rolling,pod-template-hash=86d7d44d5b,version=v1
+
+$ curl -s http://localhost:30010 | grep -o 'VERSION: v[0-9]'
+VERSION: v1
+
+$ kubectl rollout history deployment/app-rolling
+deployment.apps/app-rolling 
+REVISION  CHANGE-CAUSE
+2         <none>
+3         <none>
+
+
+############ Cleanup ############
+
+$ kubectl delete -f 01-rolling-update/service.yaml
+service "app-rolling-service" deleted from default namespace
+
+$ kubectl delete -f 01-rolling-update/deployment-v1.yaml
+deployment.apps "app-rolling" deleted from default namespace

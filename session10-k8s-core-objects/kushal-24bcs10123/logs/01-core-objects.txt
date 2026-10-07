@@ -1,0 +1,400 @@
+
+############ POD - smallest deployable unit ############
+
+$ kubectl apply -f pod/nginx-pod.yaml
+pod/yatri-demo-pod created
+
+$ kubectl wait --for=condition=Ready pod/yatri-demo-pod --timeout=120s
+pod/yatri-demo-pod condition met
+
+$ kubectl get pod yatri-demo-pod -o wide --show-labels
+NAME             READY   STATUS    RESTARTS   AGE   IP            NODE                NOMINATED NODE   READINESS GATES   LABELS
+yatri-demo-pod   1/1     Running   0          1s    10.244.3.79   kushal-lab-worker   <none>           <none>            app=yatri-demo,tier=frontend
+
+$ kubectl describe pod yatri-demo-pod | grep -E '^(Node|IP|Status):|Image:|Limits|Requests|cpu|memory'
+Node:             kushal-lab-worker/172.18.0.3
+Status:           Running
+IP:               10.244.3.79
+    Image:          nginx:1.25-alpine
+    Limits:
+      cpu:     200m
+      memory:  128Mi
+    Requests:
+      cpu:        50m
+      memory:     64Mi
+
+$ kubectl apply -f hello.yml                      # restartPolicy: Never, runs one command and exits
+pod/hello-pod created
+
+$ kubectl wait --for=jsonpath='{.status.phase}'=Succeeded pod/hello-pod --timeout=120s
+pod/hello-pod condition met
+
+$ kubectl get pod hello-pod
+NAME        READY   STATUS      RESTARTS   AGE
+hello-pod   0/1     Completed   0          6s
+
+$ kubectl logs hello-pod
+Hello Kubernetes
+
+$ kubectl apply -f k8s-core-objects/pod.yml       # two containers in one pod
+pod/mypod created
+
+$ kubectl wait --for=condition=Ready pod/mypod --timeout=120s
+pod/mypod condition met
+
+$ kubectl get pod mypod
+NAME    READY   STATUS    RESTARTS   AGE
+mypod   2/2     Running   0          4s
+
+$ kubectl logs mypod -c logger --tail=2
+log
+
+$ kubectl exec mypod -c logger -- wget -qO- http://localhost | grep -o '<title>.*</title>'   # containers in a pod share localhost
+<title>Welcome to nginx!</title>
+
+$ kubectl delete pod yatri-demo-pod hello-pod mypod
+pod "yatri-demo-pod" deleted from default namespace
+pod "hello-pod" deleted from default namespace
+pod "mypod" deleted from default namespace
+
+############ REPLICASET - keeps N identical pods alive ############
+
+$ kubectl apply -f replicaset/backend-rs.yaml
+replicaset.apps/yatri-backend-rs created
+
+$ kubectl wait --for=condition=Ready pod -l app=yatri-backend --timeout=180s
+pod/yatri-backend-rs-jzxbq condition met
+pod/yatri-backend-rs-p2hxh condition met
+pod/yatri-backend-rs-wwhld condition met
+
+$ kubectl get rs yatri-backend-rs
+NAME               DESIRED   CURRENT   READY   AGE
+yatri-backend-rs   3         3         3       1s
+
+$ kubectl get pods -l app=yatri-backend -o wide
+NAME                     READY   STATUS    RESTARTS   AGE   IP            NODE                 NOMINATED NODE   READINESS GATES
+yatri-backend-rs-jzxbq   1/1     Running   0          1s    10.244.3.82   kushal-lab-worker    <none>           <none>
+yatri-backend-rs-p2hxh   1/1     Running   0          1s    10.244.3.81   kushal-lab-worker    <none>           <none>
+yatri-backend-rs-wwhld   1/1     Running   0          1s    10.244.1.79   kushal-lab-worker2   <none>           <none>
+
+$ kubectl delete pod yatri-backend-rs-jzxbq                     # kill one pod on purpose
+pod "yatri-backend-rs-jzxbq" deleted from default namespace
+
+$ sleep 8; kubectl get pods -l app=yatri-backend    # a replacement appeared within seconds
+NAME                     READY   STATUS    RESTARTS   AGE
+yatri-backend-rs-p2hxh   1/1     Running   0          41s
+yatri-backend-rs-scdcs   1/1     Running   0          38s
+yatri-backend-rs-wwhld   1/1     Running   0          41s
+
+$ cat '/Users/kushalscaler/devops-heros/session10-k8s-core-objects/kushal-24bcs10123/logs/01-replicaset-selfheal-watch.txt'
+NAME                     READY   STATUS    RESTARTS   AGE
+yatri-backend-rs-jzxbq   1/1     Running   0          1s
+yatri-backend-rs-p2hxh   1/1     Running   0          1s
+yatri-backend-rs-wwhld   1/1     Running   0          1s
+yatri-backend-rs-jzxbq   1/1     Terminating   0          3s
+yatri-backend-rs-scdcs   0/1     Pending       0          0s
+yatri-backend-rs-jzxbq   1/1     Terminating   0          3s
+yatri-backend-rs-scdcs   0/1     Pending       0          0s
+yatri-backend-rs-scdcs   0/1     ContainerCreating   0          0s
+yatri-backend-rs-scdcs   0/1     ContainerCreating   0          0s
+yatri-backend-rs-scdcs   1/1     Running             0          0s
+yatri-backend-rs-jzxbq   0/1     Error               0          33s
+yatri-backend-rs-jzxbq   0/1     Error               0          33s
+yatri-backend-rs-jzxbq   0/1     Error               0          33s
+
+$ kubectl scale rs yatri-backend-rs --replicas=5 && sleep 6 && kubectl get rs yatri-backend-rs
+replicaset.apps/yatri-backend-rs scaled
+NAME               DESIRED   CURRENT   READY   AGE
+yatri-backend-rs   5         5         5       50s
+
+$ kubectl scale rs yatri-backend-rs --replicas=3 && sleep 6 && kubectl get rs yatri-backend-rs
+replicaset.apps/yatri-backend-rs scaled
+NAME               DESIRED   CURRENT   READY   AGE
+yatri-backend-rs   3         3         3       56s
+
+$ kubectl patch rs yatri-backend-rs --type=json -p='[{"op":"replace","path":"/spec/template/spec/containers/0/image","value":"python:3.11-alpine3.19"}]'
+replicaset.apps/yatri-backend-rs patched
+
+$ kubectl get rs yatri-backend-rs -o jsonpath='template image: {.spec.template.spec.containers[0].image}{"\n"}'
+template image: python:3.11-alpine3.19
+
+$ kubectl get pods -l app=yatri-backend -o custom-columns='NAME:.metadata.name,IMAGE:.spec.containers[0].image'   # existing pods NOT updated: a ReplicaSet has no rollout logic
+NAME                     IMAGE
+yatri-backend-rs-2pqrb   python:3.11-alpine
+yatri-backend-rs-6qbkp   python:3.11-alpine
+yatri-backend-rs-p2hxh   python:3.11-alpine
+yatri-backend-rs-scdcs   python:3.11-alpine
+yatri-backend-rs-wwhld   python:3.11-alpine
+
+$ kubectl delete rs yatri-backend-rs
+replicaset.apps "yatri-backend-rs" deleted from default namespace
+
+$ sleep 3; kubectl get pods -l app=yatri-backend   # deleting the RS cascades to its pods
+NAME                     READY   STATUS        RESTARTS   AGE
+yatri-backend-rs-2pqrb   1/1     Terminating   0          16s
+yatri-backend-rs-6qbkp   1/1     Terminating   0          16s
+yatri-backend-rs-p2hxh   1/1     Terminating   0          60s
+yatri-backend-rs-scdcs   1/1     Terminating   0          57s
+yatri-backend-rs-wwhld   1/1     Terminating   0          60s
+
+$ kubectl wait --for=delete pod -l app=yatri-backend --timeout=120s   # python as PID 1 ignores SIGTERM, so pods use the full 30s grace period
+pod/yatri-backend-rs-2pqrb condition met
+pod/yatri-backend-rs-6qbkp condition met
+pod/yatri-backend-rs-p2hxh condition met
+pod/yatri-backend-rs-scdcs condition met
+pod/yatri-backend-rs-wwhld condition met
+
+############ DEPLOYMENT - manages ReplicaSets, gives rollouts and rollbacks ############
+
+$ kubectl apply -f deployment/deployment-v1.yaml
+deployment.apps/yatri-backend created
+
+$ kubectl rollout status deployment/yatri-backend
+Waiting for deployment "yatri-backend" rollout to finish: 0 of 3 updated replicas are available...
+Waiting for deployment "yatri-backend" rollout to finish: 1 of 3 updated replicas are available...
+Waiting for deployment "yatri-backend" rollout to finish: 2 of 3 updated replicas are available...
+deployment "yatri-backend" successfully rolled out
+
+$ kubectl get deploy,rs,pods -l app=yatri-backend
+NAME                            READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/yatri-backend   3/3     3            3           1s
+
+NAME                                       DESIRED   CURRENT   READY   AGE
+replicaset.apps/yatri-backend-7554bd5c75   3         3         3       1s
+
+NAME                                 READY   STATUS    RESTARTS   AGE
+pod/yatri-backend-7554bd5c75-jvq8j   1/1     Running   0          1s
+pod/yatri-backend-7554bd5c75-pp55z   1/1     Running   0          1s
+pod/yatri-backend-7554bd5c75-rjjkr   1/1     Running   0          1s
+
+$ kubectl apply -f deployment/deployment-v2.yaml
+deployment.apps/yatri-backend configured
+
+$ kubectl rollout status deployment/yatri-backend
+Waiting for deployment "yatri-backend" rollout to finish: 1 out of 3 new replicas have been updated...
+Waiting for deployment "yatri-backend" rollout to finish: 1 out of 3 new replicas have been updated...
+Waiting for deployment "yatri-backend" rollout to finish: 1 out of 3 new replicas have been updated...
+Waiting for deployment "yatri-backend" rollout to finish: 2 out of 3 new replicas have been updated...
+Waiting for deployment "yatri-backend" rollout to finish: 2 out of 3 new replicas have been updated...
+Waiting for deployment "yatri-backend" rollout to finish: 2 out of 3 new replicas have been updated...
+Waiting for deployment "yatri-backend" rollout to finish: 1 old replicas are pending termination...
+Waiting for deployment "yatri-backend" rollout to finish: 1 old replicas are pending termination...
+deployment "yatri-backend" successfully rolled out
+
+$ kubectl wait --for=delete pod -l app=yatri-backend,version=1.0.0 --timeout=120s
+pod/yatri-backend-7554bd5c75-jvq8j condition met
+pod/yatri-backend-7554bd5c75-pp55z condition met
+pod/yatri-backend-7554bd5c75-rjjkr condition met
+
+$ kubectl get pods -l app=yatri-backend -L version
+NAME                            READY   STATUS    RESTARTS   AGE   VERSION
+yatri-backend-cbc55c649-2ld2d   1/1     Running   0          31s   2.0.0
+yatri-backend-cbc55c649-f8m9n   1/1     Running   0          32s   2.0.0
+yatri-backend-cbc55c649-h7d5c   1/1     Running   0          31s   2.0.0
+
+$ kubectl get rs -l app=yatri-backend             # old RS kept at 0 replicas for rollback
+NAME                       DESIRED   CURRENT   READY   AGE
+yatri-backend-7554bd5c75   0         0         0       33s
+yatri-backend-cbc55c649    3         3         3       32s
+
+$ kubectl rollout history deployment/yatri-backend
+deployment.apps/yatri-backend 
+REVISION  CHANGE-CAUSE
+1         <none>
+2         <none>
+
+
+$ kubectl logs deployment/yatri-backend --tail=1
+Found 3 pods, using pod/yatri-backend-cbc55c649-f8m9n
+
+############ DEPLOYMENT - a broken rollout stops itself (troubleshooting/broken-image.yaml) ############
+
+$ kubectl apply -f troubleshooting/broken-image.yaml
+deployment.apps/yatri-backend configured
+
+$ sleep 25; kubectl get pods -l app=yatri-backend
+NAME                             READY   STATUS             RESTARTS   AGE
+yatri-backend-77dbb657cd-cp56m   0/1     ImagePullBackOff   0          25s
+yatri-backend-cbc55c649-2ld2d    1/1     Running            0          57s
+yatri-backend-cbc55c649-f8m9n    1/1     Running            0          58s
+yatri-backend-cbc55c649-h7d5c    1/1     Running            0          57s
+
+$ kubectl rollout status deployment/yatri-backend --timeout=10s || true
+Waiting for deployment "yatri-backend" rollout to finish: 1 out of 3 new replicas have been updated...
+error: timed out waiting for the condition
+
+$ kubectl get deployment yatri-backend           # 3/3 READY: old pods kept serving because maxUnavailable: 0
+NAME            READY   UP-TO-DATE   AVAILABLE   AGE
+yatri-backend   3/3     1            3           69s
+
+$ kubectl rollout undo deployment/yatri-backend
+deployment.apps/yatri-backend rolled back
+
+$ kubectl rollout status deployment/yatri-backend
+deployment "yatri-backend" successfully rolled out
+
+$ kubectl wait --for=delete pod -l app=yatri-backend,version=broken-v3 --timeout=120s
+pod/yatri-backend-77dbb657cd-cp56m condition met
+
+$ kubectl get pods -l app=yatri-backend -o custom-columns='NAME:.metadata.name,VERSION:.metadata.labels.version,STATUS:.status.phase'
+NAME                            VERSION   STATUS
+yatri-backend-cbc55c649-2ld2d   2.0.0     Running
+yatri-backend-cbc55c649-f8m9n   2.0.0     Running
+yatri-backend-cbc55c649-h7d5c   2.0.0     Running
+
+$ kubectl rollout history deployment/yatri-backend
+deployment.apps/yatri-backend 
+REVISION  CHANGE-CAUSE
+1         <none>
+3         <none>
+4         <none>
+
+
+############ DEPLOYMENT - selector must match template labels (troubleshooting/selector-mismatch.yaml) ############
+
+$ kubectl apply -f troubleshooting/selector-mismatch.yaml || true
+The Deployment "selector-error-demo" is invalid: spec.template.metadata.labels: Invalid value: {"app":"wrong-app-name"}: `selector` does not match template `labels`
+
+$ kubectl delete deployment yatri-backend
+deployment.apps "yatri-backend" deleted from default namespace
+
+$ kubectl wait --for=delete pod -l app=yatri-backend --timeout=120s
+pod/yatri-backend-cbc55c649-2ld2d condition met
+pod/yatri-backend-cbc55c649-f8m9n condition met
+pod/yatri-backend-cbc55c649-h7d5c condition met
+
+############ DAEMONSET - one pod per node ############
+
+$ kubectl apply -f daemonset/node-agent-ds.yaml
+daemonset.apps/node-logging-agent created
+
+$ kubectl rollout status daemonset/node-logging-agent
+Waiting for daemon set "node-logging-agent" rollout to finish: 0 of 2 updated pods are available...
+Waiting for daemon set "node-logging-agent" rollout to finish: 1 of 2 updated pods are available...
+daemon set "node-logging-agent" successfully rolled out
+
+$ kubectl get daemonset node-logging-agent
+NAME                 DESIRED   CURRENT   READY   UP-TO-DATE   AVAILABLE   NODE SELECTOR   AGE
+node-logging-agent   2         2         2       2            2           <none>          1s
+
+$ kubectl get pods -l app=node-logging-agent -o wide
+NAME                       READY   STATUS    RESTARTS   AGE   IP            NODE                 NOMINATED NODE   READINESS GATES
+node-logging-agent-hkzmc   1/1     Running   0          2s    10.244.3.89   kushal-lab-worker    <none>           <none>
+node-logging-agent-sb5h7   1/1     Running   0          2s    10.244.1.88   kushal-lab-worker2   <none>           <none>
+
+$ kubectl describe node kushal-lab-control-plane | grep -A1 '^Taints'   # why the control-plane node got no pod
+Taints:             node-role.kubernetes.io/control-plane:NoSchedule
+Unschedulable:      false
+
+$ kubectl logs -l app=node-logging-agent --tail=1 | sed -E 's/^\[[^]]*\] //'   # each agent reports its own pod/hostname
+Collecting host system metrics on node-logging-agent-hkzmc
+Collecting host system metrics on node-logging-agent-sb5h7
+
+$ kubectl get daemonset -n kube-system            # kube-proxy and kindnet tolerate the taint, so they run on all 3 nodes
+NAME         DESIRED   CURRENT   READY   UP-TO-DATE   AVAILABLE   NODE SELECTOR            AGE
+kindnet      3         3         3       3            3           kubernetes.io/os=linux   64m
+kube-proxy   3         3         3       3            3           kubernetes.io/os=linux   64m
+
+$ kubectl delete -f daemonset/node-agent-ds.yaml
+daemonset.apps "node-logging-agent" deleted from default namespace
+
+############ STATEFULSET - stable names, ordered start, one PVC per pod ############
+
+$ kubectl apply -f k8s-core-objects/statefulset.yml
+statefulset.apps/mysql created
+
+$ sleep 20; kubectl get statefulset mysql; kubectl get pods -l app=mysql; kubectl get pvc
+NAME    READY   AGE
+mysql   0/3     20s
+NAME      READY   STATUS             RESTARTS   AGE
+mysql-0   0/1     ImagePullBackOff   0          20s
+NAME                               STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE
+mysql-persistent-storage-mysql-0   Bound    pvc-dc2075dd-be5d-4343-a931-43240205cdcb   5Gi        RWO            standard       <unset>                 20s
+
+$ kubectl describe pod mysql-0 | grep -iE 'Failed|no match|platform' | head -3
+  Warning  Failed     13s               kubelet            Failed to pull image "mysql:5.7": rpc error: code = NotFound desc = failed to pull and unpack image "docker.io/library/mysql:5.7": no match for platform in manifest: not found
+  Warning  Failed     13s               kubelet            Error: ErrImagePull
+  Warning  Failed     12s               kubelet            Error: ImagePullBackOff
+
+$ kubectl get nodes -o jsonpath='{range .items[*]}{.metadata.name}: {.status.nodeInfo.architecture}{"\n"}{end}'
+kushal-lab-control-plane: arm64
+kushal-lab-worker: arm64
+kushal-lab-worker2: arm64
+
+$ kubectl set image statefulset/mysql mysql=mysql:8.0    # mysql:5.7 has no arm64 image; 8.0 is multi-arch. Manifest on disk left unchanged.
+statefulset.apps/mysql image updated
+
+$ kubectl delete pod mysql-0                            # let the controller recreate it with the new image
+pod "mysql-0" deleted from default namespace
+
+$ kubectl rollout status statefulset/mysql --timeout=600s
+Waiting for 2 pods to be ready...
+Waiting for 1 pods to be ready...
+Waiting for 1 pods to be ready...
+partitioned roll out complete: 3 new pods have been updated...
+
+$ cat '/Users/kushalscaler/devops-heros/session10-k8s-core-objects/kushal-24bcs10123/logs/01-statefulset-ordered-watch.txt'
+NAME      READY   STATUS              RESTARTS   AGE
+mysql-0   0/1     ContainerCreating   0          0s
+mysql-0   0/1     ContainerCreating   0          0s
+mysql-0   1/1     Running             0          0s
+mysql-1   0/1     Pending             0          0s
+mysql-1   0/1     Pending             0          0s
+mysql-1   0/1     Pending             0          4s
+mysql-1   0/1     ContainerCreating   0          4s
+mysql-1   0/1     ContainerCreating   0          5s
+mysql-1   1/1     Running             0          5s
+mysql-2   0/1     Pending             0          0s
+mysql-2   0/1     Pending             0          0s
+mysql-2   0/1     Pending             0          4s
+mysql-2   0/1     ContainerCreating   0          4s
+mysql-2   0/1     ContainerCreating   0          4s
+mysql-2   1/1     Running             0          4s
+
+$ kubectl get pods -l app=mysql -o wide
+NAME      READY   STATUS    RESTARTS   AGE   IP            NODE                 NOMINATED NODE   READINESS GATES
+mysql-0   1/1     Running   0          12s   10.244.1.91   kushal-lab-worker2   <none>           <none>
+mysql-1   1/1     Running   0          12s   10.244.3.92   kushal-lab-worker    <none>           <none>
+mysql-2   1/1     Running   0          7s    10.244.1.94   kushal-lab-worker2   <none>           <none>
+
+$ kubectl get pvc
+NAME                               STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE
+mysql-persistent-storage-mysql-0   Bound    pvc-dc2075dd-be5d-4343-a931-43240205cdcb   5Gi        RWO            standard       <unset>                 38s
+mysql-persistent-storage-mysql-1   Bound    pvc-368eed1a-3623-45c1-a48a-e4284bb23a14   5Gi        RWO            standard       <unset>                 12s
+mysql-persistent-storage-mysql-2   Bound    pvc-45b3a966-af1a-4e1c-b70d-db45fe3e5ec3   5Gi        RWO            standard       <unset>                 7s
+
+$ kubectl create service clusterip mysql --clusterip=None --tcp=3306   # the headless service the manifest's serviceName refers to
+service/mysql created
+
+$ runonce dns-test busybox:1.36 nslookup mysql-1.mysql.default.svc.cluster.local | grep -A1 '^Name'
+Name:	mysql-1.mysql.default.svc.cluster.local
+Address: 10.244.3.92
+
+$ runonce dns-test2 busybox:1.36 nslookup mysql | grep -c 'Address: 10.244'   # headless: one A record per pod, no virtual IP
+3
+
+$ kubectl delete pod mysql-1 && sleep 25 && kubectl get pods -l app=mysql   # same name comes back, same PVC
+pod "mysql-1" deleted from default namespace
+NAME      READY   STATUS    RESTARTS   AGE
+mysql-0   1/1     Running   0          46s
+mysql-1   1/1     Running   0          25s
+mysql-2   1/1     Running   0          41s
+
+$ kubectl exec mysql-1 -- mysql -uroot -ppassword -e 'SELECT VERSION();' 2>/dev/null || (sleep 20; kubectl exec mysql-1 -- mysql -uroot -ppassword -e 'SELECT VERSION();' 2>/dev/null)
+VERSION()
+8.0.46
+
+$ kubectl delete statefulset mysql; kubectl delete service mysql
+statefulset.apps "mysql" deleted from default namespace
+service "mysql" deleted from default namespace
+
+$ kubectl get pvc                                       # PVCs deliberately survive the StatefulSet
+NAME                               STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE
+mysql-persistent-storage-mysql-0   Bound    pvc-dc2075dd-be5d-4343-a931-43240205cdcb   5Gi        RWO            standard       <unset>                 72s
+mysql-persistent-storage-mysql-1   Bound    pvc-368eed1a-3623-45c1-a48a-e4284bb23a14   5Gi        RWO            standard       <unset>                 46s
+mysql-persistent-storage-mysql-2   Bound    pvc-45b3a966-af1a-4e1c-b70d-db45fe3e5ec3   5Gi        RWO            standard       <unset>                 41s
+
+$ kubectl delete pvc -l app=mysql
+persistentvolumeclaim "mysql-persistent-storage-mysql-0" deleted from default namespace
+persistentvolumeclaim "mysql-persistent-storage-mysql-1" deleted from default namespace
+persistentvolumeclaim "mysql-persistent-storage-mysql-2" deleted from default namespace

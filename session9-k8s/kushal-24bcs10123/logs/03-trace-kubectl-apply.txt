@@ -1,0 +1,42 @@
+
+############ 1. kubectl -> kube-apiserver (REST over HTTPS, -v=6 shows the calls) ############
+
+$ kubectl apply -f /tmp/s9-pod.yaml -v=6 2>&1 | grep -E 'GET|POST|PATCH|Response Status' | sed -E 's/^[IWE][0-9]+ [0-9:.]+ +[0-9]+ [a-z_]+\.go:[0-9]+\] //; s#https://127.0.0.1:[0-9]+#https://<apiserver>#; s/ in [0-9]+ milliseconds//'
+"Response" verb="GET" url="https://<apiserver>/openapi/v3?timeout=32s" status="200 OK" milliseconds=13
+"Response" verb="GET" url="https://<apiserver>/openapi/v3/api/v1?hash=8F5F21DFCD465B067ED095B213D5695C2424C01AC732DEC7C1D767B196C545F4AFFE76D518B72E08FD924EE97E72DF1D115C995389B119BBEFCFE9060BF428CF&timeout=32s" status="200 OK" milliseconds=3
+"Response" verb="GET" url="https://<apiserver>/api/v1/namespaces/default/pods/trace-me" status="404 Not Found" milliseconds=4
+"Response" verb="POST" url="https://<apiserver>/api/v1/namespaces/default/pods?fieldManager=kubectl-client-side-apply&fieldValidation=Strict" status="201 Created" milliseconds=7
+
+$ kubectl get pod trace-me -o wide
+NAME       READY   STATUS              RESTARTS   AGE   IP       NODE                NOMINATED NODE   READINESS GATES
+trace-me   0/1     ContainerCreating   0          0s    <none>   kushal-lab-worker   <none>           <none>
+
+############ 2. the object is now in etcd ############
+
+$ kubectl -n kube-system exec etcd-kushal-lab-control-plane -- etcdctl --endpoints=https://127.0.0.1:2379 --cacert=/etc/kubernetes/pki/etcd/ca.crt --cert=/etc/kubernetes/pki/etcd/server.crt --key=/etc/kubernetes/pki/etcd/server.key get /registry/pods/default/trace-me --keys-only
+/registry/pods/default/trace-me
+
+
+############ 3. scheduler picked a node, kubelet pulled the image and started the container ############
+
+$ kubectl wait --for=condition=Ready pod/trace-me --timeout=120s
+pod/trace-me condition met
+
+$ kubectl get events --field-selector involvedObject.name=trace-me -o custom-columns='SOURCE:.source.component,REASON:.reason,MESSAGE:.message'
+SOURCE              REASON      MESSAGE
+default-scheduler   Scheduled   Successfully assigned default/trace-me to kushal-lab-worker
+kubelet             Pulled      Container image "nginx:1.25-alpine" already present on machine and can be accessed by the pod
+kubelet             Created     Container created
+kubelet             Started     Container started
+
+$ kubectl get pod trace-me -o jsonpath='{.spec.nodeName}{"\n"}'
+kushal-lab-worker
+
+$ docker exec $(kubectl get pod trace-me -o jsonpath='{.spec.nodeName}') crictl ps --name web    # the kubelet on that node started the container via containerd
+CONTAINER           IMAGE               CREATED                  STATE               NAME                ATTEMPT             POD ID              POD                 NAMESPACE
+d045551faac08       9d6767b714bf1       Less than a second ago   Running             web                 0                   898217df1127e       trace-me            default
+
+############ 4. cleanup ############
+
+$ kubectl delete pod trace-me
+pod "trace-me" deleted from default namespace

@@ -1,0 +1,76 @@
+
+############ TOOLS ############
+
+$ docker version --format 'Docker {{.Server.Version}} ({{.Server.Os}}/{{.Server.Arch}})'
+Docker 29.0.1 (linux/arm64)
+
+$ kind version
+kind v0.33.0 go1.27.0 darwin/arm64
+
+$ kubectl version --client
+Client Version: v1.34.1
+Kustomize Version: v5.7.1
+
+############ CREATE CLUSTER ############
+
+$ cat kind-cluster.yaml
+# kind cluster used for sessions 9-12: one control-plane node + two worker nodes.
+# The control-plane node publishes the NodePorts used by the session 10/11 labs
+# and ports 80/443 for the ingress-nginx controller used in session 12, so that
+# `curl http://localhost:<port>` from the Mac reaches the cluster like `minikube ip` would.
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: kushal-lab
+nodes:
+  - role: control-plane
+    kubeadmConfigPatches:
+      - |
+        kind: InitConfiguration
+        nodeRegistration:
+          kubeletExtraArgs:
+            node-labels: "ingress-ready=true"
+    extraPortMappings:
+      - { containerPort: 80,    hostPort: 80,    protocol: TCP }   # ingress-nginx http
+      - { containerPort: 443,   hostPort: 443,   protocol: TCP }   # ingress-nginx https
+      - { containerPort: 30010, hostPort: 30010, protocol: TCP }   # s10 rolling update
+      - { containerPort: 30020, hostPort: 30020, protocol: TCP }   # s10 blue-green
+      - { containerPort: 30030, hostPort: 30030, protocol: TCP }   # s10 canary
+      - { containerPort: 30040, hostPort: 30040, protocol: TCP }   # s10 recreate
+      - { containerPort: 30080, hostPort: 30080, protocol: TCP }   # s11 nodeport
+  - role: worker
+  - role: worker
+
+$ kind create cluster --config kind-cluster.yaml
+Creating cluster "kushal-lab" ...
+ • Ensuring node image (kindest/node:v1.37.0) 🖼️  ...
+ ✓ Ensuring node image (kindest/node:v1.37.0) 🖼️
+ • Preparing nodes 📦 📦 📦   ...
+ ✓ Preparing nodes 📦 📦 📦 
+ • Writing configuration 📜  ...
+ ✓ Writing configuration 📜
+ • Starting control-plane 🕹️  ...
+ ✓ Starting control-plane 🕹️
+ • Installing CNI 🔌  ...
+ ✓ Installing CNI 🔌
+ • Installing StorageClass 💾  ...
+ ✓ Installing StorageClass 💾
+ • Joining worker nodes 🚜  ...
+ ✓ Joining worker nodes 🚜
+Set kubectl context to "kind-kushal-lab"
+You can now use your cluster with:
+
+kubectl cluster-info --context kind-kushal-lab
+
+Thanks for using kind! 😊
+
+$ kind get clusters
+kushal-lab
+
+$ kubectl config current-context
+kind-kushal-lab
+
+$ docker ps --filter label=io.x-k8s.kind.cluster=kushal-lab --format 'table {{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}'
+NAMES                      IMAGE                  STATUS          PORTS
+kushal-lab-control-plane   kindest/node:v1.37.0   Up 21 seconds   0.0.0.0:80->80/tcp, 0.0.0.0:443->443/tcp, 0.0.0.0:30010->30010/tcp, 0.0.0.0:30020->30020/tcp, 0.0.0.0:30030->30030/tcp, 0.0.0.0:30040->30040/tcp, 0.0.0.0:30080->30080/tcp, 127.0.0.1:50863->6443/tcp
+kushal-lab-worker2         kindest/node:v1.37.0   Up 21 seconds   
+kushal-lab-worker          kindest/node:v1.37.0   Up 21 seconds   

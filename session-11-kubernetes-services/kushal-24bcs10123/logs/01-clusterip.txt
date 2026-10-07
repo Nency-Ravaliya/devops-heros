@@ -1,0 +1,81 @@
+
+############ Deploy app, service and a curl client ############
+
+$ kubectl apply -f 01-clusterip/app-deployment.yaml
+deployment.apps/web-app-clusterip created
+
+$ kubectl apply -f 01-clusterip/service.yaml
+service/web-service-clusterip created
+
+$ kubectl apply -f 01-clusterip/client-pod.yaml
+pod/curl-client created
+
+$ kubectl rollout status deployment/web-app-clusterip
+Waiting for deployment "web-app-clusterip" rollout to finish: 0 of 3 updated replicas are available...
+Waiting for deployment "web-app-clusterip" rollout to finish: 1 of 3 updated replicas are available...
+Waiting for deployment "web-app-clusterip" rollout to finish: 2 of 3 updated replicas are available...
+deployment "web-app-clusterip" successfully rolled out
+
+$ kubectl wait --for=condition=Ready pod/curl-client --timeout=120s
+pod/curl-client condition met
+
+$ kubectl get pods -l app=web-clusterip -o wide
+NAME                                 READY   STATUS    RESTARTS   AGE   IP            NODE                 NOMINATED NODE   READINESS GATES
+web-app-clusterip-66865d4855-6g5jk   1/1     Running   0          1s    10.244.1.59   kushal-lab-worker2   <none>           <none>
+web-app-clusterip-66865d4855-c8lzx   1/1     Running   0          1s    10.244.3.59   kushal-lab-worker    <none>           <none>
+web-app-clusterip-66865d4855-v8np4   1/1     Running   0          1s    10.244.1.58   kushal-lab-worker2   <none>           <none>
+
+$ kubectl get svc web-service-clusterip
+NAME                    TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)    AGE
+web-service-clusterip   ClusterIP   10.96.42.205   <none>        8080/TCP   1s
+
+$ kubectl get endpointslices -l kubernetes.io/service-name=web-service-clusterip
+NAME                          ADDRESSTYPE   PORTS   ENDPOINTS                             AGE
+web-service-clusterip-xzwdh   IPv4          80      10.244.1.58,10.244.1.59,10.244.3.59   1s
+
+############ Reach it from inside the cluster (port 8080 -> targetPort 80) ############
+
+$ kubectl exec curl-client -- curl -s http://web-service-clusterip:8080 | grep -o '<title>.*</title>'
+<title>Welcome to nginx!</title>
+
+$ kubectl exec curl-client -- nslookup web-service-clusterip 2>&1 | grep -A1 '^Name'
+Name:	web-service-clusterip.default.svc.cluster.local
+Address: 10.96.42.205
+
+$ kubectl exec curl-client -- cat /etc/resolv.conf
+search default.svc.cluster.local svc.cluster.local cluster.local
+nameserver 10.96.0.10
+options ndots:5
+
+$ kubectl exec curl-client -- curl -s http://web-service-clusterip.default.svc.cluster.local:8080 -o /dev/null -w 'FQDN -> HTTP %{http_code}\n'
+FQDN -> HTTP 200
+
+############ Not reachable from outside the cluster ############
+
+$ curl -s --max-time 3 http://10.96.42.205:8080 || echo "curl from the Mac to 10.96.42.205:8080 failed (exit $?) - ClusterIP is internal only"
+curl from the Mac to 10.96.42.205:8080 failed (exit 28) - ClusterIP is internal only
+
+############ Load balancing across the 3 pods ############
+(each pod's index.html now contains its own pod name)
+
+$ for i in $(seq 1 12); do kubectl exec curl-client -- curl -s http://web-service-clusterip:8080; done | sort | uniq -c
+   5 served-by-web-app-clusterip-66865d4855-6g5jk
+   3 served-by-web-app-clusterip-66865d4855-c8lzx
+   4 served-by-web-app-clusterip-66865d4855-v8np4
+
+############ How kube-proxy implements the VIP (iptables on a node) ############
+
+$ docker exec kushal-lab-worker iptables -t nat -S KUBE-SERVICES | grep 10.96.42.205
+-A KUBE-SERVICES -d 10.96.42.205/32 -p tcp -m comment --comment "default/web-service-clusterip:http cluster IP" -m tcp --dport 8080 -j KUBE-SVC-TIXQXGX7DUC52XEM
+
+$ docker exec kushal-lab-worker iptables -t nat -S | grep -E 'KUBE-SEP-.* -j DNAT' | grep web-service-clusterip
+-A KUBE-SEP-7CZK4ZZCY3MLJDTE -p tcp -m comment --comment "default/web-service-clusterip:http" -m tcp -j DNAT --to-destination 10.244.1.59:80
+-A KUBE-SEP-KSKBX6XG6SREN75Z -p tcp -m comment --comment "default/web-service-clusterip:http" -m tcp -j DNAT --to-destination 10.244.3.59:80
+-A KUBE-SEP-ZGDVDJT6AMFKRVRK -p tcp -m comment --comment "default/web-service-clusterip:http" -m tcp -j DNAT --to-destination 10.244.1.58:80
+
+############ Cleanup ############
+
+$ kubectl delete -f 01-clusterip/client-pod.yaml -f 01-clusterip/service.yaml -f 01-clusterip/app-deployment.yaml
+pod "curl-client" deleted from default namespace
+service "web-service-clusterip" deleted from default namespace
+deployment.apps "web-app-clusterip" deleted from default namespace

@@ -1,0 +1,93 @@
+
+############ Step 1: both environments up, Service -> BLUE ############
+
+$ kubectl apply -f 02-blue-green/deployment-blue.yaml
+deployment.apps/app-blue created
+
+$ kubectl apply -f 02-blue-green/deployment-green.yaml
+deployment.apps/app-green created
+
+$ kubectl rollout status deployment/app-blue; kubectl rollout status deployment/app-green
+Waiting for deployment "app-blue" rollout to finish: 0 of 3 updated replicas are available...
+Waiting for deployment "app-blue" rollout to finish: 1 of 3 updated replicas are available...
+Waiting for deployment "app-blue" rollout to finish: 2 of 3 updated replicas are available...
+deployment "app-blue" successfully rolled out
+deployment "app-green" successfully rolled out
+
+$ kubectl get pods -l app=myapp --show-labels
+NAME                        READY   STATUS    RESTARTS   AGE   LABELS
+app-blue-5c69d7785c-49zhk   1/1     Running   0          7s    app=myapp,pod-template-hash=5c69d7785c,slot=blue,version=v1
+app-blue-5c69d7785c-9m7sb   1/1     Running   0          7s    app=myapp,pod-template-hash=5c69d7785c,slot=blue,version=v1
+app-blue-5c69d7785c-f4tpx   1/1     Running   0          7s    app=myapp,pod-template-hash=5c69d7785c,slot=blue,version=v1
+app-green-84df7f978-8m7jj   1/1     Running   0          7s    app=myapp,pod-template-hash=84df7f978,slot=green,version=v2
+app-green-84df7f978-ds8hq   1/1     Running   0          7s    app=myapp,pod-template-hash=84df7f978,slot=green,version=v2
+app-green-84df7f978-zk5d4   1/1     Running   0          7s    app=myapp,pod-template-hash=84df7f978,slot=green,version=v2
+
+$ kubectl apply -f 02-blue-green/service-blue.yaml
+service/myapp-service created
+
+$ kubectl describe svc myapp-service | grep Selector
+Selector:                 app=myapp,slot=blue
+
+$ kubectl get endpointslices -l kubernetes.io/service-name=myapp-service -o jsonpath='{range .items[*].endpoints[*]}{.addresses[0]} {.targetRef.name}{"\n"}{end}'
+10.244.3.150 app-blue-5c69d7785c-9m7sb
+10.244.1.126 app-blue-5c69d7785c-49zhk
+10.244.3.151 app-blue-5c69d7785c-f4tpx
+
+$ curl -s http://localhost:30020 | grep -oE 'BLUE ENVIRONMENT|GREEN ENVIRONMENT|Version: v[0-9]'
+BLUE ENVIRONMENT
+Version: v1
+
+############ Step 4-5: flip the selector to GREEN ############
+
+$ kubectl apply -f 02-blue-green/service-green.yaml
+service/myapp-service configured
+
+$ kubectl describe svc myapp-service | grep Selector
+Selector:                 app=myapp,slot=green
+
+$ kubectl get endpointslices -l kubernetes.io/service-name=myapp-service -o jsonpath='{range .items[*].endpoints[*]}{.addresses[0]} {.targetRef.name}{"\n"}{end}'
+10.244.1.127 app-green-84df7f978-8m7jj
+10.244.3.152 app-green-84df7f978-ds8hq
+10.244.1.128 app-green-84df7f978-zk5d4
+
+$ curl -s http://localhost:30020 | grep -oE 'BLUE ENVIRONMENT|GREEN ENVIRONMENT|Version: v[0-9]'
+GREEN ENVIRONMENT
+Version: v2
+
+$ cat '/Users/kushalscaler/devops-heros/session10-k8s-core-objects/kushal-24bcs10123/logs/04-blue-green-curl.txt' | uniq -c        # 20 requests 0.3s apart across the switch
+   4 BLUE ENVIRONMENT
+  16 GREEN ENVIRONMENT
+
+$ kubectl get pods -l app=myapp --show-labels     # nothing was restarted, only routing changed
+NAME                        READY   STATUS    RESTARTS   AGE   LABELS
+app-blue-5c69d7785c-49zhk   1/1     Running   0          19s   app=myapp,pod-template-hash=5c69d7785c,slot=blue,version=v1
+app-blue-5c69d7785c-9m7sb   1/1     Running   0          19s   app=myapp,pod-template-hash=5c69d7785c,slot=blue,version=v1
+app-blue-5c69d7785c-f4tpx   1/1     Running   0          19s   app=myapp,pod-template-hash=5c69d7785c,slot=blue,version=v1
+app-green-84df7f978-8m7jj   1/1     Running   0          19s   app=myapp,pod-template-hash=84df7f978,slot=green,version=v2
+app-green-84df7f978-ds8hq   1/1     Running   0          19s   app=myapp,pod-template-hash=84df7f978,slot=green,version=v2
+app-green-84df7f978-zk5d4   1/1     Running   0          19s   app=myapp,pod-template-hash=84df7f978,slot=green,version=v2
+
+############ Step 6: flip back to BLUE ############
+
+$ kubectl apply -f 02-blue-green/service-blue.yaml
+service/myapp-service configured
+
+$ curl -s http://localhost:30020 | grep -oE 'BLUE ENVIRONMENT|GREEN ENVIRONMENT'
+BLUE ENVIRONMENT
+
+$ kubectl get endpointslices -l kubernetes.io/service-name=myapp-service -o jsonpath='{range .items[*].endpoints[*]}{.addresses[0]} {.targetRef.name}{"\n"}{end}'
+10.244.3.150 app-blue-5c69d7785c-9m7sb
+10.244.1.126 app-blue-5c69d7785c-49zhk
+10.244.3.151 app-blue-5c69d7785c-f4tpx
+
+############ Cleanup ############
+
+$ kubectl delete -f 02-blue-green/service-blue.yaml
+service "myapp-service" deleted from default namespace
+
+$ kubectl delete -f 02-blue-green/deployment-blue.yaml
+deployment.apps "app-blue" deleted from default namespace
+
+$ kubectl delete -f 02-blue-green/deployment-green.yaml
+deployment.apps "app-green" deleted from default namespace
