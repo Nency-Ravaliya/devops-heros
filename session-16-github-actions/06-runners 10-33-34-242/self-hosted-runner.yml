@@ -1,0 +1,17 @@
+name: Self-Hosted Runner Example
+
+on:
+  workflow_dispatch:
+
+jobs:
+  gpu-workload:
+    name: High Performance Compute Job
+    runs-on: [self-hosted, linux, gpu]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Verify GPU acceleration hardware
+        run: |
+          echo "Inspecting self-hosted runner environment..."
+          nvidia-smi || echo "GPU driver check completed (simulated on standard runner)"
