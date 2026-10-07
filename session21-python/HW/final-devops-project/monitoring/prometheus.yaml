@@ -1,0 +1,132 @@
+# Lightweight Prometheus for the TaskBoard namespace.
+# It discovers pods in its OWN namespace (Role, not ClusterRole) and scrapes every pod
+# annotated prometheus.io/scrape=true (the backend pods get this from the Helm chart).
+#   kubectl -n <ns> apply -f monitoring/prometheus.yaml
+#   kubectl -n <ns> port-forward svc/prometheus 9090:9090
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: prometheus
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: prometheus-sd
+rules:
+  - apiGroups: [""]
+    resources: [pods, services, endpoints]
+    verbs: [get, list, watch]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: prometheus-sd
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: prometheus-sd
+subjects:
+  - kind: ServiceAccount
+    name: prometheus
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 10s
+    rule_files:
+      - /etc/prometheus/alerts.yml
+    scrape_configs:
+      - job_name: taskboard-pods
+        kubernetes_sd_configs:
+          - role: pod
+            namespaces:
+              own_namespace: true
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+            action: keep
+            regex: "true"
+          - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+            target_label: __metrics_path__
+            regex: (.+)
+          - source_labels: [__meta_kubernetes_pod_ip, __meta_kubernetes_pod_annotation_prometheus_io_port]
+            regex: (.+);(.+)
+            replacement: $1:$2
+            target_label: __address__
+          - source_labels: [__meta_kubernetes_pod_label_app_kubernetes_io_name]
+            target_label: app
+          - source_labels: [__meta_kubernetes_pod_name]
+            target_label: pod
+  alerts.yml: |
+    groups:
+      - name: taskboard
+        rules:
+          - alert: TaskBoardBackendDown
+            expr: up{app="backend"} == 0
+            for: 1m
+            labels: {severity: critical}
+            annotations:
+              summary: "TaskBoard backend pod {{ $labels.pod }} is not being scraped"
+          - alert: TaskBoardHigh5xxRate
+            expr: sum(rate(http_requests_total{app="backend",status="5xx"}[5m])) / sum(rate(http_requests_total{app="backend"}[5m])) > 0.05
+            for: 5m
+            labels: {severity: warning}
+            annotations:
+              summary: "More than 5% of TaskBoard API requests are failing"
+          - alert: TaskBoardSlowRequests
+            expr: histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket{app="backend"}[5m]))) > 0.5
+            for: 5m
+            labels: {severity: warning}
+            annotations:
+              summary: "p95 latency of the TaskBoard API is above 500ms"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prometheus
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app.kubernetes.io/name: prometheus}
+  template:
+    metadata:
+      labels: {app.kubernetes.io/name: prometheus}
+    spec:
+      serviceAccountName: prometheus
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+      containers:
+        - name: prometheus
+          image: prom/prometheus:v3.5.0
+          args:
+            - --config.file=/etc/prometheus/prometheus.yml
+            - --storage.tsdb.path=/prometheus
+            - --storage.tsdb.retention.time=1d
+          ports:
+            - {name: http, containerPort: 9090}
+          readinessProbe:
+            httpGet: {path: /-/ready, port: http}
+          resources:
+            requests: {cpu: 50m, memory: 128Mi}
+            limits: {cpu: 500m, memory: 384Mi}
+          volumeMounts:
+            - {name: config, mountPath: /etc/prometheus}
+            - {name: data, mountPath: /prometheus}
+      volumes:
+        - name: config
+          configMap: {name: prometheus-config}
+        - name: data
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus
+spec:
+  selector: {app.kubernetes.io/name: prometheus}
+  ports:
+    - {name: http, port: 9090, targetPort: http}

@@ -1,0 +1,38 @@
+# Argo CD Application: Git is the source of truth for the TaskBoard release.
+# Argo CD watches the Helm chart in my fork and keeps the cluster in sync with it.
+#   kubectl apply -n argocd -f gitops/argocd-application.yaml
+# The CI pipeline (gitops job) replaces IMAGE_TAG with the commit SHA it just built and pushed.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: taskboard
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/PiyushhBansal/devops-heros.git
+    targetRevision: submission/piyush-session-21
+    path: session21-python/HW/final-devops-project/helm/taskboard
+    helm:
+      releaseName: taskboard
+      valueFiles:
+        - ../../gitops/values-gitops.yaml
+      parameters:
+        - name: backend.image.tag
+          value: IMAGE_TAG
+        - name: frontend.image.tag
+          value: IMAGE_TAG
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: p21-gitops
+  syncPolicy:
+    automated:
+      prune: true       # delete resources that were removed from Git
+      selfHeal: true    # undo manual kubectl changes (drift)
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: 5
+      backoff: {duration: 10s, factor: 2, maxDuration: 2m}
