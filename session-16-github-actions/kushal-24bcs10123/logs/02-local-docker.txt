@@ -1,0 +1,32 @@
+
+$ docker build --build-arg GIT_SHA=67c014e --build-arg BUILD_NUMBER=local -t ghcr.io/kushaltalati/unit-converter:local . 2>&1 | tail -3
+#13 DONE 1.2s
+
+View build details: docker-desktop://dashboard/build/desktop-linux/desktop-linux/rqkefxe659yd7y2n9wpdvhewl
+
+$ docker image inspect ghcr.io/kushaltalati/unit-converter:local --format 'size={{.Size}} user={{.Config.User}} cmd={{.Config.Cmd}}'
+size=52495933 user=app cmd=[uvicorn app.main:app --host 0.0.0.0 --port 8000]
+
+$ docker run -d --rm --name uc-local -p 20016:8000 ghcr.io/kushaltalati/unit-converter:local
+db6122486bf2d73a97eb3fa90d88db5527b0e7a4c3a80cc3564d6dcb92e44429
+
+$ curl -s localhost:20016/health; echo
+{"status":"ok","version":"1.0.0","uptime_seconds":2.2}
+
+$ curl -s localhost:20016/info; echo
+{"app":"unit-converter","version":"1.0.0","python":"3.12.15","git_sha":"67c014e","build_number":"local"}
+
+$ curl -s 'localhost:20016/convert/temperature?value=37&from_unit=c&to_unit=f'; echo
+{"category":"temperature","value":37.0,"from":"c","to":"f","result":98.6}
+
+$ curl -s -X POST localhost:20016/convert -H 'content-type: application/json' -d '{"category":"weight","value":70,"from_unit":"kg","to_unit":"lb"}'; echo
+{"category":"weight","value":70.0,"from":"kg","to":"lb","result":154.323584}
+
+$ curl -s -o /dev/null -w 'HTTP %{http_code}\n' 'localhost:20016/convert/length?value=1&from_unit=m&to_unit=cubit'
+HTTP 400
+
+$ docker exec uc-local id
+uid=10001(app) gid=999(app) groups=999(app)
+
+$ docker stop uc-local
+uc-local

@@ -1,0 +1,53 @@
+
+$ kubectl config current-context
+kind-kushal-lab
+
+############ get the image the pipeline pushed ############
+Status: Downloaded newer image for ghcr.io/kushaltalati/unit-converter:sha-805881e
+ghcr.io/kushaltalati/unit-converter:sha-805881e
+pulled ghcr.io/kushaltalati/unit-converter:sha-805881e from GHCR
+
+$ kind load docker-image ghcr.io/kushaltalati/unit-converter:sha-805881e --name kushal-lab 2>&1 | tail -3
+Image: "ghcr.io/kushaltalati/unit-converter:sha-805881e" with ID "sha256:a31ba555b2fcd08bfd2897f8d02a7f03a301c1b27eaf244119a2afa93d8df9a4" not yet present on node "kushal-lab-control-plane", loading...
+Image: "ghcr.io/kushaltalati/unit-converter:sha-805881e" with ID "sha256:a31ba555b2fcd08bfd2897f8d02a7f03a301c1b27eaf244119a2afa93d8df9a4" not yet present on node "kushal-lab-worker2", loading...
+Image: "ghcr.io/kushaltalati/unit-converter:sha-805881e" with ID "sha256:a31ba555b2fcd08bfd2897f8d02a7f03a301c1b27eaf244119a2afa93d8df9a4" not yet present on node "kushal-lab-worker", loading...
+
+############ deploy ############
+
+$ kubectl create namespace s16-unit-converter --dry-run=client -o yaml | kubectl apply -f -
+namespace/s16-unit-converter created
+
+$ sed "s|:latest|:sha-805881e|" unit-converter/k8s/deployment.yaml | kubectl -n s16-unit-converter apply -f -
+deployment.apps/unit-converter created
+
+$ kubectl -n s16-unit-converter apply -f unit-converter/k8s/service.yaml
+service/unit-converter created
+
+$ kubectl -n s16-unit-converter rollout status deploy/unit-converter --timeout=120s
+Waiting for deployment "unit-converter" rollout to finish: 0 of 2 updated replicas are available...
+Waiting for deployment "unit-converter" rollout to finish: 1 of 2 updated replicas are available...
+deployment "unit-converter" successfully rolled out
+
+$ kubectl -n s16-unit-converter get pods -o wide
+NAME                              READY   STATUS    RESTARTS   AGE   IP            NODE                 NOMINATED NODE   READINESS GATES
+unit-converter-8675f8c5c5-nbq47   1/1     Running   0          7s    10.244.3.64   kushal-lab-worker    <none>           <none>
+unit-converter-8675f8c5c5-xrlm2   1/1     Running   0          7s    10.244.1.46   kushal-lab-worker2   <none>           <none>
+
+$ kubectl -n s16-unit-converter get deploy unit-converter -o jsonpath='{.spec.template.spec.containers[0].image}'; echo
+ghcr.io/kushaltalati/unit-converter:sha-805881e
+
+############ smoke test through the Service ############
+
+$ curl -s localhost:20080/health; echo
+{"status":"ok","version":"1.0.0","uptime_seconds":4.2}
+
+$ curl -s localhost:20080/info; echo
+{"app":"unit-converter","version":"1.0.0","python":"3.12.15","git_sha":"805881e25e3031210aa3d8a59045b9f234d1c3ca","build_number":"3"}
+
+$ curl -s 'localhost:20080/convert/length?value=42&from_unit=km&to_unit=mi'; echo
+{"category":"length","value":42.0,"from":"km","to":"mi","result":26.09759}
+
+############ cleanup ############
+
+$ kubectl delete namespace s16-unit-converter --wait=false
+namespace "s16-unit-converter" deleted

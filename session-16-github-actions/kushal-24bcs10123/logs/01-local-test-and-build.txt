@@ -1,0 +1,58 @@
+
+$ python --version
+Python 3.14.8
+
+$ pytest -v
+============================= test session starts ==============================
+platform darwin -- Python 3.14.8, pytest-9.1.1, pluggy-1.6.0 -- /Users/kushalscaler/.venvs/devsec/bin/python3.14
+cachedir: .pytest_cache
+rootdir: /Users/kushalscaler/devops-heros-ci/session-16-github-actions/kushal-24bcs10123/unit-converter
+configfile: pytest.ini
+testpaths: tests
+plugins: cov-7.1.0, platformdirs-4.12.3, anyio-4.15.1
+collecting ... collected 11 items
+
+tests/test_api.py::test_health PASSED                                    [  9%]
+tests/test_api.py::test_units_lists_all_categories PASSED                [ 18%]
+tests/test_api.py::test_convert_get PASSED                               [ 27%]
+tests/test_api.py::test_convert_post PASSED                              [ 36%]
+tests/test_api.py::test_bad_unit_is_400 PASSED                           [ 45%]
+tests/test_converter.py::test_km_to_m PASSED                             [ 54%]
+tests/test_converter.py::test_feet_to_inches PASSED                      [ 63%]
+tests/test_converter.py::test_kg_to_lb PASSED                            [ 72%]
+tests/test_converter.py::test_celsius_to_fahrenheit PASSED               [ 81%]
+tests/test_converter.py::test_kelvin_round_trip PASSED                   [ 90%]
+tests/test_converter.py::test_unknown_unit_raises PASSED                 [100%]
+
+=============================== warnings summary ===============================
+../../../../.venvs/devsec/lib/python3.14/site-packages/fastapi/testclient.py:1
+  /Users/kushalscaler/.venvs/devsec/lib/python3.14/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+======================== 11 passed, 1 warning in 0.43s =========================
+
+############ build step = byte-compile + bundle + build-info ############
+
+$ ./build.sh
+build/ contents:
+build/app/__init__.py
+build/app/__pycache__/__init__.cpython-314.pyc
+build/app/__pycache__/converter.cpython-314.pyc
+build/app/__pycache__/main.cpython-314.pyc
+build/app/converter.py
+build/app/main.py
+build/build-info.txt
+build/Dockerfile
+build/requirements.txt
+
+app:          unit-converter
+version:      1.0.0
+git_sha:      67c014e
+build_number: local
+built_at:     2026-10-07T17:42:11Z
+built_by:     kushalscaler
+runner:       Darwin / arm64
+python:       Python 3.14.8
+
+$ rm -rf build
