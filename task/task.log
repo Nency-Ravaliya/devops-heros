@@ -1,0 +1,8 @@
+Current Date: Tue Aug 18 11:16:49 IST 2026
+Process :   PID TTY           TIME CMD
+24454 ttys000    0:01.02 -zsh
+25104 ttys000    0:00.06 vim hello
+36021 ttys003    0:00.58 /opt/homebrew/bin/zsh -il
+38111 ttys003    0:00.01 /bin/bash ./task.sh 
+Hostname: MDs-MacBook-Air.local and username mdkaif
+ 
