@@ -54,6 +54,8 @@ its own name and pod hostname).
 
 ### Phase A — Ingress with no controller
 
+![no controller](no-controller.png)
+
 ```text
 $ kubectl get pods -n ingress-nginx
 No resources found in ingress-nginx namespace.
@@ -70,6 +72,8 @@ The API server accepted the Ingress, but `ADDRESS` stays empty because no contro
 reading it. There is nothing to send traffic to.
 
 ### Phase B — the same Ingress, with ingress-nginx installed
+
+![with controller](with-controller.png)
 
 ```bash
 kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.11.3/deploy/static/provider/kind/deploy.yaml
@@ -108,6 +112,8 @@ controller with `kubectl port-forward` to its Service. Requests still go through
 ingress-nginx and its routing rules.
 
 ### Phase C — an Ingress for a controller that does not exist
+
+![wrong class](wrong-class.png)
 
 [ingress-wrong-class.yaml](ingress-wrong-class.yaml) asks for `ingressClassName: traefik`.
 

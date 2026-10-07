@@ -22,6 +22,8 @@ kubectl apply -f app-secret-broken.yaml -f app.yaml
 
 ## Before
 
+![before](before.png)
+
 ### 1. Identify the problem
 
 ```text
@@ -89,6 +91,8 @@ environment variables are set once when the container starts. Updating the Secre
 not change them in a running pod.
 
 ## After
+
+![after](after.png)
 
 ### 5. Verify
 
