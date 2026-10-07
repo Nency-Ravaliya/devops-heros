@@ -38,7 +38,7 @@ resource "aws_route_table" "public" {
 
   route {
     cidr_block = "0.0.0.0/0"
-    gateway_id  = aws_internet_gateway.main.id
+    gateway_id = aws_internet_gateway.main.id
   }
 
   tags = {
@@ -55,8 +55,16 @@ resource "aws_route_table_association" "public" {
 
 resource "aws_security_group" "web" {
   name        = "session19-mini-web-sg"
-  description = "Allow HTTP and HTTPS for Session 19"
+  description = "Allow HTTP, HTTPS and SSH for Session 19"
   vpc_id      = aws_vpc.main.id
+
+  ingress {
+    description = "SSH"
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = [var.my_ip_cidr]
+  }
 
   ingress {
     description = "HTTP"
@@ -86,5 +94,61 @@ resource "aws_security_group" "web" {
     Name      = "session19-mini-web-sg"
     Session   = "19"
     ManagedBy = "Terraform"
+  }
+}
+
+# ── EC2 Instance ────────────────────────────────────────────────────────────────
+resource "aws_instance" "web" {
+  ami                         = var.ec2_ami
+  instance_type               = var.ec2_instance_type
+  subnet_id                   = aws_subnet.public.id
+  vpc_security_group_ids      = [aws_security_group.web.id]
+  associate_public_ip_address = true
+
+  user_data = <<-EOF
+    #!/bin/bash
+    yum update -y
+    yum install -y nginx
+    systemctl start nginx
+    systemctl enable nginx
+    echo "<h1>Session 19 — Terraform EC2 Web Server</h1>" > /usr/share/nginx/html/index.html
+  EOF
+
+  tags = {
+    Name      = "session19-mini-web-server"
+    Session   = "19"
+    ManagedBy = "Terraform"
+  }
+
+  depends_on = [aws_internet_gateway.main]
+}
+
+# ── S3 Bucket ───────────────────────────────────────────────────────────────────
+resource "aws_s3_bucket" "artifacts" {
+  bucket        = var.s3_bucket_name
+  force_destroy = true
+
+  tags = {
+    Name      = var.s3_bucket_name
+    Session   = "19"
+    ManagedBy = "Terraform"
+  }
+}
+
+resource "aws_s3_bucket_versioning" "artifacts" {
+  bucket = aws_s3_bucket.artifacts.id
+
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "artifacts" {
+  bucket = aws_s3_bucket.artifacts.id
+
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "AES256"
+    }
   }
 }
