@@ -1,17 +1,17 @@
 $ terraform plan -input=false -detailed-exitcode
-random_id.bucket_suffix: Refreshing state... [id=pjQ0BA]
+random_id.bucket_suffix: Refreshing state... [id=qgV8Hg]
 data.aws_availability_zones.available: Reading...
-aws_vpc.main: Refreshing state... [id=vpc-32ac50ea35a85331d]
-aws_s3_bucket.assets: Refreshing state... [id=devops-heros-assets-a6343404]
+aws_vpc.main: Refreshing state... [id=vpc-55ebd8b6762880382]
+aws_s3_bucket.assets: Refreshing state... [id=devops-heros-assets-aa057c1e]
 data.aws_availability_zones.available: Read complete after 0s [id=ap-south-1]
-aws_internet_gateway.igw: Refreshing state... [id=igw-5a0fc6e7d521870fa]
-aws_subnet.public: Refreshing state... [id=subnet-f3ca32c36d673e14f]
-aws_security_group.web: Refreshing state... [id=sg-f0fedcb4eb31f6697]
-aws_route_table.public: Refreshing state... [id=rtb-7b01a8a6c6f775d73]
-aws_route_table_association.public: Refreshing state... [id=rtbassoc-4fa325e9d655b10a3]
-aws_instance.web: Refreshing state... [id=i-55dec0a4b6d90e3b7]
-aws_s3_bucket_versioning.assets: Refreshing state... [id=devops-heros-assets-a6343404]
-aws_s3_bucket_public_access_block.assets: Refreshing state... [id=devops-heros-assets-a6343404]
+aws_subnet.public: Refreshing state... [id=subnet-3f65043327228c548]
+aws_internet_gateway.igw: Refreshing state... [id=igw-393bc94fca231b5b8]
+aws_security_group.web: Refreshing state... [id=sg-a8aecc810f5849c16]
+aws_route_table.public: Refreshing state... [id=rtb-e1ee551a43e857e8b]
+aws_route_table_association.public: Refreshing state... [id=rtbassoc-18b97dcb6e53a50ea]
+aws_instance.web: Refreshing state... [id=i-48ebabf7b345e2fbd]
+aws_s3_bucket_versioning.assets: Refreshing state... [id=devops-heros-assets-aa057c1e]
+aws_s3_bucket_public_access_block.assets: Refreshing state... [id=devops-heros-assets-aa057c1e]
 aws_s3_object.welcome: Refreshing state... [id=welcome.txt]
 
 Terraform used the selected providers to generate the following execution
@@ -22,7 +22,7 @@ Terraform will perform the following actions:
 
   # aws_instance.web will be updated in-place
   ~ resource "aws_instance" "web" {
-        id                                   = "i-55dec0a4b6d90e3b7"
+        id                                   = "i-48ebabf7b345e2fbd"
         tags                                 = {
             "Name" = "devops-heros-web"
         }

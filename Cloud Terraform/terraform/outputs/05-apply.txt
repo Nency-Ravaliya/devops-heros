@@ -1,41 +1,41 @@
 $ terraform apply -input=false -auto-approve tfplan
 random_id.bucket_suffix: Creating...
-random_id.bucket_suffix: Creation complete after 0s [id=pjQ0BA]
+random_id.bucket_suffix: Creation complete after 0s [id=qgV8Hg]
 aws_vpc.main: Creating...
 aws_s3_bucket.assets: Creating...
-aws_s3_bucket.assets: Creation complete after 0s [id=devops-heros-assets-a6343404]
+aws_s3_bucket.assets: Creation complete after 0s [id=devops-heros-assets-aa057c1e]
 aws_s3_bucket_public_access_block.assets: Creating...
 aws_s3_bucket_versioning.assets: Creating...
 aws_s3_object.welcome: Creating...
-aws_s3_bucket_public_access_block.assets: Creation complete after 0s [id=devops-heros-assets-a6343404]
+aws_s3_bucket_public_access_block.assets: Creation complete after 0s [id=devops-heros-assets-aa057c1e]
 aws_s3_object.welcome: Creation complete after 0s [id=welcome.txt]
-aws_s3_bucket_versioning.assets: Creation complete after 1s [id=devops-heros-assets-a6343404]
+aws_s3_bucket_versioning.assets: Creation complete after 1s [id=devops-heros-assets-aa057c1e]
 aws_vpc.main: Still creating... [00m10s elapsed]
-aws_vpc.main: Creation complete after 10s [id=vpc-32ac50ea35a85331d]
+aws_vpc.main: Creation complete after 10s [id=vpc-55ebd8b6762880382]
 aws_internet_gateway.igw: Creating...
 aws_subnet.public: Creating...
 aws_security_group.web: Creating...
-aws_internet_gateway.igw: Creation complete after 0s [id=igw-5a0fc6e7d521870fa]
+aws_internet_gateway.igw: Creation complete after 0s [id=igw-393bc94fca231b5b8]
 aws_route_table.public: Creating...
-aws_security_group.web: Creation complete after 0s [id=sg-f0fedcb4eb31f6697]
-aws_route_table.public: Creation complete after 0s [id=rtb-7b01a8a6c6f775d73]
+aws_security_group.web: Creation complete after 0s [id=sg-a8aecc810f5849c16]
+aws_route_table.public: Creation complete after 0s [id=rtb-e1ee551a43e857e8b]
 aws_subnet.public: Still creating... [00m10s elapsed]
-aws_subnet.public: Creation complete after 10s [id=subnet-f3ca32c36d673e14f]
+aws_subnet.public: Creation complete after 10s [id=subnet-3f65043327228c548]
 aws_route_table_association.public: Creating...
-aws_route_table_association.public: Creation complete after 0s [id=rtbassoc-4fa325e9d655b10a3]
+aws_route_table_association.public: Creation complete after 0s [id=rtbassoc-18b97dcb6e53a50ea]
 aws_instance.web: Creating...
 aws_instance.web: Still creating... [00m10s elapsed]
-aws_instance.web: Creation complete after 10s [id=i-55dec0a4b6d90e3b7]
+aws_instance.web: Creation complete after 10s [id=i-48ebabf7b345e2fbd]
 
 Apply complete! Resources: 12 added, 0 changed, 0 destroyed.
 
 Outputs:
 
-instance_id = "i-55dec0a4b6d90e3b7"
-instance_public_ip = "54.214.206.0"
-public_subnet_id = "subnet-f3ca32c36d673e14f"
-s3_bucket = "devops-heros-assets-a6343404"
-security_group_id = "sg-f0fedcb4eb31f6697"
-vpc_id = "vpc-32ac50ea35a85331d"
-web_url = "http://54.214.206.0"
+instance_id = "i-48ebabf7b345e2fbd"
+instance_public_ip = "54.214.94.143"
+public_subnet_id = "subnet-3f65043327228c548"
+s3_bucket = "devops-heros-assets-aa057c1e"
+security_group_id = "sg-a8aecc810f5849c16"
+vpc_id = "vpc-55ebd8b6762880382"
+web_url = "http://54.214.94.143"
 [exit code: 0]
