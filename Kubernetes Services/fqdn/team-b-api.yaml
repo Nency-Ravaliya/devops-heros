@@ -1,0 +1,40 @@
+# A Service in a different namespace, used to demonstrate namespace-based DNS
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: team-b
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api
+  namespace: team-b
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: api
+  template:
+    metadata:
+      labels:
+        app: api
+    spec:
+      containers:
+        - name: api
+          image: hashicorp/http-echo:1.0
+          args: ["-text=api in team-b", "-listen=:8080"]
+          ports:
+            - containerPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: api
+  namespace: team-b
+spec:
+  selector:
+    app: api
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080

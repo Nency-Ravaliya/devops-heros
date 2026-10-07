@@ -1,0 +1,30 @@
+$ kubectl apply -f 04-externalname/service.yaml
+service/external-api created
+
+$ kubectl get svc external-api -o wide
+NAME           TYPE           CLUSTER-IP   EXTERNAL-IP   PORT(S)   AGE   SELECTOR
+external-api   ExternalName   <none>       example.com   <none>    0s    <none>
+
+$ kubectl get endpoints external-api 2>&1 | tail -n +1
+Warning: v1 Endpoints is deprecated in v1.33+; use discovery.k8s.io/v1 EndpointSlice
+Error from server (NotFound): endpoints "external-api" not found
+
+$ kubectl exec dns -- nslookup external-api.default.svc.cluster.local
+Server:		10.96.0.10
+Address:	10.96.0.10#53
+
+external-api.default.svc.cluster.local	canonical name = example.com.
+Name:	example.com
+Address: 104.20.23.154
+Name:	example.com
+Address: 172.66.147.243
+
+
+$ kubectl exec dns -- dig +noall +answer external-api.default.svc.cluster.local
+external-api.default.svc.cluster.local.	30 IN CNAME example.com.
+example.com.		30	IN	A	172.66.147.243
+example.com.		30	IN	A	104.20.23.154
+
+$ kubectl exec dns -- curl -s -o /dev/null -w 'HTTP %{http_code} from %{remote_ip}\n' -H 'Host: example.com' http://external-api
+HTTP 200 from 104.20.23.154
+

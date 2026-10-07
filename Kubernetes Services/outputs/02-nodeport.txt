@@ -1,0 +1,26 @@
+$ kubectl apply -f 02-nodeport/service.yaml
+service/web-nodeport unchanged
+
+$ kubectl get svc web-nodeport -o wide
+NAME           TYPE       CLUSTER-IP       EXTERNAL-IP   PORT(S)        AGE     SELECTOR
+web-nodeport   NodePort   10.109.189.251   <none>        80:30080/TCP   3m37s   app=web
+
+$ kubectl get nodes -o wide | awk '{print $1, $6}'
+NAME INTERNAL-IP
+minikube 192.168.49.2
+
+$ minikube ssh -- 'for i in 1 2 3; do curl -s http://192.168.49.2:30080; done'
+hello from web-86bb596c4d-xhfvv
+hello from web-86bb596c4d-nknrw
+hello from web-86bb596c4d-72lwl
+
+$ kubectl exec curl -- curl -s http://web-nodeport
+hello from web-86bb596c4d-xhfvv
+
+$ minikube service web-nodeport --url     # on Windows + docker driver this opens a tunnel and keeps running
+http://127.0.0.1:6904
+! Because you are using a Docker driver on windows, the terminal needs to be open to run it.
+
+$ curl -s http://127.0.0.1:6904    # from my Windows laptop through the tunnel
+hello from web-86bb596c4d-72lwl
+

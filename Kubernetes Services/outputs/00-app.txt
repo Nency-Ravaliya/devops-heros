@@ -1,0 +1,9 @@
+$ kubectl apply -f app-deployment.yaml
+deployment.apps/web unchanged
+
+$ kubectl get pods -l app=web -o wide
+NAME                   READY   STATUS    RESTARTS   AGE   IP            NODE       NOMINATED NODE   READINESS GATES
+web-86bb596c4d-72lwl   1/1     Running   0          40s   10.244.0.78   minikube   <none>           <none>
+web-86bb596c4d-nknrw   1/1     Running   0          40s   10.244.0.77   minikube   <none>           <none>
+web-86bb596c4d-xhfvv   1/1     Running   0          40s   10.244.0.76   minikube   <none>           <none>
+

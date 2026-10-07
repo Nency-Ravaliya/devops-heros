@@ -1,0 +1,39 @@
+$ kubectl apply -f 05-headless/statefulset.yaml
+service/db-headless created
+statefulset.apps/db created
+
+$ kubectl get svc db-headless
+NAME          TYPE        CLUSTER-IP   EXTERNAL-IP   PORT(S)    AGE
+db-headless   ClusterIP   None         <none>        8080/TCP   2s
+
+$ kubectl get pods -l app=db -o wide
+NAME   READY   STATUS    RESTARTS   AGE   IP            NODE       NOMINATED NODE   READINESS GATES
+db-0   1/1     Running   0          2s    10.244.0.80   minikube   <none>           <none>
+db-1   1/1     Running   0          1s    10.244.0.81   minikube   <none>           <none>
+db-2   1/1     Running   0          1s    10.244.0.82   minikube   <none>           <none>
+
+$ kubectl exec dns -- dig +noall +answer db-headless.default.svc.cluster.local
+db-headless.default.svc.cluster.local. 30 IN A	10.244.0.82
+db-headless.default.svc.cluster.local. 30 IN A	10.244.0.81
+db-headless.default.svc.cluster.local. 30 IN A	10.244.0.80
+
+$ kubectl exec dns -- dig +noall +answer web-clusterip.default.svc.cluster.local
+web-clusterip.default.svc.cluster.local. 30 IN A 10.102.13.85
+
+$ kubectl exec dns -- dig +noall +answer db-0.db-headless.default.svc.cluster.local
+db-0.db-headless.default.svc.cluster.local. 30 IN A 10.244.0.80
+
+$ kubectl exec dns -- sh -c 'for i in 0 1 2; do curl -s http://db-$i.db-headless:8080; done'
+I am db-0
+I am db-1
+I am db-2
+
+$ kubectl delete pod db-1 && kubectl wait --for=condition=Ready pod/db-1 --timeout=60s && kubectl get pod db-1 -o wide
+pod "db-1" deleted from default namespace
+pod/db-1 condition met
+NAME   READY   STATUS    RESTARTS   AGE   IP            NODE       NOMINATED NODE   READINESS GATES
+db-1   1/1     Running   0          0s    10.244.0.83   minikube   <none>           <none>
+
+$ kubectl exec dns -- curl -s http://db-1.db-headless:8080
+I am db-1
+

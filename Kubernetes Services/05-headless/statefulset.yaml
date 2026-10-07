@@ -1,0 +1,39 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: db-headless
+spec:
+  clusterIP: None          # headless: DNS returns Pod IPs directly
+  selector:
+    app: db
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: db
+spec:
+  serviceName: db-headless # gives each Pod a stable DNS name db-0.db-headless...
+  replicas: 3
+  selector:
+    matchLabels:
+      app: db
+  template:
+    metadata:
+      labels:
+        app: db
+    spec:
+      containers:
+        - name: db
+          image: hashicorp/http-echo:1.0
+          args: ["-text=I am $(POD_NAME)", "-listen=:8080"]
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          ports:
+            - containerPort: 8080
