@@ -1,0 +1,74 @@
+groups:
+  - name: demo-app.rules
+    rules:
+      # ---- Application health -------------------------------------------
+      - alert: DemoAppDown
+        expr: up{job="demo-app"} == 0
+        for: 15s
+        labels:
+          severity: critical
+        annotations:
+          summary: "demo-app is DOWN ({{ $labels.instance }})"
+          description: "Prometheus could not scrape {{ $labels.instance }} for more than 15s."
+
+      # ---- Errors ----------------------------------------------------------
+      - alert: HighErrorRate
+        expr: |
+          sum(rate(http_requests_total{job="demo-app",status=~"5.."}[1m]))
+            / sum(rate(http_requests_total{job="demo-app"}[1m])) > 0.10
+        for: 30s
+        labels:
+          severity: warning
+        annotations:
+          summary: "demo-app 5xx error rate is {{ $value | humanizePercentage }}"
+          description: "More than 10% of requests failed over the last minute."
+
+      # ---- Latency ---------------------------------------------------------
+      - alert: HighLatencyP95
+        expr: |
+          histogram_quantile(0.95,
+            sum by (le) (rate(http_request_duration_seconds_bucket{job="demo-app"}[1m]))) > 0.5
+        for: 30s
+        labels:
+          severity: warning
+        annotations:
+          summary: "demo-app p95 latency is {{ $value | humanizeDuration }}"
+
+      # ---- CPU (application process) --------------------------------------
+      - alert: HighCPUUsage
+        expr: rate(process_cpu_seconds_total{job="demo-app"}[30s]) > 0.5
+        for: 20s
+        labels:
+          severity: warning
+        annotations:
+          summary: "demo-app CPU is {{ $value | humanizePercentage }} of one core"
+          description: "Process CPU usage above 50% of one core for 20s."
+
+      # ---- Memory (application process) -----------------------------------
+      - alert: HighMemoryUsage
+        expr: process_resident_memory_bytes{job="demo-app"} > 150 * 1024 * 1024
+        for: 15s
+        labels:
+          severity: warning
+        annotations:
+          summary: "demo-app RSS memory is {{ $value | humanize1024 }}B"
+          description: "Resident memory above 150 MiB for 15s (possible leak)."
+
+  - name: host.rules
+    rules:
+      # ---- CPU / memory of the host (Docker VM) via node-exporter ---------
+      - alert: HostHighCPU
+        expr: 100 * (1 - avg(rate(node_cpu_seconds_total{mode="idle"}[1m]))) > 80
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Host CPU usage is {{ $value | printf \"%.1f\" }}%"
+
+      - alert: HostHighMemory
+        expr: 100 * (1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) > 90
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Host memory usage is {{ $value | printf \"%.1f\" }}%"

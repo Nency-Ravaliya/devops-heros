@@ -1,0 +1,27 @@
+# Apply this ONCE from your admin machine (it is NOT part of the Git source path).
+# repoURL points at the local `gitops-demo` repo served by `git daemon` on the host
+# (minikube resolves host.minikube.internal to the Mac). For GitHub use
+#   repoURL: https://github.com/<you>/gitops-demo.git
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: session20-app
+  namespace: argocd
+spec:
+  project: default
+
+  source:
+    repoURL: git://host.minikube.internal/gitops-demo
+    targetRevision: main
+    path: app
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: session20
+
+  syncPolicy:
+    automated:
+      prune: true      # delete cluster objects whose manifest was removed from Git
+      selfHeal: true   # revert manual drift (kubectl edit/scale/delete)
+    syncOptions:
+      - CreateNamespace=true
