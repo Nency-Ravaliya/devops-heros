@@ -1,0 +1,19 @@
+# Pod that mounts dynamic-pvc at /data. Deleting and re-creating this Pod
+# shows that the data lives in the PV, not in the Pod.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pvc-writer
+  namespace: s13-storage
+spec:
+  containers:
+  - name: app
+    image: busybox:1.36
+    command: ["/bin/sh", "-c", "sleep 3600"]
+    volumeMounts:
+    - name: data
+      mountPath: /data
+  volumes:
+  - name: data
+    persistentVolumeClaim:
+      claimName: dynamic-pvc
