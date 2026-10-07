@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: session20-mini
+  namespace: p20-gitops
+spec:
+  selector:
+    app: session20-mini
+  ports:
+    - port: 80
+      targetPort: 80

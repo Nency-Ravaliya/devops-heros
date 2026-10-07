@@ -1,0 +1,73 @@
+# Small demo app that exposes Prometheus metrics on /metrics (podinfo).
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: p20-app
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: podinfo
+  namespace: p20-app
+  labels:
+    app: podinfo
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: podinfo
+  template:
+    metadata:
+      labels:
+        app: podinfo
+    spec:
+      containers:
+        - name: podinfo
+          image: ghcr.io/stefanprodan/podinfo:6.7.1
+          command: ["./podinfo", "--port=9898", "--level=debug"]
+          ports:
+            - name: http
+              containerPort: 9898
+          # Application health: kubelet calls these endpoints.
+          # startupProbe gives a slow start (busy shared node) up to 150s before liveness kicks in.
+          startupProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 30
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 3
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 6
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: http
+            initialDelaySeconds: 3
+            periodSeconds: 5
+            timeoutSeconds: 3
+          resources:
+            requests:
+              cpu: 50m
+              memory: 32Mi
+            limits:
+              memory: 96Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: podinfo
+  namespace: p20-app
+spec:
+  selector:
+    app: podinfo
+  ports:
+    - name: http
+      port: 9898
+      targetPort: http

@@ -1,0 +1,21 @@
+# Applied by hand (kubectl apply). Kept outside app/ so Argo CD does not manage its own Application.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: session20-mini
+  namespace: p20-argocd   # Argo CD was installed into p20-argocd on the shared cluster
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/PiyushhBansal/devops-heros.git
+    targetRevision: submission/piyush-session-20
+    path: session20-monitoring-observability-gitops/HW/03-gitops/app
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: p20-gitops
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

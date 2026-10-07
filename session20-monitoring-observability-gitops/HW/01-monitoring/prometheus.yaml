@@ -1,0 +1,169 @@
+# Lean Prometheus (no Grafana / Alertmanager) for a small shared cluster.
+# Scrapes: itself, the podinfo app (per pod), and kubelet cAdvisor (container CPU/memory).
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: p20-monitoring
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: prometheus
+  namespace: p20-monitoring
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: p20-prometheus
+rules:
+  - apiGroups: [""]
+    resources: ["nodes", "nodes/proxy", "nodes/metrics", "services", "endpoints", "pods"]
+    verbs: ["get", "list", "watch"]
+  - nonResourceURLs: ["/metrics"]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: p20-prometheus
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: p20-prometheus
+subjects:
+  - kind: ServiceAccount
+    name: prometheus
+    namespace: p20-monitoring
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+  namespace: p20-monitoring
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 10s
+      evaluation_interval: 10s
+
+    rule_files:
+      - /etc/prometheus/alerts.yml
+
+    scrape_configs:
+      - job_name: prometheus
+        static_configs:
+          - targets: ["localhost:9090"]
+
+      # Every podinfo pod in p20-app, discovered through the Kubernetes API
+      - job_name: podinfo
+        kubernetes_sd_configs:
+          - role: endpoints
+            namespaces:
+              names: ["p20-app"]
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_service_name]
+            regex: podinfo
+            action: keep
+          - source_labels: [__meta_kubernetes_pod_name]
+            target_label: pod
+          - source_labels: [__meta_kubernetes_namespace]
+            target_label: namespace
+
+      # cAdvisor on the kubelet, reached through the API server proxy
+      - job_name: cadvisor
+        scheme: https
+        tls_config:
+          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+        kubernetes_sd_configs:
+          - role: node
+        relabel_configs:
+          - target_label: __address__
+            replacement: kubernetes.default.svc:443
+          - source_labels: [__meta_kubernetes_node_name]
+            regex: (.+)
+            target_label: __metrics_path__
+            replacement: /api/v1/nodes/${1}/proxy/metrics/cadvisor
+        metric_relabel_configs:
+          # keep only my namespaces to stay small
+          - source_labels: [namespace]
+            regex: p20-.*
+            action: keep
+
+  alerts.yml: |
+    groups:
+      - name: podinfo
+        rules:
+          - alert: PodinfoDown
+            expr: (count(up{job="podinfo"} == 1) or vector(0)) < 1
+            for: 30s
+            labels:
+              severity: critical
+            annotations:
+              summary: "No healthy podinfo targets are being scraped"
+          - alert: PodinfoHighCPU
+            expr: sum by (pod) (rate(container_cpu_usage_seconds_total{namespace="p20-app",container="podinfo"}[1m])) > 0.1
+            for: 30s
+            labels:
+              severity: warning
+            annotations:
+              summary: "podinfo pod {{ $labels.pod }} uses more than 100m CPU"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prometheus
+  namespace: p20-monitoring
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: prometheus
+  template:
+    metadata:
+      labels:
+        app: prometheus
+    spec:
+      serviceAccountName: prometheus
+      containers:
+        - name: prometheus
+          image: prom/prometheus:v3.5.0
+          args:
+            - --config.file=/etc/prometheus/prometheus.yml
+            - --storage.tsdb.path=/prometheus
+            - --storage.tsdb.retention.time=2h
+          ports:
+            - containerPort: 9090
+          readinessProbe:
+            httpGet:
+              path: /-/ready
+              port: 9090
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              memory: 384Mi
+          volumeMounts:
+            - name: config
+              mountPath: /etc/prometheus
+            - name: data
+              mountPath: /prometheus
+      volumes:
+        - name: config
+          configMap:
+            name: prometheus-config
+        - name: data
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus
+  namespace: p20-monitoring
+spec:
+  selector:
+    app: prometheus
+  ports:
+    - port: 9090
+      targetPort: 9090
