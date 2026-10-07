@@ -1,0 +1,18 @@
+# Revision 1 (install) uses these defaults.
+replicaCount: 1
+
+image:
+  repository: nginx
+  tag: "1.26-alpine"
+
+message: "Hello from version 1"
+
+service:
+  port: 80
+
+resources:
+  requests:
+    cpu: 10m
+    memory: 16Mi
+  limits:
+    memory: 64Mi
