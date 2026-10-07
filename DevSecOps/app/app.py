@@ -231,4 +231,7 @@ def server_error(e):
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5001, debug=True)
+    # Security fix (Bandit B201/B104): never hard-code debug=True or bind-all.
+    # Debug is opt-in for local development only; the container sets HOST=0.0.0.0.
+    debug = os.getenv("FLASK_DEBUG", "0") == "1"
+    app.run(host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", "5001")), debug=debug)

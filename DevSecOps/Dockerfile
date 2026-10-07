@@ -9,6 +9,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY app ./app
 
+ENV HOST=0.0.0.0 PORT=5001
 EXPOSE 5001
 USER 10001
 

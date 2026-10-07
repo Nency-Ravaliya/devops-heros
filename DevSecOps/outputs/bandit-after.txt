@@ -1,0 +1,13 @@
+$ bandit -r DevSecOps/app --severity-level medium --confidence-level medium   (after the fix)
+Run started:2026-10-07 19:43:14.010086
+
+Test results:
+	No issues identified.
+
+Code scanned:
+	Total issues (by severity):
+		Undefined: 0
+		Low: 5
+		Medium: 0
+		High: 0
+exit code: 0
