@@ -1,0 +1,18 @@
+# Trivy configuration shared by the SCA (trivy fs) and image (trivy image) scans.
+# Usage: trivy image --config trivy.yaml <image>   /   trivy fs --config trivy.yaml .
+# Gate policy: any HIGH or CRITICAL vulnerability -> exit code 1.
+severity:
+  - HIGH
+  - CRITICAL
+exit-code: 1
+scan:
+  scanners:
+    - vuln
+vulnerability:
+  # Strict: unfixed CVEs also count. The alpine base + pip removal currently gives 0 HIGH/CRITICAL,
+  # so no .trivyignore is required. Add one only with a per-CVE justification.
+  ignore-unfixed: false
+db:
+  # mirror.gcr.io is trivy's default DB mirror; avoids GHCR rate limits on shared runners
+  repository:
+    - mirror.gcr.io/aquasec/trivy-db
