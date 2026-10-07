@@ -23,14 +23,15 @@ cap "kubectl create namespace notes"
 cap "kubectl -n notes create secret generic notes-redis-auth --from-literal=password=\$(openssl rand -hex 16)"
 cap "kubectl -n notes get secret notes-redis-auth"
 echo "################ GitOps: commit the new image tag to the environment branch ################"
-git fetch -q origin
-git checkout -q -B final-gitops
-sed -i "s/^  tag: .*/  tag: \"$TAG\"/" gitops/notes-values.yaml
-git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" commit -q -am "GitOps: deploy notes-api $TAG"
-git push -q -f origin final-gitops
-GITOPS_REV=$(git rev-parse HEAD)
-cap "git log --oneline -1 && git show --format= HEAD -- gitops/notes-values.yaml"
-git checkout -q -
+# use a separate worktree so the main checkout (and the outputs commit) stays on main
+WT=$(mktemp -d); git fetch -q origin
+git worktree add -q --detach "$WT" HEAD
+sed -i "s/^  tag: .*/  tag: \"$TAG\"/" "$WT/final-devops-project/gitops/notes-values.yaml"
+git -C "$WT" -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" commit -q -m "GitOps: deploy notes-api $TAG" -- final-devops-project/gitops/notes-values.yaml
+git -C "$WT" push -q -f origin HEAD:refs/heads/final-gitops
+GITOPS_REV=$(git -C "$WT" rev-parse HEAD)
+cap "git -C $WT log --oneline -1 && git -C $WT show --format= HEAD"
+git worktree remove --force "$WT"
 echo "################ Argo CD Application (Helm chart + values from Git) ################"
 cap "cat gitops/argocd-application.yaml"
 cap "kubectl apply -f gitops/argocd-application.yaml"
