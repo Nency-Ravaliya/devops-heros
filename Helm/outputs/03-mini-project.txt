@@ -1,0 +1,161 @@
+################ Step 8: lint ################
+$ helm lint notes-chart
+==> Linting notes-chart
+[INFO] Chart.yaml: icon is recommended
+
+1 chart(s) linted, 0 chart(s) failed
+
+################ Step 9: render locally ################
+$ helm template notes-dev notes-chart
+---
+# Source: notes-chart/templates/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: notes-dev-config
+data:
+  APP_NAME: "notes-app"
+  ENVIRONMENT: "development"
+---
+# Source: notes-chart/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: notes-dev-svc
+spec:
+  type: NodePort
+  selector:
+    app: notes-dev
+  ports:
+    - port: 80
+      targetPort: 80
+      nodePort: 30090
+---
+# Source: notes-chart/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notes-dev-deploy
+  labels:
+    app: notes-dev
+    environment: development
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: notes-dev
+  template:
+    metadata:
+      labels:
+        app: notes-dev
+    spec:
+      containers:
+        - name: notes
+          image: "nginx:1.24"
+          ports:
+            - containerPort: 80
+          envFrom:
+            - configMapRef:
+                name: notes-dev-config
+
+################ Step 10: install (development) ################
+$ helm install notes-dev notes-chart --wait
+NAME: notes-dev
+LAST DEPLOYED: Thu Oct  8 01:32:14 2026
+NAMESPACE: default
+STATUS: deployed
+REVISION: 1
+TEST SUITE: None
+
+$ kubectl get pods -l app=notes-dev
+NAME                                READY   STATUS    RESTARTS   AGE
+notes-dev-deploy-74956bd987-rz2dv   1/1     Running   0          2s
+
+$ kubectl get services notes-dev-svc
+NAME            TYPE       CLUSTER-IP       EXTERNAL-IP   PORT(S)        AGE
+notes-dev-svc   NodePort   10.111.168.125   <none>        80:30090/TCP   2s
+
+$ kubectl get configmaps notes-dev-config -o jsonpath='{.data}'; echo
+{"APP_NAME":"notes-app","ENVIRONMENT":"development"}
+
+$ kubectl exec deploy/notes-dev-deploy -- sh -c 'echo APP_NAME=$APP_NAME ENVIRONMENT=$ENVIRONMENT; nginx -v'
+APP_NAME=notes-app ENVIRONMENT=development
+nginx version: nginx/1.24.0
+
+$ minikube ssh -- curl -s -o /dev/null -w '%{http_code}' http://192.168.49.2:30090; echo
+200
+
+################ Step 11: upgrade to production values ################
+$ helm upgrade notes-dev notes-chart -f notes-chart/values-prod.yaml --wait
+Release "notes-dev" has been upgraded. Happy Helming!
+NAME: notes-dev
+LAST DEPLOYED: Thu Oct  8 01:32:17 2026
+NAMESPACE: default
+STATUS: deployed
+REVISION: 2
+TEST SUITE: None
+
+$ kubectl get pods -l app=notes-dev
+NAME                                READY   STATUS      RESTARTS   AGE
+notes-dev-deploy-74956bd987-rz2dv   0/1     Completed   0          5s
+notes-dev-deploy-bbcc464b4-7jrbt    1/1     Running     0          1s
+notes-dev-deploy-bbcc464b4-z7l69    1/1     Running     0          2s
+notes-dev-deploy-bbcc464b4-zfgmr    1/1     Running     0          1s
+
+$ kubectl exec deploy/notes-dev-deploy -- sh -c 'echo ENVIRONMENT=$ENVIRONMENT; nginx -v'
+ENVIRONMENT=production
+nginx version: nginx/1.25.5
+
+################ Step 12: release history ################
+$ helm history notes-dev
+REVISION	UPDATED                 	STATUS    	CHART            	APP VERSION	DESCRIPTION     
+1       	Thu Oct  8 01:32:14 2026	superseded	notes-chart-0.1.0	1.0        	Install complete
+2       	Thu Oct  8 01:32:17 2026	deployed  	notes-chart-0.1.0	1.0        	Upgrade complete
+
+################ Step 13: simulate a bad upgrade ################
+$ helm upgrade notes-dev notes-chart -f notes-chart/values-prod.yaml --set image.tag=broken-tag-does-not-exist
+Release "notes-dev" has been upgraded. Happy Helming!
+NAME: notes-dev
+LAST DEPLOYED: Thu Oct  8 01:32:20 2026
+NAMESPACE: default
+STATUS: deployed
+REVISION: 3
+TEST SUITE: None
+
+$ kubectl get pods -l app=notes-dev
+NAME                                READY   STATUS         RESTARTS   AGE
+notes-dev-deploy-79b4dbdffd-s677w   0/1     ErrImagePull   0          40s
+notes-dev-deploy-bbcc464b4-7jrbt    1/1     Running        0          42s
+notes-dev-deploy-bbcc464b4-z7l69    1/1     Running        0          43s
+notes-dev-deploy-bbcc464b4-zfgmr    1/1     Running        0          42s
+
+################ Step 14: rollback to revision 2 ################
+$ helm rollback notes-dev 2 --wait
+Rollback was a success! Happy Helming!
+
+$ kubectl get pods -l app=notes-dev
+NAME                               READY   STATUS    RESTARTS   AGE
+notes-dev-deploy-bbcc464b4-7jrbt   1/1     Running   0          44s
+notes-dev-deploy-bbcc464b4-z7l69   1/1     Running   0          45s
+notes-dev-deploy-bbcc464b4-zfgmr   1/1     Running   0          44s
+
+$ helm history notes-dev
+REVISION	UPDATED                 	STATUS    	CHART            	APP VERSION	DESCRIPTION     
+1       	Thu Oct  8 01:32:14 2026	superseded	notes-chart-0.1.0	1.0        	Install complete
+2       	Thu Oct  8 01:32:17 2026	superseded	notes-chart-0.1.0	1.0        	Upgrade complete
+3       	Thu Oct  8 01:32:20 2026	superseded	notes-chart-0.1.0	1.0        	Upgrade complete
+4       	Thu Oct  8 01:33:00 2026	deployed  	notes-chart-0.1.0	1.0        	Rollback to 2   
+
+################ Step 15: clean up ################
+$ helm uninstall notes-dev --wait
+release "notes-dev" uninstalled
+
+$ kubectl get pods -l app=notes-dev
+NAME                               READY   STATUS        RESTARTS   AGE
+notes-dev-deploy-bbcc464b4-7jrbt   1/1     Terminating   0          45s
+notes-dev-deploy-bbcc464b4-z7l69   1/1     Terminating   0          46s
+notes-dev-deploy-bbcc464b4-zfgmr   1/1     Terminating   0          45s
+
+$ kubectl get services notes-dev-svc
+Error from server (NotFound): services "notes-dev-svc" not found
+
