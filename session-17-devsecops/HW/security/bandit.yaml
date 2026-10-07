@@ -1,0 +1,7 @@
+# Bandit (SAST for Python) config. Used with: bandit -c security/bandit.yaml -r app
+# Tests use assert on purpose, so the tests folder is excluded.
+exclude_dirs:
+  - tests
+  - .venv
+# no tests are skipped: every Bandit check runs
+skips: []
