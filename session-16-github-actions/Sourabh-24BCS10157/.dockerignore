@@ -1,0 +1,9 @@
+node_modules
+coverage
+reports
+test
+k8s
+*.md
+Dockerfile
+.dockerignore
+eslint.config.js
