@@ -1,0 +1,28 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: emptydir-demo
+  labels:
+    app: storage-demo
+spec:
+  containers:
+    - name: writer
+      image: busybox:1.36
+      command: ["/bin/sh", "-c"]
+      args:
+        - while true; do date >> /cache/timestamp.txt; sleep 5; done
+      volumeMounts:
+        - name: shared-cache
+          mountPath: /cache
+    - name: reader
+      image: busybox:1.36
+      command: ["/bin/sh", "-c"]
+      args:
+        - while true; do cat /cache/timestamp.txt 2>/dev/null; sleep 10; done
+      volumeMounts:
+        - name: shared-cache
+          mountPath: /cache
+  volumes:
+    - name: shared-cache
+      emptyDir:
+        medium: "" # empty string uses node disk; "Memory" uses tmpfs RAM
