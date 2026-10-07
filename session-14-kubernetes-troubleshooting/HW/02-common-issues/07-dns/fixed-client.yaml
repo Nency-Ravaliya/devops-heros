@@ -1,0 +1,22 @@
+# Fixed: hostname uses the namespace the Service really lives in.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: dns-client
+spec:
+  containers:
+    - name: client
+      image: busybox:1.36
+      env:
+        - name: DB_HOST
+          value: orders-db.p14-issues.svc.cluster.local
+      command: ["sh", "-c"]
+      args:
+        - |
+          while true; do
+            if wget -q -T 3 -O /dev/null "http://$DB_HOST"; then echo "OK   reached $DB_HOST";
+            else echo "FAIL could not reach $DB_HOST"; fi
+            sleep 5
+          done
+      resources:
+        requests: { cpu: 10m, memory: 16Mi }

@@ -1,0 +1,11 @@
+# From ../../07-imagepullbackoff/broken-pod.yaml: the repo exists but the tag does not.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: errimagepull-app
+spec:
+  containers:
+    - name: app
+      image: nginx:this-image-does-not-exist
+      resources:
+        requests: { cpu: 10m, memory: 16Mi }

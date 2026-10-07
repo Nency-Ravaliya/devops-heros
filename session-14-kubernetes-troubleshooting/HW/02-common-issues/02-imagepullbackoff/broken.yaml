@@ -1,0 +1,11 @@
+# From ../../scenarios/scenario-2-imagepull/broken.yaml: image name that does not exist on Docker Hub.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: imagepull-app
+spec:
+  containers:
+    - name: web-app
+      image: yatri-api-service:v999-invalid-tag-does-not-exist
+      resources:
+        requests: { cpu: 10m, memory: 16Mi }

@@ -1,0 +1,13 @@
+# From ../../scenarios/scenario-3-pending/broken.yaml: asks for far more than the node has.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pending-app
+spec:
+  containers:
+    - name: hungry-app
+      image: nginx:alpine
+      resources:
+        requests:
+          cpu: "500"
+          memory: "1000Gi"

@@ -1,0 +1,39 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: payments-config
+data:
+  db_host: orders-db
+  log_level: info
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: payments
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: payments
+  template:
+    metadata:
+      labels:
+        app: payments
+    spec:
+      containers:
+        - name: app
+          image: busybox:1.36
+          command: ["sh", "-c", "echo DB_HOST=$DB_HOST LOG_LEVEL=$LOG_LEVEL; sleep 3600"]
+          env:
+            - name: DB_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: payments-config
+                  key: DB_HOST          # wrong: the ConfigMap key is db_host
+            - name: LOG_LEVEL
+              valueFrom:
+                configMapKeyRef:
+                  name: payments-config
+                  key: log_level
+          resources:
+            requests: { cpu: 10m, memory: 16Mi }
