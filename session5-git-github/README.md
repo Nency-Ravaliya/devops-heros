@@ -52,3 +52,9 @@ $ git cherry-pick 1f7d1cb
 The hotfix appeared on `main`, but the other two feature commits did not. The SHA changed from `1f7d1cb` to `6ea1941` because cherry-pick created a new commit with a different parent. This helped me understand that cherry-pick copies one commit's change rather than merging the whole branch.
 
 The Git references I used are listed in [`resources.md`](resources.md).
+
+## Proof of the Git practice
+
+The screenshot shows both exercises: the difference between `git commit -m` and `git commit -a -m`, and the single commit copied to `main` with `git cherry-pick`.
+
+![Git commit and cherry-pick output](screenshots/git-commands-proof.png)

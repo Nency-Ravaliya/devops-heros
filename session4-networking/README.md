@@ -57,3 +57,9 @@ Connection to google.com port 443 [tcp/https] succeeded!
 ## What I took away
 
 I now troubleshoot from the simplest check outward: resolve the hostname, test reachability, inspect the route, confirm the port, then test the application. That prevents me from blaming DNS, the firewall, or the application before I know which layer is failing.
+
+## Proof of the checks
+
+This screenshot brings together the successful ping, DNS lookup, HTTP response, and TCP port checks from my saved command output.
+
+![Networking command results](screenshots/network-checks-proof.png)

@@ -15,3 +15,23 @@ The HPA files are in [`04-hpa/`](04-hpa/) and the load script is [`hpa/load_gene
 The Deployment uses startup, readiness, and liveness HTTP probes. All three checked `/`, the Pods stayed ready without restarts, and the Service returned HTTP 200: [`probes-service.png`](screenshots/probes-service.png).
 
 The full project and run instructions are in [`mini-project/`](mini-project/).
+
+## Screenshots from my run
+
+### Persistent storage
+
+The replacement Pod could still read the student file after the original Pod was deleted.
+
+![PVC persistence test](screenshots/pvc-persistence.png)
+
+### Horizontal scaling
+
+The generated load raised CPU usage above the target and the HPA increased the replica count.
+
+![HPA scaling test](screenshots/hpa-scaling.png)
+
+### Health probes and Service
+
+The startup, readiness, and liveness probes were configured, the Pods were ready, and the Service returned HTTP 200.
+
+![Probe and Service test](screenshots/probes-service.png)

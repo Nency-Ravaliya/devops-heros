@@ -29,9 +29,15 @@ With CI/CD, every push to Git triggers automated build, test, and deploy.
 | `09-build-test-pipeline/` | Full CI pipeline: checkout, build, test, lint |
 | `10-final-cicd-pipeline/` | Current assignment: test, security, build artifacts, Docker packaging, and delivery artifact |
 
-## Assignment status
+## What I completed
 
-The final project contains application source, tests, a Dockerfile, build script, README, and the repository-level GitHub Actions workflow. The workflow implements CI gates and produces both a source artifact and a deployable container-image artifact. Add the successful four-job run screenshot to `screenshots/github-actions-final-cicd.png` after the pushed workflow completes.
+I created the application, tests, Dockerfile, build script, and GitHub Actions workflow. The workflow checks out the code, installs dependencies, runs linting and tests, scans the project, builds the application, packages the container image, and uploads the requested artifacts.
+
+The first screenshot shows the basic lint-and-test pipeline. The second shows the completed final CI/CD pipeline with all four jobs passing.
+
+![GitHub Actions lint and test pipeline](screenshots/github-actions-success.png)
+
+![Final GitHub Actions CI/CD pipeline](screenshots/github-actions-final-cicd.png)
 
 ---
 

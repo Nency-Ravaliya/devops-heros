@@ -23,6 +23,10 @@ The important part of my output was:
 
 The hard link and original file had the same inode. The symbolic link had a different inode and stored the path to the original file. After I deleted `original.txt`, the hard link still contained the data, while the symbolic link became broken. This was the clearest practical difference between them.
 
+This is the output from my link test. It shows the matching inode numbers before I removed the original file, followed by the hard link still returning the saved text.
+
+![Linux hard-link and symbolic-link test](screenshots/linux-links-proof.png)
+
 | Check | Hard link | Symbolic link |
 |---|---|---|
 | Command | `ln target link` | `ln -s target link` |

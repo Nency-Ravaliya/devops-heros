@@ -53,3 +53,9 @@ ps > sysinfo_report/process.log
 ```
 
 I also kept my smaller practice scripts in this folder: [`condition.sh`](condition.sh), [`variable.sh`](variable.sh), [`input.sh`](input.sh), [`function.sh`](function.sh), and the loop examples.
+
+## Proof of the run
+
+This screenshot shows the details I entered and the report created by the script. It also confirms that the process output was written to a separate file.
+
+![Shell script system report](screenshots/system-report-proof.png)

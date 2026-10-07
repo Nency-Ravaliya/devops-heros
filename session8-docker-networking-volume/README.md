@@ -58,3 +58,9 @@ docker network inspect demo-overlay --format "Driver={{.Driver}} Scope={{.Scope}
 An overlay network is intended for containers running on different Docker hosts. Traffic is carried between the hosts through VXLAN while containers use one logical network. My local test confirmed the driver and Swarm scope, but a true cross-host connectivity test would require at least two Docker nodes.
 
 Reference: [Docker network drivers](https://docs.docker.com/engine/network/drivers/).
+
+## Proof of the exercises
+
+This screenshot shows the container connectivity rules, the live bind-mount update, and the overlay network created in Swarm mode.
+
+![Docker networking, bind mount, and overlay results](screenshots/docker-networking-proof.png)

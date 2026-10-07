@@ -13,3 +13,29 @@ I deployed all five Service types in Minikube and tested them from inside or out
 The LoadBalancer result was useful because `<pending>` did not mean the Service itself was broken. It meant my local cluster had no cloud provider to allocate a public address.
 
 My written notes are split into the [Service guide](service.md), [object comparisons](comparisons/README.md), [FQDN notes](fqdn/README.md), and [CoreDNS notes](coredns/README.md). I also kept a broken-selector example in [`troubleshooting/`](troubleshooting/) to show why a Service can have no endpoints.
+
+## Screenshots from my run
+
+### ClusterIP
+
+The Service had three endpoints and returned HTTP 200 from inside the cluster.
+
+![ClusterIP test](screenshots/service-clusterip.png)
+
+### NodePort
+
+The Minikube tunnel URL returned HTTP 200 through the NodePort Service.
+
+![NodePort test](screenshots/service-nodeport.png)
+
+### LoadBalancer
+
+The local Service worked with its endpoints even though Minikube could not allocate a cloud external IP.
+
+![LoadBalancer test](screenshots/service-loadbalancer.png)
+
+### ExternalName and headless DNS
+
+The DNS checks returned the ExternalName CNAME and the individual Pod addresses for the headless Service.
+
+![Service DNS tests](screenshots/service-dns.png)

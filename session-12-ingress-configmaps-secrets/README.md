@@ -14,3 +14,23 @@ The ConfigMap and Secret output is shown in [`configmap-secret.png`](screenshots
 For troubleshooting, I deliberately encoded a password with a trailing newline. The Pod received a 15-character value instead of the expected 14 characters. Reapplying the corrected Secret and restarting the Deployment removed the newline. I checked the length and newline flag without exposing the password: [`secret-troubleshooting-before-after.png`](screenshots/secret-troubleshooting-before-after.png).
 
 My explanation of Ingress versus an Ingress Controller is in [`lab.md`](lab.md), and the troubleshooting steps are in [`troubleshooting/README.md`](troubleshooting/README.md).
+
+## Screenshots from my run
+
+### ConfigMap and Secret values
+
+I checked the non-sensitive configuration values inside the backend container and verified that the Secret was present without printing its password.
+
+![ConfigMap and Secret verification](screenshots/configmap-secret.png)
+
+### Ingress routing
+
+Both the frontend route and the `/api/` backend route worked through the NGINX Ingress Controller.
+
+![Ingress routing result](screenshots/ingress-working.png)
+
+### Secret troubleshooting
+
+This before-and-after check shows the extra newline in the first Secret and the corrected value after I reapplied it.
+
+![Secret troubleshooting result](screenshots/secret-troubleshooting-before-after.png)

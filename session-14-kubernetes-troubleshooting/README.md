@@ -56,3 +56,27 @@ The Service initially selected `app: web-ahsgdf`, while the Pods had `app: web`.
 The main lesson from these exercises was to avoid guessing from the status name alone. Events explained the image and scheduling problems, logs explained the crash, and labels plus EndpointSlices explained the Service problem.
 
 The combined practice project is in [`mini-project/`](mini-project/).
+
+## Screenshots from my troubleshooting
+
+### CrashLoopBackOff diagnosis and fix
+
+![CrashLoopBackOff diagnosis](screenshots/crashloop-diagnosis.png)
+
+![Healthy Pod after the fix](screenshots/crashloop-fixed.png)
+
+### ImagePullBackOff
+
+![ImagePullBackOff before and after](screenshots/imagepullbackoff-before-after.png)
+
+### Pending Pod
+
+![Pending Pod before and after](screenshots/pending-before-after.png)
+
+### ContainerCreating events
+
+![ContainerCreating investigation](screenshots/containercreating-investigation.png)
+
+### Service and DNS recovery
+
+![Service and DNS recovery](screenshots/service-dns-recovery.png)

@@ -60,3 +60,9 @@ The container listens on port 3000, while Docker publishes it on port 8080 on th
 ## Three application types
 
 The Node.js, Python, and Java containers satisfy the final deployment task. I ran them together on separate ports and verified each response rather than only building the images.
+
+## Proof of the Docker runs
+
+This screenshot shows the images and running containers, followed by the HTTP response from every application and the multi-stage build.
+
+![Docker images, containers, and HTTP checks](screenshots/docker-apps-proof.png)

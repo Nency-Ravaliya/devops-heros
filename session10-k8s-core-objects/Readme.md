@@ -16,3 +16,27 @@ The Recreate test briefly returned a connection failure while the old Pods were 
 I also ran the examples in [`pod-lifecycle/`](pod-lifecycle/). They covered Running, Pending, Completed, Error, ImagePullBackOff, init-container, and multi-container Pods. The combined result is in [`pod-lifecycle.png`](screenshots/pod-lifecycle.png).
 
 The additional core object examples are in [`k8s-core-objects/`](k8s-core-objects/).
+
+## Screenshots from my run
+
+The following screenshots show the actual rollout and routing results for each strategy.
+
+### Rolling update
+
+![Rolling update result](screenshots/rolling-update.png)
+
+### Blue-green switch
+
+![Blue-green routing result](screenshots/blue-green-routing.png)
+
+### Canary traffic
+
+![Canary deployment result](screenshots/canary-deployment.png)
+
+### Recreate strategy
+
+![Recreate deployment result](screenshots/recreate-deployment.png)
+
+### Pod lifecycle examples
+
+![Pod lifecycle result](screenshots/pod-lifecycle.png)
