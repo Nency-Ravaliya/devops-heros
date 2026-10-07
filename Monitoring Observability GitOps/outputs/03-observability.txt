@@ -1,25 +1,25 @@
 ################ Logs pillar ################
 $ kubectl -n session20 logs deploy/demo-app --tail=5
-Found 2 pods, using pod/demo-app-787d5698c9-b2bbl
+Found 2 pods, using pod/demo-app-787d5698c9-lx97d
 
 $ kubectl -n session20 logs traffic --tail=3
 
 $ kubectl -n monitoring logs statefulset/prometheus-kps-prometheus -c prometheus --tail=5
-time=2026-10-07T20:17:26.990Z level=INFO source=main.go:1721 msg="Loading configuration file" filename=/etc/prometheus/config_out/prometheus.env.yaml
-time=2026-10-07T20:17:27.075Z level=INFO source=main.go:1763 msg="Completed loading of configuration file" db_storage=2.705µs remote_storage=3.036µs web_handler=791ns query_engine=812ns scrape=112.441µs scrape_sd=131.587µs notify=236.403µs notify_sd=13.927µs rules=73.469358ms tracing=5.881µs filename=/etc/prometheus/config_out/prometheus.env.yaml totalDuration=85.179482ms
-time=2026-10-07T20:17:34.876Z level=INFO source=main.go:1721 msg="Loading configuration file" filename=/etc/prometheus/config_out/prometheus.env.yaml
-time=2026-10-07T20:17:34.881Z level=INFO source=kubernetes.go:323 msg="Using pod service account via in-cluster config" component="discovery manager scrape" discovery=kubernetes config=serviceMonitor/session20/demo-app/0
-time=2026-10-07T20:17:34.926Z level=INFO source=main.go:1763 msg="Completed loading of configuration file" db_storage=2.003µs remote_storage=2.104µs web_handler=682ns query_engine=1.112µs scrape=982.645µs scrape_sd=370.324µs notify=196.068µs notify_sd=10.649µs rules=43.854622ms tracing=5.501µs filename=/etc/prometheus/config_out/prometheus.env.yaml totalDuration=49.500887ms
+time=2026-10-07T20:28:31.844Z level=INFO source=main.go:1721 msg="Loading configuration file" filename=/etc/prometheus/config_out/prometheus.env.yaml
+time=2026-10-07T20:28:31.884Z level=INFO source=main.go:1763 msg="Completed loading of configuration file" db_storage=2.774µs remote_storage=2.534µs web_handler=531ns query_engine=1.142µs scrape=56.554µs scrape_sd=40.75µs notify=138.735µs notify_sd=5.267µs rules=37.208915ms tracing=9.123µs filename=/etc/prometheus/config_out/prometheus.env.yaml totalDuration=40.397171ms
+time=2026-10-07T20:29:55.573Z level=INFO source=main.go:1721 msg="Loading configuration file" filename=/etc/prometheus/config_out/prometheus.env.yaml
+time=2026-10-07T20:29:55.577Z level=INFO source=kubernetes.go:323 msg="Using pod service account via in-cluster config" component="discovery manager scrape" discovery=kubernetes config=serviceMonitor/session20/demo-app/0
+time=2026-10-07T20:29:55.610Z level=INFO source=main.go:1763 msg="Completed loading of configuration file" db_storage=2.674µs remote_storage=2.393µs web_handler=410ns query_engine=1.051µs scrape=833.642µs scrape_sd=287.064µs notify=172.575µs notify_sd=8.082µs rules=33.027216ms tracing=6.299µs filename=/etc/prometheus/config_out/prometheus.env.yaml totalDuration=37.232434ms
 
 $ kubectl get events -n session20 --sort-by=.lastTimestamp | tail -8
-2m9s        Normal   Killing             pod/demo-app-787d5698c9-5xddc    Stopping container app
-2m9s        Normal   ScalingReplicaSet   deployment/demo-app              Scaled down replica set demo-app-787d5698c9 to 1 from 2
-26s         Normal   Scheduled           pod/demo-app-787d5698c9-6c7cn    Successfully assigned session20/demo-app-787d5698c9-6c7cn to session20-control-plane
-26s         Normal   ScalingReplicaSet   deployment/demo-app              Scaled up replica set demo-app-787d5698c9 to 2 from 1
-26s         Normal   SuccessfulCreate    replicaset/demo-app-787d5698c9   Created pod: demo-app-787d5698c9-6c7cn
-26s         Normal   Created             pod/demo-app-787d5698c9-6c7cn    Created container app
-26s         Normal   Pulled              pod/demo-app-787d5698c9-6c7cn    Container image "quay.io/brancz/prometheus-example-app:v0.5.0" already present on machine
-25s         Normal   Started             pod/demo-app-787d5698c9-6c7cn    Started container app
+119s        Normal   Killing             pod/demo-app-787d5698c9-875pb    Stopping container app
+119s        Normal   ScalingReplicaSet   deployment/demo-app              Scaled down replica set demo-app-787d5698c9 to 1 from 2
+16s         Normal   Pulled              pod/demo-app-787d5698c9-nph45    Container image "quay.io/brancz/prometheus-example-app:v0.5.0" already present on machine
+16s         Normal   ScalingReplicaSet   deployment/demo-app              Scaled up replica set demo-app-787d5698c9 to 2 from 1
+16s         Normal   SuccessfulCreate    replicaset/demo-app-787d5698c9   Created pod: demo-app-787d5698c9-nph45
+16s         Normal   Started             pod/demo-app-787d5698c9-nph45    Started container app
+16s         Normal   Created             pod/demo-app-787d5698c9-nph45    Created container app
+16s         Normal   Scheduled           pod/demo-app-787d5698c9-nph45    Successfully assigned session20/demo-app-787d5698c9-nph45 to session20-control-plane
 
 ################ Traces pillar: Jaeger + HotROD (OpenTelemetry) ################
 $ kubectl apply -f observability/tracing.yaml
@@ -37,24 +37,24 @@ deployment "hotrod" successfully rolled out
 
 $ kubectl get pods,svc -n tracing
 NAME                          READY   STATUS    RESTARTS   AGE
-pod/hotrod-7b4d7978f7-xjn2g   1/1     Running   0          5s
-pod/jaeger-b755f74c6-fgln7    1/1     Running   0          5s
+pod/hotrod-7b4d7978f7-9tbxz   1/1     Running   0          5s
+pod/jaeger-b755f74c6-9tvkb    1/1     Running   0          5s
 
 NAME             TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)                       AGE
-service/hotrod   ClusterIP   10.96.247.64    <none>        8080/TCP                      5s
-service/jaeger   ClusterIP   10.96.127.169   <none>        16686/TCP,4318/TCP,4317/TCP   5s
+service/hotrod   ClusterIP   10.96.243.213   <none>        8080/TCP                      5s
+service/jaeger   ClusterIP   10.96.154.174   <none>        16686/TCP,4318/TCP,4317/TCP   5s
 
 $ for c in 123 392 731 567; do curl -s "localhost:8080/dispatch?customer=$c" | jq -c '{Driver, ETA}'; done
-{"Driver":"T747782C","ETA":120000000000}
-{"Driver":"T740975C","ETA":120000000000}
-{"Driver":"T760934C","ETA":120000000000}
-{"Driver":"T745876C","ETA":120000000000}
+{"Driver":"T784901C","ETA":180000000000}
+{"Driver":"T703487C","ETA":120000000000}
+{"Driver":"T762117C","ETA":120000000000}
+{"Driver":"T768891C","ETA":120000000000}
 
 $ kubectl -n tracing logs deploy/hotrod --tail=4 | cut -c1-220
-2026-10-07T20:21:49.113Z	INFO	route/client.go:36	Finding route	{"service": "frontend", "component": "route_client", "trace_id": "f0fbd14728d6ffa1534e279f4506b896", "span_id": "4c365cf542fae9bf", "pickup": "734,539", "dro
-2026-10-07T20:21:49.113Z	INFO	route/server.go:67	HTTP request received	{"service": "route", "trace_id": "f0fbd14728d6ffa1534e279f4506b896", "span_id": "0dd7eb2acfeb874d", "method": "GET", "url": "/route?dropoff=211%2C653
-2026-10-07T20:21:49.176Z	INFO	frontend/best_eta.go:87	Found routes	{"service": "frontend", "trace_id": "f0fbd14728d6ffa1534e279f4506b896", "span_id": "4c365cf542fae9bf", "routes": [{},{},{},{},{},{},{},{},{},{}]}
-2026-10-07T20:21:49.176Z	INFO	frontend/best_eta.go:103	Dispatch successful	{"service": "frontend", "trace_id": "f0fbd14728d6ffa1534e279f4506b896", "span_id": "4c365cf542fae9bf", "driver": "T745876C", "eta": "2m0s"}
+2026-10-07T20:32:52.760Z	INFO	route/client.go:36	Finding route	{"service": "frontend", "component": "route_client", "trace_id": "de48633b892688e72d021a44ad53a15b", "span_id": "307b40f461f7d3d0", "pickup": "313,998", "dro
+2026-10-07T20:32:52.760Z	INFO	route/server.go:67	HTTP request received	{"service": "route", "trace_id": "de48633b892688e72d021a44ad53a15b", "span_id": "2e4618e8cf615836", "method": "GET", "url": "/route?dropoff=211%2C653
+2026-10-07T20:32:52.812Z	INFO	frontend/best_eta.go:87	Found routes	{"service": "frontend", "trace_id": "de48633b892688e72d021a44ad53a15b", "span_id": "307b40f461f7d3d0", "routes": [{},{},{},{},{},{},{},{},{},{}]}
+2026-10-07T20:32:52.812Z	INFO	frontend/best_eta.go:103	Dispatch successful	{"service": "frontend", "trace_id": "de48633b892688e72d021a44ad53a15b", "span_id": "307b40f461f7d3d0", "driver": "T768891C", "eta": "2m0s"}
 
 $ curl -s localhost:16686/api/services | jq -r '.data[]' | sort
 customer
@@ -65,33 +65,33 @@ redis-manual
 route
 
 $ curl -s 'localhost:16686/api/traces?service=frontend&limit=1&lookback=1h' | jq -r '.data[0] | "traceID=\(.traceID)  spans=\(.spans|length)  services=\([.processes[].serviceName]|unique|join(","))"'
-traceID=f0fbd14728d6ffa1534e279f4506b896  spans=39  services=customer,driver,frontend,mysql,redis-manual,route
+traceID=de48633b892688e72d021a44ad53a15b  spans=39  services=customer,driver,frontend,mysql,redis-manual,route
 
 $ curl -s 'localhost:16686/api/traces?service=frontend&limit=1&lookback=1h' | jq -r '.data[0] as $t | $t.spans | sort_by(.startTime) | .[] | "\($t.processes[.processID].serviceName | .[0:10]) \(.operationName | .[0:40])  \(.duration/1000|floor)ms"' | head -25
-frontend /dispatch  689ms
-frontend HTTP GET  272ms
-customer /customer  272ms
-mysql SQL SELECT  272ms
-frontend driver.DriverService/FindNearest  195ms
-driver driver.DriverService/FindNearest  194ms
-redis-manu FindDriverIDs  26ms
-redis-manu GetDriver  11ms
+frontend /dispatch  645ms
+frontend HTTP GET  284ms
+customer /customer  284ms
+mysql SQL SELECT  284ms
+frontend driver.DriverService/FindNearest  177ms
+driver driver.DriverService/FindNearest  177ms
+redis-manu FindDriverIDs  19ms
 redis-manu GetDriver  10ms
-redis-manu GetDriver  31ms
-redis-manu GetDriver  14ms
-redis-manu GetDriver  11ms
 redis-manu GetDriver  8ms
+redis-manu GetDriver  28ms
+redis-manu GetDriver  12ms
+redis-manu GetDriver  11ms
 redis-manu GetDriver  10ms
-redis-manu GetDriver  32ms
-redis-manu GetDriver  14ms
-redis-manu GetDriver  9ms
+redis-manu GetDriver  8ms
+redis-manu GetDriver  33ms
+redis-manu GetDriver  11ms
 redis-manu GetDriver  6ms
-redis-manu GetDriver  9ms
-frontend HTTP GET  41ms
-frontend HTTP GET  52ms
-frontend HTTP GET  43ms
-route /route  43ms
-route /route  41ms
-route /route  52ms
+redis-manu GetDriver  7ms
+redis-manu GetDriver  11ms
+frontend HTTP GET  59ms
+frontend HTTP GET  37ms
+frontend HTTP GET  34ms
+route /route  59ms
+route /route  36ms
+route /route  34ms
 
 screenshot jaeger-trace.png
