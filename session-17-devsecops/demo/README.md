@@ -14,7 +14,7 @@ Code → Build → Unit Test → SAST → SCA → Secret Scan → Docker Build
 |---|---|
 | Live workflow (run by GitHub) | [`.github/workflows/session17-devsecops.yml`](../../.github/workflows/session17-devsecops.yml) (repo root) |
 | Reference copy in this folder | [`.github/workflows/devsecops.yml`](.github/workflows/devsecops.yml) (identical; GitHub ignores nested `.github`) |
-| Successful pipeline run | _added after the pipeline runs on the pushed commit (see [§8](#8-pipeline-output-github-actions))_ |
+| Successful pipeline run | [#37655701204](https://github.com/jenyyy4/devops-heros/actions/runs/37655701204): all 10 jobs green, commit `cb15a33` |
 | Image | `ghcr.io/jenyyy4/session17-devsecops:<commit-sha>` |
 
 ---
@@ -279,9 +279,85 @@ curl localhost:8080/api/status
 
 ## 8. Pipeline output (GitHub Actions)
 
-> _Screenshots of the GitHub Actions run (all 10 jobs green, the per-stage logs, the security-gate
-> summary, the image in GHCR and the deploy job) are added here after the workflow runs on the
-> pushed commit._
+Run **[#37655701204](https://github.com/jenyyy4/devops-heros/actions/runs/37655701204)** was triggered
+by the push of commit `cb15a33` to `main`. All **10 jobs passed** in about 8 minutes. The screenshots
+below are the real job logs, fetched with `gh run view --job=<id> --log` and filtered with `grep`.
+
+### 8.1 Run overview
+
+![gh run list](screenshots/18-gh-run-list.png)
+
+Every job is green, in the order the assignment asks for. The run produced three artifacts:
+`docker-image` (the exact image that was scanned and pushed), `sast-reports` and `test-reports`.
+
+![gh run view](screenshots/19-gh-run-view.png)
+
+> The `ANNOTATIONS` block is filtered out of this screenshot. It only contains (a) the runner
+> notice that `ubuntu-latest` moves to Ubuntu 26 on 19 Oct 2026, and (b) a post-job checkout warning
+> `git … failed with exit code 128` (see [§11](#11-troubleshooting-notes)). Neither affects the result.
+
+### 8.2 Stages 1–2: Build and Unit Test
+
+The app compiles and imports (8 routes). 11/11 tests pass, and coverage is 86.79 % against the 80 % gate:
+
+![CI build and test](screenshots/20-ci-build-test.png)
+
+### 8.3 Stage 3: SAST
+
+CodeQL and Bandit results are uploaded to GitHub code scanning (Security tab). The Bandit gate finds
+**no issues** (0 Medium, 0 High):
+
+![CI SAST](screenshots/21-ci-sast.png)
+
+### 8.4 Stages 4–5: SCA and Secret Scan
+
+pip-audit finds **no known vulnerabilities** in the runtime or dev dependencies. Gitleaks finds **no
+leaks** in the working tree or in the project's git history:
+
+![CI SCA and secrets](screenshots/22-ci-sca-secrets.png)
+
+### 8.5 Stage 6: Docker Build
+
+Multi-stage build tagged with the full commit SHA. The smoke test hits `/health` and `/api/status`
+and shows the container runs as `uid=10001(app)`:
+
+![CI docker build](screenshots/23-ci-docker-build.png)
+
+### 8.6 Stage 7: Container Image Scan
+
+The image loaded from the stage-6 artifact has **0** HIGH/CRITICAL vulnerabilities under the
+`trivy.yaml` gate policy:
+
+![CI Trivy image](screenshots/24-ci-image-scan.png)
+
+The Dockerfile and all Kubernetes manifests have **0** HIGH/CRITICAL misconfigurations:
+
+![CI Trivy config](screenshots/25-ci-config-scan.png)
+
+### 8.7 Stage 8: Security Gate
+
+All seven checks report `success`, so the gate **passes** and the release may continue:
+
+![CI security gate](screenshots/26-ci-security-gate.png)
+
+### 8.8 Stage 9: Push Image to GHCR
+
+The same image (from the artifact, not rebuilt) is pushed as `:<sha>` and `:latest`. Both tags have
+the same digest:
+
+![CI push](screenshots/27-ci-push-ghcr.png)
+
+Checked from the laptop directly against the registry (anonymous, read-only):
+
+![GHCR image](screenshots/29-ghcr-image.png)
+
+### 8.9 Stage 10: Deploy to Kubernetes
+
+kind cluster on the runner → image pinned to the commit → `kubectl apply -k` → rollout → 2/2 Pods
+`Running` with the GHCR image → smoke test through the Service confirms `git_sha` = the commit
+that triggered the run:
+
+![CI deploy](screenshots/28-ci-deploy.png)
 
 ---
 
@@ -423,4 +499,5 @@ Smoke test through the Service:
 | `Readiness probe failed: context deadline exceeded` during start-up | default probe timeout is 1 s while two workers boot under a 250m CPU limit | `timeoutSeconds: 2` |
 | A full-history Gitleaks scan of the repo fails | classroom Secret YAMLs from session 12 | the CI job scopes the history scan to `session-17-devsecops/demo` |
 | The Trivy count for the old Debian image changed from 44 HIGH to 0 between two runs on the same day | Trivy updates its vulnerability DB; the first findings had status `affected` (no fixed version) | gate on **fixable** HIGH/CRITICAL (`ignore-unfixed`), and always pin the scanner version |
+| CI annotation `The process '/usr/bin/git' failed with exit code 128` on most jobs | in its post-job cleanup, `actions/checkout` runs `git submodule foreach`, and the repo has a submodule entry for `session-16-github-actions/mini-project 10-33-34-265` with no `.gitmodules` | harmless warning (the jobs still succeed). Fixing it means removing that broken submodule entry in session 16 |
 | A CI image doesn't run on the local minikube | CI builds `linux/amd64`, the laptop is `arm64` | locally, build the image and `minikube image load` it |
