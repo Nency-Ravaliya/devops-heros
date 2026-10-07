@@ -1,0 +1,24 @@
+# Custom Semgrep rules for this project. They run together with the public
+# p/python and p/flask rulesets (see the workflow).
+rules:
+  - id: flask-debug-enabled
+    languages: [python]
+    severity: ERROR
+    message: Flask debug mode exposes the Werkzeug debugger (remote code execution). Never enable it.
+    pattern-either:
+      - pattern: $APP.run(..., debug=True, ...)
+      - pattern: $APP.config["DEBUG"] = True
+
+  - id: hardcoded-flask-secret-key
+    languages: [python]
+    severity: ERROR
+    message: Flask SECRET_KEY must come from the environment / a Kubernetes Secret, not source code.
+    pattern-either:
+      - pattern: $APP.secret_key = "..."
+      - pattern: $APP.config["SECRET_KEY"] = "..."
+
+  - id: subprocess-shell-true
+    languages: [python]
+    severity: ERROR
+    message: subprocess with shell=True allows command injection.
+    pattern: subprocess.$FUNC(..., shell=True, ...)

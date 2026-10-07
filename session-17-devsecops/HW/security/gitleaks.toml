@@ -1,0 +1,15 @@
+# Gitleaks config: all default rules plus one custom rule.
+title = "session17 gitleaks config"
+
+[extend]
+useDefault = true
+
+[[rules]]
+id = "ghcr-pat-in-code"
+description = "GitHub personal access token"
+regex = '''gh[pousr]_[A-Za-z0-9]{36,}'''
+keywords = ["ghp_", "gho_", "ghu_", "ghs_", "ghr_"]
+
+[allowlist]
+description = "generated scanner output is not source"
+paths = ['''reports/''']

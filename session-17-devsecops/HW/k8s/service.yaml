@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: tasks-api
+  namespace: p17-devsecops
+spec:
+  selector:
+    app: tasks-api
+  ports:
+    - port: 80
+      targetPort: 8080
