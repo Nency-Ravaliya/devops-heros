@@ -1,0 +1,12 @@
+# Terraform working directories and state
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+tfplan
+# Crash logs
+crash.log
+crash.*.log
+# terraform.tfvars is a deliverable here and holds no secrets
+!terraform.tfvars
+.DS_Store
