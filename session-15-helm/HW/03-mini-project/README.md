@@ -35,6 +35,8 @@ used `kubectl port-forward svc/notes-dev-svc 18152:80` and checked the `Server` 
 
 ## Step 8: Lint
 
+![Step 8: Lint](03-mini-project-step-8-lint.png)
+
 ```text
 $ helm lint notes-chart
 ==> Linting notes-chart
@@ -44,6 +46,8 @@ $ helm lint notes-chart
 ```
 
 ## Step 9: Render locally
+
+![Step 9: Render locally](03-mini-project-step-9-render-locally.png)
 
 Every `{{ }}` was replaced correctly:
 
@@ -111,6 +115,8 @@ spec:
 
 ## Step 10: Install (development)
 
+![Step 10: Install (development)](03-mini-project-step-10-install-development.png)
+
 ```text
 $ kubectl create namespace p15-notes
 namespace/p15-notes created
@@ -146,6 +152,8 @@ Server: nginx/1.24.0
 ```
 
 ## Step 11: Upgrade to production values
+
+![Step 11: Upgrade to production values](03-mini-project-step-11-upgrade-to-production-values.png)
 
 ```text
 $ helm upgrade notes-dev notes-chart -n p15-notes -f notes-chart/values-prod.yaml --wait --timeout 6m
@@ -184,6 +192,8 @@ ConfigMap.
 
 ## Step 12: Release history
 
+![Step 12: Release history](03-mini-project-step-12-release-history.png)
+
 ```text
 $ helm history notes-dev -n p15-notes
 REVISION	UPDATED                 	STATUS    	CHART            	APP VERSION	DESCRIPTION     
@@ -192,6 +202,8 @@ REVISION	UPDATED                 	STATUS    	CHART            	APP VERSION	DESCR
 ```
 
 ## Step 13: Simulate a bad upgrade
+
+![Step 13: Simulate a bad upgrade](03-mini-project-step-13-simulate-a-bad-upgrade.png)
 
 ```text
 $ helm upgrade notes-dev notes-chart -n p15-notes --set image.tag=broken-tag-does-not-exist
@@ -238,6 +250,8 @@ Two things I noticed here:
 
 ## Step 14: Rollback to revision 2
 
+![Step 14: Rollback to revision 2](03-mini-project-step-14-rollback-to-revision-2.png)
+
 ```text
 $ helm rollback notes-dev 2 -n p15-notes --wait --timeout 6m
 Rollback was a success! Happy Helming!
@@ -271,6 +285,8 @@ REVISION	UPDATED                 	STATUS    	CHART            	APP VERSION	DESCR
 Back to 3 healthy pods on `nginx:1.25`, and the broken pod is terminating.
 
 ## Step 15: Clean up
+
+![Step 15: Clean up](03-mini-project-step-15-clean-up.png)
 
 ```text
 $ helm uninstall notes-dev -n p15-notes --wait
@@ -313,6 +329,8 @@ revision 2 as `failed`. The rollout finished a little later anyway. I deleted th
 ran the whole project again with `--timeout 6m`. The output above is from that clean run.
 
 ## What I practised
+
+![What I practised](03-mini-project-what-i-practised.png)
 
 ```text
 [PASS] Created a Helm chart (Chart.yaml, values.yaml, values-prod.yaml, 3 templates)

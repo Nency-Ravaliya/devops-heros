@@ -42,6 +42,8 @@ then `kubectl port-forward -n p15-rollback svc/hello 18151:80` in the background
 
 ## Step 0: Lint and namespace
 
+![Step 0: Lint and namespace](02-rollback-step-0-lint-and-namespace.png)
+
 ```text
 $ helm lint hello-chart
 ==> Linting hello-chart
@@ -54,6 +56,8 @@ namespace/p15-rollback created
 ```
 
 ## Step 1: Install
+
+![Step 1: Install](02-rollback-step-1-install.png)
 
 ```text
 $ helm install hello hello-chart -n p15-rollback --wait --timeout 3m
@@ -89,6 +93,8 @@ Server: nginx/1.26.3
 
 ## Step 2: Upgrade
 
+![Step 2: Upgrade](02-rollback-step-2-upgrade.png)
+
 ```text
 $ helm upgrade hello hello-chart -n p15-rollback -f values-v2.yaml --wait --timeout 3m | head -6
 Release "hello" has been upgraded. Happy Helming!
@@ -100,6 +106,8 @@ REVISION: 2
 ```
 
 ## Step 3: Verify
+
+![Step 3: Verify](02-rollback-step-3-verify.png)
 
 ```text
 $ kubectl rollout status deploy/hello -n p15-rollback --timeout 120s
@@ -126,6 +134,8 @@ Server: nginx/1.27.5
 
 ## Step 4: Upgrade again
 
+![Step 4: Upgrade again](02-rollback-step-4-upgrade-again.png)
+
 ```text
 $ helm upgrade hello hello-chart -n p15-rollback -f values-v3.yaml --wait --timeout 3m | head -6
 Release "hello" has been upgraded. Happy Helming!
@@ -137,6 +147,8 @@ REVISION: 3
 ```
 
 ## Step 5: Verify
+
+![Step 5: Verify](02-rollback-step-5-verify.png)
 
 ```text
 $ kubectl rollout status deploy/hello -n p15-rollback --timeout 120s
@@ -168,12 +180,16 @@ REVISION	UPDATED                 	STATUS    	CHART            	APP VERSION	DESCR
 
 ## Step 6: Rollback to revision 2
 
+![Step 6: Rollback to revision 2](02-rollback-step-6-rollback-to-revision-2.png)
+
 ```text
 $ helm rollback hello 2 -n p15-rollback --wait --timeout 3m
 Rollback was a success! Happy Helming!
 ```
 
 ## Step 7: Verify
+
+![Step 7: Verify](02-rollback-step-7-verify.png)
 
 ```text
 $ kubectl rollout status deploy/hello -n p15-rollback --timeout 120s

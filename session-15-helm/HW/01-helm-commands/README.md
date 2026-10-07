@@ -29,12 +29,16 @@ passed small resource requests with `--set` because the cluster is shared.
 
 ## helm version
 
+![helm version](01-helm-commands-helm-version.png)
+
 ```text
 $ helm version
 version.BuildInfo{Version:"v4.3.0", GitCommit:"bec5b06ed841fe5269972d864d5177944fd5970f", GitTreeState:"clean", GoVersion:"go1.27.1", KubeClientVersion:"v1.37"}
 ```
 
 ## helm create
+
+![helm create](01-helm-commands-helm-create.png)
 
 Creates the standard chart layout with an nginx Deployment, Service, ServiceAccount,
 optional Ingress / HTTPRoute / HPA, a test pod and `_helpers.tpl`.
@@ -69,6 +73,8 @@ $ helm lint web-chart
 
 ## helm install
 
+![helm install](01-helm-commands-helm-install.png)
+
 Installs the chart as release `web`. `--wait` makes Helm wait until the pods are ready.
 
 ```text
@@ -99,6 +105,8 @@ service/web-web-chart   ClusterIP   10.96.64.91   <none>        80/TCP    71s
 
 ## helm list
 
+![helm list](01-helm-commands-helm-list.png)
+
 Shows the releases in the namespace, their current revision, chart and app version.
 
 ```text
@@ -108,6 +116,8 @@ web 	p15-cmds 	1       	2026-10-07 20:16:31.691418 +0530 IST	deployed	web-chart-
 ```
 
 ## helm status
+
+![helm status](01-helm-commands-helm-status.png)
 
 Shows the release state. In Helm v4 it also lists the live resources by default.
 
@@ -146,6 +156,8 @@ NOTES:
 ```
 
 ## helm get
+
+![helm get](01-helm-commands-helm-get.png)
 
 `helm get` reads what Helm stored for the release (it lives in a Secret in the namespace).
 
@@ -224,6 +236,8 @@ APPLY_METHOD: server-side apply
 
 ## helm upgrade
 
+![helm upgrade](01-helm-commands-helm-upgrade.png)
+
 Changes the release. Here I scaled to 2 replicas and moved to `nginx:1.27-alpine`.
 `--reuse-values` keeps the values from the previous revision (my resource requests) and adds the new `--set` values.
 
@@ -250,6 +264,8 @@ web-web-chart   2/2     2            2           3m29s   web-chart    nginx:1.27
 
 ## helm history
 
+![helm history](01-helm-commands-helm-history.png)
+
 Every install/upgrade/rollback is a numbered revision.
 
 ```text
@@ -260,6 +276,8 @@ REVISION	UPDATED                 	STATUS    	CHART          	APP VERSION	DESCRIP
 ```
 
 ## helm rollback
+
+![helm rollback](01-helm-commands-helm-rollback.png)
 
 Goes back to revision 1. Helm does not delete revision 2; it creates revision 3 with revision 1's manifest.
 
@@ -281,6 +299,8 @@ web-web-chart   1/1     1            1           3m52s   web-chart    nginx:1.16
 Back to 1 replica and `nginx:1.16.0`.
 
 ## helm uninstall
+
+![helm uninstall](01-helm-commands-helm-uninstall.png)
 
 Removes every resource of the release and its history.
 
@@ -338,6 +358,8 @@ No resources found in p15-cmds namespace.
 
 ## helm repo
 
+![helm repo](01-helm-commands-helm-repo.png)
+
 Adds public chart repositories, lists them, refreshes their index, and removes one.
 
 ```text
@@ -374,6 +396,8 @@ bitnami             	https://charts.bitnami.com/bitnami
 the machine might be using.)
 
 ## helm search
+
+![helm search](01-helm-commands-helm-search.png)
 
 `search repo` searches the repos I added locally. `--versions` lists every chart version.
 `search hub` searches Artifact Hub online.
@@ -422,6 +446,8 @@ apiVersion: v2
 ```
 
 ## Differences I hit between Helm v4 and the course's v3 notes
+
+![Differences I hit between Helm v4 and the course's v3 notes](01-helm-commands-differences-i-hit-between-helm-v4-and-the-c.png)
 
 | v3 (course notes) | v4.3.0 (what I saw) |
 |---|---|
