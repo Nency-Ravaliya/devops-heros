@@ -1,0 +1,24 @@
+# startupProbe guards a slow start (up to 30*2=60s) before the livenessProbe takes over.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: lifecycle-startup
+  labels:
+    demo: lifecycle
+spec:
+  containers:
+    - name: nginx
+      image: nginx:alpine
+      ports:
+        - containerPort: 80
+      startupProbe:
+        httpGet:
+          path: /
+          port: 80
+        failureThreshold: 30
+        periodSeconds: 2
+      livenessProbe:
+        httpGet:
+          path: /
+          port: 80
+        periodSeconds: 5

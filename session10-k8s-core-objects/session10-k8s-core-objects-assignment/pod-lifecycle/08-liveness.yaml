@@ -1,0 +1,17 @@
+# /tmp/healthy is deleted after 20s => livenessProbe fails => kubelet restarts the container.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: lifecycle-liveness
+  labels:
+    demo: lifecycle
+spec:
+  containers:
+    - name: busybox
+      image: busybox
+      command: ["sh", "-c", "touch /tmp/healthy; sleep 20; rm -f /tmp/healthy; sleep 600"]
+      livenessProbe:
+        exec:
+          command: ["cat", "/tmp/healthy"]
+        initialDelaySeconds: 5
+        periodSeconds: 5
