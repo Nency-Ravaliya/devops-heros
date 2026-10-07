@@ -196,9 +196,22 @@ kubectl get hpa -n production-webapp -w
 ```
 *After the 5-minute stabilization window, replicas will gradually reduce back to 2.*
 
+```
+
+---
+
+## 6. Execution Output Screenshots
+
+### Deployment, PVC Bound & Probes Passing
+![Mini Project Deployment](../screenshots/05-mini-project-deployment-and-probes.png)
+
+### State Persistence Across Pod Restart & Active HPA
+![Mini Project Persistence](../screenshots/06-mini-project-pvc-persistence-and-hpa.png)
+
 ---
 
 ## 7. Probe Diagnostics Reference
+
 | Probe | Target Question | Action on Failure |
 | :--- | :--- | :--- |
 | **Startup Probe** | Has the process initialized? | Restarts container (disables other probes until it passes) |

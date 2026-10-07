@@ -286,7 +286,21 @@ kubectl get pods -w
 
 ---
 
+## Execution Output Screenshots
+
+### Initial HPA Setup & Metrics
+![HPA Initial Setup](../screenshots/02-hpa-initial-setup.png)
+
+### Load Spike & Horizontal Pod Autoscaling (1 -> 5 Replicas)
+![HPA Under Load](../screenshots/03-hpa-under-load-scaling.png)
+
+### HPA Diagnostics & Controller Rescale Events
+![HPA Diagnostics](../screenshots/04-hpa-describe-and-events.png)
+
+---
+
 ## Key Learning
+
 
 Remember:
 
