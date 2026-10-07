@@ -1,0 +1,401 @@
+$ terraform destroy -input=false -auto-approve
+random_id.bucket_suffix: Refreshing state... [id=pjQ0BA]
+data.aws_availability_zones.available: Reading...
+aws_vpc.main: Refreshing state... [id=vpc-32ac50ea35a85331d]
+aws_s3_bucket.assets: Refreshing state... [id=devops-heros-assets-a6343404]
+data.aws_availability_zones.available: Read complete after 0s [id=ap-south-1]
+aws_internet_gateway.igw: Refreshing state... [id=igw-5a0fc6e7d521870fa]
+aws_subnet.public: Refreshing state... [id=subnet-f3ca32c36d673e14f]
+aws_security_group.web: Refreshing state... [id=sg-f0fedcb4eb31f6697]
+aws_route_table.public: Refreshing state... [id=rtb-7b01a8a6c6f775d73]
+aws_route_table_association.public: Refreshing state... [id=rtbassoc-4fa325e9d655b10a3]
+aws_instance.web: Refreshing state... [id=i-55dec0a4b6d90e3b7]
+aws_s3_bucket_public_access_block.assets: Refreshing state... [id=devops-heros-assets-a6343404]
+aws_s3_bucket_versioning.assets: Refreshing state... [id=devops-heros-assets-a6343404]
+aws_s3_object.welcome: Refreshing state... [id=welcome.txt]
+
+Terraform used the selected providers to generate the following execution
+plan. Resource actions are indicated with the following symbols:
+  - destroy
+
+Terraform will perform the following actions:
+
+  # aws_instance.web will be destroyed
+  - resource "aws_instance" "web" {
+      - ami                                  = "ami-03cf127a" -> null
+      - arn                                  = "arn:aws:ec2:ap-south-1::instance/i-55dec0a4b6d90e3b7" -> null
+      - associate_public_ip_address          = true -> null
+      - availability_zone                    = "ap-south-1a" -> null
+      - disable_api_stop                     = false -> null
+      - disable_api_termination              = false -> null
+      - ebs_optimized                        = false -> null
+      - get_password_data                    = false -> null
+      - hibernation                          = false -> null
+      - id                                   = "i-55dec0a4b6d90e3b7" -> null
+      - instance_initiated_shutdown_behavior = "stop" -> null
+      - instance_state                       = "running" -> null
+      - instance_type                        = "t3.micro" -> null
+      - ipv6_address_count                   = 0 -> null
+      - ipv6_addresses                       = [] -> null
+      - monitoring                           = false -> null
+      - placement_partition_number           = 0 -> null
+      - primary_network_interface_id         = "eni-c9f19c23637b9195a" -> null
+      - private_dns                          = "ip-10-0-1-4.ap-south-1.compute.internal" -> null
+      - private_ip                           = "10.0.1.4" -> null
+      - public_dns                           = "ec2-54-214-206-0.ap-south-1.compute.amazonaws.com" -> null
+      - public_ip                            = "54.214.206.0" -> null
+      - secondary_private_ips                = [] -> null
+      - security_groups                      = [] -> null
+      - source_dest_check                    = true -> null
+      - subnet_id                            = "subnet-f3ca32c36d673e14f" -> null
+      - tags                                 = {
+          - "Name" = "devops-heros-web"
+        } -> null
+      - tags_all                             = {
+          - "Environment" = "dev"
+          - "ManagedBy"   = "terraform"
+          - "Name"        = "devops-heros-web"
+          - "Owner"       = "tejas-varshney"
+          - "Project"     = "devops-heros"
+        } -> null
+      - tenancy                              = "default" -> null
+      - user_data                            = "ae1c29c5ff511145cde4dd58714a94c32b5462a8" -> null
+      - user_data_replace_on_change          = false -> null
+      - vpc_security_group_ids               = [
+          - "sg-f0fedcb4eb31f6697",
+        ] -> null
+        # (8 unchanged attributes hidden)
+
+      - credit_specification {
+          - cpu_credits = "standard" -> null
+        }
+
+      - root_block_device {
+          - delete_on_termination = true -> null
+          - device_name           = "/dev/sda1" -> null
+          - encrypted             = true -> null
+          - iops                  = 3000 -> null
+          - kms_key_id            = "arn:aws:kms:ap-south-1:123456789012:key/dec661a3-d81c-45cf-aa08-58a84f4bf4ab" -> null
+          - tags                  = {} -> null
+          - tags_all              = {
+              - "Environment" = "dev"
+              - "ManagedBy"   = "terraform"
+              - "Owner"       = "tejas-varshney"
+              - "Project"     = "devops-heros"
+            } -> null
+          - throughput            = 0 -> null
+          - volume_id             = "vol-5611bb0e7fb2537d6" -> null
+          - volume_size           = 8 -> null
+          - volume_type           = "gp3" -> null
+        }
+    }
+
+  # aws_internet_gateway.igw will be destroyed
+  - resource "aws_internet_gateway" "igw" {
+      - arn      = "arn:aws:ec2:ap-south-1:123456789012:internet-gateway/igw-5a0fc6e7d521870fa" -> null
+      - id       = "igw-5a0fc6e7d521870fa" -> null
+      - owner_id = "123456789012" -> null
+      - tags     = {
+          - "Name" = "devops-heros-igw"
+        } -> null
+      - tags_all = {
+          - "Environment" = "dev"
+          - "ManagedBy"   = "terraform"
+          - "Name"        = "devops-heros-igw"
+          - "Owner"       = "tejas-varshney"
+          - "Project"     = "devops-heros"
+        } -> null
+      - vpc_id   = "vpc-32ac50ea35a85331d" -> null
+    }
+
+  # aws_route_table.public will be destroyed
+  - resource "aws_route_table" "public" {
+      - arn              = "arn:aws:ec2:ap-south-1:123456789012:route-table/rtb-7b01a8a6c6f775d73" -> null
+      - id               = "rtb-7b01a8a6c6f775d73" -> null
+      - owner_id         = "123456789012" -> null
+      - propagating_vgws = [] -> null
+      - route            = [
+          - {
+              - cidr_block                 = "0.0.0.0/0"
+              - gateway_id                 = "igw-5a0fc6e7d521870fa"
+                # (11 unchanged attributes hidden)
+            },
+        ] -> null
+      - tags             = {
+          - "Name" = "devops-heros-public-rt"
+        } -> null
+      - tags_all         = {
+          - "Environment" = "dev"
+          - "ManagedBy"   = "terraform"
+          - "Name"        = "devops-heros-public-rt"
+          - "Owner"       = "tejas-varshney"
+          - "Project"     = "devops-heros"
+        } -> null
+      - vpc_id           = "vpc-32ac50ea35a85331d" -> null
+    }
+
+  # aws_route_table_association.public will be destroyed
+  - resource "aws_route_table_association" "public" {
+      - id             = "rtbassoc-4fa325e9d655b10a3" -> null
+      - route_table_id = "rtb-7b01a8a6c6f775d73" -> null
+      - subnet_id      = "subnet-f3ca32c36d673e14f" -> null
+        # (1 unchanged attribute hidden)
+    }
+
+  # aws_s3_bucket.assets will be destroyed
+  - resource "aws_s3_bucket" "assets" {
+      - arn                         = "arn:aws:s3:::devops-heros-assets-a6343404" -> null
+      - bucket                      = "devops-heros-assets-a6343404" -> null
+      - bucket_domain_name          = "devops-heros-assets-a6343404.s3.amazonaws.com" -> null
+      - bucket_regional_domain_name = "devops-heros-assets-a6343404.s3.ap-south-1.amazonaws.com" -> null
+      - force_destroy               = true -> null
+      - hosted_zone_id              = "Z11RGJOFQNVJUP" -> null
+      - id                          = "devops-heros-assets-a6343404" -> null
+      - object_lock_enabled         = false -> null
+      - region                      = "ap-south-1" -> null
+      - tags                        = {
+          - "Name" = "devops-heros-assets"
+        } -> null
+      - tags_all                    = {
+          - "Environment" = "dev"
+          - "ManagedBy"   = "terraform"
+          - "Name"        = "devops-heros-assets"
+          - "Owner"       = "tejas-varshney"
+          - "Project"     = "devops-heros"
+        } -> null
+        # (4 unchanged attributes hidden)
+
+      - grant {
+          - id          = "75aa57f09aa0c8caeab4f8c24e99d10f8e7faeebf76c078efc7c6caea54ba06a" -> null
+          - permissions = [
+              - "FULL_CONTROL",
+            ] -> null
+          - type        = "CanonicalUser" -> null
+            # (1 unchanged attribute hidden)
+        }
+
+      - versioning {
+          - enabled    = true -> null
+          - mfa_delete = false -> null
+        }
+    }
+
+  # aws_s3_bucket_public_access_block.assets will be destroyed
+  - resource "aws_s3_bucket_public_access_block" "assets" {
+      - block_public_acls       = true -> null
+      - block_public_policy     = true -> null
+      - bucket                  = "devops-heros-assets-a6343404" -> null
+      - id                      = "devops-heros-assets-a6343404" -> null
+      - ignore_public_acls      = true -> null
+      - restrict_public_buckets = true -> null
+    }
+
+  # aws_s3_bucket_versioning.assets will be destroyed
+  - resource "aws_s3_bucket_versioning" "assets" {
+      - bucket                = "devops-heros-assets-a6343404" -> null
+      - id                    = "devops-heros-assets-a6343404" -> null
+        # (1 unchanged attribute hidden)
+
+      - versioning_configuration {
+          - status     = "Enabled" -> null
+            # (1 unchanged attribute hidden)
+        }
+    }
+
+  # aws_s3_object.welcome will be destroyed
+  - resource "aws_s3_object" "welcome" {
+      - arn                           = "arn:aws:s3:::devops-heros-assets-a6343404/welcome.txt" -> null
+      - bucket                        = "devops-heros-assets-a6343404" -> null
+      - bucket_key_enabled            = false -> null
+      - content                       = "Uploaded by Terraform for devops-heros" -> null
+      - content_type                  = "application/octet-stream" -> null
+      - etag                          = "12b56d7375e3dc7ac352a73b0977a624" -> null
+      - force_destroy                 = false -> null
+      - id                            = "welcome.txt" -> null
+      - key                           = "welcome.txt" -> null
+      - metadata                      = {} -> null
+      - storage_class                 = "STANDARD" -> null
+      - tags                          = {} -> null
+      - tags_all                      = {
+          - "Environment" = "dev"
+          - "ManagedBy"   = "terraform"
+          - "Owner"       = "tejas-varshney"
+          - "Project"     = "devops-heros"
+        } -> null
+      - version_id                    = "b03877cf-0bcb-4f99-ad1f-da248b38ab68" -> null
+        # (14 unchanged attributes hidden)
+    }
+
+  # aws_security_group.web will be destroyed
+  - resource "aws_security_group" "web" {
+      - arn                    = "arn:aws:ec2:ap-south-1:123456789012:security-group/sg-f0fedcb4eb31f6697" -> null
+      - description            = "HTTP from anywhere, SSH from one admin IP" -> null
+      - egress                 = [
+          - {
+              - cidr_blocks      = [
+                  - "0.0.0.0/0",
+                ]
+              - description      = "All outbound"
+              - from_port        = 0
+              - ipv6_cidr_blocks = []
+              - prefix_list_ids  = []
+              - protocol         = "-1"
+              - security_groups  = []
+              - self             = false
+              - to_port          = 0
+            },
+        ] -> null
+      - id                     = "sg-f0fedcb4eb31f6697" -> null
+      - ingress                = [
+          - {
+              - cidr_blocks      = [
+                  - "0.0.0.0/0",
+                ]
+              - description      = "HTTP"
+              - from_port        = 80
+              - ipv6_cidr_blocks = []
+              - prefix_list_ids  = []
+              - protocol         = "tcp"
+              - security_groups  = []
+              - self             = false
+              - to_port          = 80
+            },
+          - {
+              - cidr_blocks      = [
+                  - "203.0.113.10/32",
+                ]
+              - description      = "SSH from admin only"
+              - from_port        = 22
+              - ipv6_cidr_blocks = []
+              - prefix_list_ids  = []
+              - protocol         = "tcp"
+              - security_groups  = []
+              - self             = false
+              - to_port          = 22
+            },
+        ] -> null
+      - name                   = "devops-heros-web-sg" -> null
+      - owner_id               = "123456789012" -> null
+      - revoke_rules_on_delete = false -> null
+      - tags                   = {
+          - "Name" = "devops-heros-web-sg"
+        } -> null
+      - tags_all               = {
+          - "Environment" = "dev"
+          - "ManagedBy"   = "terraform"
+          - "Name"        = "devops-heros-web-sg"
+          - "Owner"       = "tejas-varshney"
+          - "Project"     = "devops-heros"
+        } -> null
+      - vpc_id                 = "vpc-32ac50ea35a85331d" -> null
+        # (1 unchanged attribute hidden)
+    }
+
+  # aws_subnet.public will be destroyed
+  - resource "aws_subnet" "public" {
+      - arn                                            = "arn:aws:ec2:ap-south-1:123456789012:subnet/subnet-f3ca32c36d673e14f" -> null
+      - assign_ipv6_address_on_creation                = false -> null
+      - availability_zone                              = "ap-south-1a" -> null
+      - availability_zone_id                           = "aps1-az1" -> null
+      - cidr_block                                     = "10.0.1.0/24" -> null
+      - enable_dns64                                   = false -> null
+      - enable_lni_at_device_index                     = 0 -> null
+      - enable_resource_name_dns_a_record_on_launch    = false -> null
+      - enable_resource_name_dns_aaaa_record_on_launch = false -> null
+      - id                                             = "subnet-f3ca32c36d673e14f" -> null
+      - ipv6_native                                    = false -> null
+      - map_customer_owned_ip_on_launch                = false -> null
+      - map_public_ip_on_launch                        = true -> null
+      - owner_id                                       = "123456789012" -> null
+      - tags                                           = {
+          - "Name" = "devops-heros-public-subnet"
+        } -> null
+      - tags_all                                       = {
+          - "Environment" = "dev"
+          - "ManagedBy"   = "terraform"
+          - "Name"        = "devops-heros-public-subnet"
+          - "Owner"       = "tejas-varshney"
+          - "Project"     = "devops-heros"
+        } -> null
+      - vpc_id                                         = "vpc-32ac50ea35a85331d" -> null
+        # (5 unchanged attributes hidden)
+    }
+
+  # aws_vpc.main will be destroyed
+  - resource "aws_vpc" "main" {
+      - arn                                  = "arn:aws:ec2:ap-south-1:123456789012:vpc/vpc-32ac50ea35a85331d" -> null
+      - assign_generated_ipv6_cidr_block     = false -> null
+      - cidr_block                           = "10.0.0.0/16" -> null
+      - default_network_acl_id               = "acl-5e20110981ba178a8" -> null
+      - default_route_table_id               = "rtb-1856c6859a855f941" -> null
+      - default_security_group_id            = "sg-c6130239460ce5ed0" -> null
+      - dhcp_options_id                      = "default" -> null
+      - enable_dns_hostnames                 = true -> null
+      - enable_dns_support                   = true -> null
+      - enable_network_address_usage_metrics = false -> null
+      - id                                   = "vpc-32ac50ea35a85331d" -> null
+      - instance_tenancy                     = "default" -> null
+      - ipv6_netmask_length                  = 0 -> null
+      - main_route_table_id                  = "rtb-1856c6859a855f941" -> null
+      - owner_id                             = "123456789012" -> null
+      - tags                                 = {
+          - "Name" = "devops-heros-vpc"
+        } -> null
+      - tags_all                             = {
+          - "Environment" = "dev"
+          - "ManagedBy"   = "terraform"
+          - "Name"        = "devops-heros-vpc"
+          - "Owner"       = "tejas-varshney"
+          - "Project"     = "devops-heros"
+        } -> null
+        # (4 unchanged attributes hidden)
+    }
+
+  # random_id.bucket_suffix will be destroyed
+  - resource "random_id" "bucket_suffix" {
+      - b64_std     = "pjQ0BA==" -> null
+      - b64_url     = "pjQ0BA" -> null
+      - byte_length = 4 -> null
+      - dec         = "2788439044" -> null
+      - hex         = "a6343404" -> null
+      - id          = "pjQ0BA" -> null
+    }
+
+Plan: 0 to add, 0 to change, 12 to destroy.
+
+Changes to Outputs:
+  - instance_id        = "i-55dec0a4b6d90e3b7" -> null
+  - instance_public_ip = "54.214.206.0" -> null
+  - public_subnet_id   = "subnet-f3ca32c36d673e14f" -> null
+  - s3_bucket          = "devops-heros-assets-a6343404" -> null
+  - security_group_id  = "sg-f0fedcb4eb31f6697" -> null
+  - vpc_id             = "vpc-32ac50ea35a85331d" -> null
+  - web_url            = "http://54.214.206.0" -> null
+aws_s3_bucket_versioning.assets: Destroying... [id=devops-heros-assets-a6343404]
+aws_s3_bucket_public_access_block.assets: Destroying... [id=devops-heros-assets-a6343404]
+aws_s3_object.welcome: Destroying... [id=welcome.txt]
+aws_instance.web: Destroying... [id=i-55dec0a4b6d90e3b7]
+aws_s3_bucket_versioning.assets: Destruction complete after 0s
+aws_s3_bucket_public_access_block.assets: Destruction complete after 0s
+aws_s3_object.welcome: Destruction complete after 0s
+aws_s3_bucket.assets: Destroying... [id=devops-heros-assets-a6343404]
+aws_s3_bucket.assets: Destruction complete after 0s
+random_id.bucket_suffix: Destroying... [id=pjQ0BA]
+random_id.bucket_suffix: Destruction complete after 0s
+aws_instance.web: Still destroying... [id=i-55dec0a4b6d90e3b7, 00m10s elapsed]
+aws_instance.web: Destruction complete after 10s
+aws_route_table_association.public: Destroying... [id=rtbassoc-4fa325e9d655b10a3]
+aws_security_group.web: Destroying... [id=sg-f0fedcb4eb31f6697]
+aws_route_table_association.public: Destruction complete after 0s
+aws_subnet.public: Destroying... [id=subnet-f3ca32c36d673e14f]
+aws_route_table.public: Destroying... [id=rtb-7b01a8a6c6f775d73]
+aws_security_group.web: Destruction complete after 0s
+aws_subnet.public: Destruction complete after 0s
+aws_route_table.public: Destruction complete after 0s
+aws_internet_gateway.igw: Destroying... [id=igw-5a0fc6e7d521870fa]
+aws_internet_gateway.igw: Destruction complete after 0s
+aws_vpc.main: Destroying... [id=vpc-32ac50ea35a85331d]
+aws_vpc.main: Destruction complete after 0s
+
+Destroy complete! Resources: 12 destroyed.
+[exit code: 0]

@@ -1,0 +1,41 @@
+$ terraform plan -input=false -detailed-exitcode
+random_id.bucket_suffix: Refreshing state... [id=pjQ0BA]
+data.aws_availability_zones.available: Reading...
+aws_vpc.main: Refreshing state... [id=vpc-32ac50ea35a85331d]
+aws_s3_bucket.assets: Refreshing state... [id=devops-heros-assets-a6343404]
+data.aws_availability_zones.available: Read complete after 0s [id=ap-south-1]
+aws_internet_gateway.igw: Refreshing state... [id=igw-5a0fc6e7d521870fa]
+aws_subnet.public: Refreshing state... [id=subnet-f3ca32c36d673e14f]
+aws_security_group.web: Refreshing state... [id=sg-f0fedcb4eb31f6697]
+aws_route_table.public: Refreshing state... [id=rtb-7b01a8a6c6f775d73]
+aws_route_table_association.public: Refreshing state... [id=rtbassoc-4fa325e9d655b10a3]
+aws_instance.web: Refreshing state... [id=i-55dec0a4b6d90e3b7]
+aws_s3_bucket_versioning.assets: Refreshing state... [id=devops-heros-assets-a6343404]
+aws_s3_bucket_public_access_block.assets: Refreshing state... [id=devops-heros-assets-a6343404]
+aws_s3_object.welcome: Refreshing state... [id=welcome.txt]
+
+Terraform used the selected providers to generate the following execution
+plan. Resource actions are indicated with the following symbols:
+  ~ update in-place
+
+Terraform will perform the following actions:
+
+  # aws_instance.web will be updated in-place
+  ~ resource "aws_instance" "web" {
+        id                                   = "i-55dec0a4b6d90e3b7"
+        tags                                 = {
+            "Name" = "devops-heros-web"
+        }
+        # (38 unchanged attributes hidden)
+
+      + metadata_options {
+          + http_endpoint      = "enabled"
+          + http_protocol_ipv6 = "disabled"
+          + http_tokens        = "required"
+        }
+
+        # (2 unchanged blocks hidden)
+    }
+
+Plan: 0 to add, 1 to change, 0 to destroy.
+[exit code: 2]

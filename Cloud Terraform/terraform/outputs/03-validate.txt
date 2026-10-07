@@ -1,0 +1,4 @@
+$ terraform validate
+Success! The configuration is valid.
+
+[exit code: 0]

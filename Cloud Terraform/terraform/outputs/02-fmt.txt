@@ -1,0 +1,2 @@
+$ terraform fmt -check -diff -recursive
+[exit code: 0]
