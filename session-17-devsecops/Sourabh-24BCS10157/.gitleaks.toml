@@ -1,0 +1,26 @@
+# Gitleaks configuration for the Session 17 project (24BCS10157).
+# The pipeline runs:  gitleaks dir session-17-devsecops/Sourabh-24BCS10157 --config <this file>
+# so only this student folder is scanned (not other students' work in the shared repo).
+
+title = "24BCS10157 session-17 gitleaks config"
+
+# Keep all of gitleaks' built-in rules (AWS keys, GitHub tokens, private keys, JWTs, generic API keys, ...)
+[extend]
+useDefault = true
+
+# Organisation-specific token format, used to demo the gate without touching any real
+# provider credential: tokens look like  s17demo_<32 lowercase hex chars>
+[[rules]]
+id = "s17-demo-api-token"
+description = "Session 17 demo API token"
+regex = '''s17demo_[a-f0-9]{32}'''
+keywords = ["s17demo_"]
+tags = ["custom", "demo"]
+
+[allowlist]
+description = "Generated reports and caches are not source"
+paths = [
+  '''reports/''',
+  '''__pycache__/''',
+  '''\.pytest_cache/''',
+]
