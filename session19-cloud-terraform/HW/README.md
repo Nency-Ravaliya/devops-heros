@@ -101,6 +101,8 @@ cd terraform-project
 
 ## 1. `terraform init` — providers
 
+![1. `terraform init` — providers](project-1-terraform-init-providers.png)
+
 ```text
 $ terraform init
 Initializing the backend...
@@ -134,6 +136,8 @@ Two providers: `aws` for the infrastructure and `random` for a unique bucket suf
 
 ## 2. `terraform fmt` and `terraform validate`
 
+![2. `terraform fmt` and `terraform validate`](project-2-terraform-fmt-and-terraform-validate.png)
+
 ```text
 $ terraform fmt -check -diff; echo "fmt exit=$?"
 fmt exit=0
@@ -146,6 +150,8 @@ My laptop was very busy during this run, and the first `validate` failed with
 time). Re-running with `TF_PLUGIN_TIMEOUT=300` worked; nothing in the code changed.
 
 ## 3. `terraform plan`
+
+![3. `terraform plan`](project-3-terraform-plan.png)
 
 ```text
 $ terraform plan -out=tfplan
@@ -225,6 +231,8 @@ same filter returns the current Amazon Linux 2 AMI in the region.
 
 ## 4. `terraform apply`
 
+![4. `terraform apply`](project-4-terraform-apply.png)
+
 ```text
 $ terraform apply tfplan
 random_id.bucket_suffix: Creating...
@@ -293,6 +301,8 @@ waits for the IGW, and `aws_instance.web` is the very last thing, only after
 
 ## 5. AWS resources (checked with the AWS CLI against LocalStack)
 
+![5. AWS resources (checked with the AWS CLI against LocalStack)](project-5-aws-resources-checked-with-the-aws-cli-against-l.png)
+
 ```text
 $ aws --endpoint-url=http://localhost:4566 ec2 describe-vpcs --filters Name=tag:Project,Values=piyush-s19 --query 'Vpcs[].[VpcId,CidrBlock,State]' --output table
 -----------------------------------------------
@@ -348,6 +358,8 @@ is no VM, so I could not `curl` nginx on it. The private IP `10.19.1.4` is from 
 `map_public_ip_on_launch = true`.
 
 ## 6. Dependencies (implicit and explicit)
+
+![6. Dependencies (implicit and explicit)](project-6-dependencies-implicit-and-explicit.png)
 
 **Implicit**: whenever one resource references another's attribute, Terraform knows it
 must create the referenced one first. Examples from `main.tf`:
@@ -429,6 +441,8 @@ independent chains (network+EC2 and random+S3), which is why they were created i
 parallel.
 
 ## 7. Terraform state
+
+![7. Terraform state](project-7-terraform-state.png)
 
 State is the JSON file where Terraform remembers which real resource IDs belong to which
 resource blocks. Here it's local (`terraform.tfstate`, git-ignored); in a team it would
@@ -597,6 +611,8 @@ committed.
 
 ### State vs reality: drift
 
+![State vs reality: drift](project-state-vs-reality-drift.png)
+
 Right after the first apply, a second `terraform plan` was not clean:
 
 ```text
@@ -645,6 +661,8 @@ plan exit code: 0
 
 ## 8. Variables in action
 
+![8. Variables in action](project-8-variables-in-action.png)
+
 Overriding a variable on the command line changes the plan without touching any file:
 
 ```text
@@ -659,6 +677,8 @@ Plan: 0 to add, 1 to change, 0 to destroy.
 `TF_VAR_<name>` environment variables sit just above defaults.
 
 ## 9. `terraform output`
+
+![9. `terraform output`](project-9-terraform-output.png)
 
 ```text
 $ terraform output
@@ -678,6 +698,8 @@ vpc_id = "vpc-eeced9fa"
 AWS CLI commands.
 
 ## 10. `terraform destroy`
+
+![10. `terraform destroy`](project-10-terraform-destroy.png)
 
 Destroy runs in the reverse order of the graph: rules, object and instance first, then
 the association, subnet, route table and SG, and the VPC last.
