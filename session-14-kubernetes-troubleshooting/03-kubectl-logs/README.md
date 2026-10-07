@@ -161,3 +161,25 @@ Logs are often the first place to look when an application is crashing or behavi
 
 * **Kubernetes Logging Architecture:**  
   https://kubernetes.io/docs/concepts/cluster-administration/logging/
+
+---
+
+## Screenshots
+
+Output captured from running the commands above on a local minikube cluster.
+
+**1. Create the Pod and check it is Running**
+
+![Create the Pod and check it is Running](screenshots/1-apply.png)
+
+**2. `kubectl logs logs-demo` (first 10 lines)**
+
+![kubectl logs logs-demo (first 10 lines)](screenshots/2-logs.png)
+
+**3. Follow logs with `-f` (stopped after a few seconds)**
+
+![Follow logs with -f (stopped after a few seconds)](screenshots/3-logs-follow.png)
+
+**4. Logs of a specific container with `-c app`**
+
+![Logs of a specific container with -c app](screenshots/4-logs-container.png)

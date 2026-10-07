@@ -226,3 +226,45 @@ Always investigate instead of simply restarting the Pod.
   https://kubernetes.io/docs/tasks/debug/debug-application/
 * **Kubernetes Pod States:**  
   https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#pod-phase
+
+---
+
+## Screenshots
+
+Output captured from running the commands above on a local minikube cluster.
+
+**1. Create the broken Pod**
+
+![Create the broken Pod](screenshots/1-apply-broken.png)
+
+**2. Pod status: `CrashLoopBackOff`**
+
+![Pod status: CrashLoopBackOff](screenshots/2-get-crashloop.png)
+
+**3. `kubectl describe pod crash-demo` (State, Last State, Exit Code, Events)**
+
+![kubectl describe pod crash-demo (State, Last State, Exit Code, Events)](screenshots/3-describe.png)
+
+**4. `kubectl logs crash-demo`**
+
+![kubectl logs crash-demo](screenshots/4-logs.png)
+
+**5. `kubectl logs crash-demo --previous`**
+
+![kubectl logs crash-demo --previous](screenshots/5-logs-previous.png)
+
+**6. Root cause: `exit 1` in the YAML**
+
+![Root cause: exit 1 in the YAML](screenshots/6-root-cause.png)
+
+**7. Delete the broken Pod and apply `fixed-pod.yaml`**
+
+![Delete the broken Pod and apply fixed-pod.yaml](screenshots/7-delete-apply-fixed.png)
+
+**8. Verify: Pod is Running**
+
+![Verify: Pod is Running](screenshots/8-verify-running.png)
+
+**9. Verify: logs show the app is healthy**
+
+![Verify: logs show the app is healthy](screenshots/9-verify-logs.png)

@@ -180,3 +180,21 @@ kubectl describe
 
 * **Kubernetes Pod Lifecycle:**  
   https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/
+
+---
+
+## Screenshots
+
+Output captured from running the commands above on a local minikube cluster.
+
+**1. Create the Pod**
+
+![Create the Pod](screenshots/1-apply.png)
+
+**2. `kubectl describe pod describe-demo`**
+
+![kubectl describe pod describe-demo](screenshots/2-describe-pod.png)
+
+**3. `kubectl describe node minikube` (first lines)**
+
+![kubectl describe node minikube (first lines)](screenshots/3-describe-node.png)
