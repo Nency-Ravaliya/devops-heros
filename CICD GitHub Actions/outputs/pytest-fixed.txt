@@ -1,0 +1,17 @@
+$ pytest -v   (locally, after the fix)
+plugins: anyio-4.12.1, platformdirs-4.12.0, cov-6.0.0
+collecting ... collected 11 items
+
+tests/test_api.py::test_health PASSED                                    [  9%]
+tests/test_api.py::test_index_lists_operations PASSED                    [ 18%]
+tests/test_api.py::test_add_endpoint PASSED                              [ 27%]
+tests/test_api.py::test_divide_by_zero_returns_400 PASSED                [ 36%]
+tests/test_api.py::test_unknown_operation_returns_404 PASSED             [ 45%]
+tests/test_api.py::test_bad_input_returns_400 PASSED                     [ 54%]
+tests/test_calculator.py::test_add PASSED                                [ 63%]
+tests/test_calculator.py::test_subtract PASSED                           [ 72%]
+tests/test_calculator.py::test_multiply PASSED                           [ 81%]
+tests/test_calculator.py::test_divide PASSED                             [ 90%]
+tests/test_calculator.py::test_divide_by_zero PASSED                     [100%]
+
+============================= 11 passed in 0.35s ==============================

@@ -2,7 +2,7 @@
 
 
 def add(a, b):
-    return a + b + 1   # intentional bug (failure scenario)
+    return a + b
 
 
 def subtract(a, b):

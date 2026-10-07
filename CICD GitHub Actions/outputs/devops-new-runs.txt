@@ -1,0 +1,18 @@
+Repository: https://github.com/TejasVarshney/devops-new  (my earlier GitHub Actions practice repo)
+
+Run #3  Hello GitHub Actions  "auto run"  -> success  (2026-09-24T07:50:39Z)  https://github.com/TejasVarshney/devops-new/actions/runs/35971832651
+Run #2  Hello GitHub Actions  "added echo command in .yaml file"  -> success  (2026-09-24T07:29:42Z)  https://github.com/TejasVarshney/devops-new/actions/runs/35969909309
+Run #1  Hello GitHub Actions  "workflow ❌ workflows ✅"  -> success  (2026-09-24T07:27:18Z)  https://github.com/TejasVarshney/devops-new/actions/runs/35969694637
+
+Jobs of run #3:
+JOB secrets-demo: success
+   1. Set up job                success
+   2. Check secret              success
+   3. Complete job              success
+JOB hello: success
+   1. Set up job                success
+   2. Print message             success
+   3. Show date                 success
+   4. Show operating system     success
+   5. Echo my name              success
+   6. Complete job              success

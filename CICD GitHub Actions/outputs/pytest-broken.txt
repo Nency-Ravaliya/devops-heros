@@ -1,0 +1,16 @@
+$ pytest -q   (locally, with the bug)
+E       assert 6.0 == 5
+
+tests\test_api.py:24: AssertionError
+__________________________________ test_add ___________________________________
+
+    def test_add():
+>       assert add(2, 3) == 5
+E       assert 6 == 5
+E        +  where 6 = add(2, 3)
+
+tests\test_calculator.py:7: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_api.py::test_add_endpoint - assert 6.0 == 5
+FAILED tests/test_calculator.py::test_add - assert 6 == 5
+2 failed, 9 passed in 0.72s
