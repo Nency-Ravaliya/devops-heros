@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: catalog
+spec:
+  replicas: 2
+  selector:
+    matchLabels: { app: catalog }
+  template:
+    metadata:
+      labels: { app: catalog }
+    spec:
+      containers:
+        - name: catalog
+          image: hashicorp/http-echo:1.0
+          args: ["-text=CATALOG service", "-listen=:8080"]
+          ports: [{ containerPort: 8080 }]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: catalog
+spec:
+  selector: { app: catalog-api }     # BUG 1: labels on the Pods are app=catalog
+  ports:
+    - port: 80
+      targetPort: 8080

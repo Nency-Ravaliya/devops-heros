@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: catalog
+spec:
+  selector: { app: catalog }         # FIXED: matches the Pod labels
+  ports:
+    - port: 80
+      targetPort: 8080

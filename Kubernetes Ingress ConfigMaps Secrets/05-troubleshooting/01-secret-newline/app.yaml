@@ -1,0 +1,15 @@
+# "Application": connects to Postgres with the password from Secret app-db
+apiVersion: v1
+kind: Pod
+metadata:
+  name: db-client
+spec:
+  restartPolicy: Never
+  containers:
+    - name: client
+      image: postgres:16-alpine
+      command: ["sh", "-c", "psql -h postgres -U yatri_admin -d yatri_admin -c 'select current_user, version();'"]
+      env:
+        - name: PGPASSWORD
+          valueFrom:
+            secretKeyRef: { name: app-db, key: DB_PASSWORD }

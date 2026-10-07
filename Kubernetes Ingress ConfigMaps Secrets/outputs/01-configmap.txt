@@ -1,0 +1,92 @@
+$ kubectl apply -f 01-configmap/configmap.yaml
+configmap/app-config created
+
+$ kubectl get configmap app-config
+NAME         DATA   AGE
+app-config   4      1s
+
+$ kubectl describe configmap app-config
+Name:         app-config
+Namespace:    default
+Labels:       <none>
+Annotations:  <none>
+
+Data
+====
+APP_COLOR:
+----
+blue
+
+APP_ENV:
+----
+staging
+
+LOG_LEVEL:
+----
+debug
+
+app.properties:
+----
+server.port=8080
+feature.newCheckout=true
+cache.ttlSeconds=300
+
+
+
+BinaryData
+====
+
+Events:  <none>
+
+$ kubectl apply -f 01-configmap/pod.yaml
+pod/configmap-demo created
+
+$ kubectl logs configmap-demo
+Starting in staging with color blue
+
+# --- verify values inside the container ---
+$ kubectl exec configmap-demo -- sh -c 'env | grep -E "^(APP_|LOG_|COLOR)" | sort'
+APP_COLOR=blue
+APP_ENV=staging
+COLOR=blue
+LOG_LEVEL=debug
+
+$ kubectl exec configmap-demo -- ls -l /etc/app
+total 0
+lrwxrwxrwx    1 root     root            21 Oct  7 19:08 app.properties -> ..data/app.properties
+
+$ kubectl exec configmap-demo -- cat /etc/app/app.properties
+server.port=8080
+feature.newCheckout=true
+cache.ttlSeconds=300
+
+# --- update the ConfigMap: mounted files refresh automatically, env vars do NOT ---
+$ kubectl patch configmap app-config --type merge -p '{"data":{"APP_COLOR":"green","app.properties":"server.port=8080\nfeature.newCheckout=false\ncache.ttlSeconds=60\n"}}'
+configmap/app-config patched
+
+$ kubectl exec configmap-demo -- cat /etc/app/app.properties
+server.port=8080
+feature.newCheckout=false
+cache.ttlSeconds=60
+
+$ kubectl exec configmap-demo -- sh -c 'echo APP_COLOR=$APP_COLOR'
+APP_COLOR=blue
+
+$ kubectl delete pod configmap-demo --now && kubectl apply -f 01-configmap/pod.yaml && kubectl wait --for=condition=Ready pod/configmap-demo --timeout=90s
+pod "configmap-demo" deleted from default namespace
+pod/configmap-demo created
+pod/configmap-demo condition met
+
+$ kubectl exec configmap-demo -- sh -c 'echo APP_COLOR=$APP_COLOR'
+APP_COLOR=green
+
+# --- imperative ways to create ConfigMaps ---
+$ kubectl create configmap cli-config --from-literal=MODE=fast --from-literal=REGION=ap-south-1 --dry-run=client -o yaml
+apiVersion: v1
+data:
+  MODE: fast
+  REGION: ap-south-1
+kind: ConfigMap
+metadata:
+  name: cli-config
+

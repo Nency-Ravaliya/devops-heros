@@ -1,0 +1,32 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: configmap-demo
+spec:
+  containers:
+    - name: app
+      image: busybox:1.36
+      command: ["sh", "-c", "echo \"Starting in $APP_ENV with color $APP_COLOR\"; sleep 3600"]
+      env:
+        # 1) a single key -> a single env var (with a different name)
+        - name: COLOR
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: APP_COLOR
+      # 2) every key -> env vars with the same names
+      envFrom:
+        - configMapRef:
+            name: app-config
+      # 3) mounted as files
+      volumeMounts:
+        - name: config-volume
+          mountPath: /etc/app
+          readOnly: true
+  volumes:
+    - name: config-volume
+      configMap:
+        name: app-config
+        items:
+          - key: app.properties
+            path: app.properties

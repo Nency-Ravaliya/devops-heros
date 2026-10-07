@@ -1,0 +1,69 @@
+########## BEFORE ##########
+$ kubectl apply -f 03-ingress-backend/app.yaml -f 03-ingress-backend/ingress-broken.yaml
+deployment.apps/catalog created
+service/catalog created
+ingress.networking.k8s.io/catalog created
+
+$ kubectl get pods -l app=catalog
+NAME                       READY   STATUS    RESTARTS   AGE
+catalog-66f66d856c-nfw2r   1/1     Running   0          16s
+catalog-66f66d856c-zzvts   1/1     Running   0          16s
+
+$ kubectl get ingress catalog
+NAME      CLASS   HOSTS           ADDRESS   PORTS   AGE
+catalog   nginx   catalog.local             80      16s
+
+$ kubectl exec curl -- curl -s -o /dev/null -w 'HTTP %{http_code}\n' -H 'Host: catalog.local' http://ingress-nginx-controller.ingress-nginx.svc.cluster.local/
+HTTP 503
+
+########## INVESTIGATE ##########
+$ kubectl describe ingress catalog | sed -n '/Rules:/,/Annotations:/p'
+Rules:
+  Host           Path  Backends
+  ----           ----  --------
+  catalog.local  
+                 /   catalog:8080 ()
+Annotations:     <none>
+
+$ kubectl get svc catalog -o wide
+NAME      TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)   AGE   SELECTOR
+catalog   ClusterIP   10.96.129.130   <none>        80/TCP    17s   app=catalog-api
+
+$ kubectl get endpointslices -l kubernetes.io/service-name=catalog
+NAME            ADDRESSTYPE   PORTS     ENDPOINTS   AGE
+catalog-884jg   IPv4          <unset>   <unset>     17s
+
+$ kubectl get pods --show-labels -l app=catalog
+NAME                       READY   STATUS    RESTARTS   AGE   LABELS
+catalog-66f66d856c-nfw2r   1/1     Running   0          17s   app=catalog,pod-template-hash=66f66d856c
+catalog-66f66d856c-zzvts   1/1     Running   0          17s   app=catalog,pod-template-hash=66f66d856c
+
+$ kubectl -n ingress-nginx logs deploy/ingress-nginx-controller --tail=40 | grep -iE 'catalog' | tail -3
+I1007 19:13:24.400869       7 event.go:377] Event(v1.ObjectReference{Kind:"Ingress", Namespace:"default", Name:"catalog", UID:"1da53737-ba8c-49a0-9a65-bfe345f9cb4f", APIVersion:"networking.k8s.io/v1", ResourceVersion:"5437", FieldPath:""}): type: 'Normal' reason: 'Sync' Scheduled for sync
+W1007 19:13:27.725530       7 controller.go:1241] Service "default/catalog" does not have any active Endpoint.
+10.244.0.19 - - [07/Oct/2026:19:13:40 +0000] "GET / HTTP/1.1" 503 190 "-" "curl/8.10.1" 77 0.000 [default-catalog-8080] [] - - - - 5d399504d4f817cf938400cea968e7b3
+
+# ROOT CAUSE 1: Service selector app=catalog-api matches no Pods -> 0 endpoints
+# ROOT CAUSE 2: Ingress points at Service port 8080 but the Service only exposes port 80
+########## FIX ##########
+$ kubectl apply -f 03-ingress-backend/service-fixed.yaml -f 03-ingress-backend/ingress-fixed.yaml
+service/catalog configured
+ingress.networking.k8s.io/catalog configured
+
+########## AFTER ##########
+$ kubectl get endpointslices -l kubernetes.io/service-name=catalog
+NAME            ADDRESSTYPE   PORTS   ENDPOINTS                   AGE
+catalog-884jg   IPv4          8080    10.244.0.108,10.244.0.109   28s
+
+$ kubectl describe ingress catalog | sed -n '/Rules:/,/Annotations:/p'
+Rules:
+  Host           Path  Backends
+  ----           ----  --------
+  catalog.local  
+                 /   catalog:80 (10.244.0.108:8080,10.244.0.109:8080)
+Annotations:     <none>
+
+$ kubectl exec curl -- curl -s -w 'HTTP %{http_code}\n' -H 'Host: catalog.local' http://ingress-nginx-controller.ingress-nginx.svc.cluster.local/
+CATALOG service
+HTTP 200
+

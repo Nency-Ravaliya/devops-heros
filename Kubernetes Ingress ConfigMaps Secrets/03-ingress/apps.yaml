@@ -1,0 +1,52 @@
+# Two small apps behind ClusterIP Services - the Ingress routes to them
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: shop
+spec:
+  replicas: 2
+  selector:
+    matchLabels: { app: shop }
+  template:
+    metadata:
+      labels: { app: shop }
+    spec:
+      containers:
+        - name: shop
+          image: hashicorp/http-echo:1.0
+          args: ["-text=SHOP service", "-listen=:8080"]
+          ports: [{ containerPort: 8080 }]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: shop
+spec:
+  selector: { app: shop }
+  ports: [{ port: 80, targetPort: 8080 }]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: blog
+spec:
+  replicas: 2
+  selector:
+    matchLabels: { app: blog }
+  template:
+    metadata:
+      labels: { app: blog }
+    spec:
+      containers:
+        - name: blog
+          image: hashicorp/http-echo:1.0
+          args: ["-text=BLOG service", "-listen=:8080"]
+          ports: [{ containerPort: 8080 }]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: blog
+spec:
+  selector: { app: blog }
+  ports: [{ port: 80, targetPort: 8080 }]
