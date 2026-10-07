@@ -1,20 +1,12 @@
-# Session 15 Homework — Helm
+# Session 15 — Helm
 
 **Submitted by:** Piyush Bansal
-**Cluster:** Docker Desktop Kubernetes v1.36.1 (single node, arm64)
-**Helm:** v4.3.0 (the course notes use v3; I list the differences I hit in task 1)
+**Cluster:** Docker Desktop Kubernetes v1.36.1 · **Helm:** v4.3.0
 
-| Task | Folder | What is inside |
+All output in these notes is from live runs.
+
+| # | Task | Notes |
 |---|---|---|
-| 1. Helm commands | [01-helm-commands/](01-helm-commands/) | `helm create` chart (`web-chart/`) + create, install, list, status, get, upgrade, history, rollback, uninstall, repo, search with real output |
-| 2. Helm rollback | [02-rollback/](02-rollback/) | `hello-chart/` + `values-v2.yaml`, `values-v3.yaml`. Install → Upgrade → Verify → Upgrade → Verify → Rollback → Verify, checked over HTTP |
-| 3. Mini project | [03-mini-project/](03-mini-project/) | `notes-chart/` (Chart.yaml, values.yaml, values-prod.yaml, templates). Install, prod upgrade, bad upgrade, rollback, uninstall |
-
-Deliverables:
-
-- **Helm charts:** `01-helm-commands/web-chart`, `02-rollback/hello-chart`, `03-mini-project/notes-chart`
-- **values.yaml / templates:** inside each chart
-- **Installation, upgrade and rollback:** documented in each README
-- **Screenshots:** I captured real terminal output as text blocks instead of screenshots
-
-Namespaces used: `p15-cmds`, `p15-rollback`, `p15-notes` (all deleted at the end).
+| 1 | Helm commands: create, install, list, status, get, upgrade, history, rollback, uninstall, repo, search | [01-helm-commands/](01-helm-commands/README.md) |
+| 2 | Rollback workflow: install → upgrade → verify → upgrade → verify → rollback → verify | [02-rollback/](02-rollback/README.md) |
+| 3 | Mini project: `notes-chart` (dev/prod values, bad upgrade, rollback) | [03-mini-project/](03-mini-project/README.md) |
