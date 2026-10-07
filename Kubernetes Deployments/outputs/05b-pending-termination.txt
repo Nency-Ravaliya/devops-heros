@@ -1,0 +1,31 @@
+#### lifecycle-pending (re-run with 64Gi memory request - more than the node has)
+$ kubectl describe node minikube | grep -A6 'Allocatable:' | grep -E 'cpu|memory'
+  cpu:                24
+  memory:             12056728Ki
+
+$ kubectl apply -f 05-pod-lifecycle/02-pending.yaml
+pod/lifecycle-pending created
+
+$ kubectl get pod lifecycle-pending -o wide
+NAME                READY   STATUS    RESTARTS   AGE   IP       NODE     NOMINATED NODE   READINESS GATES
+lifecycle-pending   0/1     Pending   0          8s    <none>   <none>   <none>           <none>
+
+$ kubectl describe pod lifecycle-pending | sed -n '/^Events:/,$p'
+Events:
+  Type     Reason            Age   From               Message
+  ----     ------            ----  ----               -------
+  Warning  FailedScheduling  8s    default-scheduler  0/1 nodes are available: 1 Insufficient memory. preemption: 0/1 nodes are available: 1 Preemption is not helpful for scheduling.
+
+#### lifecycle-termination (graceful shutdown, re-run while streaming logs)
+$ time kubectl delete pod lifecycle-termination
+pod "lifecycle-termination" deleted from default namespace
+
+real	0m10.350s
+user	0m0.000s
+sys	0m0.015s
+
+$ kubectl logs -f lifecycle-termination   (streamed while the Pod was being deleted)
+Application running
+SIGTERM received; cleaning up...
+Cleanup complete
+

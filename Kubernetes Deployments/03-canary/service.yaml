@@ -1,0 +1,12 @@
+# Selects only app=web-canary, so it matches BOTH tracks.
+# 9 stable + 1 canary Pods => roughly 10% of requests reach the canary.
+apiVersion: v1
+kind: Service
+metadata:
+  name: web-canary
+spec:
+  selector:
+    app: web-canary
+  ports:
+    - port: 80
+      targetPort: 8080

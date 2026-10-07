@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-stable
+spec:
+  replicas: 9
+  selector:
+    matchLabels:
+      app: web-canary
+      track: stable
+  template:
+    metadata:
+      labels:
+        app: web-canary
+        track: stable
+    spec:
+      containers:
+        - name: web
+          image: hashicorp/http-echo:1.0
+          args: ["-text=stable v1", "-listen=:8080"]
+          ports:
+            - containerPort: 8080

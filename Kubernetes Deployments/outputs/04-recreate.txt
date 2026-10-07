@@ -1,0 +1,75 @@
+$ kubectl apply -f 04-recreate/deployment-v1.yaml
+deployment.apps/web-recreate created
+
+$ kubectl get pods -l app=web-recreate
+NAME                           READY   STATUS    RESTARTS   AGE
+web-recreate-ff876457f-5h4dw   1/1     Running   0          1s
+web-recreate-ff876457f-rvcn4   1/1     Running   0          1s
+web-recreate-ff876457f-zplzc   1/1     Running   0          1s
+
+$ kubectl apply -f 04-recreate/deployment-v2.yaml
+deployment.apps/web-recreate configured
+
+$ kubectl rollout status deploy/web-recreate --timeout=180s
+Waiting for deployment "web-recreate" rollout to finish: 0 out of 3 new replicas have been updated...
+Waiting for deployment "web-recreate" rollout to finish: 0 out of 3 new replicas have been updated...
+Waiting for deployment "web-recreate" rollout to finish: 0 out of 3 new replicas have been updated...
+Waiting for deployment "web-recreate" rollout to finish: 0 out of 3 new replicas have been updated...
+Waiting for deployment "web-recreate" rollout to finish: 0 out of 3 new replicas have been updated...
+Waiting for deployment "web-recreate" rollout to finish: 0 of 3 updated replicas are available...
+Waiting for deployment "web-recreate" rollout to finish: 1 of 3 updated replicas are available...
+Waiting for deployment "web-recreate" rollout to finish: 2 of 3 updated replicas are available...
+deployment "web-recreate" successfully rolled out
+
+$ kubectl get pods -l app=web-recreate -w   (captured during the update)
+web-recreate-ff876457f-5h4dw   1/1   Running   0     1s
+web-recreate-ff876457f-rvcn4   1/1   Running   0     1s
+web-recreate-ff876457f-zplzc   1/1   Running   0     1s
+web-recreate-ff876457f-zplzc   1/1   Terminating   0     2s
+web-recreate-ff876457f-rvcn4   1/1   Terminating   0     2s
+web-recreate-ff876457f-5h4dw   1/1   Terminating   0     2s
+web-recreate-ff876457f-zplzc   1/1   Terminating   0     2s
+web-recreate-ff876457f-5h4dw   1/1   Terminating   0     2s
+web-recreate-ff876457f-rvcn4   1/1   Terminating   0     2s
+web-recreate-ff876457f-rvcn4   0/1   Error         0     2s
+web-recreate-ff876457f-5h4dw   0/1   Error         0     2s
+web-recreate-ff876457f-zplzc   0/1   Error         0     2s
+web-recreate-5b75889c78-glfj5   0/1   Pending       0     0s
+web-recreate-5b75889c78-x94hv   0/1   Pending       0     0s
+web-recreate-5b75889c78-glfj5   0/1   Pending       0     0s
+web-recreate-5b75889c78-r48vh   0/1   Pending       0     0s
+web-recreate-5b75889c78-x94hv   0/1   Pending       0     0s
+web-recreate-5b75889c78-r48vh   0/1   Pending       0     0s
+web-recreate-5b75889c78-glfj5   0/1   ContainerCreating   0     0s
+web-recreate-5b75889c78-r48vh   0/1   ContainerCreating   0     0s
+web-recreate-5b75889c78-x94hv   0/1   ContainerCreating   0     0s
+web-recreate-5b75889c78-glfj5   0/1   ContainerCreating   0     1s
+web-recreate-5b75889c78-x94hv   0/1   ContainerCreating   0     1s
+web-recreate-5b75889c78-r48vh   0/1   ContainerCreating   0     1s
+web-recreate-5b75889c78-glfj5   1/1   Running             0     1s
+web-recreate-5b75889c78-x94hv   1/1   Running             0     1s
+web-recreate-5b75889c78-r48vh   1/1   Running             0     1s
+web-recreate-ff876457f-zplzc    0/1   Error               0     3s
+web-recreate-ff876457f-zplzc    0/1   Error               0     3s
+web-recreate-ff876457f-rvcn4    0/1   Error               0     3s
+web-recreate-ff876457f-rvcn4    0/1   Error               0     3s
+web-recreate-ff876457f-5h4dw    0/1   Error               0     3s
+web-recreate-ff876457f-5h4dw    0/1   Error               0     3s
+
+$ kubectl describe deploy web-recreate | grep -E 'StrategyType' ; kubectl describe deploy web-recreate | sed -n '/Events:/,$p'
+StrategyType:       Recreate
+Events:
+  Type    Reason             Age   From                   Message
+  ----    ------             ----  ----                   -------
+  Normal  ScalingReplicaSet  7s    deployment-controller  Scaled up replica set web-recreate-ff876457f from 0 to 3
+  Normal  ScalingReplicaSet  5s    deployment-controller  Scaled down replica set web-recreate-ff876457f from 3 to 0
+  Normal  ScalingReplicaSet  5s    deployment-controller  Scaled up replica set web-recreate-5b75889c78 from 0 to 3
+
+$ kubectl get rs -l app=web-recreate
+NAME                      DESIRED   CURRENT   READY   AGE
+web-recreate-5b75889c78   3         3         3       5s
+web-recreate-ff876457f    0         0         0       7s
+
+$ kubectl delete -f 04-recreate/deployment-v2.yaml
+deployment.apps "web-recreate" deleted from default namespace
+

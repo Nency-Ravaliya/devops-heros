@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-rolling
+spec:
+  replicas: 4
+  revisionHistoryLimit: 5
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1        # at most 1 extra Pod above 4 during the update
+      maxUnavailable: 1  # at most 1 Pod below 4 during the update
+  selector:
+    matchLabels:
+      app: web-rolling
+  template:
+    metadata:
+      labels:
+        app: web-rolling
+      annotations:
+        kubernetes.io/change-cause: "v2 - new text"
+    spec:
+      containers:
+        - name: web
+          image: hashicorp/http-echo:1.0
+          args: ["-text=web-rolling v2", "-listen=:8080"]
+          ports:
+            - containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 2
+            periodSeconds: 2
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: web-rolling
+spec:
+  selector:
+    app: web-rolling
+  ports:
+    - port: 80
+      targetPort: 8080
