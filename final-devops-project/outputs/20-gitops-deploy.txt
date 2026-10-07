@@ -18,3 +18,104 @@ NAME               TYPE     DATA   AGE
 notes-redis-auth   Opaque   1      0s
 
 ################ GitOps: commit the new image tag to the environment branch ################
+$ git log --oneline -1 && git show --format= HEAD -- gitops/notes-values.yaml
+edd94bd GitOps: deploy notes-api 20df250
+diff --git a/final-devops-project/gitops/notes-values.yaml b/final-devops-project/gitops/notes-values.yaml
+index f16d4fa..67a07ed 100644
+--- a/final-devops-project/gitops/notes-values.yaml
++++ b/final-devops-project/gitops/notes-values.yaml
+@@ -1,7 +1,7 @@
+ # Environment-specific values - THE file the CI pipeline changes.
+ # Argo CD watches it (branch "final-gitops") and syncs the cluster to whatever is committed here.
+ image:
+-  tag: latest
++  tag: "20df250"
+ config:
+   APP_ENV: production
+   WELCOME_MESSAGE: "Welcome to the Notes API - deployed by Argo CD"
+
+error: Your local changes to the following files would be overwritten by checkout:
+	final-devops-project/outputs/20-gitops-deploy.txt
+Please commit your changes or stash them before you switch branches.
+Aborting
+################ Argo CD Application (Helm chart + values from Git) ################
+$ cat gitops/argocd-application.yaml
+# Multi-source Application: the Helm chart + the values file, both from this repo.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: notes-api
+  namespace: argocd
+spec:
+  project: default
+  sources:
+    - repoURL: https://github.com/TejasVarshney/devops-heros.git
+      targetRevision: final-gitops
+      path: final-devops-project/helm/notes-api
+      helm:
+        releaseName: notes
+        valueFiles:
+          - $values/final-devops-project/gitops/notes-values.yaml
+    - repoURL: https://github.com/TejasVarshney/devops-heros.git
+      targetRevision: final-gitops
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: notes
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+
+$ kubectl apply -f gitops/argocd-application.yaml
+application.argoproj.io/notes-api created
+
+$ kubectl -n argocd get applications -o wide
+NAME        SYNC STATUS   HEALTH STATUS   REVISION   PROJECT
+notes-api   Synced        Healthy                    default
+
+$ kubectl -n argocd get application notes-api -o jsonpath='revision={.status.sync.revisions}{"\n"}'
+revision=["edd94bd5e7f1f414537d8c974d68d35adef758bd","edd94bd5e7f1f414537d8c974d68d35adef758bd"]
+
+(expected GitOps commit: edd94bd5e7f1f414537d8c974d68d35adef758bd)
+
+$ kubectl -n notes get all,ingress,hpa,pvc,configmap,secret,servicemonitor
+NAME                            READY   STATUS    RESTARTS   AGE
+pod/notes-api-fbbf5d9b7-7t9fv   1/1     Running   0          37s
+pod/notes-api-fbbf5d9b7-k6qr8   1/1     Running   0          52s
+pod/notes-redis-0               1/1     Running   0          52s
+
+NAME                  TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)    AGE
+service/notes-api     ClusterIP   10.96.210.18   <none>        80/TCP     52s
+service/notes-redis   ClusterIP   10.96.37.25    <none>        6379/TCP   52s
+
+NAME                        READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/notes-api   2/2     2            2           52s
+
+NAME                                  DESIRED   CURRENT   READY   AGE
+replicaset.apps/notes-api-fbbf5d9b7   2         2         2       52s
+
+NAME                           READY   AGE
+statefulset.apps/notes-redis   1/1     52s
+
+NAME                                            REFERENCE              TARGETS       MINPODS   MAXPODS   REPLICAS   AGE
+horizontalpodautoscaler.autoscaling/notes-api   Deployment/notes-api   cpu: 1%/60%   2         6         2          52s
+
+NAME                                  CLASS   HOSTS         ADDRESS         PORTS   AGE
+ingress.networking.k8s.io/notes-api   nginx   notes.local   10.96.163.157   80      51s
+
+NAME                                       STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE
+persistentvolumeclaim/data-notes-redis-0   Bound    pvc-5ab65c79-06f0-46d9-9d21-5a36a01b3cb1   1Gi        RWO            standard       <unset>                 52s
+
+NAME                         DATA   AGE
+configmap/kube-root-ca.crt   1      58s
+configmap/notes-config       4      52s
+
+NAME                      TYPE     DATA   AGE
+secret/notes-redis-auth   Opaque   1      58s
+
+NAME                                             AGE
+servicemonitor.monitoring.coreos.com/notes-api   51s
+
