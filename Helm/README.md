@@ -1,5 +1,7 @@
 # Session 15: Helm
 
+> 📸 **Screenshots:** the terminal images on this page are rendered from the exact command output captured during my runs (full text is under each *Text output* section).
+
 **Name:** Tejas Varshney  
 **Tools:** Helm v3.16.2, minikube v1.39.0 (Kubernetes v1.37.0)
 
@@ -61,6 +63,17 @@ Template syntax used: `{{ .Values.x }}`, `{{ .Release.Name }}`, `{{ include "...
 | `helm repo add / update / list` | Manage chart repositories |
 | `helm search repo / hub` | Search the added repos / Artifact Hub |
 | `helm show chart / values` | Inspect a chart before installing it |
+
+![helm create scratch-chart && find scratch-chart -type f | sort && rm -rf scrat](screenshots/helm-001.png)
+![helm template demo webapp --namespace helm-demo | grep -E '^kind:|^  name:|ima](screenshots/helm-002.png)
+![helm status demo -n helm-demo](screenshots/helm-003.png)
+![helm get values demo -n helm-demo --all | head -20](screenshots/helm-004.png)
+![helm get metadata demo -n helm-demo](screenshots/helm-005.png)
+![helm rollback demo 1 -n helm-demo --wait](screenshots/helm-006.png)
+![helm list -n helm-demo](screenshots/helm-007.png)
+![helm search hub argo-cd --max-col-width 60 | head -5](screenshots/helm-008.png)
+
+<details><summary>Text output</summary>
 
 ```text
 ################ helm create ################
@@ -365,6 +378,8 @@ replicaCount: 1
 revisionHistoryLimit: 10
 ```
 
+</details>
+
 **Observations**
 - `helm install` printed the rendered **NOTES.txt**, and the page returned `revision=1`.
 - `helm upgrade --set replicaCount=3 --set page.version=v2` produced revision 2: 3 Pods, the new page, and Pods restarted because the checksum annotation changed.
@@ -377,6 +392,14 @@ revisionHistoryLimit: 10
 ## Task 2 – Helm rollback workflow
 
 Install → Upgrade → Verify → Upgrade again → Verify → **Rollback** → Verify, using release `shop` of my chart.
+
+![helm install shop webapp -n helm-demo --create-namespace --set page.version=v1](screenshots/helm-009.png)
+![helm upgrade shop webapp -n helm-demo --reuse-values --set replicaCount=3 --se](screenshots/helm-010.png)
+![helm upgrade shop webapp -n helm-demo --reuse-values --set image.tag=1.99-does](screenshots/helm-011.png)
+![helm rollback shop 2 -n helm-demo --wait](screenshots/helm-012.png)
+![helm uninstall shop -n helm-demo --wait](screenshots/helm-013.png)
+
+<details><summary>Text output</summary>
 
 ```text
 ################ 1. INSTALL (revision 1) ################
@@ -532,6 +555,8 @@ $ helm uninstall shop -n helm-demo --wait
 release "shop" uninstalled
 ```
 
+</details>
+
 | Step | Revision | What changed | Verified |
 |---|---|---|---|
 | Install | 1 | 2 replicas, nginx 1.27, page "Shop v1" | page shows `revision=1`, 2 replicas |
@@ -550,6 +575,14 @@ release "shop" uninstalled
 ## Task 3 – Mini project: Notes app chart
 
 The chart from the course instructions ([03-mini-project/notes-chart](03-mini-project/notes-chart)): `Chart.yaml`, `values.yaml` (dev: 1 replica, nginx 1.24), `values-prod.yaml` (prod: 3 replicas, nginx 1.25), and templates for the Deployment, a NodePort Service (30090) and a ConfigMap injected with `envFrom`.
+
+![helm lint notes-chart](screenshots/helm-014.png)
+![helm template notes-dev notes-chart](screenshots/helm-015.png)
+![helm install notes-dev notes-chart --wait](screenshots/helm-016.png)
+![kubectl get pods -l app=notes-dev](screenshots/helm-017.png)
+![helm history notes-dev](screenshots/helm-018.png)
+
+<details><summary>Text output</summary>
 
 ```text
 ################ Step 8: lint ################
@@ -713,6 +746,8 @@ notes-dev-deploy-bbcc464b4-zfgmr   1/1     Terminating   0          45s
 $ kubectl get services notes-dev-svc
 Error from server (NotFound): services "notes-dev-svc" not found
 ```
+
+</details>
 
 | Step | Result |
 |---|---|

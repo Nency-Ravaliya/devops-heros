@@ -1,5 +1,7 @@
 # CoreDNS
 
+> 📸 **Screenshots:** the terminal images on this page are rendered from the exact command output captured during my runs (full text is under each *Text output* section).
+
 ## What is CoreDNS?
 
 CoreDNS is a flexible DNS server written in Go and built from a chain of **plugins**. It is a CNCF graduated project and has been the **default cluster DNS since Kubernetes 1.13**, replacing kube-dns. In my cluster it runs as:
@@ -96,6 +98,13 @@ I scaled CoreDNS to 0 replicas:
 - **Verify:** the EndpointSlice showed the new CoreDNS Pod IP `10.244.0.88`, and both `nslookup` and `curl` by name worked again.
 
 ## Hands-on output
+
+![kubectl -n kube-system get deploy,pods,svc -l k8s-app=kube-dns -o wide](screenshots/coredns-001.png)
+![kubectl exec dns -- cat /etc/resolv.conf](screenshots/coredns-002.png)
+![kubectl exec dns -- dig +noall +answer +stats kubernetes.io | grep -E 'IN|Quer](screenshots/coredns-003.png)
+![kubectl exec dns -- nslookup web-clusterip](screenshots/coredns-004.png)
+
+<details><summary>Text output</summary>
 
 ```text
 $ kubectl -n kube-system get deploy,pods,svc -l k8s-app=kube-dns -o wide
@@ -233,3 +242,5 @@ Address: 10.102.13.85
 $ kubectl exec dns -- curl -s http://web-clusterip
 hello from web-86bb596c4d-nknrw
 ```
+
+</details>

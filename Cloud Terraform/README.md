@@ -1,5 +1,7 @@
 # Session 19: Cloud & Terraform in Action
 
+> 📸 **Screenshots:** the terminal images on this page are rendered from the exact command output captured during my runs (full text is under each *Text output* section). The GitHub Actions images are real browser screenshots of the run pages.
+
 **Name:** Tejas Varshney
 
 An end-to-end AWS infrastructure project with Terraform: **VPC → public subnet → Internet Gateway → route table → security group → EC2 web server**, plus an **S3 bucket**. All code is in [terraform/](terraform).
@@ -62,6 +64,9 @@ Security choices: SSH only from one `/32`, IMDSv2 required (`http_tokens = "requ
 
 ## Where it ran (honest note)
 
+![GitHub Actions - Terraform workflow (sessions 18 + 19)](screenshots/actions-terraform-run.png)
+
+
 No AWS credentials are configured for this repo, so the GitHub Actions pipeline runs Terraform against **Moto**, an open-source AWS API emulator running as a service container. A CI-only `ci_moto_override.tf` points the provider's endpoints at it. The code itself is plain AWS Terraform and runs unchanged against a real account with `aws configure && terraform apply`. The CI picks an AMI ID from Moto's catalogue because the real Amazon Linux AMI ID doesn't exist in the emulator.
 
 ```text
@@ -80,6 +85,10 @@ Wed Oct  7 19:55:17 UTC 2026
 ## Terraform commands and output
 
 ### init
+![terraform init -input=false](screenshots/cloud-terraform-001.png)
+
+<details><summary>Text output</summary>
+
 ```text
 $ terraform init -input=false
 Initializing the backend...
@@ -99,11 +108,17 @@ Terraform has been successfully initialized!
 [exit code: 0]
 ```
 
+</details>
+
 ### fmt + validate
 ```text
 $ terraform fmt -check -diff -recursive
 [exit code: 0]
 ```
+![terraform validate](screenshots/cloud-terraform-002.png)
+
+<details><summary>Text output</summary>
+
 ```text
 $ terraform validate
 Success! The configuration is valid.
@@ -111,7 +126,21 @@ Success! The configuration is valid.
 [exit code: 0]
 ```
 
+</details>
+
 ### plan
+![terraform plan -input=false -out=tfplan](screenshots/cloud-terraform-003.png)
+![output](screenshots/cloud-terraform-004.png)
+![output](screenshots/cloud-terraform-005.png)
+![output](screenshots/cloud-terraform-006.png)
+![output](screenshots/cloud-terraform-007.png)
+![output](screenshots/cloud-terraform-008.png)
+![output](screenshots/cloud-terraform-009.png)
+![output](screenshots/cloud-terraform-010.png)
+![output](screenshots/cloud-terraform-011.png)
+
+<details><summary>Text output</summary>
+
 ```text
 $ terraform plan -input=false -out=tfplan
 data.aws_availability_zones.available: Reading...
@@ -514,8 +543,14 @@ Changes to Outputs:
 [exit code: 0]
 ```
 
+</details>
+
 ### apply
 Notice the order in the log. The **whole S3 branch** (random_id → bucket → versioning/public-access/object) finished **while the VPC was still being created**, because the two branches run in parallel. After the VPC: IGW, subnet and SG in parallel, then the route table, the association, and **only then** the EC2 instance. That's the dependency graph in action.
+![terraform apply -input=false -auto-approve tfplan](screenshots/cloud-terraform-012.png)
+
+<details><summary>Text output</summary>
+
 ```text
 $ terraform apply -input=false -auto-approve tfplan
 random_id.bucket_suffix: Creating...
@@ -560,7 +595,13 @@ web_url = "http://54.214.206.0"
 [exit code: 0]
 ```
 
+</details>
+
 ### output
+![terraform output](screenshots/cloud-terraform-013.png)
+
+<details><summary>Text output</summary>
+
 ```text
 $ terraform output
 instance_id = "i-55dec0a4b6d90e3b7"
@@ -573,7 +614,13 @@ web_url = "http://54.214.206.0"
 [exit code: 0]
 ```
 
+</details>
+
 ### state
+![terraform state list](screenshots/cloud-terraform-014.png)
+
+<details><summary>Text output</summary>
+
 ```text
 $ terraform state list
 data.aws_availability_zones.available
@@ -592,7 +639,13 @@ random_id.bucket_suffix
 [exit code: 0]
 ```
 
+</details>
+
 ### plan again (drift check)
+![terraform plan -input=false -detailed-exitcode](screenshots/cloud-terraform-015.png)
+
+<details><summary>Text output</summary>
+
 ```text
 $ terraform plan -input=false -detailed-exitcode
 random_id.bucket_suffix: Refreshing state... [id=pjQ0BA]
@@ -637,9 +690,24 @@ Plan: 0 to add, 1 to change, 0 to destroy.
 [exit code: 2]
 ```
 
+</details>
+
 **What happened here:** `-detailed-exitcode` returned **2** ("changes present") with a diff on `metadata_options` of the EC2 instance. Moto doesn't store the instance's IMDS `metadata_options`, so on refresh Terraform reads them back as empty and wants to set `http_tokens = "required"` again. On real AWS the setting is stored and this plan returns 0. It's a limitation of the emulator, not of the code, and it's a good example of how `plan` detects **drift** between state/code and the real API.
 
 ### show (full state after apply)
+![terraform show](screenshots/cloud-terraform-016.png)
+![output](screenshots/cloud-terraform-017.png)
+![output](screenshots/cloud-terraform-018.png)
+![output](screenshots/cloud-terraform-019.png)
+![output](screenshots/cloud-terraform-020.png)
+![output](screenshots/cloud-terraform-021.png)
+![output](screenshots/cloud-terraform-022.png)
+![output](screenshots/cloud-terraform-023.png)
+![output](screenshots/cloud-terraform-024.png)
+![output](screenshots/cloud-terraform-025.png)
+
+<details><summary>Text output</summary>
+
 ```text
 $ terraform show
 # data.aws_availability_zones.available:
@@ -1052,7 +1120,21 @@ web_url = "http://54.214.206.0"
 [exit code: 0]
 ```
 
+</details>
+
 ### destroy
+![terraform destroy -input=false -auto-approve](screenshots/cloud-terraform-026.png)
+![output](screenshots/cloud-terraform-027.png)
+![output](screenshots/cloud-terraform-028.png)
+![output](screenshots/cloud-terraform-029.png)
+![output](screenshots/cloud-terraform-030.png)
+![output](screenshots/cloud-terraform-031.png)
+![output](screenshots/cloud-terraform-032.png)
+![output](screenshots/cloud-terraform-033.png)
+![output](screenshots/cloud-terraform-034.png)
+
+<details><summary>Text output</summary>
+
 ```text
 $ terraform destroy -input=false -auto-approve
 random_id.bucket_suffix: Refreshing state... [id=pjQ0BA]
@@ -1456,6 +1538,8 @@ aws_vpc.main: Destruction complete after 0s
 Destroy complete! Resources: 12 destroyed.
 [exit code: 0]
 ```
+
+</details>
 ```text
 $ terraform state list
 [exit code: 0]

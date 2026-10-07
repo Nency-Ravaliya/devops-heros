@@ -1,5 +1,7 @@
 # Kubernetes Volumes – what I learned
 
+> 📸 **Screenshots:** the terminal images on this page are rendered from the exact command output captured during my runs (full text is under each *Text output* section).
+
 A container's filesystem is **ephemeral**: when the container restarts, everything written to it is gone, and two containers can't see each other's files. **Volumes** solve this. A volume is declared in `spec.volumes` of the Pod and mounted into containers with `volumeMounts`.
 
 ```
@@ -76,6 +78,13 @@ All examples below are in this folder and were run on my minikube cluster. The f
 ---
 
 ## Hands-on output
+
+![kubectl apply -f 01-emptydir.yaml](screenshots/01-kubernetes-volumes-001.png)
+![minikube ssh -- cat /tmp/hostpath-demo/visits.txt](screenshots/01-kubernetes-volumes-002.png)
+![kubectl get storageclass](screenshots/01-kubernetes-volumes-003.png)
+![kubectl delete deploy notes && kubectl delete pvc dynamic-claim && sleep 5 && ](screenshots/01-kubernetes-volumes-004.png)
+
+<details><summary>Text output</summary>
 
 ```text
 ################ emptyDir ################
@@ -214,3 +223,5 @@ deployment.apps "notes" deleted from default namespace
 persistentvolumeclaim "dynamic-claim" deleted from default namespace
 Error from server (NotFound): persistentvolumes "pvc-6cfad988-10ad-46f4-883a-c816ed54fe3e" not found
 ```
+
+</details>

@@ -1,5 +1,7 @@
 # Session 17: Complete CI/CD & DevSecOps
 
+> 📸 **Screenshots:** the terminal images on this page are rendered from the exact command output captured during my runs (full text is under each *Text output* section). The GitHub Actions images are real browser screenshots of the run pages.
+
 **Name:** Tejas Varshney
 
 A complete **CI/CD + DevSecOps pipeline** for my Flask "DevSecOps Dashboard" app. I originally built it in [TejasVarshney/devsecops_demo](https://github.com/TejasVarshney/devsecops_demo) and brought it into this repo. Here I improved the pipeline: added the missing **secret scanning**, a second SAST tool, real **security gates**, a deploy that uses the exact scanned image, and container hardening.
@@ -52,6 +54,9 @@ flowchart TD
 ## The pipeline in action: a security gate blocking a real vulnerability
 
 ### Run #1: ❌ blocked by SAST
+
+![Run 1 - Bandit gate failed, build/push/deploy skipped](screenshots/actions-run1-bandit-gate-blocked.png)
+
 [Run #1](https://github.com/TejasVarshney/devops-heros/actions/runs/37676161061) ran my original app code. Tests, CodeQL, pip-audit and Gitleaks passed, but **Bandit failed**. Because the image job `needs` every scan, **Docker build, image scan, push and deploy were all skipped**. A vulnerable build never reached the registry or the cluster.
 
 ```text
@@ -110,6 +115,10 @@ JOB  9. Deploy to Kubernetes (kind)                          skipped   runner: N
 
 Same Bandit command run locally to read the findings:
 
+![bandit -r DevSecOps/app --severity-level medium --confidence-level medium](screenshots/devsecops-001.png)
+
+<details><summary>Text output</summary>
+
 ```text
 $ bandit -r DevSecOps/app --severity-level medium --confidence-level medium
 Run started:2026-10-07 19:43:00.713613
@@ -154,10 +163,16 @@ Files skipped (0):
 exit code: 1
 ```
 
+</details>
+
 - **B201 (HIGH): `debug=True`.** The Werkzeug interactive debugger lets anyone who can reach the app execute arbitrary Python on the server (CWE-94). It must never run in production.
 - **B104 (MEDIUM):** hard-coded bind to all interfaces.
 
 **Fix** ([app.py](app/app.py)): debug is **opt-in** (`FLASK_DEBUG=1`, off by default), and the bind address comes from `HOST` (default `127.0.0.1`). Only the container sets `ENV HOST=0.0.0.0`, where binding to all interfaces is intended.
+
+![bandit -r DevSecOps/app --severity-level medium --confidence-level medium   (a](screenshots/devsecops-002.png)
+
+<details><summary>Text output</summary>
 
 ```text
 $ bandit -r DevSecOps/app --severity-level medium --confidence-level medium   (after the fix)
@@ -174,6 +189,8 @@ Code scanned:
 		High: 0
 exit code: 0
 ```
+
+</details>
 
 ### Run #2: ❌ pipeline configuration error
 [Run #2](https://github.com/TejasVarshney/devops-heros/actions/runs/37676646717): Bandit now **passed** ✅, but the image job failed at *Set up job*. The annotation said `Unable to resolve action aquasecurity/trivy-action@0.33.1, unable to find version`. The action's tags use a `v` prefix, so I listed the tags through the GitHub API and pinned `@v0.36.0`.
@@ -234,6 +251,9 @@ JOB  9. Deploy to Kubernetes (kind)                          skipped   runner: N
 ```
 
 ### Run #3: ✅ all stages green, deployed to Kubernetes
+
+![Run 3 - all DevSecOps stages green](screenshots/actions-run3-success.png)
+
 [Run #3](https://github.com/TejasVarshney/devops-heros/actions/runs/37677104307): build → test → SAST ×2 → SCA → secret scan → Docker build → Trivy scan → Trivy gate → push to `ghcr.io/tejasvarshney/session17-devsecops:<sha>` → deploy to kind → smoke test.
 
 ```text
@@ -314,6 +334,9 @@ JOB  9. Deploy to Kubernetes (kind)                          success   runner: G
 ## What I changed compared with my original pipeline
 
 My first version ([original-pipeline/devsecops.yml](original-pipeline/devsecops.yml)) already had tests, CodeQL, pip-audit, Trivy, a Docker Hub push and a kind deploy. Its runs:
+
+![My original devsecops_demo pipeline run](screenshots/original-devsecops-demo-run.png)
+
 
 ```text
 Repository: https://github.com/TejasVarshney/devsecops_demo   workflow: Python DevSecOps Pipeline

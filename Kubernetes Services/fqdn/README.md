@@ -1,5 +1,7 @@
 # FQDN & Kubernetes Service DNS
 
+> 📸 **Screenshots:** the terminal images on this page are rendered from the exact command output captured during my runs (full text is under each *Text output* section).
+
 ## What is an FQDN?
 
 A **Fully Qualified Domain Name** is the complete, unambiguous name of a host, all the way up to the DNS root. For example `www.example.com.`, where the trailing dot is the root. A name that is *not* fully qualified (like `web-clusterip`) is a **relative** name. The resolver completes it using the **search domains** in `/etc/resolv.conf`.
@@ -56,6 +58,11 @@ To demonstrate this I created a second namespace with a Service: [team-b-api.yam
 The last command below shows the reverse direction too: a Pod in `team-b` reaching `web-clusterip.default`.
 
 ## Hands-on output
+
+![kubectl apply -f fqdn/team-b-api.yaml](screenshots/fqdn-001.png)
+![kubectl exec dns -- dig +noall +answer api.team-b.svc.cluster.local](screenshots/fqdn-002.png)
+
+<details><summary>Text output</summary>
 
 ```text
 $ kubectl apply -f fqdn/team-b-api.yaml
@@ -144,3 +151,5 @@ If you don't see a command prompt, try pressing enter.
 hello from web-86bb596c4d-72lwl
 pod "tmp" deleted from team-b namespace
 ```
+
+</details>

@@ -1,10 +1,15 @@
 # Session 21: Final DevOps Project – Notes API, end to end
 
+> 📸 **Screenshots:** the terminal images on this page are rendered from the exact command output captured during my runs (full text is under each *Text output* section). The GitHub Actions images are real browser screenshots of the run pages.
+
 **Name:** Tejas Varshney
 
 One application taken through **every stage of the course**: Git → GitHub → CI → build & test → security scanning → Docker image → container registry → Terraform-provisioned Kubernetes → Helm → GitOps (Argo CD) → monitoring. It finishes with a **troubleshooting challenge** where I intentionally break the app in five ways and fix each one.
 
 The whole flow runs automatically on every push in **[.github/workflows/final-devops-project.yml](../.github/workflows/final-devops-project.yml)**. The latest run is green: [Run #3](https://github.com/TejasVarshney/devops-heros/actions/runs/37684007899). All evidence below was produced by that run and committed back to [outputs/](outputs).
+
+![GitHub Actions - final project pipeline run #3](screenshots/actions-final-run.png)
+
 
 ```text
 Workflow: Session 21 - Final DevOps Project   (final-devops-project.yml, on: push)
@@ -132,6 +137,15 @@ docker build -f docker/Dockerfile --build-arg APP_VERSION=$(git rev-parse --shor
 No cloud account is used, so Terraform provisions the **Kubernetes cluster itself** (a 2-node kind cluster: control-plane with ingress port mappings + worker) and the **platform layer** as Helm releases: ingress-nginx, metrics-server, kube-prometheus-stack and Argo CD. The same layout maps to EKS by swapping `kind_cluster` for the EKS module (see Sessions 18/19 for the AWS VPC/EC2/S3 Terraform).
 
 Files: [versions.tf](terraform/versions.tf) · [variables.tf](terraform/variables.tf) · [main.tf](terraform/main.tf) · [outputs.tf](terraform/outputs.tf) · [values/](terraform/values)
+
+![terraform plan -input=false -out=tfplan](screenshots/final-devops-project-001.png)
+![output](screenshots/final-devops-project-002.png)
+![output](screenshots/final-devops-project-003.png)
+![output](screenshots/final-devops-project-004.png)
+![output](screenshots/final-devops-project-005.png)
+![output](screenshots/final-devops-project-006.png)
+
+<details><summary>Text output</summary>
 
 ```text
 $ terraform plan -input=false -out=tfplan
@@ -391,6 +405,12 @@ Changes to Outputs:
 [exit code: 0]
 ```
 
+</details>
+
+![terraform apply -input=false -auto-approve tfplan](screenshots/final-devops-project-007.png)
+
+<details><summary>Text output</summary>
+
 ```text
 $ terraform apply -input=false -auto-approve tfplan
 kind_cluster.this: Creating...
@@ -436,6 +456,12 @@ platform_releases = [
 [exit code: 0]
 ```
 
+</details>
+
+![terraform state list](screenshots/final-devops-project-008.png)
+
+<details><summary>Text output</summary>
+
 ```text
 $ terraform state list
 helm_release.argocd
@@ -445,6 +471,12 @@ helm_release.monitoring[0]
 kind_cluster.this
 [exit code: 0]
 ```
+
+</details>
+
+![kubectl get nodes -o wide](screenshots/final-devops-project-009.png)
+
+<details><summary>Text output</summary>
 
 ```text
 $ kubectl get nodes -o wide
@@ -489,6 +521,8 @@ monitoring           kps-prometheus-node-exporter-xbbbl                   1/1   
 monitoring           prometheus-kps-prometheus-0                          2/2     Running     0          37s
 ```
 
+</details>
+
 ## 8. CI/CD pipeline
 
 | # | Job | What it does | Gate |
@@ -529,6 +563,12 @@ The chart [helm/notes-api](helm/notes-api) templates all of the above from [valu
 1. CI commits `image.tag: "<sha>"` to [gitops/notes-values.yaml](gitops/notes-values.yaml) on the **`final-gitops`** branch.
 2. The Argo CD [Application](gitops/argocd-application.yaml) (multi-source: the chart path + `$values/…/notes-values.yaml`, both from that branch) detects the new commit and syncs.
 3. `automated.prune` + `selfHeal`: manual edits are reverted (shown below with the ConfigMap).
+
+![docker load -i ../image.tar.gz 2>/dev/null || docker load -i image.tar.gz](screenshots/final-devops-project-010.png)
+![cat gitops/argocd-application.yaml](screenshots/final-devops-project-011.png)
+![kubectl -n notes get all,ingress,hpa,pvc,configmap,secret,servicemonitor](screenshots/final-devops-project-012.png)
+
+<details><summary>Text output</summary>
 
 ```text
 ################ load the image built + scanned by the pipeline into the cluster ################
@@ -653,7 +693,15 @@ NAME                                             AGE
 servicemonitor.monitoring.coreos.com/notes-api   51s
 ```
 
+</details>
+
 ## 13. Verification: ingress, storage, config, probes, HPA, self-heal
+
+![api / | jq .](screenshots/final-devops-project-013.png)
+![api /api/notes | jq -r '.().text'](screenshots/final-devops-project-014.png)
+![kubectl -n notes get hpa notes-api](screenshots/final-devops-project-015.png)
+
+<details><summary>Text output</summary>
 
 ```text
 ################ through the Ingress (http://notes.local on the cluster's port 80) ################
@@ -784,6 +832,8 @@ $ kubectl -n notes get configmap notes-config -o jsonpath='{.data.WELCOME_MESSAG
 Welcome to the Notes API - deployed by Argo CD
 ```
 
+</details>
+
 - Through the **Ingress**, the API reports `version: 20df250` (the commit being deployed) and the ConfigMap message `deployed by Argo CD`.
 - **Storage:** after `kubectl delete pod notes-redis-0`, both notes were still there (Redis AOF on the PVC).
 - **HPA:** under load CPU jumped to **397%** of requests and the HPA scaled **2 → 6 (max)** within ~45s. With 6 Pods it settled around 236–260%. It can't go higher than `maxReplicas: 6`, which is exactly what the max is for. The `FailedGetResourceMetric` event at the start is the normal gap before metrics-server has data for new Pods.
@@ -792,6 +842,11 @@ Welcome to the Notes API - deployed by Argo CD
 ## 14. Monitoring
 
 Prometheus discovers the API through the chart's **ServiceMonitor**. [monitoring/alerts.yaml](monitoring/alerts.yaml) adds `NotesApiDown`, `NotesApiHighErrorRate` (> 5% 5xx) and `NotesApiHighLatency` (p95 > 500ms).
+
+![curl -s localhost:9090/api/v1/targets | jq -r '.data.activeTargets() | select(](screenshots/final-devops-project-016.png)
+![promq 'sum by (pod) (container_memory_working_set_bytes{namespace="notes", con](screenshots/final-devops-project-017.png)
+
+<details><summary>Text output</summary>
 
 ```text
 $ curl -s localhost:9090/api/v1/targets | jq -r '.data.activeTargets[] | select(.labels.namespace=="notes") | "\(.labels.job) \(.labels.instance) health=\(.health)"'
@@ -855,6 +910,8 @@ Found 6 pods, using pod/notes-api-fbbf5d9b7-k6qr8
 10.244.1.1 - - [07/Oct/2026:20:52:22 +0000] "GET /health HTTP/1.1" 200 16 "-" "kube-probe/1.33"
 ```
 
+</details>
+
 - All `notes-api` Pods are scraped (`health=up`, one target per HPA replica).
 - Request rate by status (≈44 req/s `200` from the load test, plus `404`s from my `/missing` requests and a few `503`s recorded while the Redis Pod was being restarted in the storage test), **p95 latency ≈ 0.19s**, `notes_created_total`, CPU and memory per Pod.
 - The three alert rules are **loaded**. They still showed `unknown` at capture time because the pipeline queried before Prometheus's first evaluation cycle of the new group. A full alert-firing demo (rule → firing → Alertmanager) is in [Session 20](../Monitoring%20Observability%20GitOps/README.md#task-1--monitoring).
@@ -877,6 +934,15 @@ I deployed a copy of the app into `notes-staging` from [troubleshooting/broken/]
 | 5 | Ingress **HTTP 503** | `describe ingress` → backend `notes-api:8000 ()`; Service ports `[80]` | Ingress points at the targetPort, not the Service port | `port: 80` |
 
 After all five fixes, `notes-staging.local` returned the app info and stored a note (`["staging fixed"]`).
+
+![api / ; echo "HTTP $(curl -s -o /dev/null -w '%{http_code}' -H 'Host: notes-st](screenshots/final-devops-project-018.png)
+![kubectl -n notes-staging set image deploy/notes-api api=ghcr.io/tejasvarshney/](screenshots/final-devops-project-019.png)
+![kubectl -n notes-staging get events --field-selector involvedObject.name=notes](screenshots/final-devops-project-020.png)
+![kubectl -n notes-staging get endpoints notes-api](screenshots/final-devops-project-021.png)
+![kubectl -n notes-staging get deploy notes-api -o jsonpath='{.spec.template.spe](screenshots/final-devops-project-022.png)
+![kubectl -n notes-staging get pods,svc,ingress,hpa](screenshots/final-devops-project-023.png)
+
+<details><summary>Text output</summary>
 
 ```text
 ############################ THE REPORT: "notes-staging.local is down" ############################
@@ -1109,6 +1175,8 @@ $ api /api/notes -X POST -H 'Content-Type: application/json' -d '{"text":"stagin
 $ api /api/notes | jq -c '[.[].text]'
 ["staging fixed"]
 ```
+
+</details>
 
 ---
 

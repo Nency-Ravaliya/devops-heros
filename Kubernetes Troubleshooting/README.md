@@ -1,5 +1,7 @@
 # Session 14: Kubernetes Troubleshooting
 
+> 📸 **Screenshots:** the terminal images on this page are rendered from the exact command output captured during my runs (full text is under each *Text output* section).
+
 **Name:** Tejas Varshney  
 **Cluster:** minikube v1.39.0 (Kubernetes v1.37.0) on Windows 11
 
@@ -32,6 +34,16 @@ Hands-on with a 2-replica nginx Deployment + Service ([01-commands/app.yaml](01-
 | `kubectl events` | Cluster events (scheduling, pulling, probes, kills, scaling). `--for`, `--types=Warning`. Events expire after about 1 h |
 | `kubectl explain` | Built-in API docs for any field (`pod.spec.containers.livenessProbe`), so I don't have to guess YAML |
 | `kubectl top` | Live CPU/memory from metrics-server for nodes, Pods and containers. Finds OOM/CPU-throttling suspects |
+
+![kubectl get pods](screenshots/kubernetes-troubleshooting-001.png)
+![kubectl describe pod demo-web-7c8cc9c99b-c59mx](screenshots/kubernetes-troubleshooting-002.png)
+![kubectl describe svc demo-web](screenshots/kubernetes-troubleshooting-003.png)
+![kubectl logs deploy/demo-web --tail=3 --timestamps](screenshots/kubernetes-troubleshooting-004.png)
+![kubectl events --types=Warning -A | tail -8](screenshots/kubernetes-troubleshooting-005.png)
+![kubectl explain pod.spec.containers.livenessProbe | head -25](screenshots/kubernetes-troubleshooting-006.png)
+![kubectl explain deployment.spec.strategy.rollingUpdate.maxSurge](screenshots/kubernetes-troubleshooting-007.png)
+
+<details><summary>Text output</summary>
 
 ```text
 ################ kubectl get ################
@@ -293,6 +305,8 @@ demo-web-7c8cc9c99b-c59mx   nginx   3m           18Mi
 demo-web-7c8cc9c99b-rm8d9   nginx   3m           22Mi
 ```
 
+</details>
+
 ---
 
 ## Task 2 – Troubleshooting common issues
@@ -314,6 +328,11 @@ Each folder in [02-issues](02-issues) contains the broken manifest and the fix. 
 | 9 | **Configuration** | `Error`/CrashLoopBackOff | `kubectl logs` → `nginx: [emerg] unexpected "}" in default.conf:5` | Syntax error (missing `;`) in nginx config from a ConfigMap | Fix the ConfigMap + `rollout restart` |
 
 ### 1. CrashLoopBackOff
+![kubectl apply -f 01-crashloopbackoff/broken.yaml](screenshots/kubernetes-troubleshooting-008.png)
+![kubectl delete pod payment-api --now && kubectl apply -f 01-crashloopbackoff/f](screenshots/kubernetes-troubleshooting-009.png)
+
+<details><summary>Text output</summary>
+
 ```text
 ########## 1. BREAK ##########
 $ kubectl apply -f 01-crashloopbackoff/broken.yaml
@@ -371,9 +390,15 @@ $ kubectl logs payment-api
 connected to postgres.default.svc.cluster.local
 ```
 
+</details>
+
 **Process:** `get` showed restarts climbing. `describe` showed `Last State: Terminated, Exit Code: 1` and `BackOff` events. `logs --previous` printed the real reason. CrashLoopBackOff isn't an error by itself: it means "the container keeps exiting, and kubelet is waiting longer between restarts (10s → 20s → 40s … 5 min)". Always read the logs of the **previous** container.
 
 ### 2. ImagePullBackOff
+![kubectl apply -f 02-imagepullbackoff/broken.yaml](screenshots/kubernetes-troubleshooting-010.png)
+
+<details><summary>Text output</summary>
+
 ```text
 ########## 1. BREAK ##########
 $ kubectl apply -f 02-imagepullbackoff/broken.yaml
@@ -420,9 +445,16 @@ $ kubectl get pod web-tag -o jsonpath='{.status.containerStatuses[0].image}'; ec
 docker.io/library/nginx:1.27
 ```
 
+</details>
+
 **Process:** the `waiting` state reason was `ImagePullBackOff`. Events showed `not found` for `nginx:1.277`, so the registry was reachable but the tag doesn't exist. Other causes to check: private repo without `imagePullSecrets`, Docker Hub rate limits, wrong architecture.
 
 ### 3. ErrImagePull
+![kubectl apply -f 03-errimagepull/broken.yaml](screenshots/kubernetes-troubleshooting-011.png)
+![kubectl delete pod web-registry --now && kubectl apply -f 03-errimagepull/fixe](screenshots/kubernetes-troubleshooting-012.png)
+
+<details><summary>Text output</summary>
+
 ```text
 ########## 1. BREAK ##########
 $ kubectl apply -f 03-errimagepull/broken.yaml
@@ -475,9 +507,16 @@ NAME           READY   STATUS    RESTARTS   AGE
 web-registry   1/1     Running   0          1s
 ```
 
+</details>
+
 **Process:** `ErrImagePull` is the **first** failed attempt. After retries kubelet switches to `ImagePullBackOff` (both are visible in the events). Here the event says `failed to resolve reference`, and a throw-away busybox Pod confirmed with `nslookup` that `registry.example.invalid` is NXDOMAIN, so it's a registry/DNS problem rather than a tag problem.
 
 ### 4. Pending
+![kubectl apply -f 04-pending/broken.yaml](screenshots/kubernetes-troubleshooting-013.png)
+![kubectl logs gpu-job](screenshots/kubernetes-troubleshooting-014.png)
+
+<details><summary>Text output</summary>
+
 ```text
 ########## 1. BREAK ##########
 $ kubectl apply -f 04-pending/broken.yaml
@@ -525,9 +564,15 @@ $ kubectl logs gpu-job
 running on gpu-job
 ```
 
+</details>
+
 **Process:** a Pending Pod with **no node and no IP** means the scheduler couldn't place it. The `FailedScheduling` event names the reason. `get nodes --show-labels` proved no node carries `hardware=gpu`. Other Pending causes I've seen: insufficient CPU/memory (Session 10's 64Gi Pod), taints without tolerations, an unbound PVC.
 
 ### 5. ContainerCreating
+![kubectl apply -f 05-containercreating/pod.yaml](screenshots/kubernetes-troubleshooting-015.png)
+
+<details><summary>Text output</summary>
+
 ```text
 ########## 1. BREAK ##########
 $ kubectl apply -f 05-containercreating/pod.yaml
@@ -566,9 +611,16 @@ schedule=daily
 format=pdf
 ```
 
+</details>
+
 **Process:** the Pod was scheduled (it has a node), but the container never started. `FailedMount: configmap "report-config" not found` explained it. I didn't need to delete the Pod: as soon as the ConfigMap existed, kubelet's retry mounted it and the Pod became Ready. Other causes: missing Secret, PVC not bound or attached, CNI failure (`FailedCreatePodSandBox`), a slow image pull.
 
 ### 6. Service connectivity
+![kubectl apply -f 06-service-connectivity/app.yaml -f 06-service-connectivity/s](screenshots/kubernetes-troubleshooting-016.png)
+![kubectl apply -f 06-service-connectivity/service-fixed.yaml](screenshots/kubernetes-troubleshooting-017.png)
+
+<details><summary>Text output</summary>
+
 ```text
 ########## 1. BREAK ##########
 $ kubectl apply -f 06-service-connectivity/app.yaml -f 06-service-connectivity/service-broken.yaml
@@ -627,9 +679,16 @@ orders OK
 orders OK
 ```
 
+</details>
+
 **Process:** endpoints were **not empty**, so the selector was fine (compare with the mini project, where it wasn't). Curling the Pod IP on the Service's targetPort (8080) failed, while 5678 worked, so the Service pointed at a port where nothing listens. The checklist: selector ↔ labels, `port` ↔ `targetPort` ↔ `containerPort`, readiness.
 
 ### 7. DNS
+![kubectl apply -f 07-dns/setup.yaml -f 07-dns/client-broken.yaml](screenshots/kubernetes-troubleshooting-018.png)
+![kubectl delete pod frontend --now && kubectl apply -f 07-dns/client-fixed.yaml](screenshots/kubernetes-troubleshooting-019.png)
+
+<details><summary>Text output</summary>
+
 ```text
 ########## 1. BREAK ##########
 $ kubectl apply -f 07-dns/setup.yaml -f 07-dns/client-broken.yaml
@@ -687,9 +746,16 @@ stock service
 stock service
 ```
 
+</details>
+
 **Process:** first I made sure DNS itself was healthy (the CoreDNS Pod was Running, and the FQDN `stock.inventory.svc.cluster.local` resolved). The short name failed because the search path only appends the **client's** namespace (`default.svc.cluster.local`), and the Service lives in `inventory`. Fix: use `<svc>.<namespace>` or the full FQDN. For cluster-wide DNS failures (CoreDNS down, no endpoints), see my CoreDNS outage demo in Session 11.
 
 ### 8. Pod networking
+![kubectl apply -f 08-pod-networking/broken.yaml](screenshots/kubernetes-troubleshooting-020.png)
+![kubectl logs deploy/profile](screenshots/kubernetes-troubleshooting-021.png)
+
+<details><summary>Text output</summary>
+
 ```text
 ########## 1. BREAK ##########
 $ kubectl apply -f 08-pod-networking/broken.yaml
@@ -760,9 +826,16 @@ $ kubectl exec curl -- curl -s http://profile
 profile service
 ```
 
+</details>
+
 **Process:** I separated the layers. **L3** works (ping to the Pod IP succeeds, and the CNI is fine). The Service has endpoints. But **L4** to `podIP:8080` is refused. `kubectl debug` added an ephemeral busybox container sharing the Pod's network namespace: from *inside*, `wget 127.0.0.1:8080` works, and `netstat` shows the socket bound to `127.0.0.1`. The app was only listening on loopback. (The first `kubectl debug deploy/...` attempt failed, because debug needs a Pod, so I re-ran it with the Pod name.)
 
 ### 9. Configuration issues
+![kubectl apply -f 09-configuration/configmap-broken.yaml -f 09-configuration/de](screenshots/kubernetes-troubleshooting-022.png)
+![kubectl exec curl -- curl -s http://10.244.0.49](screenshots/kubernetes-troubleshooting-023.png)
+
+<details><summary>Text output</summary>
+
 ```text
 ########## 1. BREAK ##########
 $ kubectl apply -f 09-configuration/configmap-broken.yaml -f 09-configuration/deployment.yaml
@@ -813,6 +886,8 @@ $ kubectl exec curl -- curl -s http://10.244.0.49
 gateway up
 ```
 
+</details>
+
 **Process:** the CrashLoop logs pointed at the exact file and line (`default.conf:5`). The ConfigMap content showed the `return` directive missing its `;`. After fixing the ConfigMap, the Pod needed a `rollout restart` because nginx only reads config at start. A safer pattern is to validate config in CI (`nginx -t`) or with an init container.
 
 ---
@@ -820,6 +895,15 @@ gateway up
 ## Task 3 – Mini project
 
 The instructor's scenario ([03-mini-project](03-mini-project)): an nginx Deployment + Service, a broken Pod, and a Service selector challenge.
+
+![kubectl apply -f deployment.yaml](screenshots/kubernetes-troubleshooting-024.png)
+![kubectl describe pod troubleshooting-app-59d4957864-b7pdk | sed -n '1,20p;/^Ev](screenshots/kubernetes-troubleshooting-025.png)
+![kubectl describe service troubleshooting-service](screenshots/kubernetes-troubleshooting-026.png)
+![kubectl describe pod project-broken-pod](screenshots/kubernetes-troubleshooting-027.png)
+![kubectl delete pod project-broken-pod --now](screenshots/kubernetes-troubleshooting-028.png)
+![kubectl describe service troubleshooting-service | grep -E 'Selector|TargetPor](screenshots/kubernetes-troubleshooting-029.png)
+
+<details><summary>Text output</summary>
 
 ```text
 ################ 1. Deploy the application ################
@@ -1044,6 +1128,8 @@ Address: 10.106.220.99
 
 command terminated with exit code 1
 ```
+
+</details>
 
 ### Answers for the broken Pod
 1. **What is the Pod status?** `ErrImagePull`, which then alternates with `ImagePullBackOff`. READY `0/1`.

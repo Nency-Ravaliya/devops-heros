@@ -1,5 +1,7 @@
 # Session 16: CI/CD & GitHub Actions
 
+> 📸 **Screenshots:** the terminal images on this page are rendered from the exact command output captured during my runs (full text is under each *Text output* section). The GitHub Actions images are real browser screenshots of the run pages.
+
 **Name:** Tejas Varshney
 
 A complete CI/CD demo project: a small **Calculator REST API** (Python/Flask) that is tested, packaged, containerised, pushed to a registry and deployed to Kubernetes, all by **GitHub Actions** on every push. Based on the course's `10-final-cicd-pipeline` (test → security check → build → artifact), extended with the CD half.
@@ -70,6 +72,10 @@ docker build -t calculator . && docker run -p 8000:8000 calculator
 bash build.sh                              # creates calculator-build.tar.gz
 ```
 
+![pytest -v   (locally, after the fix)](screenshots/cicd-github-actions-001.png)
+
+<details><summary>Text output</summary>
+
 ```text
 $ pytest -v   (locally, after the fix)
 plugins: anyio-4.12.1, platformdirs-4.12.0, cov-6.0.0
@@ -90,11 +96,16 @@ tests/test_calculator.py::test_divide_by_zero PASSED                     [100%]
 ============================= 11 passed in 0.35s ==============================
 ```
 
+</details>
+
 ---
 
 ## 5. Pipeline execution (real runs on GitHub)
 
 ### Run 1: first push, every job green
+
+![GitHub Actions - run 1 success](screenshots/actions-run1-success.png)
+
 [Run #1](https://github.com/TejasVarshney/devops-heros/actions/runs/37675972002): CI → CD all the way to the deployment on Kubernetes, with both artifacts uploaded.
 
 ```text
@@ -154,7 +165,14 @@ Artifacts:
 ```
 
 ### Run 2: failure scenario (from the course README)
+
+![GitHub Actions - run 2: test failed, later jobs skipped](screenshots/actions-run2-test-failed.png)
+
 I broke `add()` on purpose (`return a + b + 1`) and pushed it.
+
+![pytest -q   (locally, with the bug)](screenshots/cicd-github-actions-002.png)
+
+<details><summary>Text output</summary>
 
 ```text
 $ pytest -q   (locally, with the bug)
@@ -174,6 +192,8 @@ FAILED tests/test_api.py::test_add_endpoint - assert 6.0 == 5
 FAILED tests/test_calculator.py::test_add - assert 6 == 5
 2 failed, 9 passed in 0.72s
 ```
+
+</details>
 
 [Run #2](https://github.com/TejasVarshney/devops-heros/actions/runs/37677624867): **Test failed → Build, Docker and Deploy were skipped** (`needs:` doing its job). The `test-report` artifact was still uploaded thanks to `if: always()`, so the failure can be inspected.
 
@@ -209,6 +229,9 @@ Artifacts:
 ```
 
 ### Run 3: fix pushed, back to green
+
+![GitHub Actions - run 3 green again](screenshots/actions-run3-fixed.png)
+
 [Run #3](https://github.com/TejasVarshney/devops-heros/actions/runs/37677819623):
 
 ```text
@@ -268,6 +291,9 @@ Artifacts:
 ```
 
 ### Earlier practice: my `devops-new` repo
+
+![devops-new - Hello GitHub Actions run](screenshots/devops-new-run.png)
+
 Before this project I practised the basics (jobs, steps, runner OS info, secrets) in [TejasVarshney/devops-new](https://github.com/TejasVarshney/devops-new). Its workflow has two jobs, `hello` and `secrets-demo` (the latter fails if `DEMO_SECRET` isn't configured), and all three runs succeeded:
 
 ```text

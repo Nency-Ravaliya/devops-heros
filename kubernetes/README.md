@@ -1,5 +1,7 @@
 # Session 9: Kubernetes Fundamentals
 
+> 📸 **Screenshots:** the terminal images on this page are rendered from the exact command output captured during my runs (full text is under each *Text output* section).
+
 **Name:** Tejas Varshney  
 **Environment:** Windows 11, Docker Desktop 28.5.1, minikube v1.39.0 (docker driver), Kubernetes v1.37.0, kubectl v1.34.1
 
@@ -20,6 +22,11 @@ minikube addons enable ingress
 `minikube start` creates a single Docker container that acts as one Kubernetes node (control plane + worker), downloads the Kubernetes binaries, and writes the `minikube` context into `~/.kube/config`.
 
 ## Task 2 – Verify cluster status
+
+![minikube version](screenshots/kubernetes-001.png)
+![kubectl get namespaces](screenshots/kubernetes-002.png)
+
+<details><summary>Text output</summary>
 
 ```text
 $ minikube version
@@ -100,6 +107,8 @@ customresourcedefinitions           crd,crds     apiextensions.k8s.io/v1        
 
 ```
 
+</details>
+
 What I noticed:
 - The single node `minikube` is `Ready` and runs **containerd** as its container runtime.
 - Every control-plane component (`etcd`, `kube-apiserver`, `kube-scheduler`, `kube-controller-manager`) runs as a **static Pod** in `kube-system`, using the node's IP (`192.168.49.2`).
@@ -175,6 +184,14 @@ Kubernetes is **declarative and self-healing**: you describe the desired state, 
 ## Task 5 – Kubernetes Basics tutorial (hands-on)
 
 I went through every module of the official [Kubernetes Basics](https://kubernetes.io/docs/tutorials/kubernetes-basics/) tutorial on my minikube cluster:
+
+![kubectl create deployment kubernetes-bootcamp --image=gcr.io/google-samples/ku](screenshots/kubernetes-003.png)
+![kubectl exec kubernetes-bootcamp-5cc66bcc9b-zhx94 -- env | grep -E 'HOSTNAME|K](screenshots/kubernetes-004.png)
+![kubectl label pods kubernetes-bootcamp-5cc66bcc9b-zhx94 version=v1](screenshots/kubernetes-005.png)
+![kubectl rollout status deployments/kubernetes-bootcamp --timeout=300s](screenshots/kubernetes-006.png)
+![kubectl rollout status deployments/kubernetes-bootcamp --timeout=300s](screenshots/kubernetes-007.png)
+
+<details><summary>Text output</summary>
 
 ```text
 ### Module 2 - Deploy an app
@@ -375,6 +392,8 @@ $ kubectl delete deployment kubernetes-bootcamp
 deployment.apps "kubernetes-bootcamp" deleted from default namespace
 
 ```
+
+</details>
 
 ### Observations
 - **Deploy:** `kubectl create deployment` created a Deployment → ReplicaSet (`5cc66bcc9b`) → Pod chain. The Pod name ends with the ReplicaSet hash plus a random suffix.

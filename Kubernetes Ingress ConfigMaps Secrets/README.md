@@ -1,5 +1,7 @@
 # Session 12: Kubernetes Ingress, ConfigMaps & Secrets
 
+> 📸 **Screenshots:** the terminal images on this page are rendered from the exact command output captured during my runs (full text is under each *Text output* section).
+
 **Name:** Tejas Varshney  
 **Cluster:** minikube v1.39.0 (Kubernetes v1.37.0) on Windows 11, with the `ingress` add-on (ingress-nginx)
 
@@ -20,6 +22,12 @@ The ConfigMap holds three plain keys plus a whole `app.properties` file. The Pod
 1. `configMapKeyRef`: one key → env var `COLOR`
 2. `envFrom`: every key → env vars with the same names
 3. a `configMap` volume: `app.properties` → file `/etc/app/app.properties`
+
+![kubectl apply -f 01-configmap/configmap.yaml](screenshots/kubernetes-ingress-configmaps-secrets-001.png)
+![kubectl logs configmap-demo](screenshots/kubernetes-ingress-configmaps-secrets-002.png)
+![kubectl create configmap cli-config --from-literal=MODE=fast --from-literal=RE](screenshots/kubernetes-ingress-configmaps-secrets-003.png)
+
+<details><summary>Text output</summary>
 
 ```text
 $ kubectl apply -f 01-configmap/configmap.yaml
@@ -115,6 +123,8 @@ metadata:
   name: cli-config
 ```
 
+</details>
+
 **What I learned**
 - All three injection methods worked: `APP_ENV=staging`, `COLOR=blue`, and the file contents under `/etc/app`.
 - The mounted file is a **symlink into `..data/`**. When I patched the ConfigMap, kubelet atomically swapped the directory and the file showed `newCheckout=false` **without restarting the Pod** (after the kubelet sync period, under a minute).
@@ -122,6 +132,11 @@ metadata:
 - ConfigMaps are for **non-sensitive** config only. Values are stored in plain text.
 
 ## Task 2 – Secret
+
+![kubectl create secret generic db-credentials --from-literal=DB_USER=app_user -](screenshots/kubernetes-ingress-configmaps-secrets-004.png)
+![kubectl exec secret-demo -- cat /etc/creds/DB_USER; echo](screenshots/kubernetes-ingress-configmaps-secrets-005.png)
+
+<details><summary>Text output</summary>
 
 ```text
 # --- create the Secret imperatively (values never written to a file in Git) ---
@@ -180,6 +195,8 @@ Warning: resource secrets/db-credentials is missing the kubectl.kubernetes.io/la
 {"DB_PASSWORD":"Y2hhbmdlLW1l","DB_USER":"YXBwX3VzZXI="}
 ```
 
+</details>
+
 **What I learned**
 - `kubectl describe secret` hides the values (shows only byte counts), but `-o jsonpath='{.data}'` shows **base64**, and `base64 -d` gives back the plain password. **Base64 is encoding, not encryption.**
 - The Pod received `DB_USER` / `DB_PASSWORD` as env vars and as files in `/etc/creds`. Secret volumes are mounted on **tmpfs** (RAM, never written to the node's disk), read-only, with mode `0400`.
@@ -198,6 +215,12 @@ Warning: resource secrets/db-credentials is missing the kubectl.kubernetes.io/la
 Two apps (`shop`, `blog`, 2 replicas each) behind ClusterIP Services, plus two Ingresses:
 - `demo-ingress`: **path-based** on `demo.local` (`/shop`, `/blog`), with `rewrite-target` so the backend receives `/`
 - `host-ingress`: **host-based** (`shop.demo.local`, `blog.demo.local`)
+
+![kubectl get ingressclass](screenshots/kubernetes-ingress-configmaps-secrets-006.png)
+![kubectl get ingress](screenshots/kubernetes-ingress-configmaps-secrets-007.png)
+![kubectl exec curl -- curl -s -H 'Host: shop.demo.local' http://ingress-nginx-c](screenshots/kubernetes-ingress-configmaps-secrets-008.png)
+
+<details><summary>Text output</summary>
 
 ```text
 # --- the Ingress Controller (ingress-nginx, installed by `minikube addons enable ingress`) ---
@@ -321,6 +344,8 @@ $ curl -s --resolve blog.demo.local:80:127.0.0.1 http://blog.demo.local/
 BLOG service
 ```
 
+</details>
+
 **What I observed / verified**
 - Both Ingresses got ADDRESS `192.168.49.2` (the node) once the controller picked them up. `describe ingress` lists the resolved Pod endpoints for each backend.
 - Path routing: `/shop` → `SHOP service`, `/blog` and `/blog/some/page` → `BLOG service`. Host routing: `shop.demo.local` / `blog.demo.local` went to the right app.
@@ -338,6 +363,11 @@ For each issue: **identify → run troubleshooting commands → find the root ca
 
 ### 5.1 PostgreSQL rejects the app: the "trailing newline" Secret bug
 Scenario from the course's `troubleshooting/secret-base64-gotcha.md`, reproduced with a real PostgreSQL 16. Files: [05-troubleshooting/01-secret-newline](05-troubleshooting/01-secret-newline)
+
+![kubectl apply -f 01-secret-newline/postgres.yaml](screenshots/kubernetes-ingress-configmaps-secrets-009.png)
+![kubectl apply -f 01-secret-newline/app-secret-fixed.yaml](screenshots/kubernetes-ingress-configmaps-secrets-010.png)
+
+<details><summary>Text output</summary>
 
 ```text
 ########## BEFORE ##########
@@ -410,6 +440,8 @@ $ kubectl get secret app-db -o jsonpath='{.data.DB_PASSWORD}' | base64 -d | od -
 0000012
 ```
 
+</details>
+
 - **Problem:** `FATAL: password authentication failed for user "yatri_admin"`, even though "the password is correct".
 - **Investigation:** the Postgres logs confirm the auth failure. Decoding both Secrets with `od -c` shows the app's value is `m y p a s s w o r d \n` (**11 bytes**) while the server's is 10 bytes.
 - **Root cause:** the base64 value was generated with `echo "mypassword" | base64`, and `echo` appends `\n` (`...ZAo=`).
@@ -418,6 +450,10 @@ $ kubectl get secret app-db -o jsonpath='{.data.DB_PASSWORD}' | base64 -d | od -
 
 ### 5.2 Pod stuck in `CreateContainerConfigError`: wrong ConfigMap key
 Files: [05-troubleshooting/02-missing-configmap-key](05-troubleshooting/02-missing-configmap-key)
+
+![kubectl apply -f 02-missing-configmap-key/configmap.yaml -f 02-missing-configm](screenshots/kubernetes-ingress-configmaps-secrets-011.png)
+
+<details><summary>Text output</summary>
 
 ```text
 ########## BEFORE ##########
@@ -465,6 +501,8 @@ Found 2 pods, using pod/web-settings-759644ff5-6xrc2
 API_URL=http://api.internal:8080 THEME=dark
 ```
 
+</details>
+
 - **Problem:** the Pod never starts; status `CreateContainerConfigError`.
 - **Investigation:** the event says `couldn't find key API_URL in ConfigMap default/web-settings`, and the ConfigMap data shows the key is `api_url`.
 - **Root cause:** ConfigMap keys are **case-sensitive**.
@@ -473,6 +511,11 @@ API_URL=http://api.internal:8080 THEME=dark
 
 ### 5.3 Ingress returns 503: two backend misconfigurations
 Files: [05-troubleshooting/03-ingress-backend](05-troubleshooting/03-ingress-backend)
+
+![kubectl apply -f 03-ingress-backend/app.yaml -f 03-ingress-backend/ingress-bro](screenshots/kubernetes-ingress-configmaps-secrets-012.png)
+![kubectl -n ingress-nginx logs deploy/ingress-nginx-controller --tail=40 | grep](screenshots/kubernetes-ingress-configmaps-secrets-013.png)
+
+<details><summary>Text output</summary>
 
 ```text
 ########## BEFORE ##########
@@ -544,6 +587,8 @@ $ kubectl exec curl -- curl -s -w 'HTTP %{http_code}\n' -H 'Host: catalog.local'
 CATALOG service
 HTTP 200
 ```
+
+</details>
 
 - **Problem:** `curl -H 'Host: catalog.local'` → **HTTP 503**, even though both Pods are Running.
 - **Investigation:**

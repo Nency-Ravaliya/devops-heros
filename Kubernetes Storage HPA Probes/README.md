@@ -1,5 +1,7 @@
 # Session 13: Kubernetes Storage, HPA & Probes
 
+> 📸 **Screenshots:** the terminal images on this page are rendered from the exact command output captured during my runs (full text is under each *Text output* section).
+
 **Name:** Tejas Varshney  
 **Cluster:** minikube v1.39.0 (Kubernetes v1.37.0) with the `metrics-server` add-on, on Windows 11
 
@@ -33,6 +35,17 @@ kubectl get hpa ; kubectl describe hpa yatri-backend-hpa         # 3. verify
 kubectl apply -f 02-hpa/load-generator.yaml                      # 4-5. load
 kubectl top pods ; kubectl get hpa -w                            # 6-7. observe
 ```
+
+![kubectl apply -f deployment.yaml -f service.yaml](screenshots/kubernetes-storage-hpa-probes-001.png)
+![kubectl get hpa](screenshots/kubernetes-storage-hpa-probes-002.png)
+![kubectl top pods -l app=yatri-backend](screenshots/kubernetes-storage-hpa-probes-003.png)
+![kubectl get hpa](screenshots/kubernetes-storage-hpa-probes-004.png)
+![kubectl get pods -l app=yatri-backend -o wide](screenshots/kubernetes-storage-hpa-probes-005.png)
+![kubectl get hpa](screenshots/kubernetes-storage-hpa-probes-006.png)
+![kubectl describe hpa yatri-backend-hpa | sed -n '/Events:/,$p'](screenshots/kubernetes-storage-hpa-probes-007.png)
+![kubectl describe hpa yatri-backend-hpa | sed -n '/Events:/,$p'](screenshots/kubernetes-storage-hpa-probes-008.png)
+
+<details><summary>Text output</summary>
 
 ```text
 ################ 1. deploy the application ################
@@ -318,6 +331,8 @@ Events:
   Normal   SuccessfulRescale             27s                horizontal-pod-autoscaler  New size: 2; reason: All metrics below target
 ```
 
+</details>
+
 ### What I observed
 
 | Time | CPU (avg of requests) | Replicas | What happened |
@@ -337,6 +352,15 @@ Events:
 ## Task 3 – Mini project: production-ready web app
 
 The course mini project ([03-mini-project](03-mini-project)): namespace `production-webapp`, a 500Mi RWO **PVC** mounted at `/data`, an nginx Deployment with **startup, readiness and liveness probes** and CPU requests/limits, a ClusterIP Service, and an **HPA** (2–5 replicas at 50% CPU).
+
+![kubectl apply -f namespace.yaml](screenshots/kubernetes-storage-hpa-probes-009.png)
+![kubectl describe pod web-app-d45775485-cx8xl -n production-webapp | grep -E 'S](screenshots/kubernetes-storage-hpa-probes-010.png)
+![kubectl run load-generator -n production-webapp --image=busybox:1.36 --restart](screenshots/kubernetes-storage-hpa-probes-011.png)
+![kubectl top pods -n production-webapp](screenshots/kubernetes-storage-hpa-probes-012.png)
+![kubectl get hpa -n production-webapp -w   (full watch log)](screenshots/kubernetes-storage-hpa-probes-013.png)
+![kubectl apply -f deployment.yaml && kubectl rollout status deploy/web-app -n p](screenshots/kubernetes-storage-hpa-probes-014.png)
+
+<details><summary>Text output</summary>
 
 ```text
 ################ Step 5.1 - 5.4: deploy ################
@@ -553,7 +577,16 @@ NAME                                               ADDRESSTYPE   PORTS   ENDPOIN
 endpointslice.discovery.k8s.io/web-service-p5nlh   IPv4          80      10.244.0.76,10.244.0.77   12m
 ```
 
+</details>
+
 Re-run of Task 2 (my first port-forward capture came out empty), **Bonus 1** (HPA threshold 30%) and **Bonus 2** with the right command (`kubectl get endpoints` shows only *Ready* addresses; `get endpointslices` also lists not-ready ones):
+
+![kubectl get svc,endpoints -n production-webapp](screenshots/kubernetes-storage-hpa-probes-015.png)
+![kubectl get hpa -n production-webapp](screenshots/kubernetes-storage-hpa-probes-016.png)
+![kubectl delete pod load-generator -n production-webapp --now](screenshots/kubernetes-storage-hpa-probes-017.png)
+![kubectl get endpoints web-service -n production-webapp](screenshots/kubernetes-storage-hpa-probes-018.png)
+
+<details><summary>Text output</summary>
 
 ```text
 ################ Task 2 (re-run): service verification ################
@@ -687,6 +720,8 @@ Warning: v1 Endpoints is deprecated in v1.33+; use discovery.k8s.io/v1 EndpointS
 NAME          ENDPOINTS                       AGE
 web-service   10.244.0.90:80,10.244.0.91:80   5m16s
 ```
+
+</details>
 
 ### Results
 

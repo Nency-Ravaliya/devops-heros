@@ -1,5 +1,7 @@
 # Session 18: Terraform & Infrastructure as Code
 
+> 📸 **Screenshots:** the terminal images on this page are rendered from the exact command output captured during my runs (full text is under each *Text output* section). The GitHub Actions images are real browser screenshots of the run pages.
+
 **Name:** Tejas Varshney
 
 | Task | Where |
@@ -41,6 +43,9 @@ Since AWS provider v4, versioning, encryption and public-access settings are **s
 
 ### Where it ran (honest note)
 
+![GitHub Actions - Terraform workflow (sessions 18 + 19)](screenshots/actions-terraform-run.png)
+
+
 I don't have AWS credentials set up for this repo, so the workflow runs in **GitHub Actions** with the AWS provider pointed at **[Moto](https://github.com/getmoto/moto)**, an open-source emulator of the AWS APIs, running as a service container. The pipeline writes a small `ci_moto_override.tf` with the endpoint and fake credentials *only inside CI* (Terraform merges `*_override.tf` files into the provider block). **The Terraform code in this folder is unchanged and targets real AWS** when run with real credentials:
 
 ```bash
@@ -63,6 +68,10 @@ Wed Oct  7 19:52:37 UTC 2026
 
 ### `terraform init`
 Downloads the providers listed in `required_providers` into `.terraform/`, writes `.terraform.lock.hcl`, and sets up the backend (local state here).
+![terraform init -input=false](screenshots/terraform-001.png)
+
+<details><summary>Text output</summary>
+
 ```text
 $ terraform init -input=false
 Initializing the backend...
@@ -78,6 +87,8 @@ Terraform has been successfully initialized!
 [exit code: 0]
 ```
 
+</details>
+
 ### `terraform fmt`
 Rewrites files into canonical style. `-check -diff` makes it a CI gate: an empty diff and exit 0 mean it's already formatted.
 ```text
@@ -87,6 +98,10 @@ $ terraform fmt -check -diff -recursive
 
 ### `terraform validate`
 Checks syntax, types and references without contacting AWS.
+![terraform validate](screenshots/terraform-002.png)
+
+<details><summary>Text output</summary>
+
 ```text
 $ terraform validate
 Success! The configuration is valid.
@@ -94,8 +109,16 @@ Success! The configuration is valid.
 [exit code: 0]
 ```
 
+</details>
+
 ### `terraform plan`
 Compares the desired configuration with the state and the real infrastructure, and shows what would change. `-out=tfplan` saves the exact plan so `apply` does precisely what was reviewed.
+![terraform plan -input=false -out=tfplan](screenshots/terraform-003.png)
+![output](screenshots/terraform-004.png)
+![output](screenshots/terraform-005.png)
+
+<details><summary>Text output</summary>
+
 ```text
 $ terraform plan -input=false -out=tfplan
 
@@ -198,7 +221,13 @@ Changes to Outputs:
 [exit code: 0]
 ```
 
+</details>
+
 ### `terraform apply`
+![terraform apply -input=false -auto-approve tfplan](screenshots/terraform-006.png)
+
+<details><summary>Text output</summary>
+
 ```text
 $ terraform apply -input=false -auto-approve tfplan
 random_id.suffix: Creating...
@@ -222,8 +251,16 @@ bucket_region = "ap-south-1"
 [exit code: 0]
 ```
 
+</details>
+
 ### `terraform show`
 Human-readable dump of the **state**, i.e. every attribute Terraform now knows about.
+![terraform show](screenshots/terraform-007.png)
+![output](screenshots/terraform-008.png)
+![output](screenshots/terraform-009.png)
+
+<details><summary>Text output</summary>
+
 ```text
 $ terraform show
 # aws_s3_bucket.demo:
@@ -322,7 +359,13 @@ bucket_region = "ap-south-1"
 [exit code: 0]
 ```
 
+</details>
+
 ### `terraform output`
+![terraform output](screenshots/terraform-010.png)
+
+<details><summary>Text output</summary>
+
 ```text
 $ terraform output
 bucket_arn = "arn:aws:s3:::tejas-devops-heros-d7bdd73e"
@@ -331,7 +374,13 @@ bucket_region = "ap-south-1"
 [exit code: 0]
 ```
 
+</details>
+
 ### State: `terraform state list` and re-plan
+![terraform state list](screenshots/terraform-011.png)
+
+<details><summary>Text output</summary>
+
 ```text
 $ terraform state list
 aws_s3_bucket.demo
@@ -342,7 +391,13 @@ random_id.suffix
 [exit code: 0]
 ```
 
+</details>
+
 Running `plan` again right after `apply` proves the infrastructure matches the code (`-detailed-exitcode` returns **0** = no changes):
+![terraform plan -input=false -detailed-exitcode](screenshots/terraform-012.png)
+
+<details><summary>Text output</summary>
+
 ```text
 $ terraform plan -input=false -detailed-exitcode
 random_id.suffix: Refreshing state... [id=173XPg]
@@ -358,7 +413,15 @@ and found no differences, so no changes are needed.
 [exit code: 0]
 ```
 
+</details>
+
 ### `terraform destroy`
+![terraform destroy -input=false -auto-approve](screenshots/terraform-013.png)
+![output](screenshots/terraform-014.png)
+![output](screenshots/terraform-015.png)
+
+<details><summary>Text output</summary>
+
 ```text
 $ terraform destroy -input=false -auto-approve
 random_id.suffix: Refreshing state... [id=173XPg]
@@ -490,6 +553,8 @@ random_id.suffix: Destruction complete after 0s
 Destroy complete! Resources: 5 destroyed.
 [exit code: 0]
 ```
+
+</details>
 ```text
 $ terraform state list
 [exit code: 0]

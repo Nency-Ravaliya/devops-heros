@@ -1,5 +1,7 @@
 # Session 20: Monitoring, Observability & GitOps
 
+> 📸 **Screenshots:** the terminal images on this page are rendered from the exact command output captured during my runs (full text is under each *Text output* section). The GitHub Actions images are real browser screenshots of the run pages.
+
 **Name:** Tejas Varshney
 
 Everything below ran on a real Kubernetes cluster (**kind**, created inside a GitHub Actions runner) by [.github/workflows/session20-observability-gitops.yml](../.github/workflows/session20-observability-gitops.yml). The scripts are [scripts/run-demo.sh](scripts/run-demo.sh) and [scripts/gitops-git-change.sh](scripts/gitops-git-change.sh). All command output and the screenshots were committed back to [outputs/](outputs). (My laptop didn't have enough free disk space for Prometheus + Grafana + Argo CD in minikube, so the pipeline's runner did the work.)
@@ -13,6 +15,10 @@ Kustomize Version: v5.0.4-0.20230601165947-6ce0bf390ce3
 v3.22.0+g144ca65
 Wed Oct  7 20:35:14 UTC 2026
 ```
+
+
+![GitHub Actions - Session 20 demo run](screenshots/actions-session20-run.png)
+
 
 | Deliverable | Where |
 |---|---|
@@ -30,6 +36,13 @@ Wed Oct  7 20:35:14 UTC 2026
 **App:** [`demo-app.yaml`](monitoring/demo-app.yaml) runs `prometheus-example-app`, which exposes `http_requests_total{code,method}` on `/metrics`. A **ServiceMonitor** tells Prometheus to scrape it every 15s. A traffic Pod sends requests to `/` (200) and `/err` (404).
 
 **Alerts:** [`alerts.yaml`](monitoring/alerts.yaml) defines three `PrometheusRule` alerts: `DemoAppReplicasLow` (available replicas < 2 for 30s), `DemoAppHighRequestRate` (> 5 req/s), `DemoAppHighMemory` (> 50Mi per Pod).
+
+![helm repo add prometheus-community https://prometheus-community.github.io/helm](screenshots/monitoring-observability-gitops-001.png)
+![kubectl get svc -n monitoring](screenshots/monitoring-observability-gitops-002.png)
+![curl -s localhost:8081/ ; curl -s localhost:8081/err >/dev/null; curl -s local](screenshots/monitoring-observability-gitops-003.png)
+![promq '100 * (1 - avg(rate(node_cpu_seconds_total{mode="idle"}(2m))))'](screenshots/monitoring-observability-gitops-004.png)
+
+<details><summary>Text output</summary>
 
 ```text
 ################ install kube-prometheus-stack (Prometheus, Alertmanager, Grafana, node-exporter, kube-state-metrics) ################
@@ -192,6 +205,8 @@ Waiting for deployment "demo-app" rollout to finish: 1 of 2 updated replicas are
 deployment "demo-app" successfully rolled out
 ```
 
+</details>
+
 ### What the demo shows
 
 | Requirement | Evidence above |
@@ -216,6 +231,10 @@ deployment "demo-app" successfully rolled out
 **Node Exporter / Nodes**: node CPU, load, memory, disk and network.
 
 ![Grafana node exporter](outputs/grafana-node-exporter.png)
+
+![curl -s localhost:3000/api/health](screenshots/monitoring-observability-gitops-005.png)
+
+<details><summary>Text output</summary>
 
 ```text
 $ curl -s localhost:3000/api/health
@@ -260,6 +279,8 @@ screenshot grafana-cluster.png <- dashboard 'Kubernetes / Compute Resources / Cl
 screenshot grafana-node-exporter.png <- dashboard 'Node Exporter / Nodes' (uid=7d57716318ee0dddbac5a7f451fb7753)
 ```
 
+</details>
+
 ---
 
 # Task 2 – Observability
@@ -282,6 +303,12 @@ screenshot grafana-node-exporter.png <- dashboard 'Node Exporter / Nodes' (uid=7
 - **Logs:** containers log to stdout/stderr, kubelet stores them on the node, and a DaemonSet agent (Fluent Bit / Promtail) ships them to Loki or Elasticsearch. `kubectl logs` and `kubectl get events` are the built-in views.
 - **Traces:** apps are instrumented with the **OpenTelemetry** SDK and export over OTLP to a collector or backend (Jaeger, Tempo). Context propagates in HTTP headers (`traceparent`).
 - **Correlation:** add `trace_id` to logs (as HotROD does) and use Prometheus exemplars, so you can jump metric → trace → log in Grafana.
+
+![kubectl -n session20 logs deploy/demo-app --tail=5](screenshots/monitoring-observability-gitops-006.png)
+![kubectl get pods,svc -n tracing](screenshots/monitoring-observability-gitops-007.png)
+![curl -s 'localhost:16686/api/traces?service=frontend&limit=1&lookback=1h' | jq](screenshots/monitoring-observability-gitops-008.png)
+
+<details><summary>Text output</summary>
 
 ```text
 ################ Logs pillar ################
@@ -383,6 +410,8 @@ route /route  34ms
 screenshot jaeger-trace.png
 ```
 
+</details>
+
 **What the traces show:** one `/dispatch` request produced a trace of **39 spans across 6 services** (frontend → customer → mysql, frontend → driver → redis ×13, frontend → route ×10). The timeline makes it obvious that the **MySQL query (~279ms) is the biggest part of the ~655ms request**, and that the route calls run in parallel. You can't see that from metrics or logs alone. The HotROD log lines carry the same `trace_id`, so logs and traces can be joined.
 
 ![Jaeger trace](outputs/jaeger-trace.png)
@@ -414,6 +443,12 @@ developer ── git commit/PR ──▶ Git repo (desired state) ◀── pull
 **Kubernetes + GitOps:** Argo CD runs as controllers inside the cluster. An `Application` CRD ([gitops/argocd-application.yaml](gitops/argocd-application.yaml)) points at a repo/branch/path and a destination namespace. Argo CD renders the manifests (plain YAML, Helm or Kustomize), diffs them against the live objects, and syncs. Session 21 uses the same mechanism to deploy a Helm chart, with CI updating the image tag in Git.
 
 ### 3a. Install Argo CD, create the Application, self-heal
+
+![kubectl create namespace argocd && kubectl apply -n argocd --server-side -f ht](screenshots/monitoring-observability-gitops-009.png)
+![cat gitops/argocd-application.yaml](screenshots/monitoring-observability-gitops-010.png)
+![kubectl -n session20-gitops scale deploy session20-gitops-app --replicas=5](screenshots/monitoring-observability-gitops-011.png)
+
+<details><summary>Text output</summary>
 
 ```text
 ################ install Argo CD ################
@@ -508,10 +543,18 @@ $ kubectl -n argocd get application session20-app -o jsonpath='{range .status.hi
 0 4b0eec8b47cb0b72c27f3080594c829fbeb42a33 2026-10-07T20:33:45Z
 ```
 
+</details>
+
 - The Application became **Synced / Healthy** at the commit SHA of the `gitops-demo` branch.
 - **Self-heal:** I scaled the Deployment to 5 by hand. Within seconds READY went `2/5` → back to `2/2`. I deleted the Service, and Argo CD recreated it (new ClusterIP, AGE 25s).
 
 ### 3b. Changing the system only through Git
+
+![kubectl -n session20-gitops get deploy session20-gitops-app](screenshots/monitoring-observability-gitops-012.png)
+![git -C '/tmp/tmp.PC9PfMDDwF' diff HEAD~1 -- 'Monitoring Observability GitOps/g](screenshots/monitoring-observability-gitops-013.png)
+![kubectl -n argocd get application session20-app -o jsonpath='{range .status.hi](screenshots/monitoring-observability-gitops-014.png)
+
+<details><summary>Text output</summary>
 
 ```text
 ################ Change 1: scale from 2 to 3 replicas - by committing to Git, not with kubectl ################
@@ -598,6 +641,8 @@ $ kubectl -n argocd get application session20-app -o jsonpath='{range .status.hi
 3  536f3920a1b5c45d731bc04c890512990d977708  2026-10-07T20:35:04Z
 4  e7b277a0c8210f73467fdf862a57e174d4ef95f2  2026-10-07T20:35:10Z
 ```
+
+</details>
 
 | Commit on `gitops-demo` | Result in the cluster (no kubectl used) |
 |---|---|

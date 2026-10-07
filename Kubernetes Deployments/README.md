@@ -1,5 +1,7 @@
 # Session 10: Kubernetes Pods, ReplicaSets & Deployments
 
+> 📸 **Screenshots:** the terminal images on this page are rendered from the exact command output captured during my runs (full text is under each *Text output* section).
+
 **Name:** Tejas Varshney  
 **Cluster:** minikube v1.39.0 (Kubernetes v1.37.0, docker driver) on Windows 11
 
@@ -32,6 +34,14 @@ kubectl rollout status deployment/web-rolling
 kubectl rollout history deployment/web-rolling
 kubectl rollout undo deployment/web-rolling --to-revision=1
 ```
+
+![kubectl apply -f 01-rolling-update/deployment-v1.yaml](screenshots/kubernetes-deployments-001.png)
+![kubectl rollout status deployment/web-rolling --timeout=180s](screenshots/kubernetes-deployments-002.png)
+![kubectl get pods -l app=web-rolling -w   (captured during the update)](screenshots/kubernetes-deployments-003.png)
+![kubectl get rs -l app=web-rolling](screenshots/kubernetes-deployments-004.png)
+![kubectl rollout undo deployment/web-rolling --to-revision=1](screenshots/kubernetes-deployments-005.png)
+
+<details><summary>Text output</summary>
 
 ```text
 $ kubectl apply -f 01-rolling-update/deployment-v1.yaml
@@ -200,6 +210,8 @@ deployment.apps "web-rolling" deleted from default namespace
 service "web-rolling" deleted from default namespace
 ```
 
+</details>
+
 **Observations**
 - The Deployment created ReplicaSet `7f9c498c9c` (v1). Applying v2 created a **second ReplicaSet** `88d45747f`. The controller then scaled the new one up and the old one down **one Pod at a time** (`maxSurge: 1` / `maxUnavailable: 1`), as the `ScalingReplicaSet` events show.
 - In the watch output, new Pods become `1/1 Running` (readiness probe passed) before the next old Pods are terminated, so there are always at least 3 Pods serving.
@@ -213,6 +225,11 @@ kubectl apply -f 02-blue-green/blue.yaml -f 02-blue-green/service.yaml   # live 
 kubectl apply -f 02-blue-green/green.yaml                                # green idle
 kubectl patch service web-bg -p '{"spec":{"selector":{"app":"web-bg","version":"green"}}}'
 ```
+
+![kubectl apply -f 02-blue-green/blue.yaml -f 02-blue-green/service.yaml](screenshots/kubernetes-deployments-006.png)
+![kubectl get endpoints web-bg](screenshots/kubernetes-deployments-007.png)
+
+<details><summary>Text output</summary>
 
 ```text
 $ kubectl apply -f 02-blue-green/blue.yaml -f 02-blue-green/service.yaml
@@ -292,6 +309,8 @@ service "web-bg" deleted from default namespace
 Error from server (NotFound): error when deleting "02-blue-green\\blue.yaml": deployments.apps "web-blue" not found
 ```
 
+</details>
+
 **Observations**
 - Blue and green run **at the same time** as two complete Deployments (3 + 3 Pods). The Service selector `version: blue|green` is the only thing that decides which set receives traffic.
 - After the patch, the Service endpoints changed to the green Pod IPs and **100% of requests** returned `GREEN (v2)` immediately. There was no mixed-version period.
@@ -304,6 +323,11 @@ Error from server (NotFound): error when deleting "02-blue-green\\blue.yaml": de
 kubectl apply -f 03-canary/stable.yaml -f 03-canary/service.yaml   # 9 stable replicas
 kubectl apply -f 03-canary/canary.yaml                             # 1 canary replica
 ```
+
+![kubectl apply -f 03-canary/stable.yaml -f 03-canary/service.yaml](screenshots/kubernetes-deployments-008.png)
+![kubectl scale deploy web-canary --replicas=10 && kubectl scale deploy web-stab](screenshots/kubernetes-deployments-009.png)
+
+<details><summary>Text output</summary>
 
 ```text
 $ kubectl apply -f 03-canary/stable.yaml -f 03-canary/service.yaml
@@ -363,6 +387,8 @@ service "web-canary" deleted from default namespace
 deployment.apps "web-stable" deleted from default namespace
 ```
 
+</details>
+
 **Observations**
 - The Service selects only `app: web-canary`, so it load-balances across **all 10 Pods** of both Deployments. With 9 stable + 1 canary, **7 of 100** requests reached the canary (about 10%, as expected from the replica ratio).
 - Scaling to 5/5 shifted traffic to about 50% (46 canary / 54 stable). Scaling stable to 0 promoted the canary to 100%.
@@ -374,6 +400,12 @@ deployment.apps "web-stable" deleted from default namespace
 kubectl apply -f 04-recreate/deployment-v1.yaml
 kubectl apply -f 04-recreate/deployment-v2.yaml
 ```
+
+![kubectl apply -f 04-recreate/deployment-v1.yaml](screenshots/kubernetes-deployments-010.png)
+![kubectl get pods -l app=web-recreate -w   (captured during the update)](screenshots/kubernetes-deployments-011.png)
+![kubectl get rs -l app=web-recreate](screenshots/kubernetes-deployments-012.png)
+
+<details><summary>Text output</summary>
 
 ```text
 $ kubectl apply -f 04-recreate/deployment-v1.yaml
@@ -452,6 +484,8 @@ $ kubectl delete -f 04-recreate/deployment-v2.yaml
 deployment.apps "web-recreate" deleted from default namespace
 ```
 
+</details>
+
 **Observations**
 - With `strategy.type: Recreate`, the events show the old ReplicaSet scaled **3 → 0 first**, then the new ReplicaSet scaled **0 → 3**.
 - In the watch output, **all three** old Pods are `Terminating` before any new Pod appears as `Pending`. During that gap the application had zero Pods, so it was **down**.
@@ -478,6 +512,18 @@ kubectl get pods -o wide
 kubectl describe pod <name>
 kubectl logs <name>
 ```
+
+![kubectl apply -f 05-pod-lifecycle/](screenshots/kubernetes-deployments-013.png)
+![kubectl describe pod lifecycle-running | sed -n '/^Events:/,$p' | tail -7](screenshots/kubernetes-deployments-014.png)
+![kubectl describe pod lifecycle-succeeded | grep -E '^Status:|State:|Reason:|Ex](screenshots/kubernetes-deployments-015.png)
+![kubectl logs lifecycle-failed --tail=5](screenshots/kubernetes-deployments-016.png)
+![kubectl describe pod lifecycle-image-error | grep -E '^Status:|State:|Reason:|](screenshots/kubernetes-deployments-017.png)
+![kubectl logs lifecycle-readiness --tail=5](screenshots/kubernetes-deployments-018.png)
+![kubectl describe pod lifecycle-startup | grep -E '^Status:|State:|Reason:|Exit](screenshots/kubernetes-deployments-019.png)
+![kubectl describe pod lifecycle-init | sed -n '/^Events:/,$p' | tail -7](screenshots/kubernetes-deployments-020.png)
+![time kubectl delete pod lifecycle-termination](screenshots/kubernetes-deployments-021.png)
+
+<details><summary>Text output</summary>
 
 ```text
 $ kubectl apply -f 05-pod-lifecycle/
@@ -810,7 +856,13 @@ user	0m0.000s
 sys	0m0.030s
 ```
 
+</details>
+
 **Note on `lifecycle-pending`:** on my first run this Pod was **Running**. My minikube node has 24 CPUs and about 11.5 GiB of allocatable memory, so the original `9Gi` request fit. I raised the request to `64Gi` and re-applied it. I also re-ran `lifecycle-termination` while streaming its logs, so the SIGTERM handling is visible:
+
+![kubectl describe node minikube | grep -A6 'Allocatable:' | grep -E 'cpu|memory](screenshots/kubernetes-deployments-022.png)
+
+<details><summary>Text output</summary>
 
 ```text
 #### lifecycle-pending (re-run with 64Gi memory request - more than the node has)
@@ -844,6 +896,8 @@ Application running
 SIGTERM received; cleaning up...
 Cleanup complete
 ```
+
+</details>
 
 ### What I observed for each Pod
 
