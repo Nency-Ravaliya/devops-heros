@@ -3,7 +3,7 @@ apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
   name: session20-mini
-  namespace: argocd
+  namespace: p20-argocd   # Argo CD was installed into p20-argocd on the shared cluster
 spec:
   project: default
   source:
