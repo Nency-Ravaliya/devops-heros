@@ -11,6 +11,7 @@ crash.log
 crash.*.log
 # Variable files
 *.tfvars
+!terraform.tfvars
 !terraform.tfvars.example
 # Terraform override files
 override.tf
