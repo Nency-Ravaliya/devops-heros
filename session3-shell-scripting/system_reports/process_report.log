@@ -1,0 +1,78 @@
+UID          PID    PPID  C STIME TTY          TIME CMD
+root           1       0 24 19:48 ?        00:00:00 /sbin/init
+root           2       1  0 19:48 ?        00:00:00 /init
+root           6       2  0 19:48 ?        00:00:00 plan9 --control-socket 7 --log-level 4 --server-fd 8 --pipe-fd 10 --log-truncate
+root          46       1  7 19:48 ?        00:00:00 /usr/lib/systemd/systemd-journald
+systemd+      78       1  3 19:48 ?        00:00:00 /usr/lib/systemd/systemd-resolved
+root          85       1 13 19:48 ?        00:00:00 /usr/lib/systemd/systemd-udevd
+root         107       1  2 19:48 ?        00:00:00 /bin/sh /usr/lib/systemd/scripts/chronyd-starter.sh -n -F 1
+root         108       1  0 19:48 ?        00:00:00 /usr/sbin/cron -f -P
+message+     109       1  2 19:48 ?        00:00:00 @dbus-daemon --system --address=systemd: --nofork --nopidfile --systemd-activation --syslog-only
+root         113      85  1 19:48 ?        00:00:00 (udev-worker)
+root         114      85  1 19:48 ?        00:00:00 (udev-worker)
+root         115      85  0 19:48 ?        00:00:00 (udev-worker)
+root         116      85  1 19:48 ?        00:00:00 (udev-worker)
+root         117      85  0 19:48 ?        00:00:00 (udev-worker)
+root         118       1 13 19:48 ?        00:00:00 /usr/bin/python3 /usr/bin/networkd-dispatcher --run-startup-triggers
+root         119      85  1 19:48 ?        00:00:00 (udev-worker)
+root         120      85  0 19:48 ?        00:00:00 (udev-worker)
+root         121      85  1 19:48 ?        00:00:00 (udev-worker)
+root         122      85  1 19:48 ?        00:00:00 (udev-worker)
+root         123      85  0 19:48 ?        00:00:00 (udev-worker)
+root         124      85  1 19:48 ?        00:00:00 (udev-worker)
+root         125      85  1 19:48 ?        00:00:00 (udev-worker)
+root         127      85  1 19:48 ?        00:00:00 (udev-worker)
+root         128      85  2 19:48 ?        00:00:00 (udev-worker)
+root         129      85  1 19:48 ?        00:00:00 (udev-worker)
+root         130      85  1 19:48 ?        00:00:00 (udev-worker)
+root         131      85  0 19:48 ?        00:00:00 (udev-worker)
+root         132      85  1 19:48 ?        00:00:00 (udev-worker)
+root         133      85  0 19:48 ?        00:00:00 (udev-worker)
+root         135      85  1 19:48 ?        00:00:00 (udev-worker)
+root         136      85  1 19:48 ?        00:00:00 (udev-worker)
+root         137      85  0 19:48 ?        00:00:00 (udev-worker)
+root         138      85  1 19:48 ?        00:00:00 (udev-worker)
+root         139      85  1 19:48 ?        00:00:00 (udev-worker)
+root         140      85  1 19:48 ?        00:00:00 (udev-worker)
+root         141      85  1 19:48 ?        00:00:00 (udev-worker)
+root         142      85  1 19:48 ?        00:00:00 (udev-worker)
+root         143      85  1 19:48 ?        00:00:00 (udev-worker)
+root         144      85  0 19:48 ?        00:00:00 (udev-worker)
+root         145      85  1 19:48 ?        00:00:00 (udev-worker)
+root         146      85  1 19:48 ?        00:00:00 (udev-worker)
+root         147      85  0 19:48 ?        00:00:00 (udev-worker)
+root         148      85  1 19:48 ?        00:00:00 (udev-worker)
+root         149       1 13 19:48 ?        00:00:00 /usr/lib/snapd/snapd
+root         150      85  1 19:48 ?        00:00:00 (udev-worker)
+root         151      85  1 19:48 ?        00:00:00 (udev-worker)
+root         152      85  1 19:48 ?        00:00:00 (udev-worker)
+root         153      85  1 19:48 ?        00:00:00 (udev-worker)
+root         154      85  0 19:48 ?        00:00:00 (udev-worker)
+root         155      85  1 19:48 ?        00:00:00 (udev-worker)
+root         156      85  1 19:48 ?        00:00:00 (udev-worker)
+root         158       1  3 19:48 ?        00:00:00 /usr/lib/systemd/systemd-logind
+root         161       1  4 19:48 ?        00:00:00 /usr/libexec/wsl-pro-service
+syslog       166       1  2 19:48 ?        00:00:00 /usr/sbin/rsyslogd -n -iNONE
+root         199       1  0 19:48 tty1     00:00:00 /usr/sbin/agetty --noreset --noclear --issue-file=/etc/issue:/etc/issue.d:/run/issue.d:/usr/lib/issue.d - linux
+root         212       1 11 19:48 ?        00:00:00 /usr/bin/python3 /usr/share/unattended-upgrades/unattended-upgrade-shutdown --wait-for-signal
+_chrony      227     107  0 19:48 ?        00:00:00 /usr/sbin/chronyd -n -F 1 -x
+_chrony      228     227  0 19:48 ?        00:00:00 /usr/sbin/chronyd -n -F 1 -x
+root         280       1  2 19:48 ?        00:00:00 /usr/lib/systemd/systemd-timedated
+root         296       2  0 19:48 ?        00:00:00 /init
+root         297     296  0 19:48 ?        00:00:00 /init
+sahas        301     297  1 19:48 pts/0    00:00:00 /bin/bash -c printf 'DevOps Intern\n2026-DEV-007\nAutomated System Health Inspection\n' | bash system_info.sh
+root         305       2  1 19:48 ?        00:00:00 login -- sahas
+sahas        358       1 16 19:48 ?        00:00:00 /usr/lib/systemd/systemd --user
+sahas        360     358  0 19:48 ?        00:00:00 (sd-pam)
+sahas        386     305  5 19:48 pts/1    00:00:00 -bash
+sahas        415     301 11 19:48 pts/0    00:00:00 bash system_info.sh
+sahas        424     415  0 19:48 pts/0    00:00:00 ps -ef
+
+# ============================================================
+# AUDIT SUMMARY
+# Generated on : Wednesday, 07 October 2026 19:48:43 UTC
+# Hostname     : sahulaptop
+# Operator     : DevOps Intern (2026-DEV-007)
+# User Comment : Automated System Health Inspection
+# Total Procs  : 72
+# ============================================================
