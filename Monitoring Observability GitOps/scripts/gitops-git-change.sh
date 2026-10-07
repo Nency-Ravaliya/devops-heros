@@ -42,7 +42,7 @@ wait_rev "$REV3"
 cap "kubectl -n session20-gitops get svc"
 
 echo '################ Roll back = git revert ################'
-( cd "$WT" && git revert --no-edit HEAD >/dev/null && git push -q origin HEAD:gitops-demo )
+( cd "$WT" && git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" revert --no-edit HEAD >/dev/null && git push -q origin HEAD:gitops-demo )
 REV4=$(git -C "$WT" rev-parse HEAD)
 wait_rev "$REV4"
 cap "git -C '$WT' log --oneline -5"
