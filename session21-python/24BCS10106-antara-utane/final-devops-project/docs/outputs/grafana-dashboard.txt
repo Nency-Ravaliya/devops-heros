@@ -1,0 +1,42 @@
+$ curl -s -u admin:*** 'http://localhost:13000/api/search?tag=stockpilot'
+[
+    {
+        "id": 4246512556322816,
+        "uid": "stockpilot-final",
+        "orgId": 1,
+        "title": "StockPilot API (final)",
+        "uri": "db/stockpilot-api-final",
+        "url": "/d/stockpilot-final/stockpilot-api-final",
+        "slug": "",
+        "type": "dash-db",
+        "tags": [
+            "24BCS10106",
+            "stockpilot"
+        ],
+        "isStarred": false,
+        "sortMeta": 0,
+        "isDeleted": false
+    }
+]
+
+$ curl -s -u admin:*** http://localhost:13000/api/dashboards/uid/stockpilot-final  (panel list)
+  title: StockPilot API (final)
+  - [stat] Healthy API targets
+  - [stat] Request rate (req/s)
+  - [stat] Low-stock SKUs
+  - [stat] 5xx ratio (5m)
+  - [timeseries] Requests per second by route
+  - [timeseries] Latency p50 / p95
+  - [timeseries] Pod CPU (cores)
+  - [timeseries] Stock movements per minute
+
+Evaluating each panel query through Grafana's datasource proxy (datasource uid=prometheus):
+  Healthy API targets                 1 series  value=2
+  Request rate (req/s)                1 series  value=0.97
+  Low-stock SKUs                      1 series  value=2
+  5xx ratio (5m)                      0 series  
+  Requests per second by route   {{ro 8 series  /ready=0.675, /health=0.295, /api/items=0, /api/items/{item_id}/adjust=0
+  Latency p50 / p95              p50  1 series  value=0.00311
+  Latency p50 / p95              p95  1 series  value=0.0145
+  Pod CPU (cores)                {{po 5 series  stockpilot-api-8694764fbc-w4lzc=0.0196, stockpilot-api-8694764fbc-99pfk=0.00333, stockpilot-api-8694764fbc-mcv
+  Stock movements per minute     {{di 1 series  out=0

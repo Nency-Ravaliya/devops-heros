@@ -1,0 +1,49 @@
+# Prod overlay: immutable GHCR image (tag = git SHA, set by CI / Argo CD),
+# credentials from a pre-created Secret, more replicas, tighter limits.
+image:
+  repository: ghcr.io/Aana-1025 Utane/stockpilot-api
+  pullPolicy: IfNotPresent
+
+replicaCount: 3
+
+config:
+  APP_ENV: prod
+  LOG_LEVEL: info
+
+database:
+  # kubectl create secret generic stockpilot-db-prod \
+  #   --from-literal=DB_USER=... --from-literal=DB_PASSWORD=...
+  existingSecret: stockpilot-db-prod
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: "1"
+    memory: 384Mi
+
+ingress:
+  host: stockpilot.example.com
+  annotations:
+    nginx.ingress.kubernetes.io/limit-rps: "50"
+
+hpa:
+  minReplicas: 3
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 65
+
+pdb:
+  minAvailable: 2
+
+postgres:
+  storage:
+    size: 10Gi
+
+monitoring:
+  serviceMonitor:
+    enabled: true
+  prometheusRule:
+    enabled: true
+  grafanaDashboard:
+    enabled: true

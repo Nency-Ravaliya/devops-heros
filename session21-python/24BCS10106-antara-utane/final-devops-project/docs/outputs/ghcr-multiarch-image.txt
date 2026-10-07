@@ -1,0 +1,14 @@
+$ docker buildx imagetools inspect ghcr.io/Aana-1025 Utane/stockpilot-api:ae25d71d53b8cf800ae2502558d1118149f412a8
+Name:      ghcr.io/Aana-1025 Utane/stockpilot-api:ae25d71d53b8cf800ae2502558d1118149f412a8
+MediaType: application/vnd.oci.image.index.v1+json
+Digest:    sha256:2a2a405032069330000fe2b8443e8646068963a4cbedaf650c9d501ad6cf105e
+           
+Manifests: 
+  Name:      ghcr.io/Aana-1025 Utane/stockpilot-api:ae25d71d53b8cf800ae2502558d1118149f412a8@sha256:e2f4ac0063a081ce16bab423875f329df3f80662850e452f8b3e765886aec05f
+  MediaType: application/vnd.oci.image.manifest.v1+json
+  Platform:  linux/amd64
+             
+  Name:      ghcr.io/Aana-1025 Utane/stockpilot-api:ae25d71d53b8cf800ae2502558d1118149f412a8@sha256:a22feb949cf7c0b245ec55cdb022c7934443d104e56249ca285ee398a26655f4
+  MediaType: application/vnd.oci.image.manifest.v1+json
+  Platform:  linux/arm64
+

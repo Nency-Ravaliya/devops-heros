@@ -1,0 +1,75 @@
+
+############ BREAK: someone hot-patches the Service to targetPort 9000 ############
+
+$ kubectl -n final-trouble patch svc stockpilot-api --type=json -p "$(cat troubleshooting/patches/service-wrong-targetport.json)"
+service/stockpilot-api patched
+
+
+############ SYMPTOM ############
+
+$ curl -s -o /dev/null -w 'HTTP %{http_code}\n' -H 'Host: trouble.stockpilot.local' localhost:8081/ready
+HTTP 502
+
+$ kubectl -n final-trouble get pods -l app.kubernetes.io/component=api
+NAME                              READY   STATUS    RESTARTS   AGE
+stockpilot-api-8694764fbc-6n29w   1/1     Running   0          118s
+stockpilot-api-8694764fbc-7km5h   1/1     Running   0          2m3s
+
+
+############ INVESTIGATE ############
+
+$ kubectl -n final-trouble get svc stockpilot-api -o jsonpath='port={.spec.ports[0].port} targetPort={.spec.ports[0].targetPort}{"\n"}'
+port=80 targetPort=9000
+
+$ kubectl -n final-trouble get endpointslices -l kubernetes.io/service-name=stockpilot-api
+NAME                   ADDRESSTYPE   PORTS   ENDPOINTS                   AGE
+stockpilot-api-gp8b2   IPv4          9000    10.244.2.121,10.244.1.168   9m7s
+
+$ kubectl -n final-trouble get pod -l app.kubernetes.io/component=api -o jsonpath='{range .items[*]}{.metadata.name} containerPort={.spec.containers[0].ports[0].containerPort}{"\n"}{end}'
+stockpilot-api-8694764fbc-6n29w containerPort=8000
+stockpilot-api-8694764fbc-7km5h containerPort=8000
+
+$ kubectl -n ingress-nginx logs deploy/ingress-nginx-controller --tail=400 | grep -E 'server: trouble.stockpilot.local.*:9000' | tail -1 | cut -c1-300
+2026/10/06 11:55:35 [error] 1380#1380: *116193 connect() failed (111: Connection refused) while connecting to upstream, client: 192.168.65.1, server: trouble.stockpilot.local, request: "GET /ready HTTP/1.1", upstream: "http://10.244.2.121:9000/ready", host: "trouble.stockpilot.local"
+
+
+############ ROOT CAUSE: pods are Ready, but the Service forwards to :9000 where nothing listens -> upstream connection refused -> 502. ############
+
+
+
+############ FIX attempt 1: re-apply the chart (Service uses the named port 'http') ############
+
+$ helm upgrade stockpilot helm/stockpilot -n final-trouble -f helm/stockpilot/values-dev.yaml -f troubleshooting/values-trouble.yaml --wait --timeout 5m | grep -E 'STATUS|REVISION'
+level=WARN msg="upgrade failed" name=stockpilot error="conflict occurred while applying object final-trouble/stockpilot-api /v1, Kind=Service: Apply failed with 1 conflict: conflict with \"kubectl-patch\" using v1: .spec.ports[port=80,protocol=\"TCP\"].targetPort"
+Error: UPGRADE FAILED: conflict occurred while applying object final-trouble/stockpilot-api /v1, Kind=Service: Apply failed with 1 conflict: conflict with "kubectl-patch" using v1: .spec.ports[port=80,protocol="TCP"].targetPort
+
+$ kubectl -n final-trouble get svc stockpilot-api -o jsonpath='port={.spec.ports[0].port} targetPort={.spec.ports[0].targetPort}{"\n"}'
+port=80 targetPort=9000
+
+$ kubectl -n final-trouble get svc stockpilot-api --show-managed-fields -o jsonpath='{range .metadata.managedFields[*]}{.manager} {.operation}{"\n"}{end}'
+helm Apply
+kubectl-patch Update
+
+Helm 4 uses server-side apply: the kubectl-patch field manager now owns .spec.ports[].targetPort,
+so Helm refuses to overwrite it. The drift has to be taken back explicitly.
+
+
+############ FIX attempt 2: helm upgrade --force-conflicts (Helm reclaims ownership of the field) ############
+
+$ helm upgrade stockpilot helm/stockpilot -n final-trouble -f helm/stockpilot/values-dev.yaml -f troubleshooting/values-trouble.yaml --force-conflicts --wait --timeout 5m | grep -E 'STATUS|REVISION'
+STATUS: deployed
+REVISION: 30
+
+$ kubectl -n final-trouble get svc stockpilot-api -o jsonpath='port={.spec.ports[0].port} targetPort={.spec.ports[0].targetPort}{"\n"}'
+port=80 targetPort=http
+
+
+############ VERIFY ############
+
+$ kubectl -n final-trouble get endpointslices -l kubernetes.io/service-name=stockpilot-api
+NAME                   ADDRESSTYPE   PORTS   ENDPOINTS                   AGE
+stockpilot-api-gp8b2   IPv4          8000    10.244.2.121,10.244.1.168   9m8s
+
+$ curl -s -o /dev/null -w 'HTTP %{http_code}\n' -H 'Host: trouble.stockpilot.local' localhost:8081/ready
+HTTP 200
+

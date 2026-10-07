@@ -1,0 +1,16 @@
+$ helm upgrade --install stockpilot helm/stockpilot -n final --create-namespace -f helm/stockpilot/values-dev.yaml --wait --timeout 5m
+Release "stockpilot" does not exist. Installing it now.
+NAME: stockpilot
+LAST DEPLOYED: Tue Oct  6 19:07:33 2026
+NAMESPACE: final
+STATUS: deployed
+REVISION: 1
+DESCRIPTION: Install complete
+TEST SUITE: None
+NOTES:
+StockPilot stockpilot-api:1.0.0 deployed to namespace final.
+
+  kubectl -n final get deploy,po,svc,ing,hpa,pvc -l app.kubernetes.io/instance=stockpilot
+  curl -H 'Host: stockpilot.local' http://localhost:8081/health   # kind ingress port
+  kubectl -n final port-forward svc/stockpilot-api 8000:80
+

@@ -1,0 +1,7 @@
+StockPilot {{ include "stockpilot.image" . }} deployed to namespace {{ .Release.Namespace }}.
+
+  kubectl -n {{ .Release.Namespace }} get deploy,po,svc,ing,hpa,pvc -l app.kubernetes.io/instance={{ .Release.Name }}
+{{- if .Values.ingress.enabled }}
+  curl -H 'Host: {{ .Values.ingress.host }}' http://localhost:8081/health   # kind ingress port
+{{- end }}
+  kubectl -n {{ .Release.Namespace }} port-forward svc/{{ include "stockpilot.fullname" . }}-api 8000:{{ .Values.service.port }}

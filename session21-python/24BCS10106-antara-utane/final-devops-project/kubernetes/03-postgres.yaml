@@ -1,0 +1,64 @@
+# PostgreSQL with a PersistentVolumeClaim (kind default StorageClass "standard").
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: stockpilot-postgres-data
+  namespace: final-k8s
+  labels: {app: stockpilot-postgres}
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: stockpilot-postgres
+  namespace: final-k8s
+  labels: {app: stockpilot-postgres}
+spec:
+  replicas: 1
+  strategy: {type: Recreate}
+  selector:
+    matchLabels: {app: stockpilot-postgres}
+  template:
+    metadata:
+      labels: {app: stockpilot-postgres}
+    spec:
+      securityContext: {fsGroup: 70}
+      containers:
+        - name: postgres
+          image: postgres:17-alpine
+          ports: [{name: postgres, containerPort: 5432}]
+          env:
+            - {name: POSTGRES_DB, value: stockpilot}
+            - name: POSTGRES_USER
+              valueFrom: {secretKeyRef: {name: stockpilot-db, key: DB_USER}}
+            - name: POSTGRES_PASSWORD
+              valueFrom: {secretKeyRef: {name: stockpilot-db, key: DB_PASSWORD}}
+            - {name: PGDATA, value: /var/lib/postgresql/data/pgdata}
+          readinessProbe:
+            exec: {command: ["sh", "-c", "pg_isready -U \"$POSTGRES_USER\" -d \"$POSTGRES_DB\""]}
+            periodSeconds: 5
+          livenessProbe:
+            exec: {command: ["sh", "-c", "pg_isready -U \"$POSTGRES_USER\" -d \"$POSTGRES_DB\""]}
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          resources:
+            requests: {cpu: 50m, memory: 128Mi}
+            limits: {cpu: 500m, memory: 512Mi}
+          volumeMounts:
+            - {name: data, mountPath: /var/lib/postgresql/data}
+      volumes:
+        - name: data
+          persistentVolumeClaim: {claimName: stockpilot-postgres-data}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: stockpilot-postgres
+  namespace: final-k8s
+spec:
+  selector: {app: stockpilot-postgres}
+  ports: [{name: postgres, port: 5432, targetPort: postgres}]

@@ -1,0 +1,82 @@
+############ current state ############
+
+$ kubectl -n final-gitops get deploy,po,svc,ing,hpa,pvc
+NAME                                  READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/stockpilot-api        2/2     2            2           33m
+deployment.apps/stockpilot-postgres   1/1     1            1           33m
+
+NAME                                      READY   STATUS    RESTARTS   AGE
+pod/stockpilot-api-88d449859-b2htr        1/1     Running   0          6m33s
+pod/stockpilot-api-88d449859-gzsx2        1/1     Running   0          6m14s
+pod/stockpilot-postgres-fccf44f68-hpj87   1/1     Running   0          33m
+
+NAME                          TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)    AGE
+service/stockpilot-api        ClusterIP   10.96.205.203   <none>        80/TCP     33m
+service/stockpilot-postgres   ClusterIP   10.96.149.95    <none>        5432/TCP   33m
+
+NAME                                   CLASS   HOSTS                     ADDRESS     PORTS   AGE
+ingress.networking.k8s.io/stockpilot   nginx   stockpilot-gitops.local   localhost   80      33m
+
+NAME                                                 REFERENCE                   TARGETS       MINPODS   MAXPODS   REPLICAS   AGE
+horizontalpodautoscaler.autoscaling/stockpilot-api   Deployment/stockpilot-api   cpu: 3%/65%   2         4         2          33m
+
+NAME                                             STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE
+persistentvolumeclaim/stockpilot-postgres-data   Bound    pvc-60a3f7bc-e729-4546-8fff-cceb678f0d92   1Gi        RWO            standard       <unset>                 33m
+
+$ curl -s -H 'Host: stockpilot-gitops.local' localhost:8081/api/info
+{"service":"StockPilot","version":"ae25d71d53b8cf800ae2502558d1118149f412a8","env":"gitops"}
+############ DRIFT 1: someone edits the ConfigMap by hand (LOG_LEVEL info -> debug) ############
+
+$ kubectl -n final-gitops patch configmap stockpilot-config --type merge -p '{"data":{"LOG_LEVEL":"debug"}}'
+configmap/stockpilot-config patched
+
+$ kubectl -n final-gitops get configmap stockpilot-config -o jsonpath='{.data.LOG_LEVEL}{"\n"}'
+debug
+
+(waited 4s)
+$ kubectl -n final-gitops get configmap stockpilot-config -o jsonpath='{.data.LOG_LEVEL}{"\n"}'
+info
+
+############ DRIFT 2: someone deletes the Service ############
+
+$ kubectl -n final-gitops delete service stockpilot-api
+service "stockpilot-api" deleted from final-gitops namespace
+
+$ curl -s -o /dev/null -w 'HTTP %{http_code}\n' -H 'Host: stockpilot-gitops.local' localhost:8081/api/info
+HTTP 200
+
+(waited 6s)
+$ kubectl -n final-gitops get svc stockpilot-api
+NAME             TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)   AGE
+stockpilot-api   ClusterIP   10.96.24.239   <none>        80/TCP    5s
+
+$ curl -s -o /dev/null -w 'HTTP %{http_code}\n' -H 'Host: stockpilot-gitops.local' localhost:8081/api/info
+HTTP 200
+
+############ DRIFT 3: someone scales the HPA floor up by hand (minReplicas 2 -> 4) ############
+
+$ kubectl -n final-gitops patch hpa stockpilot-api --type merge -p '{"spec":{"minReplicas":4}}'
+horizontalpodautoscaler.autoscaling/stockpilot-api patched
+
+(waited 16s)
+$ kubectl -n final-gitops get hpa stockpilot-api
+NAME             REFERENCE                   TARGETS       MINPODS   MAXPODS   REPLICAS   AGE
+stockpilot-api   Deployment/stockpilot-api   cpu: 4%/65%   2         4         4          34m
+
+############ Argo CD history / events ############
+
+$ kubectl -n argocd get application final-stockpilot-24BCS10106 -o jsonpath='{range .status.history[*]}{.id}  {.revision}  {.deployedAt}{"\n"}{end}'
+0  323e26f1d2d5448f6deef9791533367d39ae0949  2026-10-06T11:37:14Z
+1  8330767b8619205a17d8ebeba21aa153b4d87a18  2026-10-06T12:04:36Z
+
+$ kubectl -n argocd get events --field-selector involvedObject.name=final-stockpilot-24BCS10106 --sort-by=.lastTimestamp | tail -8 | cut -c1-220
+20s         Normal   OperationCompleted   application/final-stockpilot-24BCS10106   Partial sync operation to 8330767b8619205a17d8ebeba21aa153b4d87a18 succeeded
+20s         Normal   ResourceUpdated      application/final-stockpilot-24BCS10106   Updated sync status: OutOfSync -> Synced
+15s         Normal   ResourceUpdated      application/final-stockpilot-24BCS10106   Updated sync status: Synced -> OutOfSync
+15s         Normal   ResourceUpdated      application/final-stockpilot-24BCS10106   Updated health status: Healthy -> Progressing
+9s          Normal   ResourceUpdated      application/final-stockpilot-24BCS10106   Updated health status: Progressing -> Healthy
+2s          Normal   OperationStarted     application/final-stockpilot-24BCS10106   Initiated automated sync to '8330767b8619205a17d8ebeba21aa153b4d87a18'
+2s          Normal   OperationCompleted   application/final-stockpilot-24BCS10106   Partial sync operation to 8330767b8619205a17d8ebeba21aa153b4d87a18 succeeded
+2s          Normal   ResourceUpdated      application/final-stockpilot-24BCS10106   Updated sync status: OutOfSync -> Synced
+
+final status: Synced/Healthy

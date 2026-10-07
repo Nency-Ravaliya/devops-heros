@@ -1,0 +1,31 @@
+=== [4. Secret scan (Gitleaks)] Gitleaks (scoped to project folder)
+    12:04PM INF scanned ~261199 bytes (261.20 KB) in 33.1ms
+    12:04PM WRN leaks found: 2
+
+=== [7. Security gate] Evaluate policy (block on any HIGH/CRITICAL, SAST finding or secret)
+    SAST (Semgrep): 0 -> PASS
+    SCA (pip-audit): 0 -> PASS
+    SCA (Trivy fs (HIGH/CRITICAL)): 0 -> PASS
+    Secrets (Gitleaks): 2 -> FAIL
+    Secrets (Gitleaks): 2 -> FAIL
+    Container image (Trivy image (HIGH/CRITICAL, fixable)): 0 -> PASS
+    Container image (Trivy image (HIGH/CRITICAL, fixable)): 0 -> PASS
+
+
+
+JOBS
+✓ 1. Build & unit test in 28s (ID 112259070926)
+✓ 4. Secret scan (Gitleaks) in 7s (ID 112259271689)
+✓ 3. SCA (pip-audit + Trivy fs) in 27s (ID 112259271699)
+✓ 2. SAST (Semgrep) in 23s (ID 112259271705)
+✓ 5. Docker build in 2m58s (ID 112259271834)
+✓ 6. Image scan (Trivy) in 26s (ID 112260488542)
+X 7. Security gate in 4s (ID 112260675912)
+  ✓ Set up job
+  X Evaluate policy (block on any HIGH/CRITICAL, SAST finding or secret)
+  ✓ Complete job
+- 9. Deploy to Kubernetes (kind) in 0s (ID 112260723478)
+
+$ gh run download 37460645786 -n gitleaks-report   # findings in gitleaks.json
+generic-api-key  docs/outputs/ghcr-multiarch-image.txt:1  match=stockpilot-api:REDACTED
+generic-api-key  docs/outputs/ghcr-multiarch-image.txt:2  match=stockpilot-api:REDACTED

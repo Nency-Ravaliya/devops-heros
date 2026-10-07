@@ -1,0 +1,23 @@
+# GitOps environment (Argo CD app final-stockpilot-24BCS10106, ns final-gitops).
+# Layered on top of values-prod.yaml. To promote a build, set image.tag to the
+# git SHA that the CI pipeline pushed to GHCR and commit - Argo CD syncs it.
+image:
+  tag: ae25d71d53b8cf800ae2502558d1118149f412a8   # multi-arch (amd64+arm64), CI run 37459886248
+
+config:
+  APP_ENV: gitops
+
+ingress:
+  host: stockpilot-gitops.local
+  annotations: {}
+
+hpa:
+  minReplicas: 2
+  maxReplicas: 4
+
+pdb:
+  minAvailable: 1
+
+postgres:
+  storage:
+    size: 1Gi

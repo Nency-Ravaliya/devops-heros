@@ -1,0 +1,27 @@
+# Dev overlay: local kind cluster, image loaded with `kind load docker-image`.
+image:
+  repository: stockpilot-api
+  tag: "1.0.1"
+  pullPolicy: IfNotPresent
+
+replicaCount: 2
+
+config:
+  APP_ENV: dev
+  LOG_LEVEL: debug
+
+ingress:
+  host: stockpilot.local
+
+hpa:
+  minReplicas: 2
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 50
+
+monitoring:
+  serviceMonitor:
+    enabled: true
+  prometheusRule:
+    enabled: true
+  grafanaDashboard:
+    enabled: true

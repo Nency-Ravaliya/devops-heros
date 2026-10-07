@@ -1,0 +1,77 @@
+$ terraform output
+app_security_group_id = "sg-d5b3e229bf02ecfbc"
+artifacts_bucket = "stockpilot-dev-artifacts-24BCS10106"
+db_security_group_id = "sg-6cb066e4ce7baf4eb"
+ecr_repository_url = "not created (ECR needs LocalStack Pro) - images are in ghcr.io/Aana-1025 Utane/stockpilot-api"
+private_subnet_ids = [
+  "subnet-72481b82",
+  "subnet-88bc33ab",
+]
+public_subnet_ids = [
+  "subnet-196116de",
+  "subnet-e8581ded",
+]
+target = "LocalStack (http://localhost:4566)"
+tf_lock_table = "stockpilot-dev-tf-locks"
+vpc_id = "vpc-53157776"
+
+$ aws --endpoint-url http://localhost:4566 ec2 describe-vpcs --vpc-ids vpc-53157776 --query Vpcs[].{Id:VpcId,Cidr:CidrBlock,Name:Tags[?Key==`Name`]|[0].Value} --output table
+--------------------------------------------------------
+|                     DescribeVpcs                     |
++--------------+----------------+----------------------+
+|     Cidr     |      Id        |        Name          |
++--------------+----------------+----------------------+
+|  10.40.0.0/16|  vpc-53157776  |  stockpilot-dev-vpc  |
++--------------+----------------+----------------------+
+
+$ aws --endpoint-url http://localhost:4566 ec2 describe-subnets --filters Name=vpc-id,Values=vpc-53157776 --query Subnets[].{Id:SubnetId,Cidr:CidrBlock,AZ:AvailabilityZone,Name:Tags[?Key==`Name`]|[0].Value} --output table
+-------------------------------------------------------------------------------------------
+|                                     DescribeSubnets                                     |
++-------------+----------------+------------------+---------------------------------------+
+|     AZ      |     Cidr       |       Id         |                 Name                  |
++-------------+----------------+------------------+---------------------------------------+
+|  ap-south-1a|  10.40.10.0/24 |  subnet-72481b82 |  stockpilot-dev-private-ap-south-1a   |
+|  ap-south-1a|  10.40.0.0/24  |  subnet-196116de |  stockpilot-dev-public-ap-south-1a    |
+|  ap-south-1b|  10.40.1.0/24  |  subnet-e8581ded |  stockpilot-dev-public-ap-south-1b    |
+|  ap-south-1b|  10.40.11.0/24 |  subnet-88bc33ab |  stockpilot-dev-private-ap-south-1b   |
++-------------+----------------+------------------+---------------------------------------+
+
+$ aws --endpoint-url http://localhost:4566 ec2 describe-security-groups --filters Name=vpc-id,Values=vpc-53157776 --query SecurityGroups[?GroupName!=`default`].{Name:GroupName,Ports:IpPermissions[].FromPort|join(`,`,to_array(@)[].to_string(@))} --output table
+-------------------------------------
+|      DescribeSecurityGroups       |
++------------------------+----------+
+|          Name          |  Ports   |
++------------------------+----------+
+|  stockpilot-dev-app-sg |  80,443  |
+|  stockpilot-dev-db-sg  |  5432    |
++------------------------+----------+
+
+$ aws --endpoint-url http://localhost:4566 s3api get-bucket-versioning --bucket stockpilot-dev-artifacts-24BCS10106
+{
+    "Status": "Enabled"
+}
+
+$ aws --endpoint-url http://localhost:4566 s3api get-bucket-encryption --bucket stockpilot-dev-artifacts-24BCS10106 --query ServerSideEncryptionConfiguration.Rules[0].ApplyServerSideEncryptionByDefault
+{
+    "SSEAlgorithm": "AES256"
+}
+
+$ aws --endpoint-url http://localhost:4566 dynamodb describe-table --table-name stockpilot-dev-tf-locks --query Table.{Name:TableName,Key:KeySchema[0].AttributeName,Billing:BillingModeSummary.BillingMode,Status:TableStatus} --output table
+--------------------------------------------------------------------
+|                           DescribeTable                          |
++------------------+---------+---------------------------+---------+
+|      Billing     |   Key   |           Name            | Status  |
++------------------+---------+---------------------------+---------+
+|  PAY_PER_REQUEST |  LockID |  stockpilot-dev-tf-locks  |  ACTIVE |
++------------------+---------+---------------------------+---------+
+
+$ kubectl -n final exec deploy/stockpilot-postgres -- sh -c 'pg_dump -U "$POSTGRES_USER" "$POSTGRES_DB"' | gzip > /tmp/stockpilot-20261006192715.sql.gz
+-rw-r--r--@ 1 Antara  wheel  1029 Oct  6 19:27 /tmp/stockpilot-20261006192715.sql.gz
+
+$ aws --endpoint-url http://localhost:4566 s3 cp /tmp/stockpilot-20261006192715.sql.gz s3://stockpilot-dev-artifacts-24BCS10106/db-backups/stockpilot-20261006192715.sql.gz
+Completed 1.0 KiB/1.0 KiB (43.3 KiB/s) with 1 file(s) remaining
+upload: ../../../../../../../../../../../tmp/stockpilot-20261006192715.sql.gz to s3://stockpilot-dev-artifacts-24BCS10106/db-backups/stockpilot-20261006192715.sql.gz
+
+$ aws --endpoint-url http://localhost:4566 s3 ls s3://stockpilot-dev-artifacts-24BCS10106/db-backups/
+2026-10-06 19:27:15       1029 stockpilot-20261006192715.sql.gz
+

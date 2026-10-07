@@ -1,0 +1,13 @@
+$ kubectl apply -f gitops/application.yaml
+application.argoproj.io/final-stockpilot-24BCS10106 configured
+
+$ kubectl -n argocd get application final-stockpilot-24BCS10106 -o wide
+NAME                          SYNC STATUS   HEALTH STATUS   REVISION                                   PROJECT
+final-stockpilot-24BCS10106   Synced        Healthy         8330767b8619205a17d8ebeba21aa153b4d87a18   default
+
+$ kubectl -n argocd get application final-stockpilot-24BCS10106 -o jsonpath='{.status.operationState.phase} {.status.operationState.message}'
+Succeeded successfully synced (all tasks run)
+
+$ kubectl -n argocd get application final-stockpilot-24BCS10106 -o jsonpath='{.status.summary.images}'
+["ghcr.io/Aana-1025 Utane/stockpilot-api:ae25d71d53b8cf800ae2502558d1118149f412a8","postgres:17-alpine"]
+

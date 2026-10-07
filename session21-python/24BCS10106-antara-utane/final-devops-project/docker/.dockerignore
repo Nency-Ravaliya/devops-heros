@@ -1,0 +1,17 @@
+# Applied to the build context (../application). BuildKit picks this up via the
+# Dockerfile.dockerignore symlink that sits next to the Dockerfile.
+**/__pycache__
+**/*.pyc
+**/.pytest_cache
+.coverage
+coverage.xml
+htmlcov
+*.db
+.venv
+venv
+.env
+.env.*
+tests
+requirements-dev.txt
+pytest.ini
+.git

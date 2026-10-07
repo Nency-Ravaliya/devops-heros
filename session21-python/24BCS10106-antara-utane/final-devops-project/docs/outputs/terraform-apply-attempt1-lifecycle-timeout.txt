@@ -1,0 +1,64 @@
+$ terraform apply -no-color tfplan
+aws_vpc.main: Creating...
+aws_dynamodb_table.tf_locks: Creating...
+aws_s3_bucket.artifacts: Creating...
+aws_s3_bucket.artifacts: Creation complete after 0s [id=stockpilot-dev-artifacts-24BCS10106]
+aws_s3_bucket_public_access_block.artifacts: Creating...
+aws_s3_bucket_server_side_encryption_configuration.artifacts: Creating...
+aws_s3_bucket_versioning.artifacts: Creating...
+aws_s3_bucket_lifecycle_configuration.artifacts: Creating...
+aws_s3_bucket_server_side_encryption_configuration.artifacts: Creation complete after 0s [id=stockpilot-dev-artifacts-24BCS10106]
+aws_s3_bucket_public_access_block.artifacts: Creation complete after 0s [id=stockpilot-dev-artifacts-24BCS10106]
+aws_dynamodb_table.tf_locks: Creation complete after 0s [id=stockpilot-dev-tf-locks]
+aws_s3_bucket_versioning.artifacts: Creation complete after 1s [id=stockpilot-dev-artifacts-24BCS10106]
+aws_vpc.main: Still creating... [00m10s elapsed]
+aws_s3_bucket_lifecycle_configuration.artifacts: Still creating... [00m10s elapsed]
+aws_vpc.main: Creation complete after 10s [id=vpc-62815675]
+aws_internet_gateway.main: Creating...
+aws_subnet.private[1]: Creating...
+aws_subnet.private[0]: Creating...
+aws_subnet.public[1]: Creating...
+aws_subnet.public[0]: Creating...
+aws_security_group.app: Creating...
+aws_subnet.private[1]: Creation complete after 0s [id=subnet-57fbcb3f]
+aws_subnet.private[0]: Creation complete after 0s [id=subnet-18fdeb36]
+aws_internet_gateway.main: Creation complete after 0s [id=igw-bbdf55d6]
+aws_route_table.public: Creating...
+aws_route_table.public: Creation complete after 0s [id=rtb-a2c78f4b]
+aws_security_group.app: Creation complete after 0s [id=sg-b62f4b18f00f82339]
+aws_security_group.db: Creating...
+aws_security_group.db: Creation complete after 1s [id=sg-b3230578806c69e19]
+aws_s3_bucket_lifecycle_configuration.artifacts: Still creating... [00m20s elapsed]
+aws_subnet.public[1]: Still creating... [00m10s elapsed]
+aws_subnet.public[0]: Still creating... [00m10s elapsed]
+aws_subnet.public[0]: Creation complete after 10s [id=subnet-71ae228a]
+aws_subnet.public[1]: Creation complete after 10s [id=subnet-c6ab2fe9]
+aws_route_table_association.public[0]: Creating...
+aws_route_table_association.public[1]: Creating...
+aws_route_table_association.public[1]: Creation complete after 0s [id=rtbassoc-1943068e]
+aws_route_table_association.public[0]: Creation complete after 0s [id=rtbassoc-8fa8dad2]
+aws_s3_bucket_lifecycle_configuration.artifacts: Still creating... [00m30s elapsed]
+aws_s3_bucket_lifecycle_configuration.artifacts: Still creating... [00m40s elapsed]
+aws_s3_bucket_lifecycle_configuration.artifacts: Still creating... [00m50s elapsed]
+aws_s3_bucket_lifecycle_configuration.artifacts: Still creating... [01m00s elapsed]
+aws_s3_bucket_lifecycle_configuration.artifacts: Still creating... [01m10s elapsed]
+aws_s3_bucket_lifecycle_configuration.artifacts: Still creating... [01m20s elapsed]
+aws_s3_bucket_lifecycle_configuration.artifacts: Still creating... [01m30s elapsed]
+aws_s3_bucket_lifecycle_configuration.artifacts: Still creating... [01m40s elapsed]
+aws_s3_bucket_lifecycle_configuration.artifacts: Still creating... [01m50s elapsed]
+aws_s3_bucket_lifecycle_configuration.artifacts: Still creating... [02m00s elapsed]
+aws_s3_bucket_lifecycle_configuration.artifacts: Still creating... [02m10s elapsed]
+aws_s3_bucket_lifecycle_configuration.artifacts: Still creating... [02m20s elapsed]
+aws_s3_bucket_lifecycle_configuration.artifacts: Still creating... [02m30s elapsed]
+aws_s3_bucket_lifecycle_configuration.artifacts: Still creating... [02m40s elapsed]
+aws_s3_bucket_lifecycle_configuration.artifacts: Still creating... [02m50s elapsed]
+
+Error: creating S3 Bucket (stockpilot-dev-artifacts-24BCS10106) Lifecycle Configuration
+
+  with aws_s3_bucket_lifecycle_configuration.artifacts,
+  on main.tf line 140, in resource "aws_s3_bucket_lifecycle_configuration" "artifacts":
+ 140: resource "aws_s3_bucket_lifecycle_configuration" "artifacts" {
+
+While waiting: timeout while waiting for state to become 'true' (last state:
+'false', timeout: 3m0s)
+

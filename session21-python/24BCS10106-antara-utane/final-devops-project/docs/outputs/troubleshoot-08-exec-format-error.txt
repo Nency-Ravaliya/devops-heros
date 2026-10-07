@@ -1,0 +1,40 @@
+$ kubectl -n argocd get application final-stockpilot-24BCS10106
+NAME                          SYNC STATUS   HEALTH STATUS
+final-stockpilot-24BCS10106   Synced        Degraded
+
+$ kubectl -n final-gitops get pods -l app.kubernetes.io/component=api
+NAME                              READY   STATUS             RESTARTS      AGE
+stockpilot-api-7df94ccf4f-gbd4p   0/1     CrashLoopBackOff   6 (19s ago)   6m17s
+stockpilot-api-7df94ccf4f-tvt2c   0/1     CrashLoopBackOff   5 (79s ago)   6m17s
+
+$ kubectl -n final-gitops logs deploy/stockpilot-api --tail=5
+Found 2 pods, using pod/stockpilot-api-7df94ccf4f-gbd4p
+exec /opt/venv/bin/uvicorn: exec format error
+
+$ kubectl -n final-gitops describe pod -l app.kubernetes.io/component=api | grep -E 'Image:|State:|Reason:|Exit Code:|Back-off' 
+    Image:          ghcr.io/Aana-1025 Utane/stockpilot-api:f9d09f1d0cd1a86a20a1711fda2d2d23f3171db5
+    State:          Waiting
+      Reason:       CrashLoopBackOff
+    Last State:     Terminated
+      Reason:       Error
+      Exit Code:    255
+    Image:          ghcr.io/Aana-1025 Utane/stockpilot-api:f9d09f1d0cd1a86a20a1711fda2d2d23f3171db5
+    State:          Waiting
+      Reason:       CrashLoopBackOff
+    Last State:     Terminated
+      Reason:       Error
+      Exit Code:    255
+
+$ kubectl get nodes -o custom-columns=NAME:.metadata.name,ARCH:.status.nodeInfo.architecture
+NAME                         ARCH
+devops-heros-control-plane   arm64
+devops-heros-worker          arm64
+devops-heros-worker2         arm64
+
+$ docker buildx imagetools inspect ghcr.io/Aana-1025 Utane/stockpilot-api:f9d09f1d0cd1a86a20a1711fda2d2d23f3171db5
+Name:      ghcr.io/Aana-1025 Utane/stockpilot-api:f9d09f1d0cd1a86a20a1711fda2d2d23f3171db5
+MediaType: application/vnd.docker.distribution.manifest.v2+json
+Digest:    sha256:3f9a0c040effa7545bb7c5f27cb53d1528ecb7d33f5ab8e8dd3cc9b5d32ad728
+
+$ docker buildx imagetools inspect ghcr.io/Aana-1025 Utane/stockpilot-api:f9d09f1d0cd1a86a20a1711fda2d2d23f3171db5 --format '{{ .Image.OS }}/{{ .Image.Architecture }}'
+linux/amd64

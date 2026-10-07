@@ -1,0 +1,57 @@
+
+############ BREAK: Ingress backend renamed to stockpilot-apii ############
+
+$ kubectl -n final-trouble patch ingress stockpilot --type=json -p "$(cat troubleshooting/patches/ingress-wrong-service.json)"
+ingress.networking.k8s.io/stockpilot patched
+
+
+############ SYMPTOM ############
+
+$ curl -s -o /dev/null -w 'HTTP %{http_code}\n' -H 'Host: trouble.stockpilot.local' localhost:8081/ready
+HTTP 503
+
+$ kubectl -n final-trouble get pods,svc
+NAME                                      READY   STATUS    RESTARTS   AGE
+pod/stockpilot-api-8694764fbc-6n29w       1/1     Running   0          2m25s
+pod/stockpilot-api-8694764fbc-7km5h       1/1     Running   0          2m30s
+pod/stockpilot-postgres-8874969c8-zj4d6   1/1     Running   0          4m13s
+
+NAME                          TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)    AGE
+service/stockpilot-api        ClusterIP   10.96.36.164   <none>        80/TCP     9m34s
+service/stockpilot-postgres   ClusterIP   10.96.7.58     <none>        5432/TCP   9m34s
+
+
+############ INVESTIGATE ############
+
+$ kubectl -n final-trouble describe ingress stockpilot | sed -n '/Rules:/,/Annotations/p'
+Rules:
+  Host                      Path  Backends
+  ----                      ----  --------
+  trouble.stockpilot.local  
+                            /   stockpilot-apii:http (<error: services "stockpilot-apii" not found>)
+Annotations:                meta.helm.sh/release-name: stockpilot
+
+$ kubectl -n ingress-nginx logs deploy/ingress-nginx-controller --tail=300 | grep -E 'stockpilot-apii' | tail -2 | cut -c1-260
+W1006 11:55:54.062005      11 controller.go:1109] Error obtaining Endpoints for Service "final-trouble/stockpilot-apii": no object matching key "final-trouble/stockpilot-apii" in local store
+192.168.65.1 - - [06/Oct/2026:11:56:02 +0000] "GET /ready HTTP/1.1" 503 190 "-" "curl/8.7.1" 92 0.000 [final-trouble-stockpilot-apii-http] [] - - - - 874bea3a4f8a12d4c03fd49b2bf2d292
+
+
+############ ROOT CAUSE: ingress backend service name typo - the controller has no endpoints for it and returns 503. ############
+
+
+
+############ FIX: re-apply the chart; --force-conflicts because kubectl-patch now owns the field (see issue 5) ############
+
+$ helm upgrade stockpilot helm/stockpilot -n final-trouble -f helm/stockpilot/values-dev.yaml -f troubleshooting/values-trouble.yaml --force-conflicts --wait --timeout 5m | grep -E 'STATUS|REVISION'
+STATUS: deployed
+REVISION: 32
+
+$ kubectl -n final-trouble get ingress stockpilot -o jsonpath='{.spec.rules[0].http.paths[0].backend.service.name}{"\n"}'
+stockpilot-api
+
+
+############ VERIFY ############
+
+$ curl -s -o /dev/null -w 'HTTP %{http_code}\n' -H 'Host: trouble.stockpilot.local' localhost:8081/ready
+HTTP 200
+

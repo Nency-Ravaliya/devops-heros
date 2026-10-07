@@ -1,0 +1,73 @@
+
+############ BREAK: deploy a tag that does not exist ############
+
+$ helm upgrade stockpilot helm/stockpilot -n final-trouble -f helm/stockpilot/values-dev.yaml -f troubleshooting/values-trouble.yaml --set image.tag=1.0.9-typo | grep -E 'STATUS|REVISION'
+STATUS: deployed
+REVISION: 2
+
+
+############ SYMPTOM ############
+
+$ kubectl -n final-trouble rollout status deploy/stockpilot-api --timeout=10s
+Waiting for deployment "stockpilot-api" rollout to finish: 1 out of 2 new replicas have been updated...
+error: timed out waiting for the condition
+
+$ kubectl -n final-trouble get pods -l app.kubernetes.io/component=api
+NAME                              READY   STATUS         RESTARTS   AGE
+stockpilot-api-7d7c5dffcb-mtmbj   0/1     ErrImagePull   0          36s
+stockpilot-api-8694764fbc-d66ln   1/1     Running        0          47s
+stockpilot-api-8694764fbc-kpxk4   1/1     Running        0          47s
+
+$ curl -s -o /dev/null -w 'HTTP %{http_code}\n' -H 'Host: trouble.stockpilot.local' localhost:8081/ready
+HTTP 200
+
+
+############ INVESTIGATE ############
+
+$ kubectl -n final-trouble describe pod -l app.kubernetes.io/component=api | grep -E '^Name:|Image:|Reason:|Failed|Back-off' | head -12
+Name:             stockpilot-api-7d7c5dffcb-mtmbj
+    Image:          stockpilot-api:1.0.9-typo
+      Reason:       ErrImagePull
+Name:             stockpilot-api-8694764fbc-d66ln
+    Image:          stockpilot-api:1.0.1
+Name:             stockpilot-api-8694764fbc-kpxk4
+    Image:          stockpilot-api:1.0.1
+
+$ kubectl -n final-trouble get events --sort-by=.lastTimestamp | grep -E 'Failed|BackOff' | tail -4 | cut -c1-260
+17s         Warning   FailedComputeMetricsReplicas   horizontalpodautoscaler/stockpilot-api           invalid metrics (1 invalid out of 1), first error is: failed to get cpu resource metric value: failed to get cpu utilization: did not receive metrics for targ
+17s         Warning   FailedGetResourceMetric        horizontalpodautoscaler/stockpilot-api           failed to get cpu utilization: did not receive metrics for targeted pods (pods might be unready)
+6s          Normal    BackOff                        pod/stockpilot-api-7d7c5dffcb-mtmbj              Back-off pulling image "stockpilot-api:1.0.9-typo"
+6s          Warning   Failed                         pod/stockpilot-api-7d7c5dffcb-mtmbj              Error: ImagePullBackOff
+
+$ helm history stockpilot -n final-trouble | tail -3
+REVISION	UPDATED                 	STATUS    	CHART           	APP VERSION	DESCRIPTION     
+1       	Tue Oct  6 19:46:28 2026	superseded	stockpilot-0.1.0	1.0.1      	Install complete
+2       	Tue Oct  6 19:46:39 2026	deployed  	stockpilot-0.1.0	1.0.1      	Upgrade complete
+
+
+############ ROOT CAUSE: image stockpilot-api:1.0.9-typo does not exist (not in the node cache, not on docker.io). ############
+
+Old ReplicaSet kept serving because maxUnavailable=0 - the outage was avoided by the rollout strategy.
+
+
+############ FIX: redeploy the known-good tag from values-dev.yaml ############
+
+$ helm upgrade stockpilot helm/stockpilot -n final-trouble -f helm/stockpilot/values-dev.yaml -f troubleshooting/values-trouble.yaml --wait --timeout 5m | grep -E 'STATUS|REVISION'
+STATUS: deployed
+REVISION: 3
+
+
+############ VERIFY ############
+
+$ kubectl -n final-trouble get pods -l app.kubernetes.io/component=api
+NAME                              READY   STATUS        RESTARTS   AGE
+stockpilot-api-7d7c5dffcb-mtmbj   0/1     Terminating   0          36s
+stockpilot-api-8694764fbc-d66ln   1/1     Running       0          47s
+stockpilot-api-8694764fbc-kpxk4   1/1     Running       0          47s
+
+$ kubectl -n final-trouble get deploy stockpilot-api -o jsonpath='{.spec.template.spec.containers[0].image}{"\n"}'
+stockpilot-api:1.0.1
+
+$ curl -s -o /dev/null -w 'HTTP %{http_code}\n' -H 'Host: trouble.stockpilot.local' localhost:8081/ready
+HTTP 200
+

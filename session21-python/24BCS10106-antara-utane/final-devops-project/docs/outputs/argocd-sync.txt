@@ -1,0 +1,56 @@
+$ kubectl create namespace final-gitops
+namespace/final-gitops created
+
+$ kubectl -n final-gitops create secret generic stockpilot-db-prod --from-literal=DB_USER=stockpilot --from-literal=DB_PASSWORD="$(openssl rand -hex 16)"
+secret/stockpilot-db-prod created
+
+$ kubectl apply -f gitops/application.yaml
+Warning: metadata.finalizers: "resources-finalizer.argocd.argoproj.io": prefer a domain-qualified finalizer name including a path (/) to avoid accidental conflicts with other finalizer writers
+application.argoproj.io/final-stockpilot-24BCS10106 created
+
+$ kubectl -n argocd get application final-stockpilot-24BCS10106 -o wide
+NAME                          SYNC STATUS   HEALTH STATUS   REVISION                                   PROJECT
+final-stockpilot-24BCS10106   Synced        Degraded        323e26f1d2d5448f6deef9791533367d39ae0949   default
+
+$ kubectl -n argocd get application final-stockpilot-24BCS10106 -o jsonpath={.status.sync.revision}{"\n"}{.status.summary.images}{"\n"}
+323e26f1d2d5448f6deef9791533367d39ae0949
+["ghcr.io/Aana-1025 Utane/stockpilot-api:f9d09f1d0cd1a86a20a1711fda2d2d23f3171db5","postgres:17-alpine"]
+
+$ kubectl get deploy,po,svc,ing,hpa,pvc,servicemonitor,prometheusrule -n final-gitops
+NAME                                  READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/stockpilot-api        0/2     2            0           4m
+deployment.apps/stockpilot-postgres   1/1     1            1           4m
+
+NAME                                      READY   STATUS             RESTARTS      AGE
+pod/stockpilot-api-7df94ccf4f-gbd4p       0/1     CrashLoopBackOff   5 (43s ago)   4m
+pod/stockpilot-api-7df94ccf4f-tvt2c       0/1     CrashLoopBackOff   4 (23s ago)   4m
+pod/stockpilot-postgres-fccf44f68-hpj87   1/1     Running            0             4m
+
+NAME                          TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)    AGE
+service/stockpilot-api        ClusterIP   10.96.205.203   <none>        80/TCP     4m
+service/stockpilot-postgres   ClusterIP   10.96.149.95    <none>        5432/TCP   4m
+
+NAME                                   CLASS   HOSTS                     ADDRESS     PORTS   AGE
+ingress.networking.k8s.io/stockpilot   nginx   stockpilot-gitops.local   localhost   80      4m
+
+NAME                                                 REFERENCE                   TARGETS              MINPODS   MAXPODS   REPLICAS   AGE
+horizontalpodautoscaler.autoscaling/stockpilot-api   Deployment/stockpilot-api   cpu: <unknown>/65%   2         4         2          4m
+
+NAME                                             STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE
+persistentvolumeclaim/stockpilot-postgres-data   Bound    pvc-60a3f7bc-e729-4546-8fff-cceb678f0d92   1Gi        RWO            standard       <unset>                 4m
+
+NAME                                                  AGE
+servicemonitor.monitoring.coreos.com/stockpilot-api   4m
+
+NAME                                                     AGE
+prometheusrule.monitoring.coreos.com/stockpilot-alerts   4m
+
+$ curl -s -H Host: stockpilot-gitops.local localhost:8081/api/info
+<html>
+<head><title>503 Service Temporarily Unavailable</title></head>
+<body>
+<center><h1>503 Service Temporarily Unavailable</h1></center>
+<hr><center>nginx</center>
+</body>
+</html>
+

@@ -1,0 +1,65 @@
+
+############ BREAK: remove resources (requests/limits) from the API container ############
+
+$ helm upgrade stockpilot helm/stockpilot -n final-trouble -f helm/stockpilot/values-dev.yaml -f troubleshooting/values-trouble.yaml --set resources=null | grep -E 'STATUS|REVISION'
+STATUS: deployed
+REVISION: 20
+
+
+############ SYMPTOM ############
+
+$ kubectl -n final-trouble get hpa
+NAME             REFERENCE                   TARGETS              MINPODS   MAXPODS   REPLICAS   AGE
+stockpilot-api   Deployment/stockpilot-api   cpu: <unknown>/50%   2         3         2          7m3s
+
+
+############ INVESTIGATE ############
+
+$ kubectl -n final-trouble describe hpa stockpilot-api | sed -n '/Conditions/,$p' | cut -c1-220
+Conditions:
+  Type            Status  Reason                   Message
+  ----            ------  ------                   -------
+  AbleToScale     True    SucceededGetScale        the HPA controller was able to get the target's current scale
+  ScaledToZero    False   NotScaledToZero          the HPA controller did not scale the workload to zero
+  ScalingActive   False   FailedGetResourceMetric  the HPA was unable to compute the replica count: failed to get cpu utilization: missing request for cpu in container api of Pod stockpilot-api-7b59456f5f-7t5zx
+  ScalingLimited  True    TooFewReplicas           the desired replica count is less than the minimum replica count
+Events:
+  Type     Reason                        Age                  From                       Message
+  ----     ------                        ----                 ----                       -------
+  Normal   SuccessfulRescale             7m4s                 horizontal-pod-autoscaler  New size: 2; reason: Current number of replicas below Spec.MinReplicas
+  Warning  FailedGetResourceMetric       6m49s                horizontal-pod-autoscaler  failed to get cpu utilization: unable to get metrics for resource cpu: no metrics returned from resource metrics API
+  Warning  FailedComputeMetricsReplicas  6m49s                horizontal-pod-autoscaler  invalid metrics (1 invalid out of 1), first error is: failed to get cpu resource metric value: failed to get cpu utilization: unabl
+  Warning  FailedGetResourceMetric       34s (x5 over 6m34s)  horizontal-pod-autoscaler  failed to get cpu utilization: did not receive metrics for targeted pods (pods might be unready)
+  Warning  FailedComputeMetricsReplicas  34s (x5 over 6m34s)  horizontal-pod-autoscaler  invalid metrics (1 invalid out of 1), first error is: failed to get cpu resource metric value: failed to get cpu utilization: did n
+  Warning  FailedGetResourceMetric       4s (x3 over 64s)     horizontal-pod-autoscaler  failed to get cpu utilization: missing request for cpu in container api of Pod stockpilot-api-7b59456f5f-7t5zx
+  Warning  FailedComputeMetricsReplicas  4s (x3 over 64s)     horizontal-pod-autoscaler  invalid metrics (1 invalid out of 1), first error is: failed to get cpu resource metric value: failed to get cpu utilization: missi
+
+$ kubectl -n final-trouble get deploy stockpilot-api -o jsonpath='{.spec.template.spec.containers[0].resources}{"\n"}'
+{}
+
+$ kubectl -n final-trouble top pods -l app.kubernetes.io/component=api
+NAME                              CPU(cores)   MEMORY(bytes)   
+stockpilot-api-7b59456f5f-7t5zx   3m           60Mi            
+stockpilot-api-7b59456f5f-fp7rf   3m           61Mi            
+
+
+############ ROOT CAUSE: HPA utilization = usage / request. With no cpu request the ratio is undefined, so the HPA reports <unknown> (metrics-server itself is fine - kubectl top works). ############
+
+
+
+############ FIX ############
+
+$ helm upgrade stockpilot helm/stockpilot -n final-trouble -f helm/stockpilot/values-dev.yaml -f troubleshooting/values-trouble.yaml --wait --timeout 5m | grep -E 'STATUS|REVISION'
+STATUS: deployed
+REVISION: 21
+
+
+############ VERIFY ############
+
+$ kubectl -n final-trouble get deploy stockpilot-api -o jsonpath='{.spec.template.spec.containers[0].resources}{"\n"}'
+{"limits":{"cpu":"500m","memory":"256Mi"},"requests":{"cpu":"50m","memory":"96Mi"}}
+
+$ kubectl -n final-trouble get hpa
+NAME             REFERENCE                   TARGETS       MINPODS   MAXPODS   REPLICAS   AGE
+stockpilot-api   Deployment/stockpilot-api   cpu: 8%/50%   2         3         2          8m1s
+

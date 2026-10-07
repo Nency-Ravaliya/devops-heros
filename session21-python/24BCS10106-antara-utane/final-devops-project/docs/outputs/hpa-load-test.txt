@@ -1,0 +1,106 @@
+$ kubectl -n final get hpa
+NAME             REFERENCE                   TARGETS       MINPODS   MAXPODS   REPLICAS   AGE
+stockpilot-api   Deployment/stockpilot-api   cpu: 9%/50%   2         5         2          22m
+
+$ kubectl -n final run load-gen --image=busybox:1.37 --restart=Never -- sh -c '<8 parallel wget loops against http://stockpilot-api.final.svc.cluster.local/api/summary and /api/items>'
+pod/load-gen created
+
+--- 19:30:06
+stockpilot-api   Deployment/stockpilot-api   cpu: 9%/50%   2     5     2     22m
+stockpilot-api-8694764fbc-99pfk   4m    61Mi   
+stockpilot-api-8694764fbc-w4lzc   5m    63Mi   
+--- 19:30:21
+stockpilot-api   Deployment/stockpilot-api   cpu: 8%/50%   2     5     2     22m
+stockpilot-api-8694764fbc-99pfk   4m    61Mi   
+stockpilot-api-8694764fbc-w4lzc   4m    63Mi   
+--- 19:30:36
+stockpilot-api   Deployment/stockpilot-api   cpu: 664%/50%   2     5     2     23m
+stockpilot-api-8694764fbc-99pfk   399m   74Mi   
+stockpilot-api-8694764fbc-w4lzc   265m   77Mi   
+--- 19:30:52
+stockpilot-api   Deployment/stockpilot-api   cpu: 848%/50%   2     5     5     23m
+stockpilot-api-8694764fbc-99pfk   439m   66Mi   
+stockpilot-api-8694764fbc-ghm9k   300m   76Mi   
+stockpilot-api-8694764fbc-mcvfj   271m   63Mi   
+stockpilot-api-8694764fbc-vd4mf   257m   62Mi   
+stockpilot-api-8694764fbc-w4lzc   409m   77Mi   
+--- 19:31:07
+stockpilot-api   Deployment/stockpilot-api   cpu: 626%/50%   2     5     5     23m
+stockpilot-api-8694764fbc-99pfk   298m   65Mi   
+stockpilot-api-8694764fbc-ghm9k   277m   77Mi   
+stockpilot-api-8694764fbc-mcvfj   328m   64Mi   
+stockpilot-api-8694764fbc-vd4mf   291m   61Mi   
+stockpilot-api-8694764fbc-w4lzc   372m   66Mi   
+--- 19:31:22
+stockpilot-api   Deployment/stockpilot-api   cpu: 553%/50%   2     5     5     23m
+stockpilot-api-8694764fbc-99pfk   270m   69Mi   
+stockpilot-api-8694764fbc-ghm9k   285m   63Mi   
+stockpilot-api-8694764fbc-mcvfj   275m   63Mi   
+stockpilot-api-8694764fbc-vd4mf   276m   61Mi   
+stockpilot-api-8694764fbc-w4lzc   278m   66Mi   
+--- 19:31:37
+stockpilot-api   Deployment/stockpilot-api   cpu: 599%/50%   2     5     5     24m
+stockpilot-api-8694764fbc-99pfk   303m   73Mi   
+stockpilot-api-8694764fbc-ghm9k   311m   63Mi   
+stockpilot-api-8694764fbc-mcvfj   300m   64Mi   
+stockpilot-api-8694764fbc-vd4mf   295m   62Mi   
+stockpilot-api-8694764fbc-w4lzc   289m   70Mi   
+--- 19:31:52
+stockpilot-api   Deployment/stockpilot-api   cpu: 627%/50%   2     5     5     24m
+stockpilot-api-8694764fbc-99pfk   329m   66Mi   
+stockpilot-api-8694764fbc-ghm9k   311m   62Mi   
+stockpilot-api-8694764fbc-mcvfj   317m   64Mi   
+stockpilot-api-8694764fbc-vd4mf   295m   62Mi   
+stockpilot-api-8694764fbc-w4lzc   317m   66Mi   
+--- 19:32:08
+stockpilot-api   Deployment/stockpilot-api   cpu: 681%/50%   2     5     5     24m
+stockpilot-api-8694764fbc-99pfk   329m   66Mi   
+stockpilot-api-8694764fbc-ghm9k   354m   62Mi   
+stockpilot-api-8694764fbc-mcvfj   347m   63Mi   
+stockpilot-api-8694764fbc-vd4mf   333m   62Mi   
+stockpilot-api-8694764fbc-w4lzc   340m   65Mi   
+--- 19:32:23
+stockpilot-api   Deployment/stockpilot-api   cpu: 578%/50%   2     5     5     24m
+stockpilot-api-8694764fbc-99pfk   307m   65Mi   
+stockpilot-api-8694764fbc-ghm9k   292m   62Mi   
+stockpilot-api-8694764fbc-mcvfj   274m   63Mi   
+stockpilot-api-8694764fbc-vd4mf   275m   62Mi   
+stockpilot-api-8694764fbc-w4lzc   298m   67Mi   
+--- 19:32:38
+stockpilot-api   Deployment/stockpilot-api   cpu: 596%/50%   2     5     5     25m
+stockpilot-api-8694764fbc-99pfk   307m   65Mi   
+stockpilot-api-8694764fbc-ghm9k   295m   62Mi   
+stockpilot-api-8694764fbc-mcvfj   305m   64Mi   
+stockpilot-api-8694764fbc-vd4mf   302m   63Mi   
+stockpilot-api-8694764fbc-w4lzc   282m   71Mi   
+--- 19:32:53
+stockpilot-api   Deployment/stockpilot-api   cpu: 611%/50%   2     5     5     25m
+stockpilot-api-8694764fbc-99pfk   282m   66Mi   
+stockpilot-api-8694764fbc-ghm9k   312m   62Mi   
+stockpilot-api-8694764fbc-mcvfj   305m   64Mi   
+stockpilot-api-8694764fbc-vd4mf   312m   63Mi   
+stockpilot-api-8694764fbc-w4lzc   317m   66Mi   
+
+$ kubectl -n final describe hpa | sed -n '/Events/,$p'
+Events:
+  Type     Reason                        Age                From                       Message
+  ----     ------                        ----               ----                       -------
+  Normal   SuccessfulRescale             25m                horizontal-pod-autoscaler  New size: 2; reason: Current number of replicas below Spec.MinReplicas
+  Warning  FailedGetResourceMetric       22m (x6 over 25m)  horizontal-pod-autoscaler  failed to get cpu utilization: unable to get metrics for resource cpu: no metrics returned from resource metrics API
+  Warning  FailedComputeMetricsReplicas  22m (x6 over 25m)  horizontal-pod-autoscaler  invalid metrics (1 invalid out of 1), first error is: failed to get cpu resource metric value: failed to get cpu utilization: unable to get metrics for resource cpu: no metrics returned from resource metrics API
+  Warning  FailedGetResourceMetric       21m (x2 over 24m)  horizontal-pod-autoscaler  failed to get cpu utilization: did not receive metrics for targeted pods (pods might be unready)
+  Warning  FailedComputeMetricsReplicas  21m (x2 over 24m)  horizontal-pod-autoscaler  invalid metrics (1 invalid out of 1), first error is: failed to get cpu resource metric value: failed to get cpu utilization: did not receive metrics for targeted pods (pods might be unready)
+  Normal   SuccessfulRescale             2m33s              horizontal-pod-autoscaler  New size: 5; reason: cpu resource utilization (percentage of request) above target
+
+$ kubectl -n final get deploy stockpilot-api
+NAME             READY   UP-TO-DATE   AVAILABLE   AGE
+stockpilot-api   5/5     5            5           25m
+$ kubectl -n final get hpa stockpilot-api
+NAME             REFERENCE                   TARGETS       MINPODS   MAXPODS   REPLICAS   AGE
+stockpilot-api   Deployment/stockpilot-api   cpu: 7%/50%   2         5         2          50m
+
+$ kubectl -n final describe hpa stockpilot-api | grep SuccessfulRescale
+  Normal   SuccessfulRescale             50m                horizontal-pod-autoscaler  New size: 2; reason: Current number of replicas below Spec.MinReplicas
+  Normal   SuccessfulRescale             27m                horizontal-pod-autoscaler  New size: 5; reason: cpu resource utilization (percentage of request) above target
+  Normal   SuccessfulRescale             23m                horizontal-pod-autoscaler  New size: 2; reason: All metrics below target
+
