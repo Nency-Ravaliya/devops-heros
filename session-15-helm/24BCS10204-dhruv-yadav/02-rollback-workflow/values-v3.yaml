@@ -1,0 +1,9 @@
+# Revision 3 (second upgrade): new image tag, 3 replicas, new message
+replicaCount: 3
+image:
+  tag: "1.25"
+service:
+  type: ClusterIP
+app:
+  environment: production
+  message: "v3 - nginx 1.25 with three replicas"
