@@ -1,8 +1,10 @@
-# Docker Hello World Applications
+# Docker Hello World Applications (Task 3 Deployment Suite)
 
-## 👩‍💻 Submitted by Sahasra
+## 👩‍💻 Submitted by Sahasra Rambati
+- **Enrollment Number:** sahasra10241
+- **Master Docker Assignment Documentation:** [session6-7-docker/README.md](../README.md)
 
-This project contains six simple **Hello World applications** containerized using Docker.
+This project contains six simple **Hello World applications** containerized using Docker (Node.js, Python, Java, Apache, React, Nginx).
 
 Each application has its own folder, application code, and Dockerfile.
 
