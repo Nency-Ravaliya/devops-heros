@@ -1,0 +1,13 @@
+# Step 8 of the mini project: the course service.yaml with the selector
+# intentionally changed from app: troubleshooting-app to app: wrong-app.
+apiVersion: v1
+kind: Service
+metadata:
+  name: troubleshooting-service
+spec:
+  selector:
+    app: wrong-app
+  ports:
+    - port: 80
+      targetPort: 80
+  type: ClusterIP
