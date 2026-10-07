@@ -1,0 +1,51 @@
+Workflow: Session 17 - DevSecOps Pipeline
+Run #1  event=push  commit=bc03018  "Session 17: DevSecOps pipeline (Bandit, CodeQL, pip-audit, Gitleaks, Trivy gate, GHCR, kind)"
+Status: completed / failure
+Started 2026-10-07T19:39:39Z  updated 2026-10-07T19:41:09Z
+URL: https://github.com/TejasVarshney/devops-heros/actions/runs/37676161061
+
+JOB  1. Build & Unit Test                                    success   runner: GitHub Actions 1000000031 (ubuntu-latest)
+      1. Set up job                                              success
+      2. Run actions/checkout@v4                                 success
+      3. Run actions/setup-python@v5                             success
+      4. Install dependencies (build)                            success
+      5. Byte-compile (catch syntax errors)                      success
+      6. Unit tests + coverage                                   success
+     11. Post Run actions/setup-python@v5                        success
+     12. Post Run actions/checkout@v4                            success
+     13. Complete job                                            success
+JOB  2a. SAST - Bandit (gate)                                failure   runner: GitHub Actions 1000000035 (ubuntu-latest)
+      1. Set up job                                              success
+      2. Run actions/checkout@v4                                 success
+      3. Run actions/setup-python@v5                             success
+      4. Run pip install bandit==1.8.6                           success
+      5. Bandit - fail on MEDIUM+ severity / MEDIUM+ confidence  failure
+      9. Post Run actions/setup-python@v5                        skipped
+     10. Post Run actions/checkout@v4                            success
+     11. Complete job                                            success
+JOB  2b. SAST - CodeQL                                       success   runner: GitHub Actions 1000000032 (ubuntu-latest)
+      1. Set up job                                              success
+      2. Run actions/checkout@v4                                 success
+      3. Run github/codeql-action/init@v3                        success
+      4. Run github/codeql-action/analyze@v3                     success
+      6. Post Run github/codeql-action/analyze@v3                success
+      7. Post Run github/codeql-action/init@v3                   success
+      8. Post Run actions/checkout@v4                            success
+      9. Complete job                                            success
+JOB  3. SCA - pip-audit (gate)                               success   runner: GitHub Actions 1000000034 (ubuntu-latest)
+      1. Set up job                                              success
+      2. Run actions/checkout@v4                                 success
+      3. Run actions/setup-python@v5                             success
+      4. Run pip install pip-audit==2.9.0                        success
+      5. Audit dependencies for known CVEs                       success
+      9. Post Run actions/setup-python@v5                        success
+     10. Post Run actions/checkout@v4                            success
+     11. Complete job                                            success
+JOB  4. Secret Scan - Gitleaks (gate)                        success   runner: GitHub Actions 1000000033 (ubuntu-latest)
+      1. Set up job                                              success
+      2. Run actions/checkout@v4                                 success
+      3. Gitleaks                                                success
+      6. Post Run actions/checkout@v4                            success
+      7. Complete job                                            success
+JOB  5-8. Docker Build, Image Scan, Security Gate, Push      skipped   runner: None (ubuntu-latest)
+JOB  9. Deploy to Kubernetes (kind)                          skipped   runner: None (ubuntu-latest)
