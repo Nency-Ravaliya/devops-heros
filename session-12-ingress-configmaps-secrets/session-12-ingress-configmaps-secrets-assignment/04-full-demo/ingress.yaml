@@ -1,0 +1,32 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: yatri-ingress
+  labels:
+    app: yatri-app
+  annotations:
+    # Rewrite everything captured by group 2 of the path regex to the service root.
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    nginx.ingress.kubernetes.io/use-regex: "true"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: yatri.local
+      http:
+        paths:
+          # Root traffic -> frontend (Nginx)
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: yatri-frontend
+                port:
+                  number: 80
+          # /api and everything under it -> backend (Python API), stripped by rewrite-target
+          - path: /api(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: yatri-backend
+                port:
+                  number: 8080
