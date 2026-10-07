@@ -185,10 +185,11 @@ jobs:
           docker save "$IMAGE_NAME:${GITHUB_SHA::7}" -o image.tar
       - name: Quick container check (non-root, read-only rootfs)
         run: |
-          docker run -d --name t --read-only --tmpfs /tmp --cap-drop ALL -p 8080:8080 "$IMAGE_NAME:${GITHUB_SHA::7}"
+          docker run -d --name smoke --read-only --tmpfs /tmp --cap-drop ALL -p 8080:8080 "$IMAGE_NAME:${GITHUB_SHA::7}"
           for i in $(seq 1 15); do curl -fs localhost:8080/health && break; sleep 1; done
           echo
-          echo "container user: $(docker exec t id)"
+          echo "container user: $(docker exec smoke id)"
+          docker rm -f smoke
       - uses: actions/upload-artifact@v7
         with:
           name: image-tar
