@@ -80,7 +80,10 @@ cap "kubectl -n notes get configmap notes-config -o jsonpath='{.data.WELCOME_MES
 kubectl apply -f monitoring/alerts.yaml >/dev/null 2>&1
 PROM=$(pf -n monitoring svc/kps-prometheus 9090:9090); GRAF=$(pf -n monitoring svc/kps-grafana 3000:80); sleep 5
 for i in $(seq 1 20); do api /api/notes >/dev/null; api /missing >/dev/null; done
-sleep 40
+for i in $(seq 1 30); do   # wait until the operator has loaded the PrometheusRule
+  [ "$(curl -s localhost:9090/api/v1/rules | jq '[.data.groups[] | select(.name=="notes-api.rules")] | length')" = "1" ] && break; sleep 6
+done
+sleep 20
 {
 cap "curl -s localhost:9090/api/v1/targets | jq -r '.data.activeTargets[] | select(.labels.namespace==\"notes\") | \"\(.labels.job) \(.labels.instance) health=\(.health)\"'"
 cap "promq 'sum by (endpoint, status) (rate(notes_http_requests_total{namespace=\"notes\"}[2m]))'"

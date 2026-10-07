@@ -27,7 +27,8 @@ cap "kubectl -n $NS get pods,svc,ingress,hpa"
 
 echo "############################ ISSUE 1: ImagePullBackOff ############################"
 cap "kubectl -n $NS get pods -l app=notes-api"
-cap "kubectl -n $NS describe pod -l app=notes-api | grep -E 'Image:|Failed|BackOff' | sort -u | head -5"
+cap "kubectl -n $NS describe pod -l app=notes-api | grep -m1 'Image:'"
+cap "kubectl -n $NS get events --field-selector reason=Failed -o custom-columns=OBJECT:.involvedObject.name,MESSAGE:.message | grep notes-api | sort -u | head -3"
 echo "# ROOT CAUSE: image tag has a typo (extra 'x') - that tag was never built or pushed"
 echo "# FIX: use the image the pipeline built ($IMAGE)"
 cap "kubectl -n $NS set image deploy/notes-api api=$IMAGE"
@@ -35,7 +36,7 @@ sleep 30
 cap "kubectl -n $NS get pods -l app=notes-api"
 
 echo "############################ ISSUE 2: CreateContainerConfigError ############################"
-cap "kubectl -n $NS describe pod -l app=notes-api | grep -E 'Error:|Warning' | sort -u | head -4"
+cap "kubectl -n $NS get events --field-selector reason=Failed -o custom-columns=MESSAGE:.message | grep -i secret | sort -u | head -2"
 cap "kubectl -n $NS get secret notes-redis-auth -o jsonpath='{.data}' | jq 'keys'"
 echo "# ROOT CAUSE: Deployment reads key 'redis-password' but the Secret's key is 'password'"
 cap "diff <(sed 's#IMAGE_PLACEHOLDER_TYPO#IMG#' troubleshooting/broken/deployment.yaml) <(sed 's#IMAGE_PLACEHOLDER#IMG#' kubernetes/deployment.yaml)"
@@ -45,8 +46,9 @@ sleep 40
 cap "kubectl -n $NS get pods -l app=notes-api"
 
 echo "############################ ISSUE 3: Pods Running but never Ready ############################"
-cap "kubectl -n $NS describe pod -l app=notes-api | grep -E 'Readiness probe failed' | sort -u | head -2"
-POD=$(kubectl -n $NS get pod -l app=notes-api -o jsonpath='{.items[0].metadata.name}')
+POD=$(kubectl -n $NS get pod -l app=notes-api --field-selector=status.phase=Running -o jsonpath='{.items[0].metadata.name}')
+cap "kubectl -n $NS get pod $POD"
+cap "kubectl -n $NS get events --field-selector involvedObject.name=$POD,reason=Unhealthy -o custom-columns=MESSAGE:.message | sort -u | head -2"
 cap "kubectl -n $NS exec $POD -- python -c \"import urllib.request as u; print(u.urlopen('http://127.0.0.1:8000/health').read().decode())\""
 cap "kubectl -n $NS exec $POD -- python -c \"import urllib.request as u, urllib.error as e
 try: u.urlopen('http://127.0.0.1:8000/ready')
@@ -58,12 +60,19 @@ cap "kubectl -n $NS apply -f kubernetes/configmap.yaml && kubectl -n $NS rollout
 cap "kubectl -n $NS get endpoints notes-api"
 
 echo "############################ ISSUE 4: HPA shows <unknown> ############################"
-echo "(captured from the broken Deployment before the fix in issue 2 removed it:)"
+echo "(state with the original broken manifest, captured at the start:)"
 cat /tmp/hpa-broken.txt 2>/dev/null
+echo "# At that point no Pod was even running. To isolate the real config bug, deploy the broken manifest"
+echo "# with only issues 1+2 corrected, i.e. still WITHOUT resources.requests:"
+cap "sed 's#IMAGE_PLACEHOLDER_TYPO#$IMAGE#; s#key: redis-password#key: password#' troubleshooting/broken/deployment.yaml | kubectl -n $NS apply -f - && kubectl -n $NS rollout status deploy/notes-api --timeout=120s"
+sleep 60
 cap "kubectl -n $NS get hpa notes-api"
-cap "kubectl -n $NS describe hpa notes-api | grep -E 'Metrics|resource cpu|Conditions' -A2 | head -12"
-echo "# ROOT CAUSE (broken manifest): no resources.requests.cpu -> HPA cannot compute utilization (% of request)"
-echo "# FIX: requests added in kubernetes/deployment.yaml (applied in issue 2)"
+cap "kubectl -n $NS describe hpa notes-api | grep -iE 'missing request|FailedGetResourceMetric' | sort -u | head -3"
+cap "kubectl -n $NS get deploy notes-api -o jsonpath='{.spec.template.spec.containers[0].resources}'; echo '<- empty'"
+echo "# ROOT CAUSE: no resources.requests.cpu -> HPA utilization is a % OF THE REQUEST, so it cannot be computed"
+cap "sed 's#IMAGE_PLACEHOLDER#$IMAGE#' kubernetes/deployment.yaml | kubectl -n $NS apply -f - && kubectl -n $NS rollout status deploy/notes-api --timeout=120s"
+sleep 75
+cap "kubectl -n $NS get hpa notes-api"
 
 echo "############################ ISSUE 5: Ingress returns 503 ############################"
 cap "echo HTTP \$(curl -s -o /dev/null -w '%{http_code}' -H 'Host: notes-staging.local' http://localhost/)"
