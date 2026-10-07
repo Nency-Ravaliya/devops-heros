@@ -1,0 +1,48 @@
+# Grafana dashboard provisioned "as code".
+# The kube-prometheus-stack Grafana sidecar watches ConfigMaps labelled grafana_dashboard=1
+# in the monitoring namespace and loads the JSON automatically.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: s20-podinfo-dashboard
+  namespace: monitoring
+  labels:
+    grafana_dashboard: "1"
+data:
+  s20-podinfo.json: |
+    {
+      "uid": "s20-podinfo",
+      "title": "S20 - podinfo (24BCS10106)",
+      "tags": ["s20", "session20"],
+      "timezone": "browser",
+      "schemaVersion": 39,
+      "refresh": "30s",
+      "time": { "from": "now-30m", "to": "now" },
+      "panels": [
+        {
+          "id": 1, "type": "timeseries", "title": "CPU (cores) per pod",
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "targets": [ { "refId": "A", "expr": "sum by (pod) (rate(container_cpu_usage_seconds_total{namespace=\"s20\", container=\"podinfo\"}[5m]))", "legendFormat": "{{pod}}" } ]
+        },
+        {
+          "id": 2, "type": "timeseries", "title": "Memory working set (bytes) per pod",
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "fieldConfig": { "defaults": { "unit": "bytes" } },
+          "targets": [ { "refId": "A", "expr": "sum by (pod) (container_memory_working_set_bytes{namespace=\"s20\", container=\"podinfo\"})", "legendFormat": "{{pod}}" } ]
+        },
+        {
+          "id": 3, "type": "timeseries", "title": "HTTP requests/s (app metric)",
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "targets": [ { "refId": "A", "expr": "sum by (status) (rate(http_request_duration_seconds_count{namespace=\"s20\"}[1m]))", "legendFormat": "{{status}}" } ]
+        },
+        {
+          "id": 4, "type": "stat", "title": "Targets up",
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "targets": [ { "refId": "A", "expr": "sum(up{namespace=\"s20\", job=\"podinfo\"})" } ]
+        }
+      ]
+    }
