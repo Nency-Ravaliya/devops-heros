@@ -1,5 +1,5 @@
 $ terraform output
-bucket_arn = "arn:aws:s3:::tejas-devops-heros-752291b5"
-bucket_name = "tejas-devops-heros-752291b5"
+bucket_arn = "arn:aws:s3:::tejas-devops-heros-d7bdd73e"
+bucket_name = "tejas-devops-heros-d7bdd73e"
 bucket_region = "ap-south-1"
 [exit code: 0]

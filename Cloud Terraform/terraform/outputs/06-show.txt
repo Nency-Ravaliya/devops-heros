@@ -21,7 +21,7 @@ data "aws_availability_zones" "available" {
 # aws_instance.web:
 resource "aws_instance" "web" {
     ami                                  = "ami-03cf127a"
-    arn                                  = "arn:aws:ec2:ap-south-1::instance/i-48ebabf7b345e2fbd"
+    arn                                  = "arn:aws:ec2:ap-south-1::instance/i-55dec0a4b6d90e3b7"
     associate_public_ip_address          = true
     availability_zone                    = "ap-south-1a"
     disable_api_stop                     = false
@@ -31,7 +31,7 @@ resource "aws_instance" "web" {
     hibernation                          = false
     host_id                              = null
     iam_instance_profile                 = null
-    id                                   = "i-48ebabf7b345e2fbd"
+    id                                   = "i-55dec0a4b6d90e3b7"
     instance_initiated_shutdown_behavior = "stop"
     instance_lifecycle                   = null
     instance_state                       = "running"
@@ -44,16 +44,16 @@ resource "aws_instance" "web" {
     password_data                        = null
     placement_group                      = null
     placement_partition_number           = 0
-    primary_network_interface_id         = "eni-cc6766c504edcb643"
+    primary_network_interface_id         = "eni-c9f19c23637b9195a"
     private_dns                          = "ip-10-0-1-4.ap-south-1.compute.internal"
     private_ip                           = "10.0.1.4"
-    public_dns                           = "ec2-54-214-94-143.ap-south-1.compute.amazonaws.com"
-    public_ip                            = "54.214.94.143"
+    public_dns                           = "ec2-54-214-206-0.ap-south-1.compute.amazonaws.com"
+    public_ip                            = "54.214.206.0"
     secondary_private_ips                = []
     security_groups                      = []
     source_dest_check                    = true
     spot_instance_request_id             = null
-    subnet_id                            = "subnet-3f65043327228c548"
+    subnet_id                            = "subnet-f3ca32c36d673e14f"
     tags                                 = {
         "Name" = "devops-heros-web"
     }
@@ -68,7 +68,7 @@ resource "aws_instance" "web" {
     user_data                            = "ae1c29c5ff511145cde4dd58714a94c32b5462a8"
     user_data_replace_on_change          = false
     vpc_security_group_ids               = [
-        "sg-a8aecc810f5849c16",
+        "sg-f0fedcb4eb31f6697",
     ]
 
     credit_specification {
@@ -80,7 +80,7 @@ resource "aws_instance" "web" {
         device_name           = "/dev/sda1"
         encrypted             = true
         iops                  = 3000
-        kms_key_id            = "arn:aws:kms:ap-south-1:123456789012:key/21a9699d-864a-4535-aec7-c727522ed099"
+        kms_key_id            = "arn:aws:kms:ap-south-1:123456789012:key/dec661a3-d81c-45cf-aa08-58a84f4bf4ab"
         tags_all              = {
             "Environment" = "dev"
             "ManagedBy"   = "terraform"
@@ -88,7 +88,7 @@ resource "aws_instance" "web" {
             "Project"     = "devops-heros"
         }
         throughput            = 0
-        volume_id             = "vol-289cb6eec3b8a9e27"
+        volume_id             = "vol-5611bb0e7fb2537d6"
         volume_size           = 8
         volume_type           = "gp3"
     }
@@ -96,8 +96,8 @@ resource "aws_instance" "web" {
 
 # aws_internet_gateway.igw:
 resource "aws_internet_gateway" "igw" {
-    arn      = "arn:aws:ec2:ap-south-1:123456789012:internet-gateway/igw-393bc94fca231b5b8"
-    id       = "igw-393bc94fca231b5b8"
+    arn      = "arn:aws:ec2:ap-south-1:123456789012:internet-gateway/igw-5a0fc6e7d521870fa"
+    id       = "igw-5a0fc6e7d521870fa"
     owner_id = "123456789012"
     tags     = {
         "Name" = "devops-heros-igw"
@@ -109,13 +109,13 @@ resource "aws_internet_gateway" "igw" {
         "Owner"       = "tejas-varshney"
         "Project"     = "devops-heros"
     }
-    vpc_id   = "vpc-55ebd8b6762880382"
+    vpc_id   = "vpc-32ac50ea35a85331d"
 }
 
 # aws_route_table.public:
 resource "aws_route_table" "public" {
-    arn              = "arn:aws:ec2:ap-south-1:123456789012:route-table/rtb-e1ee551a43e857e8b"
-    id               = "rtb-e1ee551a43e857e8b"
+    arn              = "arn:aws:ec2:ap-south-1:123456789012:route-table/rtb-7b01a8a6c6f775d73"
+    id               = "rtb-7b01a8a6c6f775d73"
     owner_id         = "123456789012"
     propagating_vgws = []
     route            = [
@@ -125,7 +125,7 @@ resource "aws_route_table" "public" {
             core_network_arn           = null
             destination_prefix_list_id = null
             egress_only_gateway_id     = null
-            gateway_id                 = "igw-393bc94fca231b5b8"
+            gateway_id                 = "igw-5a0fc6e7d521870fa"
             ipv6_cidr_block            = null
             local_gateway_id           = null
             nat_gateway_id             = null
@@ -145,28 +145,28 @@ resource "aws_route_table" "public" {
         "Owner"       = "tejas-varshney"
         "Project"     = "devops-heros"
     }
-    vpc_id           = "vpc-55ebd8b6762880382"
+    vpc_id           = "vpc-32ac50ea35a85331d"
 }
 
 # aws_route_table_association.public:
 resource "aws_route_table_association" "public" {
     gateway_id     = null
-    id             = "rtbassoc-18b97dcb6e53a50ea"
-    route_table_id = "rtb-e1ee551a43e857e8b"
-    subnet_id      = "subnet-3f65043327228c548"
+    id             = "rtbassoc-4fa325e9d655b10a3"
+    route_table_id = "rtb-7b01a8a6c6f775d73"
+    subnet_id      = "subnet-f3ca32c36d673e14f"
 }
 
 # aws_s3_bucket.assets:
 resource "aws_s3_bucket" "assets" {
     acceleration_status         = null
-    arn                         = "arn:aws:s3:::devops-heros-assets-aa057c1e"
-    bucket                      = "devops-heros-assets-aa057c1e"
-    bucket_domain_name          = "devops-heros-assets-aa057c1e.s3.amazonaws.com"
+    arn                         = "arn:aws:s3:::devops-heros-assets-a6343404"
+    bucket                      = "devops-heros-assets-a6343404"
+    bucket_domain_name          = "devops-heros-assets-a6343404.s3.amazonaws.com"
     bucket_prefix               = null
-    bucket_regional_domain_name = "devops-heros-assets-aa057c1e.s3.ap-south-1.amazonaws.com"
+    bucket_regional_domain_name = "devops-heros-assets-a6343404.s3.ap-south-1.amazonaws.com"
     force_destroy               = true
     hosted_zone_id              = "Z11RGJOFQNVJUP"
-    id                          = "devops-heros-assets-aa057c1e"
+    id                          = "devops-heros-assets-a6343404"
     object_lock_enabled         = false
     policy                      = null
     region                      = "ap-south-1"
@@ -201,17 +201,17 @@ resource "aws_s3_bucket" "assets" {
 resource "aws_s3_bucket_public_access_block" "assets" {
     block_public_acls       = true
     block_public_policy     = true
-    bucket                  = "devops-heros-assets-aa057c1e"
-    id                      = "devops-heros-assets-aa057c1e"
+    bucket                  = "devops-heros-assets-a6343404"
+    id                      = "devops-heros-assets-a6343404"
     ignore_public_acls      = true
     restrict_public_buckets = true
 }
 
 # aws_s3_bucket_versioning.assets:
 resource "aws_s3_bucket_versioning" "assets" {
-    bucket                = "devops-heros-assets-aa057c1e"
+    bucket                = "devops-heros-assets-a6343404"
     expected_bucket_owner = null
-    id                    = "devops-heros-assets-aa057c1e"
+    id                    = "devops-heros-assets-a6343404"
 
     versioning_configuration {
         mfa_delete = null
@@ -221,8 +221,8 @@ resource "aws_s3_bucket_versioning" "assets" {
 
 # aws_s3_object.welcome:
 resource "aws_s3_object" "welcome" {
-    arn                           = "arn:aws:s3:::devops-heros-assets-aa057c1e/welcome.txt"
-    bucket                        = "devops-heros-assets-aa057c1e"
+    arn                           = "arn:aws:s3:::devops-heros-assets-a6343404/welcome.txt"
+    bucket                        = "devops-heros-assets-a6343404"
     bucket_key_enabled            = false
     cache_control                 = null
     checksum_crc32                = null
@@ -250,13 +250,13 @@ resource "aws_s3_object" "welcome" {
         "Owner"       = "tejas-varshney"
         "Project"     = "devops-heros"
     }
-    version_id                    = "39dcafda-43d7-43c1-a541-3f03a9d72216"
+    version_id                    = "b03877cf-0bcb-4f99-ad1f-da248b38ab68"
     website_redirect              = null
 }
 
 # aws_security_group.web:
 resource "aws_security_group" "web" {
-    arn                    = "arn:aws:ec2:ap-south-1:123456789012:security-group/sg-a8aecc810f5849c16"
+    arn                    = "arn:aws:ec2:ap-south-1:123456789012:security-group/sg-f0fedcb4eb31f6697"
     description            = "HTTP from anywhere, SSH from one admin IP"
     egress                 = [
         {
@@ -273,7 +273,7 @@ resource "aws_security_group" "web" {
             to_port          = 0
         },
     ]
-    id                     = "sg-a8aecc810f5849c16"
+    id                     = "sg-f0fedcb4eb31f6697"
     ingress                = [
         {
             cidr_blocks      = [
@@ -316,12 +316,12 @@ resource "aws_security_group" "web" {
         "Owner"       = "tejas-varshney"
         "Project"     = "devops-heros"
     }
-    vpc_id                 = "vpc-55ebd8b6762880382"
+    vpc_id                 = "vpc-32ac50ea35a85331d"
 }
 
 # aws_subnet.public:
 resource "aws_subnet" "public" {
-    arn                                            = "arn:aws:ec2:ap-south-1:123456789012:subnet/subnet-3f65043327228c548"
+    arn                                            = "arn:aws:ec2:ap-south-1:123456789012:subnet/subnet-f3ca32c36d673e14f"
     assign_ipv6_address_on_creation                = false
     availability_zone                              = "ap-south-1a"
     availability_zone_id                           = "aps1-az1"
@@ -331,7 +331,7 @@ resource "aws_subnet" "public" {
     enable_lni_at_device_index                     = 0
     enable_resource_name_dns_a_record_on_launch    = false
     enable_resource_name_dns_aaaa_record_on_launch = false
-    id                                             = "subnet-3f65043327228c548"
+    id                                             = "subnet-f3ca32c36d673e14f"
     ipv6_cidr_block                                = null
     ipv6_cidr_block_association_id                 = null
     ipv6_native                                    = false
@@ -350,29 +350,29 @@ resource "aws_subnet" "public" {
         "Owner"       = "tejas-varshney"
         "Project"     = "devops-heros"
     }
-    vpc_id                                         = "vpc-55ebd8b6762880382"
+    vpc_id                                         = "vpc-32ac50ea35a85331d"
 }
 
 # aws_vpc.main:
 resource "aws_vpc" "main" {
-    arn                                  = "arn:aws:ec2:ap-south-1:123456789012:vpc/vpc-55ebd8b6762880382"
+    arn                                  = "arn:aws:ec2:ap-south-1:123456789012:vpc/vpc-32ac50ea35a85331d"
     assign_generated_ipv6_cidr_block     = false
     cidr_block                           = "10.0.0.0/16"
-    default_network_acl_id               = "acl-081fa18fe00c5b688"
-    default_route_table_id               = "rtb-d7c96ffd23c7a0da2"
-    default_security_group_id            = "sg-cb956cd14457f205d"
+    default_network_acl_id               = "acl-5e20110981ba178a8"
+    default_route_table_id               = "rtb-1856c6859a855f941"
+    default_security_group_id            = "sg-c6130239460ce5ed0"
     dhcp_options_id                      = "default"
     enable_dns_hostnames                 = true
     enable_dns_support                   = true
     enable_network_address_usage_metrics = false
-    id                                   = "vpc-55ebd8b6762880382"
+    id                                   = "vpc-32ac50ea35a85331d"
     instance_tenancy                     = "default"
     ipv6_association_id                  = null
     ipv6_cidr_block                      = null
     ipv6_cidr_block_network_border_group = null
     ipv6_ipam_pool_id                    = null
     ipv6_netmask_length                  = 0
-    main_route_table_id                  = "rtb-d7c96ffd23c7a0da2"
+    main_route_table_id                  = "rtb-1856c6859a855f941"
     owner_id                             = "123456789012"
     tags                                 = {
         "Name" = "devops-heros-vpc"
@@ -388,22 +388,22 @@ resource "aws_vpc" "main" {
 
 # random_id.bucket_suffix:
 resource "random_id" "bucket_suffix" {
-    b64_std     = "qgV8Hg=="
-    b64_url     = "qgV8Hg"
+    b64_std     = "pjQ0BA=="
+    b64_url     = "pjQ0BA"
     byte_length = 4
-    dec         = "2852486174"
-    hex         = "aa057c1e"
-    id          = "qgV8Hg"
+    dec         = "2788439044"
+    hex         = "a6343404"
+    id          = "pjQ0BA"
 }
 
 
 Outputs:
 
-instance_id = "i-48ebabf7b345e2fbd"
-instance_public_ip = "54.214.94.143"
-public_subnet_id = "subnet-3f65043327228c548"
-s3_bucket = "devops-heros-assets-aa057c1e"
-security_group_id = "sg-a8aecc810f5849c16"
-vpc_id = "vpc-55ebd8b6762880382"
-web_url = "http://54.214.94.143"
+instance_id = "i-55dec0a4b6d90e3b7"
+instance_public_ip = "54.214.206.0"
+public_subnet_id = "subnet-f3ca32c36d673e14f"
+s3_bucket = "devops-heros-assets-a6343404"
+security_group_id = "sg-f0fedcb4eb31f6697"
+vpc_id = "vpc-32ac50ea35a85331d"
+web_url = "http://54.214.206.0"
 [exit code: 0]
