@@ -1,0 +1,72 @@
+# Session 20 - Task 1: a small app that exposes Prometheus metrics.
+# podinfo (ghcr.io/stefanprodan/podinfo) serves /metrics, /healthz and /readyz on port 9898.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: s20
+  labels:
+    owner: 24BCS10204
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: podinfo
+  namespace: s20
+  labels:
+    app: podinfo
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: podinfo
+  template:
+    metadata:
+      labels:
+        app: podinfo
+    spec:
+      containers:
+        - name: podinfo
+          image: ghcr.io/stefanprodan/podinfo:6.7.1
+          command:
+            - ./podinfo
+            - --port=9898
+            - --level=info
+          ports:
+            - name: http
+              containerPort: 9898
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+          # Application health: Kubernetes uses these probes,
+          # kube-state-metrics turns the result into kube_pod_status_ready.
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 3
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: http
+            initialDelaySeconds: 3
+            periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: podinfo
+  namespace: s20
+  labels:
+    app: podinfo
+spec:
+  selector:
+    app: podinfo
+  ports:
+    - name: http
+      port: 9898
+      targetPort: http
