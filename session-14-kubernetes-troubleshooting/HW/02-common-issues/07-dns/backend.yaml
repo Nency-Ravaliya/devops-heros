@@ -1,0 +1,31 @@
+# Stand-in "database" service (nginx) the client wants to reach.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: orders-db
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: orders-db
+  template:
+    metadata:
+      labels:
+        app: orders-db
+    spec:
+      containers:
+        - name: db
+          image: nginx:1.27
+          resources:
+            requests: { cpu: 10m, memory: 16Mi }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: orders-db
+spec:
+  selector:
+    app: orders-db
+  ports:
+    - port: 80
+      targetPort: 80

@@ -1,0 +1,18 @@
+# Mounts a ConfigMap that was never created.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: containercreating-app
+spec:
+  containers:
+    - name: web
+      image: nginx:1.27
+      volumeMounts:
+        - name: site
+          mountPath: /usr/share/nginx/html
+      resources:
+        requests: { cpu: 10m, memory: 16Mi }
+  volumes:
+    - name: site
+      configMap:
+        name: site-content
