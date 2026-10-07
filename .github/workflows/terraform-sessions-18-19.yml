@@ -82,7 +82,7 @@ jobs:
 
       - name: Run init / fmt / validate / plan / apply / show / output / state / destroy
         run: |
-          set -o pipefail
+          set +e
           mkdir -p outputs
           run() {            # run "<file>" <command...>  -> output saved to outputs/<file>.txt
             f="outputs/$1.txt"; shift
@@ -100,19 +100,26 @@ jobs:
           run 10-destroy     terraform destroy -input=false -auto-approve
           run 11-state-after terraform state list
           # dependency graph (Session 19 architecture/dependencies)
-          terraform graph > outputs/graph.dot
-          sudo apt-get install -y -qq graphviz >/dev/null
-          dot -Tsvg outputs/graph.dot -o outputs/graph.svg
+          terraform graph > outputs/graph.dot 2> outputs/graph-error.txt || true
+          sudo apt-get install -y -qq graphviz >/dev/null 2>&1 || true
+          dot -Tsvg outputs/graph.dot -o outputs/graph.svg 2>> outputs/graph-error.txt || true
+          [ -s outputs/graph-error.txt ] || rm -f outputs/graph-error.txt
+          # fail the job (after saving everything) if apply or destroy failed
+          grep -q "Apply complete" outputs/05-apply.txt && grep -q "Destroy complete" outputs/10-destroy.txt; echo $? > outputs/.status
           # environment info
           { echo "runner: $RUNNER_OS / $ImageOS"; terraform version; echo "AWS API: Moto $(curl -s localhost:5000/moto-api/ -o /dev/null -w '%{http_code}') (motoserver/moto:5.1.4)"; date -u; } > outputs/00-environment.txt
           # never commit state / plan / override / provider binaries
           rm -rf .terraform tfplan terraform.tfstate* ci_moto_override.tf
 
       - name: Commit outputs back to the repo
+        if: always()
         working-directory: .
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add "${{ matrix.project.dir }}/outputs" "${{ matrix.project.dir }}/.terraform.lock.hcl" || true
+          rm -f "${{ matrix.project.dir }}/outputs/.status.bak"; git add "${{ matrix.project.dir }}/outputs" "${{ matrix.project.dir }}/.terraform.lock.hcl" || true
           git commit -m "CI: Terraform outputs for ${{ matrix.project.name }} [skip ci]" || exit 0
           for i in 1 2 3; do git pull --rebase -q && git push -q && break; sleep 5; done
+
+      - name: Result
+        run: exit $(cat outputs/.status 2>/dev/null || echo 1)
