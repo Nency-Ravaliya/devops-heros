@@ -1,0 +1,93 @@
+===== nodejs-app =====
+#0 building with "default" instance using docker driver
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 143B done
+#1 DONE 0.1s
+#2 [internal] load metadata for docker.io/library/node:20-alpine
+#2 DONE 2.6s
+#3 [internal] load build context
+#3 DONE 0.1s
+#4 [1/4] FROM docker.io/library/node:20-alpine
+#4 DONE 7.4s
+#5 [2/4] WORKDIR /app
+#5 DONE 3.8s
+#6 [3/4] COPY package.json .
+#6 DONE 0.1s
+#7 [4/4] COPY index.js .
+#7 DONE 0.1s
+#8 exporting to image
+#8 naming to docker.io/library/dhruv-nodejs-app:latest done
+#8 DONE 0.5s
+Hello World from Node.js!
+test-dhruv-nodejs-app dhruv-nodejs-app Up 5 seconds 0.0.0.0:8080->8080/tcp, [::]:8080->8080/tcp
+===== python-app =====
+#0 building with "default" instance using docker driver
+#1 [internal] load build definition from Dockerfile
+#1 DONE 0.0s
+#2 [1/4] FROM docker.io/library/python:3.12-slim
+#2 DONE 3.7s
+#3 [2/4] WORKDIR /app
+#3 DONE 2.7s
+#4 [3/4] RUN pip install --no-cache-dir flask
+#4 DONE 4.0s
+#5 [4/4] COPY app.py .
+#5 DONE 0.1s
+#6 exporting to image
+#6 naming to docker.io/library/dhruv-python-app:latest done
+#6 DONE 0.9s
+Hello World from Python Flask!
+test-dhruv-python-app dhruv-python-app Up 1 second 0.0.0.0:8080->8080/tcp, [::]:8080->8080/tcp
+===== java-app =====
+#0 building with "default" instance using docker driver
+#1 [1/4] FROM docker.io/library/eclipse-temurin:21-jdk-alpine
+#1 DONE 6.5s
+#2 [2/4] WORKDIR /app
+#2 DONE 6.4s
+#3 [3/4] COPY HelloWorld.java .
+#3 DONE 1.1s
+#4 [4/4] RUN javac HelloWorld.java
+#4 DONE 1.1s
+#5 exporting to image
+#5 naming to docker.io/library/dhruv-java-app:latest done
+#5 DONE 0.3s
+Hello World from Java!
+test-dhruv-java-app dhruv-java-app Up 1 second 0.0.0.0:8080->8080/tcp, [::]:8080->8080/tcp
+===== Apache-app =====
+#0 building with "default" instance using docker driver
+#1 [1/2] FROM docker.io/library/httpd:2.4
+#1 DONE 1.2s
+#2 [2/2] COPY index.html /usr/local/apache2/htdocs/index.html
+#2 DONE 0.8s
+#3 exporting to image
+#3 naming to docker.io/library/dhruv-apache-app:latest done
+#3 DONE 0.2s
+<!DOCTYPE html>
+<html>
+<head><title>Hello World - Apache</title></head>
+<body>
+  <h1>Hello World from Apache!</h1>
+  <p>Served by Apache httpd running in Docker.</p>
+</body>
+</html>
+test-dhruv-apache-app dhruv-apache-app Up 1 second 0.0.0.0:8080->80/tcp, [::]:8080->80/tcp
+===== React-app =====
+#0 building with "default" instance using docker driver
+#1 naming to docker.io/library/dhruv-react-app:latest done
+test-dhruv-react-app dhruv-react-app Up 1 second 0.0.0.0:8080->80/tcp, [::]:8080->80/tcp
+===== nginx-app =====
+#0 building with "default" instance using docker driver
+#1 naming to docker.io/library/dhruv-nginx-app:latest done
+test-dhruv-nginx-app dhruv-nginx-app Up 1 second 0.0.0.0:8080->80/tcp, [::]:8080->80/tcp
+===== multi-stage =====
+#0 building with "default" instance using docker driver
+#1 naming to docker.io/library/dhruv-multi-stage:latest done
+Hello World from Docker multi-stage build
+test-dhruv-multi-stage dhruv-multi-stage Up 1 second 0.0.0.0:8080->3000/tcp, [::]:8080->3000/tcp
+===== image sizes =====
+dhruv-apache-app latest 175MB
+dhruv-java-app latest 552MB
+dhruv-multi-stage latest 193MB
+dhruv-nginx-app latest 93.6MB
+dhruv-nodejs-app latest 193MB
+dhruv-python-app latest 198MB
+dhruv-react-app latest 94.2MB
