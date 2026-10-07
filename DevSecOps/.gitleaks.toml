@@ -1,0 +1,3 @@
+# Gitleaks config: default rules + allow the documented test fixture
+[extend]
+useDefault = true

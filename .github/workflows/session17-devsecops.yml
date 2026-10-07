@@ -1,0 +1,153 @@
+# Session 17 - Complete CI/CD + DevSecOps pipeline for the Flask app in DevSecOps/
+#
+# Code -> Build -> Unit Test -> SAST -> SCA -> Secret Scan -> Docker Build
+#      -> Container Image Scan -> Security Gate -> Push Image -> Deploy to Kubernetes
+name: Session 17 - DevSecOps Pipeline
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "DevSecOps/**"
+      - ".github/workflows/session17-devsecops.yml"
+  pull_request:
+    branches: [main]
+    paths: ["DevSecOps/**"]
+  workflow_dispatch: {}
+
+env:
+  APP_DIR: DevSecOps
+  IMAGE: ghcr.io/tejasvarshney/session17-devsecops
+
+permissions:
+  contents: read
+
+jobs:
+  # ---------- Build + Unit Test ----------
+  build-test:
+    name: 1. Build & Unit Test
+    runs-on: ubuntu-latest
+    defaults: { run: { working-directory: DevSecOps } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - name: Install dependencies (build)
+        run: pip install -r requirements-dev.txt
+      - name: Byte-compile (catch syntax errors)
+        run: python -m compileall -q app
+      - name: Unit tests + coverage
+        run: pytest -v --cov=app --cov-report=term-missing
+
+  # ---------- SAST ----------
+  sast-bandit:
+    name: 2a. SAST - Bandit (gate)
+    needs: build-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install bandit==1.8.6
+      - name: Bandit - fail on MEDIUM+ severity / MEDIUM+ confidence
+        run: bandit -r "$APP_DIR/app" --severity-level medium --confidence-level medium
+
+  sast-codeql:
+    name: 2b. SAST - CodeQL
+    needs: build-test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: github/codeql-action/init@v3
+        with:
+          languages: python
+          source-root: DevSecOps
+      - uses: github/codeql-action/analyze@v3
+
+  # ---------- SCA ----------
+  sca:
+    name: 3. SCA - pip-audit (gate)
+    needs: build-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install pip-audit==2.9.0
+      - name: Audit dependencies for known CVEs
+        run: pip-audit -r "$APP_DIR/requirements.txt" --strict
+
+  # ---------- Secret scanning ----------
+  secret-scan:
+    name: 4. Secret Scan - Gitleaks (gate)
+    needs: build-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Gitleaks
+        run: |
+          docker run --rm -v "$PWD/$APP_DIR:/src" zricethezav/gitleaks:v8.28.0 \
+            dir /src --config /src/.gitleaks.toml --redact --verbose --exit-code 1
+
+  # ---------- Docker build + image scan + gate + push ----------
+  image:
+    name: 5-8. Docker Build, Image Scan, Security Gate, Push
+    needs: [sast-bandit, sast-codeql, sca, secret-scan]   # SECURITY GATE 1: every scan must pass
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image: ${{ steps.tag.outputs.image }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: tag
+        run: echo "image=${IMAGE}:${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+      - name: 5. Docker build
+        run: docker build -t ${{ steps.tag.outputs.image }} "$APP_DIR"
+      - name: 6. Container image scan - Trivy (report all HIGH/CRITICAL)
+        uses: aquasecurity/trivy-action@0.33.1
+        with:
+          image-ref: ${{ steps.tag.outputs.image }}
+          severity: HIGH,CRITICAL
+          format: table
+          exit-code: "0"
+      - name: 7. Security gate - block CRITICAL vulnerabilities that have a fix
+        uses: aquasecurity/trivy-action@0.33.1
+        with:
+          image-ref: ${{ steps.tag.outputs.image }}
+          severity: CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"
+          skip-setup-trivy: true
+      - name: 8. Push image to GHCR
+        if: github.event_name != 'pull_request'
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          docker push ${{ steps.tag.outputs.image }}
+
+  # ---------- Deploy ----------
+  deploy:
+    name: 9. Deploy to Kubernetes (kind)
+    needs: image
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: helm/kind-action@v1.10.0
+      - name: Deploy the exact image that passed the gates
+        run: |
+          sed -i "s|__IMAGE__|${{ needs.image.outputs.image }}|" $APP_DIR/k8s/deployment.yaml
+          grep image: $APP_DIR/k8s/deployment.yaml
+          kubectl apply -f $APP_DIR/k8s/
+          kubectl rollout status deployment/session17-python --timeout=120s
+          kubectl get pods,svc -o wide
+      - name: Smoke test
+        run: |
+          kubectl port-forward service/session17-python 5001:80 &
+          sleep 3
+          curl -fs http://localhost:5001/health
+          curl -fs http://localhost:5001/api/status
