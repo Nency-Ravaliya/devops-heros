@@ -1,0 +1,136 @@
+################ emptyDir ################
+$ kubectl apply -f 01-emptydir.yaml
+pod/emptydir-demo created
+
+$ kubectl get pod emptydir-demo
+NAME            READY   STATUS    RESTARTS   AGE
+emptydir-demo   2/2     Running   0          7s
+
+$ kubectl exec emptydir-demo -c reader -- tail -3 /input/log.txt
+line 2 written at 19:15:44
+line 3 written at 19:15:46
+line 4 written at 19:15:48
+
+$ kubectl exec emptydir-demo -c reader -- sh -c 'echo test > /input/x.txt'
+sh: can't create /input/x.txt: Read-only file system
+command terminated with exit code 1
+
+$ kubectl exec emptydir-demo -c writer -- df -h /shared
+Filesystem                Size      Used Available Use% Mounted on
+/dev/sde               1006.9G      9.0G    946.6G   1% /shared
+
+$ minikube ssh -- sudo ls /var/lib/kubelet/pods/742ed947-645f-43e0-93ea-5a51e068f4c7/volumes/kubernetes.io~empty-dir/shared
+log.txt
+
+$ kubectl delete pod emptydir-demo --now && kubectl apply -f 01-emptydir.yaml && kubectl wait --for=condition=Ready pod/emptydir-demo --timeout=60s
+pod "emptydir-demo" deleted from default namespace
+pod/emptydir-demo created
+pod/emptydir-demo condition met
+
+$ kubectl exec emptydir-demo -c reader -- head -2 /input/log.txt
+line 1 written at 19:15:54
+
+################ hostPath ################
+$ kubectl apply -f 02-hostpath.yaml
+pod/hostpath-demo created
+
+$ kubectl delete pod hostpath-demo --now && kubectl apply -f 02-hostpath.yaml && kubectl wait --for=condition=Ready pod/hostpath-demo --timeout=60s
+pod "hostpath-demo" deleted from default namespace
+pod/hostpath-demo created
+pod/hostpath-demo condition met
+
+$ kubectl exec hostpath-demo -- cat /host-data/visits.txt
+written by hostpath-demo at 19:15:55
+written by hostpath-demo at 19:15:59
+
+$ minikube ssh -- cat /tmp/hostpath-demo/visits.txt
+written by hostpath-demo at 19:15:55
+written by hostpath-demo at 19:15:59
+
+################ static PersistentVolume + PersistentVolumeClaim ################
+$ kubectl apply -f 03-static-pv-pvc.yaml
+persistentvolume/manual-pv-1gi created
+persistentvolumeclaim/manual-claim created
+pod/pv-demo created
+
+$ kubectl get pv manual-pv-1gi
+NAME            CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS   CLAIM                  STORAGECLASS   VOLUMEATTRIBUTESCLASS   REASON   AGE
+manual-pv-1gi   1Gi        RWO            Retain           Bound    default/manual-claim   manual         <unset>                          1s
+
+$ kubectl get pvc manual-claim
+NAME           STATUS   VOLUME          CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE
+manual-claim   Bound    manual-pv-1gi   1Gi        RWO            manual         <unset>                 1s
+
+$ kubectl exec pv-demo -- sh -c 'echo "order-1001 saved" > /data/orders.txt; cat /data/orders.txt'
+order-1001 saved
+
+$ kubectl delete pod pv-demo --now && kubectl apply -f 03-static-pv-pvc.yaml >/dev/null && kubectl wait --for=condition=Ready pod/pv-demo --timeout=60s && kubectl exec pv-demo -- cat /data/orders.txt
+pod "pv-demo" deleted from default namespace
+pod/pv-demo condition met
+order-1001 saved
+
+# --- Retain policy: deleting the PVC releases the PV but keeps the data ---
+$ kubectl delete pod pv-demo --now && kubectl delete pvc manual-claim
+pod "pv-demo" deleted from default namespace
+persistentvolumeclaim "manual-claim" deleted from default namespace
+
+$ kubectl get pv manual-pv-1gi
+NAME            CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS     CLAIM                  STORAGECLASS   VOLUMEATTRIBUTESCLASS   REASON   AGE
+manual-pv-1gi   1Gi        RWO            Retain           Released   default/manual-claim   manual         <unset>                          9s
+
+$ minikube ssh -- cat /mnt/manual-pv/orders.txt
+order-1001 saved
+
+$ kubectl delete pv manual-pv-1gi
+persistentvolume "manual-pv-1gi" deleted
+
+################ StorageClass + dynamic provisioning ################
+$ kubectl get storageclass
+NAME                 PROVISIONER                RECLAIMPOLICY   VOLUMEBINDINGMODE   ALLOWVOLUMEEXPANSION   AGE
+standard (default)   k8s.io/minikube-hostpath   Delete          Immediate           false                  36m
+
+$ kubectl apply -f 04-storageclass.yaml
+storageclass.storage.k8s.io/fast-local created
+
+$ kubectl get storageclass
+NAME                 PROVISIONER                RECLAIMPOLICY   VOLUMEBINDINGMODE   ALLOWVOLUMEEXPANSION   AGE
+fast-local           k8s.io/minikube-hostpath   Delete          Immediate           true                   0s
+standard (default)   k8s.io/minikube-hostpath   Delete          Immediate           false                  36m
+
+$ kubectl apply -f 05-dynamic-pvc.yaml
+persistentvolumeclaim/dynamic-claim created
+deployment.apps/notes created
+
+$ kubectl get pvc dynamic-claim
+NAME            STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE
+dynamic-claim   Bound    pvc-6cfad988-10ad-46f4-883a-c816ed54fe3e   200Mi      RWO            fast-local     <unset>                 1s
+
+$ kubectl get pv pvc-6cfad988-10ad-46f4-883a-c816ed54fe3e
+NAME                                       CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS   CLAIM                   STORAGECLASS   VOLUMEATTRIBUTESCLASS   REASON   AGE
+pvc-6cfad988-10ad-46f4-883a-c816ed54fe3e   200Mi      RWO            Delete           Bound    default/dynamic-claim   fast-local     <unset>                          2s
+
+$ kubectl describe pv pvc-6cfad988-10ad-46f4-883a-c816ed54fe3e | grep -E 'Annotations|provisioned-by|StorageClass|Reclaim|Source|Path'
+Annotations:     hostPathProvisionerIdentity: 855b89c4-bb48-416c-9b3d-57aa24c3caa7
+                 pv.kubernetes.io/provisioned-by: k8s.io/minikube-hostpath
+StorageClass:    fast-local
+Reclaim Policy:  Delete
+Source:
+    Type:          HostPath (bare host directory volume)
+    Path:          /tmp/hostpath-provisioner/default/dynamic-claim
+    HostPathType:  
+
+$ kubectl exec deploy/notes -- sh -c 'echo "note: buy milk" > /data/notes.txt'
+
+$ kubectl rollout restart deploy/notes && kubectl rollout status deploy/notes --timeout=90s && sleep 3 && kubectl exec deploy/notes -- cat /data/notes.txt
+deployment.apps/notes restarted
+Waiting for deployment "notes" rollout to finish: 1 old replicas are pending termination...
+Waiting for deployment "notes" rollout to finish: 1 old replicas are pending termination...
+deployment "notes" successfully rolled out
+note: buy milk
+
+# --- Delete policy: deleting the PVC deletes the dynamically created PV ---
+$ kubectl delete deploy notes && kubectl delete pvc dynamic-claim && sleep 5 && kubectl get pv pvc-6cfad988-10ad-46f4-883a-c816ed54fe3e
+deployment.apps "notes" deleted from default namespace
+persistentvolumeclaim "dynamic-claim" deleted from default namespace
+Error from server (NotFound): persistentvolumes "pvc-6cfad988-10ad-46f4-883a-c816ed54fe3e" not found
+

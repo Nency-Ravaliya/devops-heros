@@ -1,0 +1,131 @@
+################ Task 2 (re-run): service verification ################
+$ kubectl get svc,endpoints -n production-webapp
+Warning: v1 Endpoints is deprecated in v1.33+; use discovery.k8s.io/v1 EndpointSlice
+NAME                  TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)   AGE
+service/web-service   ClusterIP   10.97.248.119   <none>        80/TCP    8s
+
+NAME                    ENDPOINTS                       AGE
+endpoints/web-service   10.244.0.85:80,10.244.0.86:80   8s
+
+$ kubectl exec curl -- sh -c 'curl -s http://web-service.production-webapp | head -4'
+<!DOCTYPE html>
+<html>
+<head>
+<title>Welcome to nginx!</title>
+
+$ kubectl port-forward -n production-webapp svc/web-service 8085:80   (background)
+Forwarding from 127.0.0.1:8085 -> 80
+Forwarding from [::1]:8085 -> 80
+
+$ curl -s http://localhost:8085 | head -4
+<!DOCTYPE html>
+<html>
+<head>
+<title>Welcome to nginx!</title>
+
+################ Bonus 1: lower the HPA target from 50% to 30% ################
+$ kubectl patch hpa web-app-hpa -n production-webapp --type merge -p '{"spec":{"metrics":[{"type":"Resource","resource":{"name":"cpu","target":{"type":"Utilization","averageUtilization":30}}}]}}'
+horizontalpodautoscaler.autoscaling/web-app-hpa patched
+
+$ kubectl get hpa -n production-webapp
+NAME          REFERENCE            TARGETS       MINPODS   MAXPODS   REPLICAS   AGE
+web-app-hpa   Deployment/web-app   cpu: 1%/30%   2         5         2          77s
+
+$ kubectl run load-generator -n production-webapp --image=busybox:1.36 --restart=Never -- /bin/sh -c 'while true; do wget -q -O- http://web-service > /dev/null; done'
+pod/load-generator created
+
+======== t+45s ========
+$ kubectl get hpa -n production-webapp
+NAME          REFERENCE            TARGETS       MINPODS   MAXPODS   REPLICAS   AGE
+web-app-hpa   Deployment/web-app   cpu: 1%/30%   2         5         2          2m2s
+
+======== t+90s ========
+$ kubectl get hpa -n production-webapp
+NAME          REFERENCE            TARGETS        MINPODS   MAXPODS   REPLICAS   AGE
+web-app-hpa   Deployment/web-app   cpu: 28%/30%   2         5         2          2m47s
+
+======== t+135s ========
+$ kubectl get hpa -n production-webapp
+NAME          REFERENCE            TARGETS        MINPODS   MAXPODS   REPLICAS   AGE
+web-app-hpa   Deployment/web-app   cpu: 32%/30%   2         5         2          3m32s
+
+======== t+180s ========
+$ kubectl get hpa -n production-webapp
+NAME          REFERENCE            TARGETS        MINPODS   MAXPODS   REPLICAS   AGE
+web-app-hpa   Deployment/web-app   cpu: 33%/30%   2         5         2          4m18s
+
+$ kubectl top pods -n production-webapp
+NAME                      CPU(cores)   MEMORY(bytes)   
+load-generator            870m         11Mi            
+web-app-d45775485-7m7h2   32m          19Mi            
+web-app-d45775485-kdxl6   34m          19Mi            
+
+$ kubectl get pods -n production-webapp
+NAME                      READY   STATUS    RESTARTS   AGE
+load-generator            1/1     Running   0          3m1s
+web-app-d45775485-7m7h2   1/1     Running   0          4m18s
+web-app-d45775485-kdxl6   1/1     Running   0          4m18s
+
+$ kubectl describe hpa web-app-hpa -n production-webapp | sed -n '/Events:/,$p'
+Events:
+  Type     Reason                        Age                   From                       Message
+  ----     ------                        ----                  ----                       -------
+  Warning  FailedGetResourceMetric       4m18s                 horizontal-pod-autoscaler  failed to get cpu utilization: unable to get metrics for resource cpu: no metrics returned from resource metrics API
+  Warning  FailedComputeMetricsReplicas  4m18s                 horizontal-pod-autoscaler  invalid metrics (1 invalid out of 1), first error is: failed to get cpu resource metric value: failed to get cpu utilization: unable to get metrics for resource cpu: no metrics returned from resource metrics API
+  Warning  FailedGetResourceMetric       3m18s (x5 over 4m3s)  horizontal-pod-autoscaler  failed to get cpu utilization: did not receive metrics for targeted pods (pods might be unready)
+  Warning  FailedComputeMetricsReplicas  3m18s (x5 over 4m3s)  horizontal-pod-autoscaler  invalid metrics (1 invalid out of 1), first error is: failed to get cpu resource metric value: failed to get cpu utilization: did not receive metrics for targeted pods (pods might be unready)
+
+$ kubectl get hpa -n production-webapp -w   (full watch log)
+NAME          REFERENCE            TARGETS       MINPODS   MAXPODS   REPLICAS   AGE
+web-app-hpa   Deployment/web-app   cpu: 1%/30%   2         5         2          77s
+web-app-hpa   Deployment/web-app   cpu: 28%/30%   2         5         2          2m15s
+web-app-hpa   Deployment/web-app   cpu: 32%/30%   2         5         2          3m15s
+web-app-hpa   Deployment/web-app   cpu: 33%/30%   2         5         2          4m15s
+
+$ kubectl delete pod load-generator -n production-webapp --now
+pod "load-generator" deleted from production-webapp namespace
+
+$ kubectl apply -f hpa.yaml
+horizontalpodautoscaler.autoscaling/web-app-hpa configured
+
+################ Bonus 2 (re-run): readiness gating ################
+$ kubectl get endpoints web-service -n production-webapp
+Warning: v1 Endpoints is deprecated in v1.33+; use discovery.k8s.io/v1 EndpointSlice
+NAME          ENDPOINTS                       AGE
+web-service   10.244.0.85:80,10.244.0.86:80   4m21s
+
+$ kubectl patch deploy web-app -n production-webapp --type json -p '[{"op":"replace","path":"/spec/template/spec/containers/0/readinessProbe/httpGet/path","value":"/does-not-exist"}]'
+deployment.apps/web-app patched
+
+$ kubectl get pods -n production-webapp
+NAME                       READY   STATUS    RESTARTS   AGE
+web-app-5945bfc776-jvrm4   0/1     Running   0          44s
+web-app-5945bfc776-jxm7p   0/1     Running   0          44s
+
+$ kubectl get endpoints web-service -n production-webapp
+Warning: v1 Endpoints is deprecated in v1.33+; use discovery.k8s.io/v1 EndpointSlice
+NAME          ENDPOINTS   AGE
+web-service               5m6s
+
+$ kubectl get endpointslices -n production-webapp -o jsonpath='{range .items[*].endpoints[*]}{.addresses[0]} ready={.conditions.ready}{"\n"}{end}'
+10.244.0.89 ready=false
+10.244.0.88 ready=false
+
+$ kubectl exec curl -- sh -c 'curl -sS -m 5 http://web-service.production-webapp 2>&1 | head -2; true'
+curl: (7) Failed to connect to web-service.production-webapp port 80 after 1 ms: Could not connect to server
+
+$ kubectl apply -f deployment.yaml && kubectl rollout status deploy/web-app -n production-webapp --timeout=180s
+deployment.apps/web-app configured
+Waiting for deployment "web-app" rollout to finish: 0 out of 2 new replicas have been updated...
+Waiting for deployment "web-app" rollout to finish: 0 out of 2 new replicas have been updated...
+Waiting for deployment "web-app" rollout to finish: 0 out of 2 new replicas have been updated...
+Waiting for deployment "web-app" rollout to finish: 0 out of 2 new replicas have been updated...
+Waiting for deployment "web-app" rollout to finish: 0 of 2 updated replicas are available...
+Waiting for deployment "web-app" rollout to finish: 1 of 2 updated replicas are available...
+deployment "web-app" successfully rolled out
+
+$ kubectl get endpoints web-service -n production-webapp
+Warning: v1 Endpoints is deprecated in v1.33+; use discovery.k8s.io/v1 EndpointSlice
+NAME          ENDPOINTS                       AGE
+web-service   10.244.0.90:80,10.244.0.91:80   5m16s
+

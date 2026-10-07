@@ -1,0 +1,33 @@
+# Backend the HPA scales. registry.k8s.io/hpa-example is a PHP/Apache page that
+# burns CPU on every request - perfect for demonstrating CPU-based autoscaling.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: yatri-backend
+  labels:
+    app: yatri-backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: yatri-backend
+  template:
+    metadata:
+      labels:
+        app: yatri-backend
+    spec:
+      containers:
+        - name: backend
+          image: registry.k8s.io/hpa-example
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              cpu: 200m          # HPA % is calculated against this request
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 128Mi
+          readinessProbe:
+            httpGet: { path: /, port: 80 }
+            periodSeconds: 5

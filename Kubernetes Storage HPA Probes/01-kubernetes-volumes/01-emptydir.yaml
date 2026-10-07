@@ -1,0 +1,24 @@
+# emptyDir: scratch space shared by the containers of ONE Pod; deleted with the Pod
+apiVersion: v1
+kind: Pod
+metadata:
+  name: emptydir-demo
+spec:
+  containers:
+    - name: writer
+      image: busybox:1.36
+      command: ["sh", "-c", "i=0; while true; do i=$((i+1)); echo \"line $i written at $(date +%T)\" >> /shared/log.txt; sleep 2; done"]
+      volumeMounts:
+        - name: shared
+          mountPath: /shared
+    - name: reader
+      image: busybox:1.36
+      command: ["sh", "-c", "sleep 3600"]
+      volumeMounts:
+        - name: shared
+          mountPath: /input
+          readOnly: true
+  volumes:
+    - name: shared
+      emptyDir:
+        sizeLimit: 50Mi        # medium: Memory would use RAM (tmpfs) instead

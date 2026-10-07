@@ -1,0 +1,9 @@
+# A custom StorageClass using minikube's hostpath provisioner
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: fast-local
+provisioner: k8s.io/minikube-hostpath    # AWS EKS would use ebs.csi.aws.com
+reclaimPolicy: Delete
+volumeBindingMode: Immediate
+allowVolumeExpansion: true
