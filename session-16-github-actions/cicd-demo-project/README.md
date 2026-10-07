@@ -8,6 +8,17 @@ and every green build on `main` is published to GitHub Container Registry and de
 Based on `session-16-github-actions/10-final-cicd-pipeline`, extended with a Dockerfile, a REST
 API, a CD workflow, secrets and cross-workflow artifacts.
 
+**Quick links**
+
+| | |
+|---|---|
+| Live workflows (executed by GitHub) | [`.github/workflows/` at the repo root](https://github.com/jenyyy4/devops-heros/tree/main/.github/workflows) |
+| Workflow copies in this folder | [`.github/workflows/`](.github/workflows) (identical, kept for reference) |
+| Successful CI run | [#37637628164](https://github.com/jenyyy4/devops-heros/actions/runs/37637628164) |
+| Successful CD run | [#37637770731](https://github.com/jenyyy4/devops-heros/actions/runs/37637770731) |
+| Failing CI run (build blocked) | [#37640535371](https://github.com/jenyyy4/devops-heros/actions/runs/37640535371) |
+| Published image | `ghcr.io/jenyyy4/session16-calculator-api` |
+
 ---
 
 ## 1. Project Structure
@@ -18,6 +29,7 @@ devops-heros/
 │   ├── session16-ci.yml          # CI pipeline  (lint → test → security → build)
 │   └── session16-cd.yml          # CD pipeline  (publish → staging → production)
 └── session-16-github-actions/cicd-demo-project/
+    ├── .github/workflows/        # reference copies of the two workflows above
     ├── app/
     │   ├── calculator.py         # business logic (pure functions)
     │   └── main.py               # Flask REST API
@@ -33,7 +45,9 @@ devops-heros/
 
 > GitHub only runs workflows from `.github/workflows/` at the **repository root**, so the two
 > workflow files live there. They use `paths:` filters and `defaults.run.working-directory` so
-> they only react to (and run inside) this project folder.
+> they only react to (and run inside) this project folder. Identical copies are kept in this
+> folder's `.github/workflows/` so the project is self-contained. GitHub ignores nested
+> `.github` folders, so those copies never run.
 
 ![Project structure](screenshots/01-project-structure.png)
 
@@ -273,7 +287,65 @@ Session 16 - CI Pipeline                    Session 16 - CD Pipeline
       └── artifacts: docker-image, test-reports-py3.11, test-reports-py3.12
 ```
 
-<!-- GITHUB-RUN-SCREENSHOTS -->
+### Actual runs on GitHub
+
+Pushing commit `f4b788c` to `main` triggered **CI run
+[#37637628164](https://github.com/jenyyy4/devops-heros/actions/runs/37637628164)**. When it
+succeeded, CI automatically triggered **CD run
+[#37637770731](https://github.com/jenyyy4/devops-heros/actions/runs/37637770731)** through
+`workflow_run`.
+
+#### Secrets and environments
+`APP_SECRET_KEY` is stored as a repository secret (only names are ever listed, never values).
+The `staging` and `production` environments were created by the first CD run.
+
+![Repository secrets and environments](screenshots/06-repo-secrets.png)
+
+#### Both pipelines green
+![gh run list](screenshots/08-gh-run-list.png)
+
+#### CI: jobs and artifacts
+`lint`, both `test` matrix jobs and `security-check` ran **in parallel**, and `build` started
+only after all of them passed (`needs:`). The run produced three artifacts.
+
+![CI jobs and artifacts](screenshots/09-ci-run-jobs-artifacts.png)
+
+#### CI: steps inside the build job
+![Build job steps](screenshots/10-ci-build-job-steps.png)
+
+#### CI: test results on the GitHub runner (Python 3.12, ubuntu-latest)
+![CI test logs](screenshots/11-ci-test-logs.png)
+
+#### CI: Docker build, container smoke test and build info
+![CI build logs](screenshots/12-ci-build-logs.png)
+
+#### Artifacts downloaded from the CI run
+The image tarball, build info and JUnit report can be downloaded from any run. `docker load`
+restores the exact image CI tested.
+
+![Artifacts downloaded](screenshots/13-ci-artifacts-download.png)
+
+#### CD: publish → staging → production
+![CD jobs](screenshots/14-cd-run-jobs.png)
+
+#### CD: image loaded from the CI artifact and pushed to GHCR
+Both tags (`<sha>` and `latest`) point to the same digest.
+
+![CD publish logs](screenshots/15-cd-publish-logs.png)
+
+#### CD: deployment smoke tests
+Each environment reports its own `APP_ENV`, the same version and commit, and
+`"secret_configured": true`. The secret was injected at deploy time, and its value never appears
+in the logs.
+
+![CD deploy logs](screenshots/16-cd-deploy-logs.png)
+
+#### The published image in GitHub Container Registry
+The digest matches the one pushed in the CD log. The image runs as non-root `appuser` and carries
+the CI build's version and commit.
+
+![GHCR image](screenshots/17-ghcr-image-pull.png)
+
 
 ---
 
@@ -297,12 +369,19 @@ gh workflow run session16-ci.yml --ref demo/failing-test
 Expected:
 ```text
 ✓ Lint (flake8)
-✗ Test (Python 3.11)      test_add: assert 16 == 15, test_add_endpoint: assert 16.0 == 15
-✗ Test (Python 3.12)
+✗ Test (Python 3.12)      test_add: assert 16 == 15, test_add_endpoint: assert 16.0 == 15
+⊘ Test (Python 3.11)      cancelled (matrix fail-fast)
 ✓ Security Check
 – Build Docker Image      skipped (needs: test)
 CD Pipeline               not triggered (CI failed / not main)
 ```
+Actual run on GitHub
+([#37640535371](https://github.com/jenyyy4/devops-heros/actions/runs/37640535371), branch
+`demo/failing-test`). Python 3.12 failed, the matrix's default `fail-fast` cancelled Python 3.11,
+`build` was **skipped**, and **no CD run was triggered**:
+
+![Failing CI run on GitHub](screenshots/18-gh-failing-ci-run.png)
+
 `needs:` stops the build, and the CD `if:` condition (`workflow_run.conclusion == 'success'`)
 means a failing commit is **never** published or deployed. Restore `return a + b` to fix it.
 

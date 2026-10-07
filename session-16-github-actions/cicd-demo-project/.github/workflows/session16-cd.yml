@@ -1,0 +1,163 @@
+# Session 16 - Continuous Delivery / Deployment
+# Triggered only when the CI pipeline finishes successfully on main.
+# It takes the image CI already built and tested (artifact), publishes it to
+# GitHub Container Registry, then deploys it to staging and production.
+#
+# "Deploy" here means: pull the published image onto the runner, start it with
+# the environment's config + secrets, and smoke test it. In a real project this
+# job would instead target a server, Kubernetes cluster or cloud service.
+name: Session 16 - CD Pipeline
+
+on:
+  workflow_run:
+    workflows: ["Session 16 - CI Pipeline"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      ci_run_id:
+        description: "CI run ID whose docker-image artifact should be deployed"
+        required: true
+
+env:
+  APP_DIR: session-16-github-actions/cicd-demo-project
+  IMAGE_NAME: session16-calculator-api
+  REGISTRY: ghcr.io
+
+permissions:
+  contents: read
+  actions: read    # download the artifact from the CI run
+  packages: write  # push the image to ghcr.io
+
+jobs:
+  publish:
+    name: Publish Image to GHCR
+    # Skip when CI failed - a broken build is never delivered.
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    outputs:
+      image: ${{ steps.push.outputs.image }}
+    steps:
+      - name: Download image artifact from CI run
+        uses: actions/download-artifact@v8
+        with:
+          name: docker-image
+          path: build
+          run-id: ${{ github.event.workflow_run.id || inputs.ci_run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Load image
+        run: |
+          cat build/build-info.txt
+          docker load < build/image.tar.gz
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Tag and push
+        id: push
+        run: |
+          SHA=$(awk '/^commit:/ {print $2}' build/build-info.txt)
+          OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          TARGET=$REGISTRY/$OWNER/$IMAGE_NAME
+          docker tag $IMAGE_NAME:$SHA $TARGET:$SHA
+          docker tag $IMAGE_NAME:$SHA $TARGET:latest
+          docker push $TARGET:$SHA
+          docker push $TARGET:latest
+          echo "image=$TARGET:$SHA" >> "$GITHUB_OUTPUT"
+
+  deploy-staging:
+    name: Deploy to Staging
+    needs: publish
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - name: Checkout source code (for smoke test script)
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Secrets are passed via env, never echoed. Only their presence is checked.
+      - name: Verify secret is configured
+        run: |
+          if [ -z "$APP_SECRET_KEY" ]; then
+            echo "::warning::Repository secret APP_SECRET_KEY is not set - app will report secret_configured=false"
+          else
+            echo "APP_SECRET_KEY is configured."
+          fi
+        env:
+          APP_SECRET_KEY: ${{ secrets.APP_SECRET_KEY }}
+
+      - name: Deploy container
+        env:
+          APP_SECRET_KEY: ${{ secrets.APP_SECRET_KEY }}
+        run: |
+          docker pull ${{ needs.publish.outputs.image }}
+          docker run -d --name calculator-staging -p 8080:5000 \
+            -e APP_ENV=staging \
+            -e APP_SECRET_KEY \
+            ${{ needs.publish.outputs.image }}
+          docker ps --filter name=calculator-staging
+
+      - name: Smoke test staging
+        working-directory: ${{ env.APP_DIR }}
+        run: |
+          ./scripts/smoke_test.sh http://localhost:8080
+          curl -s http://localhost:8080/info
+
+  deploy-production:
+    name: Deploy to Production
+    needs: [publish, deploy-staging] # only after staging is healthy
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Checkout source code (for smoke test script)
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Deploy container
+        env:
+          APP_SECRET_KEY: ${{ secrets.APP_SECRET_KEY }}
+        run: |
+          docker pull ${{ needs.publish.outputs.image }}
+          docker run -d --name calculator-production -p 80:5000 \
+            -e APP_ENV=production \
+            -e APP_SECRET_KEY \
+            ${{ needs.publish.outputs.image }}
+          docker ps --filter name=calculator-production
+
+      - name: Smoke test production
+        working-directory: ${{ env.APP_DIR }}
+        run: |
+          ./scripts/smoke_test.sh http://localhost:80
+          curl -s http://localhost:80/info
+
+      - name: Deployment summary
+        run: |
+          {
+            echo "## Deployment complete"
+            echo "| Field | Value |"
+            echo "|---|---|"
+            echo "| Image | \`${{ needs.publish.outputs.image }}\` |"
+            echo "| Environment | production |"
+            echo "| Triggered by | ${{ github.event_name }} |"
+          } >> "$GITHUB_STEP_SUMMARY"
