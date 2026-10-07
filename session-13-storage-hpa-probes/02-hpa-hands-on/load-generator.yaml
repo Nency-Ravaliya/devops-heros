@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: load-generator
+  labels:
+    app: load-generator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: load-generator
+  template:
+    metadata:
+      labels:
+        app: load-generator
+    spec:
+      containers:
+        - name: busybox
+          image: busybox:1.36
+          command: ["/bin/sh", "-c"]
+          args:
+            - while true; do wget -q -O- http://hpa-demo-service; done

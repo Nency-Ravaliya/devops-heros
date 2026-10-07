@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: hostpath-demo
+  labels:
+    app: storage-demo
+spec:
+  containers:
+    - name: node-logger
+      image: busybox:1.36
+      command: ["/bin/sh", "-c"]
+      args:
+        - echo "HostPath logging active at $(date)" >> /host-logs/app-audit.log; sleep 3600
+      volumeMounts:
+        - name: node-log-dir
+          mountPath: /host-logs
+  volumes:
+    - name: node-log-dir
+      hostPath:
+        path: /var/log/custom-audit
+        type: DirectoryOrCreate

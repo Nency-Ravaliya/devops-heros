@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: hpa-demo-service
+  labels:
+    app: hpa-demo
+spec:
+  ports:
+    - port: 80
+      targetPort: 80
+  selector:
+    app: hpa-demo
+  type: ClusterIP
