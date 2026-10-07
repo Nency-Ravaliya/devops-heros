@@ -1,0 +1,16 @@
+# Trivy config shared by the SCA (fs) scan and the image scan.
+# Scanners never fail the job themselves (exit-code 0): they write JSON reports and
+# security/gate.py decides. The gate blocks on HIGH/CRITICAL.
+scan:
+  scanners:
+    - vuln
+severity:
+  - LOW
+  - MEDIUM
+  - HIGH
+  - CRITICAL
+vulnerability:
+  # only count issues that actually have a fix available
+  ignore-unfixed: true
+exit-code: 0
+format: json

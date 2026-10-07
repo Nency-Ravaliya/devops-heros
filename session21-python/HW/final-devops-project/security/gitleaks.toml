@@ -1,0 +1,22 @@
+# Gitleaks config: all default rules plus two custom rules.
+title = "session21 final project gitleaks config"
+
+[extend]
+useDefault = true
+
+[[rules]]
+id = "github-token-in-code"
+description = "GitHub personal access / actions token"
+regex = '''gh[pousr]_[A-Za-z0-9]{36,}'''
+keywords = ["ghp_", "gho_", "ghu_", "ghs_", "ghr_"]
+
+[[rules]]
+id = "postgres-url-with-password"
+description = "PostgreSQL connection string with an inline password"
+regex = '''postgres(?:ql)?(?:\+\w+)?://[^:\s/]+:([^@\s]{6,})@'''
+secretGroup = 1
+keywords = ["postgres://", "postgresql://", "postgresql+psycopg://"]
+
+[allowlist]
+description = "generated scanner output and lockfiles are not source"
+paths = ['''reports/''', '''package-lock\.json''']

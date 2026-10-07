@@ -1,0 +1,30 @@
+# Custom Semgrep rules for the TaskBoard backend. They run together with the
+# public p/python and p/fastapi rulesets (see the workflow).
+rules:
+  - id: fastapi-debug-enabled
+    languages: [python]
+    severity: ERROR
+    message: FastAPI debug=True returns full tracebacks to clients. Never enable it.
+    pattern: FastAPI(..., debug=True, ...)
+
+  - id: hardcoded-database-password
+    languages: [python]
+    severity: ERROR
+    message: Database credentials must come from the environment / a Kubernetes Secret, not source code.
+    pattern-regex: 'postgres(ql)?(\+\w+)?://[^:\s/]+:[^@\s{$]{3,}@'
+
+  - id: raw-sql-string-format
+    languages: [python]
+    severity: ERROR
+    message: Building SQL with f-strings/format allows SQL injection. Use SQLAlchemy expressions or bound parameters.
+    pattern-either:
+      - pattern: $DB.execute(f"...")
+      - pattern: $DB.execute(text(f"..."))
+      - pattern: $DB.execute("..." % ...)
+      - pattern: $DB.execute("...".format(...))
+
+  - id: subprocess-shell-true
+    languages: [python]
+    severity: ERROR
+    message: subprocess with shell=True allows command injection.
+    pattern: subprocess.$FUNC(..., shell=True, ...)

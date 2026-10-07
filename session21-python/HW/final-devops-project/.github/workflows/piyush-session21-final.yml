@@ -1,0 +1,486 @@
+name: Session 21 - Final DevOps Project (Piyush)
+
+# Code -> Build & Test -> SAST / SCA / Secret scan -> Docker build -> Image scan
+#      -> Security gate -> Push to GHCR -> Deploy to Kubernetes (kind) with kubectl + Helm
+#      -> Smoke test through Ingress -> Monitoring check
+#      -> GitOps: Argo CD syncs the same chart from Git
+on:
+  push:
+    branches:
+      - submission/piyush-session-21
+    paths:
+      - "session21-python/HW/final-devops-project/**"
+      - ".github/workflows/piyush-session21-final.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: piyush-session21-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PROJECT: session21-python/HW/final-devops-project
+  BACKEND_IMAGE: ghcr.io/piyushhbansal/session21-taskboard-backend
+  FRONTEND_IMAGE: ghcr.io/piyushhbansal/session21-taskboard-frontend
+  PYTHON_VERSION: "3.13"
+  NODE_VERSION: "22"
+  TRIVY_IMAGE: aquasec/trivy:0.75.0
+  GITLEAKS_VERSION: "8.30.1"
+  INGRESS_NGINX_VERSION: controller-v1.15.1
+  METRICS_SERVER_VERSION: v0.9.0
+  ARGOCD_VERSION: v3.5.4
+
+jobs:
+  # ------------------------------------------------------------------ 1
+  build-test:
+    name: 1. Build & Unit Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Backend - install, compile, pytest (coverage >= 90%)
+        working-directory: ${{ env.PROJECT }}/application/backend
+        run: |
+          pip install -r requirements-dev.txt && pip check
+          python -m compileall -q app && echo "compiled OK"
+          mkdir -p reports
+          python -m pytest -v --junitxml=reports/junit.xml \
+            --cov=app --cov-report=term-missing --cov-fail-under=90
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - name: Frontend - npm ci + vite build
+        working-directory: ${{ env.PROJECT }}/application/frontend
+        run: |
+          npm ci --no-audit --no-fund
+          npm run build
+          ls -l dist dist/assets
+      - name: Helm lint + render
+        run: |
+          helm lint "$PROJECT/helm/taskboard"
+          helm template taskboard "$PROJECT/helm/taskboard" | grep -E '^kind:' | sort | uniq -c
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: test-report
+          path: ${{ env.PROJECT }}/application/backend/reports/
+          retention-days: 7
+
+  # ------------------------------------------------------------------ 2
+  # Scanners never fail on findings: they write JSON reports and the
+  # security-gate job applies the policy. Crashed scanner = missing report = gate fails.
+  sast:
+    name: 2. SAST (Bandit + Semgrep)
+    needs: build-test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ env.PROJECT }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - run: pip install bandit==1.9.4 semgrep==1.179.0
+      - name: Bandit
+        run: |
+          mkdir -p reports
+          bandit -c security/bandit.yaml -r application/backend/app -f json -o reports/bandit.json --exit-zero
+          bandit -c security/bandit.yaml -r application/backend/app --exit-zero | tail -n 14
+      - name: Semgrep (custom rules + p/python + p/fastapi)
+        run: |
+          semgrep scan --metrics=off \
+            --config security/semgrep.yml --config p/python --config p/fastapi \
+            --json -o reports/semgrep.json application/backend/app
+          python -c "import json; r=json.load(open('reports/semgrep.json')); print('semgrep findings:', len(r['results'])); [print(' ', x['check_id'], x['path'], x['start']['line'], x['extra']['severity']) for x in r['results']]"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: report-sast
+          path: |
+            ${{ env.PROJECT }}/reports/bandit.json
+            ${{ env.PROJECT }}/reports/semgrep.json
+
+  # ------------------------------------------------------------------ 3
+  sca:
+    name: 3. SCA (pip-audit + Trivy fs)
+    needs: build-test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ env.PROJECT }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - run: pip install pip-audit==2.10.1
+      - name: pip-audit (backend requirements)
+        run: |
+          mkdir -p reports
+          pip-audit -r application/backend/requirements.txt -f json -o reports/pip-audit.json \
+            || echo "pip-audit reported vulnerabilities - the security gate will decide"
+          pip-audit -r application/backend/requirements.txt || true
+      - name: Trivy fs (requirements.txt + package-lock.json)
+        run: |
+          docker run --rm -v "$PWD:/src" "$TRIVY_IMAGE" fs \
+            --config /src/security/trivy.yaml --ignorefile /src/security/.trivyignore \
+            -o /src/reports/trivy-fs.json /src/application/backend/requirements.txt
+          docker run --rm -v "$PWD:/src" "$TRIVY_IMAGE" fs \
+            --config /src/security/trivy.yaml --ignorefile /src/security/.trivyignore \
+            -o /src/reports/trivy-fs-frontend.json /src/application/frontend/package-lock.json
+          for r in trivy-fs trivy-fs-frontend; do
+            docker run --rm -v "$PWD:/src" "$TRIVY_IMAGE" convert --format table /src/reports/$r.json
+          done
+      - uses: actions/upload-artifact@v7
+        with:
+          name: report-sca
+          path: |
+            ${{ env.PROJECT }}/reports/pip-audit.json
+            ${{ env.PROJECT }}/reports/trivy-fs.json
+            ${{ env.PROJECT }}/reports/trivy-fs-frontend.json
+
+  # ------------------------------------------------------------------ 4
+  secret-scan:
+    name: 4. Secret Scan (Gitleaks)
+    needs: build-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Install gitleaks
+        run: |
+          curl -sSfL -o /tmp/gitleaks.tgz \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          tar -xzf /tmp/gitleaks.tgz -C /tmp gitleaks
+          /tmp/gitleaks version
+      - name: Scan project files + git history of the project folder
+        run: |
+          mkdir -p reports
+          /tmp/gitleaks dir "$PROJECT" --config "$PROJECT/security/gitleaks.toml" \
+            --report-format json --report-path reports/gitleaks.json --exit-code 0 --redact
+          /tmp/gitleaks git . --config "$PROJECT/security/gitleaks.toml" \
+            --log-opts="-- $PROJECT" \
+            --report-format json --report-path reports/gitleaks-history.json --exit-code 0 --redact
+      - uses: actions/upload-artifact@v7
+        with:
+          name: report-secrets
+          path: reports/
+
+  # ------------------------------------------------------------------ 5
+  docker-build:
+    name: 5. Docker Build (backend + frontend)
+    needs: build-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Build images (tag = short commit SHA)
+        run: |
+          TAG=${GITHUB_SHA::7}
+          docker build --build-arg APP_VERSION=$TAG -f "$PROJECT/docker/backend.Dockerfile" \
+            -t "$BACKEND_IMAGE:$TAG" "$PROJECT/application/backend"
+          docker build -f "$PROJECT/docker/frontend.Dockerfile" \
+            -t "$FRONTEND_IMAGE:$TAG" "$PROJECT/application/frontend"
+          docker image ls | grep session21-taskboard
+          docker save "$BACKEND_IMAGE:$TAG" -o backend.tar
+          docker save "$FRONTEND_IMAGE:$TAG" -o frontend.tar
+      - name: Container check - docker compose stack (postgres + backend + frontend)
+        working-directory: ${{ env.PROJECT }}/docker
+        run: |
+          TAG=${GITHUB_SHA::7}
+          docker tag "$BACKEND_IMAGE:$TAG" docker-backend
+          docker tag "$FRONTEND_IMAGE:$TAG" docker-frontend
+          docker compose up -d --no-build
+          for i in $(seq 1 30); do curl -fs localhost:8000/ready && break; sleep 2; done
+          echo
+          curl -fsS -X POST -H 'Content-Type: application/json' -d '{"title":"compose smoke"}' localhost:3000/api/tasks
+          echo
+          curl -fsS localhost:3000/api/tasks/stats
+          echo
+          echo "backend user: $(docker compose exec -T backend id)"
+          echo "frontend user: $(docker compose exec -T frontend id)"
+          docker compose logs backend | tail -n 5
+          docker compose down -v
+      - uses: actions/upload-artifact@v7
+        with:
+          name: image-tars
+          path: "*.tar"
+          retention-days: 1
+
+  # ------------------------------------------------------------------ 6
+  image-scan:
+    name: 6. Image Scan (Trivy)
+    needs: docker-build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with:
+          name: image-tars
+      - name: Trivy image scan (the exact tarballs that will be pushed)
+        run: |
+          mkdir -p reports
+          for img in backend frontend; do
+            docker run --rm -v "$PWD:/src" "$TRIVY_IMAGE" image \
+              --config "/src/$PROJECT/security/trivy.yaml" --ignorefile "/src/$PROJECT/security/.trivyignore" \
+              --input /src/$img.tar -o /src/reports/trivy-image-$img.json
+            echo "=== $img (HIGH/CRITICAL, fixable)"
+            docker run --rm -v "$PWD:/src" "$TRIVY_IMAGE" convert --format table \
+              --severity HIGH,CRITICAL /src/reports/trivy-image-$img.json
+          done
+      - uses: actions/upload-artifact@v7
+        with:
+          name: report-image
+          path: reports/
+
+  # ------------------------------------------------------------------ 7
+  security-gate:
+    name: 7. Security Gate (block HIGH/CRITICAL)
+    needs: [sast, sca, secret-scan, image-scan]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: report-*
+          merge-multiple: true
+          path: reports
+      - run: ls -l reports
+      - name: Evaluate policy
+        run: python3 "$PROJECT/security/gate.py" reports
+
+  # ------------------------------------------------------------------ 8
+  push:
+    name: 8. Push Images (GHCR)
+    needs: security-gate
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      tag: ${{ steps.push.outputs.tag }}
+      backend_digest: ${{ steps.push.outputs.backend_digest }}
+      frontend_digest: ${{ steps.push.outputs.frontend_digest }}
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: image-tars
+      - name: Log in to GHCR with GITHUB_TOKEN
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+      - name: Push the scanned images
+        id: push
+        run: |
+          TAG=${GITHUB_SHA::7}
+          docker load -i backend.tar
+          docker load -i frontend.tar
+          for IMG in "$BACKEND_IMAGE" "$FRONTEND_IMAGE"; do
+            docker tag "$IMG:$TAG" "$IMG:latest"
+            docker push -q "$IMG:$TAG"
+            docker push -q "$IMG:latest"
+            echo "pushed: $(docker inspect --format '{{index .RepoDigests 0}}' "$IMG:$TAG")"
+          done
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "backend_digest=$(docker inspect --format '{{index .RepoDigests 0}}' "$BACKEND_IMAGE:$TAG")" >> "$GITHUB_OUTPUT"
+          echo "frontend_digest=$(docker inspect --format '{{index .RepoDigests 0}}' "$FRONTEND_IMAGE:$TAG")" >> "$GITHUB_OUTPUT"
+
+  # ------------------------------------------------------------------ 9
+  deploy:
+    name: 9. Deploy to Kubernetes (kind) - kubectl + Helm + monitoring
+    needs: push
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+    env:
+      TAG: ${{ needs.push.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Create kind cluster (ports 80/443 mapped for the Ingress)
+        uses: helm/kind-action@v1.15.1
+        with:
+          cluster_name: s21
+          config: ${{ env.PROJECT }}/kubernetes/kind-config.yaml
+      - name: Install ingress-nginx + metrics-server
+        run: |
+          kubectl apply -f "https://raw.githubusercontent.com/kubernetes/ingress-nginx/${INGRESS_NGINX_VERSION}/deploy/static/provider/kind/deploy.yaml"
+          kubectl apply -f "https://github.com/kubernetes-sigs/metrics-server/releases/download/${METRICS_SERVER_VERSION}/components.yaml"
+          kubectl -n kube-system patch deployment metrics-server --type=json \
+            -p='[{"op":"add","path":"/spec/template/spec/containers/0/args/-","value":"--kubelet-insecure-tls"}]'
+          kubectl -n ingress-nginx rollout status deployment/ingress-nginx-controller --timeout=180s
+          kubectl -n kube-system rollout status deployment/metrics-server --timeout=180s
+          kubectl get nodes -o wide
+
+      # ---- A) plain manifests (kubernetes/) with kubectl -------------------------
+      - name: "kubectl apply: plain manifests into p21-taskboard"
+        run: |
+          kubectl apply -f "$PROJECT/kubernetes/00-namespace.yaml"
+          NS=p21-taskboard
+          kubectl -n $NS create secret docker-registry ghcr-pull --docker-server=ghcr.io \
+            --docker-username="${{ github.actor }}" --docker-password="${{ secrets.GITHUB_TOKEN }}"
+          kubectl -n $NS patch serviceaccount default -p '{"imagePullSecrets":[{"name":"ghcr-pull"}]}'
+          kubectl -n $NS apply -f "$PROJECT/kubernetes/01-config.yaml"
+          # real password instead of the placeholder in the file
+          kubectl -n $NS create secret generic taskboard-db --from-literal=DB_USER=taskboard \
+            --from-literal=DB_PASSWORD="$(openssl rand -hex 16)" --dry-run=client -o yaml | kubectl apply -f -
+          for f in 02-postgres 03-backend 04-frontend 05-ingress-hpa; do
+            sed -e "s#session21-taskboard-backend:latest#session21-taskboard-backend:$TAG#" \
+                -e "s#session21-taskboard-frontend:latest#session21-taskboard-frontend:$TAG#" \
+                "$PROJECT/kubernetes/$f.yaml" | kubectl -n $NS apply -f -
+          done
+          kubectl -n $NS rollout status statefulset/taskboard-postgres --timeout=180s
+          kubectl -n $NS rollout status deployment/taskboard-backend --timeout=180s
+          kubectl -n $NS rollout status deployment/taskboard-frontend --timeout=120s
+          kubectl -n $NS get all,cm,secret,pvc,ingress,hpa
+          for i in $(seq 1 30); do curl -fs -H 'Host: taskboard.local' localhost/api/tasks/stats && break; sleep 2; done
+          echo
+          echo "plain manifests OK - removing them before the Helm install"
+          kubectl delete namespace $NS --wait=true
+
+      # ---- B) Helm ----------------------------------------------------------------
+      - name: "helm upgrade --install (namespace p21-helm, image = commit SHA)"
+        run: |
+          kubectl create namespace p21-helm
+          kubectl -n p21-helm create secret docker-registry ghcr-pull --docker-server=ghcr.io \
+            --docker-username="${{ github.actor }}" --docker-password="${{ secrets.GITHUB_TOKEN }}"
+          helm upgrade --install taskboard "$PROJECT/helm/taskboard" -n p21-helm \
+            --set backend.image.tag="$TAG" --set frontend.image.tag="$TAG" \
+            --set "imagePullSecrets[0].name=ghcr-pull" \
+            --wait --timeout 5m
+          helm list -n p21-helm
+          kubectl -n p21-helm rollout status deployment/taskboard-backend --timeout=180s
+          kubectl -n p21-helm get deploy,sts,pods,svc,ingress,hpa,cm,secret,pvc -o wide
+      - name: helm test
+        run: helm test taskboard -n p21-helm --logs
+      - name: Smoke test through the Ingress (http://localhost, Host taskboard.local)
+        run: |
+          H='Host: taskboard.local'
+          for i in $(seq 1 30); do curl -fs -H "$H" localhost/api/tasks/stats && break; sleep 2; done
+          echo
+          curl -fsS -H "$H" localhost/ | grep -o '<title>.*</title>'
+          curl -fsS -H "$H" -X POST -H 'Content-Type: application/json' \
+            -d '{"title":"Deploy via Helm","priority":"HIGH","assignee":"Piyush"}' localhost/api/tasks
+          echo
+          curl -fsS -H "$H" localhost/api/tasks | tee /tmp/tasks.json
+          echo
+          grep -q '"Deploy via Helm"' /tmp/tasks.json
+          curl -fsS -H "$H" localhost/api/tasks/stats
+          echo
+          curl -sI -H "$H" localhost/api/tasks | grep -iE '^(x-app-version|x-content-type-options)'
+          echo "Smoke test through Ingress passed"
+      - name: Data survives a postgres pod restart (PVC)
+        run: |
+          kubectl -n p21-helm delete pod taskboard-postgres-0
+          kubectl -n p21-helm rollout status statefulset/taskboard-postgres --timeout=180s
+          for i in $(seq 1 30); do curl -fs -H 'Host: taskboard.local' localhost/api/tasks | grep -q '"Deploy via Helm"' && break; sleep 2; done
+          curl -fsS -H 'Host: taskboard.local' localhost/api/tasks
+          echo
+          kubectl -n p21-helm get pvc
+
+      # ---- C) Monitoring ------------------------------------------------------------
+      - name: "Monitoring: Prometheus scrapes /metrics, load test, kubectl top, HPA"
+        run: |
+          NS=p21-helm
+          kubectl -n $NS apply -f "$PROJECT/monitoring/prometheus.yaml"
+          kubectl -n $NS rollout status deployment/prometheus --timeout=180s
+          echo "--- raw /metrics from one backend pod (first lines)"
+          kubectl -n $NS port-forward svc/taskboard-backend 18000:8000 >/tmp/pf-api.log 2>&1 &
+          sleep 3
+          curl -fsS localhost:18000/metrics | grep -E '^(http_requests_total|taskboard_)' | head -n 10
+          echo "--- load test through the Ingress"
+          HOST_HEADER=taskboard.local bash "$PROJECT/monitoring/load-test.sh" http://localhost 60 8
+          kubectl -n $NS port-forward svc/prometheus 19090:9090 >/tmp/pf-prom.log 2>&1 &
+          sleep 15
+          q() { curl -fsS --get localhost:19090/api/v1/query --data-urlencode "query=$1" | python3 -c \
+                'import json,sys; [print("  ", r["metric"], r["value"][1]) for r in json.load(sys.stdin)["data"]["result"]]'; }
+          echo "--- Prometheus: targets up"
+          q 'up{job="taskboard-pods"}'
+          echo "--- Prometheus: request rate per handler (req/s, last 1m)"
+          q 'sum by (handler) (rate(http_requests_total{app="backend"}[1m]))'
+          echo "--- Prometheus: p95 latency (s)"
+          q 'histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket{app="backend"}[1m])))'
+          echo "--- Prometheus: loaded alert rules"
+          curl -fsS localhost:19090/api/v1/rules | python3 -c 'import json,sys; [print("  ", r["name"], r["state"]) for g in json.load(sys.stdin)["data"]["groups"] for r in g["rules"]]'
+          echo "--- kubectl top"
+          for i in $(seq 1 12); do kubectl -n $NS top pods && break; sleep 10; done
+          echo "--- HPA"
+          kubectl -n $NS get hpa
+          kubectl -n $NS describe hpa taskboard-backend | sed -n '/Metrics:/,/Events:/p'
+          echo "--- structured backend logs"
+          kubectl -n $NS logs deployment/taskboard-backend --tail=5
+      - name: Debug on failure
+        if: failure()
+        run: |
+          kubectl get pods -A || true
+          kubectl -n p21-taskboard describe pods || true
+          kubectl -n p21-helm describe pods || true
+          kubectl -n p21-helm get events --sort-by=.lastTimestamp || true
+          kubectl -n p21-helm logs deployment/taskboard-backend --tail=50 || true
+
+  # ----------------------------------------------------------------- 10
+  gitops:
+    name: 10. GitOps (Argo CD syncs the chart from Git)
+    needs: push
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+    env:
+      TAG: ${{ needs.push.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Create kind cluster
+        uses: helm/kind-action@v1.15.1
+        with:
+          cluster_name: s21-gitops
+      - name: Install Argo CD (core install, no UI)
+        run: |
+          kubectl create namespace argocd
+          kubectl apply -n argocd --server-side --force-conflicts \
+            -f "https://raw.githubusercontent.com/argoproj/argo-cd/${ARGOCD_VERSION}/manifests/core-install.yaml"
+          kubectl -n argocd rollout status statefulset/argocd-application-controller --timeout=300s
+          kubectl -n argocd rollout status deployment/argocd-repo-server --timeout=300s
+          kubectl -n argocd get pods
+      - name: Pre-create namespace, pull secret and DB secret (secrets are not stored in Git)
+        run: |
+          kubectl create namespace p21-gitops
+          kubectl -n p21-gitops create secret docker-registry ghcr-pull --docker-server=ghcr.io \
+            --docker-username="${{ github.actor }}" --docker-password="${{ secrets.GITHUB_TOKEN }}"
+          kubectl -n p21-gitops create secret generic taskboard-db-gitops \
+            --from-literal=DB_USER=taskboard --from-literal=DB_PASSWORD="$(openssl rand -hex 16)"
+      - name: Apply the Argo CD Application (image tag = this commit)
+        run: |
+          sed "s/IMAGE_TAG/$TAG/" "$PROJECT/gitops/argocd-application.yaml" | kubectl apply -f -
+          for i in $(seq 1 60); do
+            S=$(kubectl -n argocd get application taskboard -o jsonpath='{.status.sync.status}/{.status.health.status}')
+            echo "$(date +%T) sync/health = $S"
+            [ "$S" = "Synced/Healthy" ] && break
+            sleep 10
+          done
+          kubectl -n argocd get application taskboard -o wide
+          kubectl -n argocd get application taskboard \
+            -o jsonpath='{range .status.resources[*]}{.kind}{"\t"}{.name}{"\t"}{.status}{"\t"}{.health.status}{"\n"}{end}'
+          kubectl -n p21-gitops get deploy,sts,pods,svc,ingress,hpa
+          test "$S" = "Synced/Healthy"
+      - name: "Self-heal: manual drift is reverted by Argo CD"
+        run: |
+          echo "before: $(kubectl -n p21-gitops get cm taskboard-config -o jsonpath='{.data.LOG_LEVEL}')"
+          kubectl -n p21-gitops patch configmap taskboard-config -p '{"data":{"LOG_LEVEL":"DEBUG"}}'
+          echo "after manual patch: $(kubectl -n p21-gitops get cm taskboard-config -o jsonpath='{.data.LOG_LEVEL}')"
+          for i in $(seq 1 30); do
+            V=$(kubectl -n p21-gitops get cm taskboard-config -o jsonpath='{.data.LOG_LEVEL}')
+            [ "$V" = "INFO" ] && break
+            sleep 5
+          done
+          echo "after Argo CD self-heal: $V"
+          test "$V" = "INFO"
+          kubectl -n argocd get application taskboard -o jsonpath='{.status.sync.status}/{.status.health.status}{"\n"}'
+      - name: Debug on failure
+        if: failure()
+        run: |
+          kubectl -n argocd get application taskboard -o yaml || true
+          kubectl -n p21-gitops get events --sort-by=.lastTimestamp || true
+          kubectl -n p21-gitops describe pods || true
