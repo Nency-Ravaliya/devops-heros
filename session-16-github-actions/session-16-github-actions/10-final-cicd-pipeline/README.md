@@ -1,212 +1,52 @@
-# 10 - Final CI/CD Pipeline
+# Session 16 Assignment Submission:
 
-## 1. Architecture
+## What was done:
 
-```mermaid
-flowchart TD
-    A[Developer] -->|git push| B[GitHub Repository]
-    B --> C[GitHub Actions]
-    C --> D[TEST]
-    C --> E[SECURITY]
-    D --> F[BUILD]
-    F --> G[ARTIFACT]
-```
+We were asked to build and application and use github action to build a ci/cd pipeline for this and show the demo
 
----
+***For the files and folders please visit the github repo mentioned later in this readme***
 
-## 2. Jobs
-The workflow contains three jobs:
-1. `test`
-2. `build`
-3. `security-check`
+## What is in the yml file:
 
----
+We have done the following in the yml file:
+- It runs on ubuntu latest
+- Has 2 jobs:
+  - test
+  - build
+- Test has 5 steps:
+  - Checkout the source code
+  - Setup Python
+  - Display the Python Version
+  - Install required dependencies listed in requirements.txt
+  - Run pytest
+- Build has 5 steps too:
+  - Checkout the source code
+  - Setup Python
+  - Build application
+  - Show build output
+  - Upload build artifact
+- What artifact does is that it uploads a zip file downloadble that user can download that is already setup and build using the steps mentioned before
 
-## 3. Test Job
-The test job:
-**Checkout** → **Setup Python** → **Install dependencies** → **Run pytest**
+* Screenshots of workflow in github is shown below.
 
----
+**To redirect to the repo of the cicd pipline, [click here.](https://github.com/adx19/github-actions-pipeline-practice)**
 
-## 4. Build Job
-The build job runs **only** after tests pass.
-```yaml
-needs: test
-```
+## Screenshots:
 
-**Flow:**
-Test → PASS → Build → Artifact
+![test 1](./screenshots/github%20actions%20test%20job%201.png)
 
-**If tests fail:**
-Test → FAIL → Build does not run
+![test 2](./screenshots/github%20actions%20test%20job%202.png)
 
----
+![test 3](./screenshots/github%20actions%20test%20job%203.png)
 
-## 5. Security Check
-The security job checks for common sensitive files:
-* `.env`
-* `*.pem`
-* `*.key`
+![build 1](./screenshots/github%20actions%20build%20job%201.png)
 
-*(This is only a basic classroom demonstration. It is not a complete security scanner.)*
+![build 2](./screenshots/github%20actions%20build%20job%202.png)
 
----
+![build 3](./screenshots/github%20actions%20build%20job%203.png)
 
-## 6. Runner
-All jobs use:
-```yaml
-runs-on: ubuntu-latest
-```
-GitHub provides the runner environment.
+![complete ci](./screenshots/github%20action%20ci.png)
 
----
+![complete cd](./screenshots/github%20action%20cd.png)
 
-## 7. Artifact
-The build generates:
-```text
-build/
-├── calculator.py
-└── build-info.txt
-```
-The workflow uploads it as:
-`calculator-build`
 
----
-
-## 8. Run Locally
-
-**Install dependencies:**
-```bash
-python3 -m pip install -r requirements.txt
-```
-
-**Run application:**
-```bash
-python3 app/calculator.py
-```
-
-**Run tests:**
-```bash
-pytest -v
-```
-
-**Build:**
-```bash
-chmod +x build.sh
-./build.sh
-```
-
----
-
-## 9. Git Commands
-```bash
-git init
-git add .
-git commit -m "Add final CI/CD pipeline"
-git branch -M main
-git remote add origin https://github.com/YOUR_USERNAME/session16-cicd-github-actions.git
-git push -u origin main
-```
-
----
-
-## 10. Expected Pipeline
-GitHub Actions should show:
-
-```text
-Final CI Pipeline
-│
-├── ✓ Test Application
-│
-├── ✓ Security Check
-│
-└── ✓ Build Application
-      │
-      └── ✓ Upload build artifact
-```
-
----
-
-## 11. Failure Scenario
-Break the application intentionally:
-```python
-def add(a, b):
-    return a + b + 1
-```
-
-Run:
-```bash
-pytest
-```
-The test fails. Push the change.
-
-**Expected:**
-```text
-✗ Test Application
-```
-
-Because `build` `needs: test`, the build does not proceed.
-
----
-
-## 12. Fix
-Restore:
-```python
-def add(a, b):
-    return a + b
-```
-
-Commit:
-```bash
-git add .
-git commit -m "Fix application"
-git push
-```
-
-**Expected:**
-```text
-✓ Test Application
-✓ Security Check
-✓ Build Application
-✓ Upload build artifact
-```
-
----
-
-## 13. Complete Concept Map
-
-```text
-CI/CD
-│
-├── CI
-│   ├── Build
-│   └── Test
-│
-├── CD
-│   └── Deliver / Deploy
-│
-└── GitHub Actions
-    │
-    ├── Workflow
-    │
-    ├── Jobs
-    │   ├── Test
-    │   ├── Security
-    │   └── Build
-    │
-    ├── Steps
-    │
-    ├── Runner
-    │
-    ├── Secrets
-    │
-    └── Artifacts
-```
-
----
-
-### 💡 Final Takeaway
-
-> **git push** → **GitHub Actions** → **Test** → **Security Check** → **Build** → **Artifact** → **Ready for CD / Deployment**
-
-The next step after this session is to connect the pipeline to a deployment target such as Docker, Kubernetes, AWS, or Azure.
