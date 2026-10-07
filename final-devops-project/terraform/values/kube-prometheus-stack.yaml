@@ -1,0 +1,17 @@
+fullnameOverride: kps
+prometheus:
+  prometheusSpec:
+    scrapeInterval: 15s
+    serviceMonitorSelectorNilUsesHelmValues: false
+    ruleSelectorNilUsesHelmValues: false
+    retention: 2h
+grafana:
+  adminPassword: demo-only-not-secret
+  grafana.ini:
+    auth.anonymous:
+      enabled: true
+      org_role: Viewer
+kubeEtcd: { enabled: false }
+kubeControllerManager: { enabled: false }
+kubeScheduler: { enabled: false }
+kubeProxy: { enabled: false }

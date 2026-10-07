@@ -1,0 +1,4 @@
+-r requirements.txt
+pytest==8.4.2
+pytest-cov==6.0.0
+fakeredis==2.31.3

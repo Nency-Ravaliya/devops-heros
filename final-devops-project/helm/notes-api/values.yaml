@@ -1,0 +1,37 @@
+image:
+  repository: ghcr.io/tejasvarshney/final-notes-api
+  tag: latest                 # overridden per environment in gitops/notes-values.yaml
+  pullPolicy: IfNotPresent
+
+replicaCount: 2
+
+config:                        # rendered into the notes-config ConfigMap
+  APP_ENV: production
+  WELCOME_MESSAGE: "Welcome to the Notes API"
+  REDIS_HOST: notes-redis
+  REDIS_PORT: "6379"
+
+redis:
+  image: redis:7.4-alpine
+  storage: 1Gi
+  # The password Secret is NOT stored in Git - the pipeline creates it:
+  #   kubectl -n notes create secret generic notes-redis-auth --from-literal=password=<random>
+  existingSecret: notes-redis-auth
+
+resources:
+  requests: { cpu: 100m, memory: 96Mi }
+  limits:   { cpu: 500m, memory: 192Mi }
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 6
+  targetCPUUtilizationPercentage: 60
+
+ingress:
+  enabled: true
+  className: nginx
+  host: notes.local
+
+serviceMonitor:
+  enabled: true

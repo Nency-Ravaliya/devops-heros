@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: notes-config
+data:
+  APP_ENV: staging
+  WELCOME_MESSAGE: "Welcome to the Notes API (plain manifests)"
+  REDIS_HOST: redis          # BUG 3: the Service is called notes-redis
+  REDIS_PORT: "6379"

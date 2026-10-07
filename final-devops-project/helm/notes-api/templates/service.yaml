@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: notes-api
+  labels:
+    app: notes-api
+    {{- include "notes.labels" . | nindent 4 }}
+spec:
+  selector: { app: notes-api }
+  ports:
+    - name: http
+      port: 80
+      targetPort: http

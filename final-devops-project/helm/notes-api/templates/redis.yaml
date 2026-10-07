@@ -1,0 +1,56 @@
+# Redis: StatefulSet with a PersistentVolumeClaim so notes survive Pod restarts
+apiVersion: v1
+kind: Service
+metadata:
+  name: notes-redis
+  labels: {{- include "notes.labels" . | nindent 4 }}
+spec:
+  selector: { app: notes-redis }
+  ports:
+    - name: redis
+      port: 6379
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: notes-redis
+  labels: {{- include "notes.labels" . | nindent 4 }}
+spec:
+  serviceName: notes-redis
+  replicas: 1
+  selector:
+    matchLabels: { app: notes-redis }
+  template:
+    metadata:
+      labels: { app: notes-redis }
+    spec:
+      containers:
+        - name: redis
+          image: {{ .Values.redis.image }}
+          command: ["sh", "-c", "exec redis-server --appendonly yes --requirepass \"$REDIS_PASSWORD\""]
+          env:
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.redis.existingSecret }}
+                  key: password
+          ports:
+            - containerPort: 6379
+          readinessProbe:
+            exec:
+              command: ["sh", "-c", "redis-cli -a \"$REDIS_PASSWORD\" --no-auth-warning ping | grep -q PONG"]
+            periodSeconds: 5
+          resources:
+            requests: { cpu: 50m, memory: 64Mi }
+            limits: { cpu: 250m, memory: 128Mi }
+          volumeMounts:
+            - name: data
+              mountPath: /data
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: {{ .Values.redis.storage }}
