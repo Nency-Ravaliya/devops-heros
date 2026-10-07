@@ -1,0 +1,46 @@
+# Alerting rules for the s20 demo app.
+# Short "for:" durations so the demo fires quickly in a lab cluster.
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: podinfo-alerts
+  namespace: s20
+  labels:
+    app: podinfo
+spec:
+  groups:
+    - name: s20-podinfo.rules
+      rules:
+        # App down: no podinfo target is up (also covers "scaled to 0" because
+        # the target disappears -> absent()).
+        - alert: PodinfoDown
+          expr: (sum(up{namespace="s20", job="podinfo"}) or vector(0)) == 0
+          for: 30s
+          labels:
+            severity: critical
+            team: s20
+          annotations:
+            summary: "podinfo in namespace s20 is down"
+            description: "No podinfo scrape target in namespace s20 has been up for 30s."
+
+        # Pod not ready: readiness probe failing (kube-state-metrics signal).
+        - alert: PodinfoPodNotReady
+          expr: sum by (pod) (kube_pod_status_ready{namespace="s20", condition="false"}) > 0
+          for: 30s
+          labels:
+            severity: warning
+            team: s20
+          annotations:
+            summary: "Pod {{ $labels.pod }} in s20 is not ready"
+            description: "Readiness probe has been failing for 30s."
+
+        # High CPU: container using more than 80% of its CPU limit (200m).
+        - alert: PodinfoHighCPU
+          expr: sum by (pod) (rate(container_cpu_usage_seconds_total{namespace="s20", container="podinfo"}[5m])) > 0.16
+          for: 1m
+          labels:
+            severity: warning
+            team: s20
+          annotations:
+            summary: "High CPU on {{ $labels.pod }}"
+            description: "CPU usage is above 80% of the 200m limit."

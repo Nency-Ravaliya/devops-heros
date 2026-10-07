@@ -1,0 +1,25 @@
+# Applied ONCE by hand (kubectl apply -f). Kept OUTSIDE the watched app/ path on purpose:
+# this object tells Argo CD what to watch; it is not one of the workload manifests.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: s20-gitops-24bcs10157
+  namespace: argocd
+spec:
+  project: default
+
+  source:
+    repoURL: https://github.com/BYT-Bender/devops-heros.git
+    targetRevision: session20
+    path: session20-monitoring-observability-gitops/Sourabh-24BCS10157/gitops/app
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: s20-gitops
+
+  syncPolicy:
+    automated:
+      prune: true      # delete cluster objects whose manifest was removed from Git
+      selfHeal: true   # revert manual (kubectl) drift back to what Git says
+    syncOptions:
+      - CreateNamespace=true
