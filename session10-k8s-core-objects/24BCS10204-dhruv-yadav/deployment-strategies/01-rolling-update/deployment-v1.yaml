@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-rolling
+  namespace: s10
+  annotations:
+    kubernetes.io/change-cause: "v1 - http-echo:1.0"
+spec:
+  replicas: 4
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1        # at most 4 + 1 = 5 pods exist during the rollout
+      maxUnavailable: 0  # never go below 4 ready pods -> zero downtime
+  selector:
+    matchLabels:
+      app: web-rolling
+  template:
+    metadata:
+      labels:
+        app: web-rolling
+        version: v1
+    spec:
+      containers:
+        - name: web
+          image: hashicorp/http-echo:1.0
+          args: ["-listen=:5678", "-text=v1"]
+          ports:
+            - containerPort: 5678
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 5678
+            initialDelaySeconds: 2
+            periodSeconds: 2
+          lifecycle:
+            preStop:
+              sleep:
+                seconds: 5   # let kube-proxy remove the endpoint before the process stops
+          resources:
+            requests: { cpu: 5m, memory: 8Mi }
+            limits:   { cpu: 50m, memory: 32Mi }

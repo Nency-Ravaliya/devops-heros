@@ -1,0 +1,11 @@
+# Long-running curl client used to send requests to the Services from inside the cluster.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: client
+  namespace: s10
+spec:
+  containers:
+    - name: curl
+      image: curlimages/curl:8.10.1
+      command: ["sleep", "infinity"]
