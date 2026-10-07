@@ -4,7 +4,7 @@ resource "aws_vpc" "main" {
   enable_dns_hostnames = true
 
   tags = {
-    Name      = "session19-vpc"
+    Name      = "anushika-session19-vpc"
     Session   = "19"
     ManagedBy = "Terraform"
   }
@@ -17,7 +17,7 @@ resource "aws_subnet" "public" {
   map_public_ip_on_launch = true
 
   tags = {
-    Name      = "session19-public-subnet"
+    Name      = "anushika-session19-public-subnet"
     Session   = "19"
     ManagedBy = "Terraform"
   }
@@ -27,7 +27,7 @@ resource "aws_internet_gateway" "main" {
   vpc_id = aws_vpc.main.id
 
   tags = {
-    Name      = "session19-igw"
+    Name      = "anushika-session19-igw"
     Session   = "19"
     ManagedBy = "Terraform"
   }
@@ -42,7 +42,7 @@ resource "aws_route_table" "public" {
   }
 
   tags = {
-    Name      = "session19-public-rt"
+    Name      = "anushika-session19-public-rt"
     Session   = "19"
     ManagedBy = "Terraform"
   }
@@ -54,7 +54,7 @@ resource "aws_route_table_association" "public" {
 }
 
 resource "aws_security_group" "web" {
-  name        = "session19-web-sg"
+  name        = "anushika-session19-web-sg"
   description = "Security group for Session 19 web traffic"
   vpc_id      = aws_vpc.main.id
 
@@ -83,7 +83,7 @@ resource "aws_security_group" "web" {
   }
 
   tags = {
-    Name      = "session19-web-sg"
+    Name      = "anushika-session19-web-sg"
     Session   = "19"
     ManagedBy = "Terraform"
   }
