@@ -6,6 +6,7 @@ networkpolicy.networking.k8s.io/argocd-repo-server-network-policy serverside-app
 networkpolicy.networking.k8s.io/argocd-server-network-policy serverside-applied
 
 $ kubectl -n argocd rollout status deploy/argocd-server --timeout=300s && kubectl -n argocd rollout status deploy/argocd-repo-server --timeout=300s && kubectl -n argocd rollout status statefulset/argocd-application-controller --timeout=300s
+Waiting for deployment "argocd-server" rollout to finish: 0 out of 1 new replicas have been updated...
 Waiting for deployment "argocd-server" rollout to finish: 0 of 1 updated replicas are available...
 deployment "argocd-server" successfully rolled out
 deployment "argocd-repo-server" successfully rolled out
@@ -14,12 +15,12 @@ partitioned roll out complete: 1 new pods have been updated...
 $ kubectl get pods -n argocd
 NAME                                                READY   STATUS    RESTARTS   AGE
 argocd-application-controller-0                     1/1     Running   0          31s
-argocd-applicationset-controller-59cdc58ccb-cg85f   1/1     Running   0          31s
-argocd-dex-server-78bd84dc54-hmcjd                  1/1     Running   0          31s
-argocd-notifications-controller-5c45dc8b68-4zcs5    1/1     Running   0          31s
-argocd-redis-78c944f84c-bv8dm                       1/1     Running   0          31s
-argocd-repo-server-8f6876d64-jcffd                  1/1     Running   0          31s
-argocd-server-58bc76d7b7-np4ph                      1/1     Running   0          31s
+argocd-applicationset-controller-59cdc58ccb-gsjhv   1/1     Running   0          31s
+argocd-dex-server-78bd84dc54-trz68                  1/1     Running   0          31s
+argocd-notifications-controller-5c45dc8b68-mxtwl    1/1     Running   0          31s
+argocd-redis-78c944f84c-b2jn7                       1/1     Running   0          31s
+argocd-repo-server-8f6876d64-rx6s5                  1/1     Running   0          31s
+argocd-server-58bc76d7b7-g82rn                      1/1     Running   0          31s
 
 ################ Git is the source of truth: create the Application ################
 $ cat gitops/argocd-application.yaml
@@ -51,21 +52,21 @@ application.argoproj.io/session20-app created
 
 $ kubectl -n argocd get application session20-app -o wide
 NAME            SYNC STATUS   HEALTH STATUS   REVISION                                   PROJECT
-session20-app   Synced        Healthy         8bd47fbb0e51cec6138077ee54f8ff0adbda8a4a   default
+session20-app   Synced        Healthy         fc767774da700030d83350411fd00d0fa7bad4d2   default
 
 $ kubectl -n argocd get application session20-app -o jsonpath='{.status.sync.revision}'; echo
-8bd47fbb0e51cec6138077ee54f8ff0adbda8a4a
+fc767774da700030d83350411fd00d0fa7bad4d2
 
 $ kubectl get deploy,svc,pods -n session20-gitops
 NAME                                   READY   UP-TO-DATE   AVAILABLE   AGE
 deployment.apps/session20-gitops-app   2/2     2            2           7s
 
-NAME                           TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)   AGE
-service/session20-gitops-app   ClusterIP   10.96.251.14   <none>        80/TCP    7s
+NAME                           TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)   AGE
+service/session20-gitops-app   ClusterIP   10.96.133.182   <none>        80/TCP    7s
 
 NAME                                        READY   STATUS    RESTARTS   AGE
-pod/session20-gitops-app-67cfc4ccc4-4bsn8   1/1     Running   0          8s
-pod/session20-gitops-app-67cfc4ccc4-jzq2r   1/1     Running   0          8s
+pod/session20-gitops-app-67cfc4ccc4-dfcj7   1/1     Running   0          7s
+pod/session20-gitops-app-67cfc4ccc4-z7j2w   1/1     Running   0          7s
 
 ################ Continuous reconciliation: self-heal (manual drift is reverted) ################
 $ kubectl -n session20-gitops scale deploy session20-gitops-app --replicas=5
@@ -73,19 +74,19 @@ deployment.apps/session20-gitops-app scaled
 
 $ kubectl -n session20-gitops get deploy session20-gitops-app
 NAME                   READY   UP-TO-DATE   AVAILABLE   AGE
-session20-gitops-app   2/5     5            2           8s
+session20-gitops-app   2/5     5            2           7s
 
 $ kubectl -n session20-gitops get deploy session20-gitops-app
 NAME                   READY   UP-TO-DATE   AVAILABLE   AGE
-session20-gitops-app   2/2     2            2           33s
+session20-gitops-app   2/2     2            2           32s
 
 $ kubectl -n session20-gitops delete svc session20-gitops-app
 service "session20-gitops-app" deleted
 
 $ kubectl -n session20-gitops get svc
-NAME                   TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)   AGE
-session20-gitops-app   ClusterIP   10.96.112.221   <none>        80/TCP    25s
+NAME                   TYPE        CLUSTER-IP    EXTERNAL-IP   PORT(S)   AGE
+session20-gitops-app   ClusterIP   10.96.94.39   <none>        80/TCP    25s
 
 $ kubectl -n argocd get application session20-app -o jsonpath='{range .status.history[*]}{.id} {.revision} {.deployedAt}{"\n"}{end}'
-0 8bd47fbb0e51cec6138077ee54f8ff0adbda8a4a 2026-10-07T20:13:16Z
+0 fc767774da700030d83350411fd00d0fa7bad4d2 2026-10-07T20:22:43Z
 

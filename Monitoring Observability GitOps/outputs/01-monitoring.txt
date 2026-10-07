@@ -7,7 +7,7 @@ Update Complete. ⎈Happy Helming!⎈
 
 $ helm install kps prometheus-community/kube-prometheus-stack -n monitoring --create-namespace -f monitoring/kps-values.yaml --wait --timeout 10m
 NAME: kps
-LAST DEPLOYED: Wed Oct  7 20:08:02 2026
+LAST DEPLOYED: Wed Oct  7 20:16:48 2026
 NAMESPACE: monitoring
 STATUS: deployed
 REVISION: 1
@@ -33,23 +33,23 @@ Visit https://github.com/prometheus-operator/kube-prometheus for instructions on
 
 $ kubectl get pods -n monitoring
 NAME                                      READY   STATUS    RESTARTS   AGE
-alertmanager-kps-alertmanager-0           2/2     Running   0          33s
-kps-grafana-7bc98b4bc5-qncl7              3/3     Running   0          38s
-kps-kube-state-metrics-7cf7845df4-rnqtb   1/1     Running   0          38s
-kps-operator-5f8bff94d8-95sw4             1/1     Running   0          38s
-kps-prometheus-node-exporter-khzvj        1/1     Running   0          38s
-prometheus-kps-prometheus-0               2/2     Running   0          33s
+alertmanager-kps-alertmanager-0           2/2     Running   0          29s
+kps-grafana-7bc98b4bc5-zcjgc              3/3     Running   0          37s
+kps-kube-state-metrics-7cf7845df4-f9ngq   1/1     Running   0          37s
+kps-operator-5f8bff94d8-zgttd             1/1     Running   0          37s
+kps-prometheus-node-exporter-5hbn9        1/1     Running   0          37s
+prometheus-kps-prometheus-0               1/2     Running   0          28s
 
 $ kubectl get svc -n monitoring
 NAME                           TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)                      AGE
-alertmanager-operated          ClusterIP   None            <none>        9093/TCP,9094/TCP,9094/UDP   33s
-kps-alertmanager               ClusterIP   10.96.203.163   <none>        9093/TCP,8080/TCP            38s
-kps-grafana                    ClusterIP   10.96.42.107    <none>        80/TCP                       38s
-kps-kube-state-metrics         ClusterIP   10.96.190.244   <none>        8080/TCP                     38s
-kps-operator                   ClusterIP   10.96.190.79    <none>        443/TCP                      38s
-kps-prometheus                 ClusterIP   10.96.158.173   <none>        9090/TCP,8080/TCP            38s
-kps-prometheus-node-exporter   ClusterIP   10.96.180.118   <none>        9100/TCP                     38s
-prometheus-operated            ClusterIP   None            <none>        9090/TCP                     33s
+alertmanager-operated          ClusterIP   None            <none>        9093/TCP,9094/TCP,9094/UDP   29s
+kps-alertmanager               ClusterIP   10.96.34.237    <none>        9093/TCP,8080/TCP            37s
+kps-grafana                    ClusterIP   10.96.56.145    <none>        80/TCP                       37s
+kps-kube-state-metrics         ClusterIP   10.96.251.9     <none>        8080/TCP                     37s
+kps-operator                   ClusterIP   10.96.76.35     <none>        443/TCP                      37s
+kps-prometheus                 ClusterIP   10.96.229.169   <none>        9090/TCP,8080/TCP            37s
+kps-prometheus-node-exporter   ClusterIP   10.96.15.119    <none>        9100/TCP                     37s
+prometheus-operated            ClusterIP   None            <none>        9090/TCP                     29s
 
 ################ deploy an instrumented app + ServiceMonitor + alert rules ################
 $ kubectl apply -f monitoring/demo-app.yaml && kubectl apply -f monitoring/alerts.yaml
@@ -66,33 +66,38 @@ deployment "demo-app" successfully rolled out
 
 $ kubectl get pods,svc,servicemonitor,prometheusrule -n session20
 NAME                            READY   STATUS    RESTARTS   AGE
-pod/demo-app-787d5698c9-45r2r   1/1     Running   0          3s
-pod/demo-app-787d5698c9-rrrfs   1/1     Running   0          3s
+pod/demo-app-787d5698c9-5xddc   1/1     Running   0          2s
+pod/demo-app-787d5698c9-b2bbl   1/1     Running   0          2s
 
-NAME               TYPE        CLUSTER-IP    EXTERNAL-IP   PORT(S)   AGE
-service/demo-app   ClusterIP   10.96.176.0   <none>        80/TCP    3s
+NAME               TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)   AGE
+service/demo-app   ClusterIP   10.96.247.224   <none>        80/TCP    2s
 
 NAME                                            AGE
-servicemonitor.monitoring.coreos.com/demo-app   3s
+servicemonitor.monitoring.coreos.com/demo-app   2s
 
 NAME                                                   AGE
-prometheusrule.monitoring.coreos.com/demo-app-alerts   3s
+prometheusrule.monitoring.coreos.com/demo-app-alerts   2s
 
-$ kubectl -n session20 exec demo-app-787d5698c9-45r2r -- wget -qO- localhost:8080/metrics | grep -E '^# (HELP|TYPE) http_requests_total|^http_requests_total|^version'
-exec /bin/wget: exec format error
-command terminated with exit code 1
+$ curl -s localhost:8081/ ; curl -s localhost:8081/err >/dev/null; curl -s localhost:8081/metrics | grep -E '^# (HELP|TYPE) http_requests_total|^http_requests_total|^version'
+Hello from example application.# HELP http_requests_total Count of all HTTP requests
+# TYPE http_requests_total counter
+http_requests_total{code="200",method="get"} 2
+http_requests_total{code="404",method="get"} 1
+version{version="v0.5.0"} 1
 
 ################ generate traffic ################
 pod/traffic created
 ################ Prometheus: targets ################
 $ curl -s localhost:9090/api/v1/targets | jq -r '.data.activeTargets[] | "\(.labels.job) \(.labels.instance) health=\(.health)"' | sort | uniq
 apiserver 172.18.0.2:6443 health=up
-coredns 10.244.0.2:9153 health=up
 coredns 10.244.0.3:9153 health=up
+coredns 10.244.0.4:9153 health=up
+demo-app 10.244.0.12:8080 health=up
+demo-app 10.244.0.13:8080 health=up
 kps-alertmanager 10.244.0.9:8080 health=up
 kps-alertmanager 10.244.0.9:9093 health=up
-kps-grafana 10.244.0.8:3000 health=up
-kps-operator 10.244.0.7:10250 health=up
+kps-grafana 10.244.0.7:3000 health=up
+kps-operator 10.244.0.8:10250 health=up
 kps-prometheus 10.244.0.10:8080 health=up
 kps-prometheus 10.244.0.10:9090 health=up
 kube-state-metrics 10.244.0.6:8080 health=up
@@ -101,40 +106,47 @@ node-exporter 172.18.0.2:9100 health=up
 
 ################ Metrics: application health ################
 $ promq 'up{namespace="session20"}'
+container=app,endpoint=http,instance=10.244.0.12:8080,job=demo-app,namespace=session20,pod=demo-app-787d5698c9-5xddc,service=demo-app => 1
+container=app,endpoint=http,instance=10.244.0.13:8080,job=demo-app,namespace=session20,pod=demo-app-787d5698c9-b2bbl,service=demo-app => 1
 
 $ promq 'sum by (code) (rate(http_requests_total{namespace="session20"}[1m]))'
+code=200 => 18.93333333333333
+code=404 => 18.42222222222222
 
 $ promq 'kube_deployment_status_replicas_available{namespace="session20"}'
-container=kube-state-metrics,deployment=demo-app,endpoint=http,instance=10.244.0.6:8080,job=kube-state-metrics,namespace=session20,pod=kps-kube-state-metrics-7cf7845df4-rnqtb,service=kps-kube-state-metrics => 2
+container=kube-state-metrics,deployment=demo-app,endpoint=http,instance=10.244.0.6:8080,job=kube-state-metrics,namespace=session20,pod=kps-kube-state-metrics-7cf7845df4-f9ngq,service=kps-kube-state-metrics => 2
 
 ################ Metrics: CPU utilization ################
 $ promq 'sum by (pod) (rate(container_cpu_usage_seconds_total{namespace="session20", container!=""}[2m]))'
-pod=demo-app-787d5698c9-rrrfs => 0.0038293800000000007
-pod=demo-app-787d5698c9-45r2r => 0.004685417511064777
-pod=traffic => 0.037305750000000006
+pod=demo-app-787d5698c9-b2bbl => 0.005981816723802649
+pod=demo-app-787d5698c9-5xddc => 0.006196312525953503
+pod=traffic => 0.059214922072820884
 
 $ promq '100 * (1 - avg(rate(node_cpu_seconds_total{mode="idle"}[2m])))'
- => 33.360882777777775
+ => 8.083333333333343
 
 ################ Metrics: memory utilization ################
 $ promq 'sum by (pod) (container_memory_working_set_bytes{namespace="session20", container!=""})'
-pod=demo-app-787d5698c9-rrrfs => 12787712
-pod=demo-app-787d5698c9-45r2r => 12259328
-pod=traffic => 1363968
+pod=demo-app-787d5698c9-b2bbl => 15675392
+pod=demo-app-787d5698c9-5xddc => 15753216
+pod=traffic => 1478656
 
 $ promq '100 * (1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)'
-container=node-exporter,endpoint=http-metrics,instance=172.18.0.2:9100,job=node-exporter,namespace=monitoring,pod=kps-prometheus-node-exporter-khzvj,service=kps-prometheus-node-exporter => 18.10626128198256
+container=node-exporter,endpoint=http-metrics,instance=172.18.0.2:9100,job=node-exporter,namespace=monitoring,pod=kps-prometheus-node-exporter-5hbn9,service=kps-prometheus-node-exporter => 18.793275846779288
 
 ################ Alerts: rules loaded ################
 $ curl -s localhost:9090/api/v1/rules | jq -r '.data.groups[] | select(.name=="demo-app.rules") | .rules[] | "\(.name): \(.state) health=\(.health)"'
+DemoAppReplicasLow: inactive health=ok
+DemoAppHighRequestRate: firing health=ok
+DemoAppHighMemory: inactive health=ok
 
 ################ Alerts: break something - scale demo-app to 1 replica ################
 $ kubectl -n session20 scale deploy demo-app --replicas=1
 deployment.apps/demo-app scaled
 
 $ curl -s localhost:9090/api/v1/alerts | jq -r '.data.alerts[] | select(.labels.namespace=="session20" or (.labels.alertname|startswith("DemoApp"))) | "\(.labels.alertname) state=\(.state) severity=\(.labels.severity) value=\(.value) since=\(.activeAt)"'
-DemoAppReplicasLow state=firing severity=warning value=1e+00 since=2026-10-07T20:10:22.874450291Z
-DemoAppHighRequestRate state=firing severity=info value=3.7022222222222226e+01 since=2026-10-07T20:10:37.874450291Z
+DemoAppReplicasLow state=firing severity=warning value=1e+00 since=2026-10-07T20:19:45.452929783Z
+DemoAppHighRequestRate state=firing severity=info value=3.702222222222222e+01 since=2026-10-07T20:18:00.452929783Z
 
 $ curl -s localhost:9093/api/v2/alerts | jq -r '.[] | select(.labels.alertname|startswith("DemoApp")) | "Alertmanager received: \(.labels.alertname) [\(.status.state)] \(.annotations.summary)"'
 Alertmanager received: DemoAppHighRequestRate [suppressed] demo-app is receiving more than 5 req/s

@@ -1,10 +1,10 @@
 ################ Change 1: scale from 2 to 3 replicas - by committing to Git, not with kubectl ################
 $ kubectl -n session20-gitops get deploy session20-gitops-app
 NAME                   READY   UP-TO-DATE   AVAILABLE   AGE
-session20-gitops-app   2/2     2            2           58s
+session20-gitops-app   2/2     2            2           57s
 
-$ git -C '/tmp/tmp.yKsqvjNObr' log --oneline -1 && git -C '/tmp/tmp.yKsqvjNObr' show --stat --format= HEAD && git -C '/tmp/tmp.yKsqvjNObr' diff HEAD~1 -- 'Monitoring Observability GitOps/gitops/app/deployment.yaml'
-8021103 GitOps demo: scale session20-gitops-app to 3 replicas
+$ git -C '/tmp/tmp.I0NSDp633X' log --oneline -1 && git -C '/tmp/tmp.I0NSDp633X' show --stat --format= HEAD && git -C '/tmp/tmp.I0NSDp633X' diff HEAD~1 -- 'Monitoring Observability GitOps/gitops/app/deployment.yaml'
+55094e3 GitOps demo: scale session20-gitops-app to 3 replicas
  Monitoring Observability GitOps/gitops/app/deployment.yaml | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 diff --git a/Monitoring Observability GitOps/gitops/app/deployment.yaml b/Monitoring Observability GitOps/gitops/app/deployment.yaml
@@ -22,20 +22,20 @@ index d874558..c128447 100644
        app: session20-gitops-app
 
 $ kubectl -n argocd get application session20-app -o jsonpath='synced revision: {.status.sync.revision}  sync={.status.sync.status}  health={.status.health.status}'; echo
-synced revision: 8021103f5e2a9a6235a6d1a56a464a56d4dabdd4  sync=Synced  health=Healthy
+synced revision: 55094e3bd040d8b42a88f4bb0ec876855dbeb177  sync=Synced  health=Healthy
 
 $ kubectl -n session20-gitops get deploy session20-gitops-app
 NAME                   READY   UP-TO-DATE   AVAILABLE   AGE
-session20-gitops-app   3/3     3            3           65s
+session20-gitops-app   3/3     3            3           64s
 
 $ kubectl -n session20-gitops get pods
 NAME                                    READY   STATUS    RESTARTS   AGE
-session20-gitops-app-67cfc4ccc4-4bsn8   1/1     Running   0          65s
-session20-gitops-app-67cfc4ccc4-66fmt   1/1     Running   0          4s
-session20-gitops-app-67cfc4ccc4-jzq2r   1/1     Running   0          65s
+session20-gitops-app-67cfc4ccc4-9cl4b   1/1     Running   0          4s
+session20-gitops-app-67cfc4ccc4-dfcj7   1/1     Running   0          64s
+session20-gitops-app-67cfc4ccc4-z7j2w   1/1     Running   0          64s
 
 ################ Change 2: upgrade the image nginx:1.27-alpine -> nginx:1.28-alpine via Git ################
-$ git -C '/tmp/tmp.yKsqvjNObr' diff HEAD~1 -- 'Monitoring Observability GitOps/gitops/app/deployment.yaml'
+$ git -C '/tmp/tmp.I0NSDp633X' diff HEAD~1 -- 'Monitoring Observability GitOps/gitops/app/deployment.yaml'
 diff --git a/Monitoring Observability GitOps/gitops/app/deployment.yaml b/Monitoring Observability GitOps/gitops/app/deployment.yaml
 index c128447..3fc2e0e 100644
 --- a/Monitoring Observability GitOps/gitops/app/deployment.yaml	
@@ -54,40 +54,31 @@ nginx:1.28-alpine  ready=3/3
 
 ################ Change 3: prune - delete service.yaml from Git, Argo CD deletes the Service ################
 $ kubectl -n session20-gitops get svc
-NAME                   TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)   AGE
-session20-gitops-app   ClusterIP   10.96.112.221   <none>        80/TCP    39s
+NAME                   TYPE        CLUSTER-IP    EXTERNAL-IP   PORT(S)   AGE
+session20-gitops-app   ClusterIP   10.96.94.39   <none>        80/TCP    45s
 
 $ kubectl -n session20-gitops get svc
 No resources found in session20-gitops namespace.
 
 ################ Roll back = git revert ################
-Author identity unknown
-
-*** Please tell me who you are.
-
-Run
-
-  git config --global user.email "you@example.com"
-  git config --global user.name "Your Name"
-
-to set your account's default identity.
-Omit --global to set the identity only in this repository.
-
-fatal: empty ident name (for <runner@runnervm8df0l.j2yi3mv5n44ehbbz2q5lpa50tg.vx.internal.cloudapp.net>) not allowed
-$ git -C '/tmp/tmp.yKsqvjNObr' log --oneline -5
-50d8113 GitOps demo: remove the Service
-5581611 GitOps demo: upgrade to nginx 1.28
-8021103 GitOps demo: scale session20-gitops-app to 3 replicas
-8bd47fb Session 20: monitoring/observability/GitOps demo (kube-prometheus-stack, Jaeger, Argo CD) on kind via CI
-c58dcd7 Session 15 homework: Helm commands, rollback workflow, notes-chart mini project
+$ git -C '/tmp/tmp.I0NSDp633X' log --oneline -5
+c6bd9a3 Revert "GitOps demo: remove the Service"
+fdbe33e GitOps demo: remove the Service
+af844c7 GitOps demo: upgrade to nginx 1.28
+55094e3 GitOps demo: scale session20-gitops-app to 3 replicas
+fc76777 Session 20: wait for Prometheus target discovery, fix metrics sample + git revert identity
 
 $ kubectl -n session20-gitops get deploy,svc
 NAME                                   READY   UP-TO-DATE   AVAILABLE   AGE
-deployment.apps/session20-gitops-app   3/3     3            3           79s
+deployment.apps/session20-gitops-app   3/3     3            3           90s
+
+NAME                           TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)   AGE
+service/session20-gitops-app   ClusterIP   10.96.123.66   <none>        80/TCP    4s
 
 $ kubectl -n argocd get application session20-app -o jsonpath='{range .status.history[*]}{.id}  {.revision}  {.deployedAt}{"\n"}{end}'
-0  8bd47fbb0e51cec6138077ee54f8ff0adbda8a4a  2026-10-07T20:13:16Z
-1  8021103f5e2a9a6235a6d1a56a464a56d4dabdd4  2026-10-07T20:14:17Z
-2  5581611a9fc1cd3557e2955325767865f3627793  2026-10-07T20:14:24Z
-3  50d8113d0d5289ddc09aae1dfa2fc35ea120e279  2026-10-07T20:14:31Z
+0  fc767774da700030d83350411fd00d0fa7bad4d2  2026-10-07T20:22:43Z
+1  55094e3bd040d8b42a88f4bb0ec876855dbeb177  2026-10-07T20:23:43Z
+2  af844c7f61b5ebf7d1e9c165c78487ded0fa882d  2026-10-07T20:23:50Z
+3  fdbe33ed3e8d494d361c2a6128fd41b7c02c379c  2026-10-07T20:24:02Z
+4  c6bd9a3b01974ab77e3e858165cbe3a26d2c3c49  2026-10-07T20:24:09Z
 
