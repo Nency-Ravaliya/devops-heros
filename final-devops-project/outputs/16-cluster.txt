@@ -1,0 +1,41 @@
+$ kubectl get nodes -o wide
+NAME                         STATUS   ROLES           AGE   VERSION   INTERNAL-IP   EXTERNAL-IP   OS-IMAGE                         KERNEL-VERSION      CONTAINER-RUNTIME
+final-devops-control-plane   Ready    control-plane   90s   v1.33.1   172.18.0.2    <none>        Debian GNU/Linux 12 (bookworm)   6.17.0-1022-azure   containerd://2.1.1
+final-devops-worker          Ready    <none>          81s   v1.33.1   172.18.0.3    <none>        Debian GNU/Linux 12 (bookworm)   6.17.0-1022-azure   containerd://2.1.1
+
+$ helm list -A
+NAME          	NAMESPACE    	REVISION	UPDATED                                	STATUS  	CHART                       	APP VERSION
+argocd        	argocd       	1       	2026-10-07 20:31:01.84294794 +0000 UTC 	deployed	argo-cd-10.10.0             	v3.5.4     
+ingress-nginx 	ingress-nginx	1       	2026-10-07 20:31:01.038173134 +0000 UTC	deployed	ingress-nginx-4.15.1        	1.15.1     
+kps           	monitoring   	1       	2026-10-07 20:31:07.961399011 +0000 UTC	deployed	kube-prometheus-stack-92.1.0	v0.94.1    
+metrics-server	kube-system  	1       	2026-10-07 20:31:01.120329674 +0000 UTC	deployed	metrics-server-3.14.0       	0.9.0      
+
+$ kubectl get pods -A
+NAMESPACE            NAME                                                 READY   STATUS      RESTARTS   AGE
+argocd               argocd-application-controller-0                      1/1     Running     0          53s
+argocd               argocd-applicationset-controller-6d87689f74-rcmx4    1/1     Running     0          53s
+argocd               argocd-redis-6df6bc684d-mbrrv                        1/1     Running     0          53s
+argocd               argocd-redis-secret-init-qbw5f                       0/1     Completed   0          66s
+argocd               argocd-repo-server-74f9d7c6f5-fwjgz                  1/1     Running     0          53s
+argocd               argocd-server-7d77d476f7-45mxb                       1/1     Running     0          53s
+ingress-nginx        ingress-nginx-controller-7b89b5b654-gm2pw            1/1     Running     0          65s
+kube-system          coredns-674b8bbfcf-kmf24                             1/1     Running     0          88s
+kube-system          coredns-674b8bbfcf-pljts                             1/1     Running     0          88s
+kube-system          etcd-final-devops-control-plane                      1/1     Running     0          95s
+kube-system          kindnet-qdhsj                                        1/1     Running     0          88s
+kube-system          kindnet-r4gnc                                        1/1     Running     0          87s
+kube-system          kube-apiserver-final-devops-control-plane            1/1     Running     0          94s
+kube-system          kube-controller-manager-final-devops-control-plane   1/1     Running     0          94s
+kube-system          kube-proxy-ls5lc                                     1/1     Running     0          88s
+kube-system          kube-proxy-qdfqt                                     1/1     Running     0          87s
+kube-system          kube-scheduler-final-devops-control-plane            1/1     Running     0          94s
+kube-system          metrics-server-65f9479866-jblxj                      1/1     Running     0          72s
+local-path-storage   local-path-provisioner-7dc846544d-rfvs8              1/1     Running     0          88s
+monitoring           alertmanager-kps-alertmanager-0                      2/2     Running     0          48s
+monitoring           kps-grafana-54c98f5b68-wllcm                         3/3     Running     0          52s
+monitoring           kps-kube-state-metrics-667b9d7c5-hztbf               1/1     Running     0          52s
+monitoring           kps-operator-7c5fdd9599-n4tmz                        1/1     Running     0          52s
+monitoring           kps-prometheus-node-exporter-ddk6g                   1/1     Running     0          52s
+monitoring           kps-prometheus-node-exporter-dnrkk                   1/1     Running     0          52s
+monitoring           prometheus-kps-prometheus-0                          2/2     Running     0          48s
+

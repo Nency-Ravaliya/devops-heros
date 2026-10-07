@@ -1,0 +1,11 @@
+$ terraform output
+api_endpoint = "https://127.0.0.1:45647"
+cluster_name = "final-devops"
+kubeconfig_path = "/home/runner/work/devops-heros/devops-heros/final-devops-project/terraform/final-devops-config"
+platform_releases = [
+  "ingress-nginx",
+  "metrics-server",
+  "argocd",
+  "kps",
+]
+[exit code: 0]

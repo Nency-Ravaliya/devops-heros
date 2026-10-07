@@ -1,0 +1,57 @@
+$ curl -s localhost:9090/api/v1/targets | jq -r '.data.activeTargets[] | select(.labels.namespace=="notes") | "\(.labels.job) \(.labels.instance) health=\(.health)"'
+notes-api 10.244.1.28:8000 health=up
+notes-api 10.244.1.18:8000 health=up
+notes-api 10.244.1.21:8000 health=up
+notes-api 10.244.1.26:8000 health=up
+notes-api 10.244.1.29:8000 health=up
+notes-api 10.244.1.27:8000 health=up
+
+$ promq 'sum by (endpoint, status) (rate(notes_http_requests_total{namespace="notes"}[2m]))'
+endpoint=http,status=200 => 37.59603813492063
+endpoint=http,status=503 => 0
+endpoint=http,status=201 => 0
+endpoint=http,status=404 => 0.048196111111111106
+
+$ promq 'histogram_quantile(0.95, sum by (le) (rate(notes_http_request_duration_seconds_bucket{namespace="notes"}[5m])))'
+ => 0.18926597326436911
+
+$ promq 'notes_created_total'
+container=api,endpoint=http,instance=10.244.1.21:8000,job=notes-api,namespace=notes,pod=notes-api-59f8bdfcb9-2tpbl,service=notes-api => 0
+container=api,endpoint=http,instance=10.244.1.18:8000,job=notes-api,namespace=notes,pod=notes-api-59f8bdfcb9-c8f6d,service=notes-api => 1
+container=api,endpoint=http,instance=10.244.1.26:8000,job=notes-api,namespace=notes,pod=notes-api-59f8bdfcb9-kdlmh,service=notes-api => 0
+container=api,endpoint=http,instance=10.244.1.29:8000,job=notes-api,namespace=notes,pod=notes-api-59f8bdfcb9-47vvx,service=notes-api => 0
+container=api,endpoint=http,instance=10.244.1.27:8000,job=notes-api,namespace=notes,pod=notes-api-59f8bdfcb9-8xntd,service=notes-api => 0
+container=api,endpoint=http,instance=10.244.1.28:8000,job=notes-api,namespace=notes,pod=notes-api-59f8bdfcb9-8fpcr,service=notes-api => 0
+
+$ promq 'sum by (pod) (rate(container_cpu_usage_seconds_total{namespace="notes", container!=""}[2m]))'
+pod=notes-api-59f8bdfcb9-c8f6d => 0.1620368398660933
+pod=notes-api-59f8bdfcb9-2tpbl => 0.16369391557754545
+pod=notes-redis-0 => 0.004970210482122683
+pod=load-59c59589b5-rfftv => 0.017484376216119372
+pod=load-59c59589b5-vgrrq => 0.01716364377558747
+pod=load-59c59589b5-9ds4x => 0.015789250179967664
+pod=notes-api-59f8bdfcb9-kdlmh => 0.168073619007958
+pod=notes-api-59f8bdfcb9-8xntd => 0.16481341727648094
+pod=notes-api-59f8bdfcb9-8fpcr => 0.16883443638304474
+pod=notes-api-59f8bdfcb9-47vvx => 0.1588396235516975
+
+$ promq 'sum by (pod) (container_memory_working_set_bytes{namespace="notes", container!=""})'
+pod=notes-api-59f8bdfcb9-c8f6d => 62685184
+pod=notes-api-59f8bdfcb9-2tpbl => 62488576
+pod=notes-redis-0 => 9310208
+pod=notes-api-59f8bdfcb9-kdlmh => 62435328
+pod=notes-api-59f8bdfcb9-8xntd => 62410752
+pod=notes-api-59f8bdfcb9-8fpcr => 62423040
+pod=notes-api-59f8bdfcb9-47vvx => 62308352
+
+$ curl -s localhost:9090/api/v1/rules | jq -r '.data.groups[] | select(.name=="notes-api.rules") | .rules[] | "\(.name): \(.state) health=\(.health)"'
+
+$ kubectl -n notes logs deploy/notes-api --tail=6
+Found 6 pods, using pod/notes-api-59f8bdfcb9-c8f6d
+10.244.1.1 - - [07/Oct/2026:20:37:28 +0000] "GET /health HTTP/1.1" 200 16 "-" "kube-probe/1.33"
+10.244.1.1 - - [07/Oct/2026:20:37:32 +0000] "GET /ready HTTP/1.1" 200 19 "-" "kube-probe/1.33"
+10.244.1.1 - - [07/Oct/2026:20:37:37 +0000] "GET /ready HTTP/1.1" 200 19 "-" "kube-probe/1.33"
+10.244.1.15 - - [07/Oct/2026:20:37:37 +0000] "GET /metrics HTTP/1.1" 200 9092 "-" "Prometheus/3.15.0"
+10.244.1.1 - - [07/Oct/2026:20:37:38 +0000] "GET /health HTTP/1.1" 200 16 "-" "kube-probe/1.33"
+10.244.1.1 - - [07/Oct/2026:20:37:42 +0000] "GET /ready HTTP/1.1" 200 19 "-" "kube-probe/1.33"
+

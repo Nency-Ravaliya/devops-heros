@@ -1,0 +1,127 @@
+################ through the Ingress (http://notes.local on the cluster's port 80) ################
+$ api / | jq .
+{
+  "app": "notes-api",
+  "environment": "production",
+  "message": "Welcome to the Notes API - deployed by Argo CD",
+  "version": "4b0eec8"
+}
+
+$ api /health
+{"status":"ok"}
+
+$ api /ready
+{"status":"ready"}
+
+$ api /api/notes -X POST -H 'Content-Type: application/json' -d '{"text":"Final project deployed by Argo CD"}' | jq .
+{
+  "created": 1791405194.891164,
+  "id": "20adb231",
+  "text": "Final project deployed by Argo CD"
+}
+
+$ api /api/notes -X POST -H 'Content-Type: application/json' -d '{"text":"Notes survive Redis restarts"}' | jq .
+{
+  "created": 1791405194.9023254,
+  "id": "1c17d00e",
+  "text": "Notes survive Redis restarts"
+}
+
+$ api /api/notes | jq -r '.[].text'
+Final project deployed by Argo CD
+Notes survive Redis restarts
+
+################ storage: delete the Redis Pod, the PVC keeps the data ################
+$ kubectl -n notes get pvc
+NAME                 STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE
+data-notes-redis-0   Bound    pvc-4c24aec3-bb02-4a6e-b4da-10b6afa19572   1Gi        RWO            standard       <unset>                 46s
+
+$ kubectl -n notes delete pod notes-redis-0 && kubectl -n notes wait --for=condition=Ready pod/notes-redis-0 --timeout=120s
+pod "notes-redis-0" deleted from notes namespace
+pod/notes-redis-0 condition met
+
+$ api /api/notes | jq -r '.[].text'
+Final project deployed by Argo CD
+Notes survive Redis restarts
+
+################ ConfigMap + Secret inside the container ################
+$ kubectl -n notes exec deploy/notes-api -- sh -c 'echo APP_ENV=$APP_ENV; echo WELCOME_MESSAGE=$WELCOME_MESSAGE; echo REDIS_HOST=$REDIS_HOST; echo REDIS_PASSWORD length=${#REDIS_PASSWORD}'
+APP_ENV=production
+WELCOME_MESSAGE=Welcome to the Notes API - deployed by Argo CD
+REDIS_HOST=notes-redis
+REDIS_PASSWORD length=32
+
+################ probes ################
+$ kubectl -n notes describe deploy notes-api | grep -E 'Liveness|Readiness|Startup|Limits|Requests' -A0
+    Limits:
+--
+    Requests:
+--
+    Liveness:   http-get http://:http/health delay=0s timeout=1s period=10s successThreshold=1 failureThreshold=3
+    Readiness:  http-get http://:http/ready delay=0s timeout=1s period=5s successThreshold=1 failureThreshold=2
+    Startup:    http-get http://:http/health delay=0s timeout=1s period=2s successThreshold=1 failureThreshold=30
+
+################ HPA: generate CPU load on /api/burn ################
+$ kubectl -n notes get hpa
+NAME        REFERENCE              TARGETS       MINPODS   MAXPODS   REPLICAS   AGE
+notes-api   Deployment/notes-api   cpu: 1%/60%   2         6         2          59s
+
+deployment.apps/load created
+======== t+45s under load ========
+$ kubectl -n notes get hpa notes-api
+NAME        REFERENCE              TARGETS         MINPODS   MAXPODS   REPLICAS   AGE
+notes-api   Deployment/notes-api   cpu: 214%/60%   2         6         2          104s
+
+======== t+90s under load ========
+$ kubectl -n notes get hpa notes-api
+NAME        REFERENCE              TARGETS         MINPODS   MAXPODS   REPLICAS   AGE
+notes-api   Deployment/notes-api   cpu: 251%/60%   2         6         6          2m29s
+
+======== t+135s under load ========
+$ kubectl -n notes get hpa notes-api
+NAME        REFERENCE              TARGETS         MINPODS   MAXPODS   REPLICAS   AGE
+notes-api   Deployment/notes-api   cpu: 258%/60%   2         6         6          3m14s
+
+======== t+180s under load ========
+$ kubectl -n notes get hpa notes-api
+NAME        REFERENCE              TARGETS         MINPODS   MAXPODS   REPLICAS   AGE
+notes-api   Deployment/notes-api   cpu: 257%/60%   2         6         6          3m59s
+
+$ kubectl -n notes top pods
+NAME                         CPU(cores)   MEMORY(bytes)   
+load-59c59589b5-9ds4x        28m          1Mi             
+load-59c59589b5-rfftv        31m          1Mi             
+load-59c59589b5-vgrrq        29m          1Mi             
+notes-api-59f8bdfcb9-2tpbl   252m         59Mi            
+notes-api-59f8bdfcb9-47vvx   264m         59Mi            
+notes-api-59f8bdfcb9-8fpcr   277m         59Mi            
+notes-api-59f8bdfcb9-8xntd   274m         59Mi            
+notes-api-59f8bdfcb9-c8f6d   263m         59Mi            
+notes-api-59f8bdfcb9-kdlmh   201m         59Mi            
+notes-redis-0                7m           8Mi             
+
+$ kubectl -n notes get pods -l app=notes-api
+NAME                         READY   STATUS    RESTARTS   AGE
+notes-api-59f8bdfcb9-2tpbl   1/1     Running   0          3m44s
+notes-api-59f8bdfcb9-47vvx   1/1     Running   0          2m29s
+notes-api-59f8bdfcb9-8fpcr   1/1     Running   0          2m29s
+notes-api-59f8bdfcb9-8xntd   1/1     Running   0          2m29s
+notes-api-59f8bdfcb9-c8f6d   1/1     Running   0          3m59s
+notes-api-59f8bdfcb9-kdlmh   1/1     Running   0          2m29s
+
+$ kubectl -n notes describe hpa notes-api | sed -n '/Events:/,$p'
+Events:
+  Type     Reason                        Age    From                       Message
+  ----     ------                        ----   ----                       -------
+  Normal   SuccessfulRescale             3m44s  horizontal-pod-autoscaler  New size: 2; reason: Current number of replicas below Spec.MinReplicas
+  Warning  FailedGetResourceMetric       3m29s  horizontal-pod-autoscaler  failed to get cpu utilization: did not receive metrics for targeted pods (pods might be unready)
+  Warning  FailedComputeMetricsReplicas  3m29s  horizontal-pod-autoscaler  invalid metrics (1 invalid out of 1), first error is: failed to get cpu resource metric value: failed to get cpu utilization: did not receive metrics for targeted pods (pods might be unready)
+  Normal   SuccessfulRescale             2m29s  horizontal-pod-autoscaler  New size: 6; reason: cpu resource utilization (percentage of request) above target
+
+################ GitOps self-heal: manual change is reverted by Argo CD ################
+$ kubectl -n notes patch configmap notes-config --type merge -p '{"data":{"WELCOME_MESSAGE":"hacked by hand"}}'
+configmap/notes-config patched
+
+$ kubectl -n notes get configmap notes-config -o jsonpath='{.data.WELCOME_MESSAGE}'; echo
+Welcome to the Notes API - deployed by Argo CD
+

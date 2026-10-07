@@ -1,0 +1,255 @@
+$ terraform plan -input=false -out=tfplan
+
+Terraform used the selected providers to generate the following execution
+plan. Resource actions are indicated with the following symbols:
+  + create
+
+Terraform will perform the following actions:
+
+  # helm_release.argocd will be created
+  + resource "helm_release" "argocd" {
+      + atomic                     = false
+      + chart                      = "argo-cd"
+      + cleanup_on_fail            = false
+      + create_namespace           = true
+      + dependency_update          = false
+      + disable_crd_hooks          = false
+      + disable_openapi_validation = false
+      + disable_webhooks           = false
+      + force_update               = false
+      + id                         = (known after apply)
+      + lint                       = false
+      + manifest                   = (known after apply)
+      + max_history                = 0
+      + metadata                   = (known after apply)
+      + name                       = "argocd"
+      + namespace                  = "argocd"
+      + pass_credentials           = false
+      + recreate_pods              = false
+      + render_subchart_notes      = true
+      + replace                    = false
+      + repository                 = "https://argoproj.github.io/argo-helm"
+      + reset_values               = false
+      + reuse_values               = false
+      + skip_crds                  = false
+      + status                     = "deployed"
+      + timeout                    = 900
+      + verify                     = false
+      + version                    = "10.10.0"
+      + wait                       = true
+      + wait_for_jobs              = false
+
+      + set {
+          + name  = "dex.enabled"
+          + value = "false"
+            # (1 unchanged attribute hidden)
+        }
+      + set {
+          + name  = "notifications.enabled"
+          + value = "false"
+            # (1 unchanged attribute hidden)
+        }
+    }
+
+  # helm_release.ingress_nginx will be created
+  + resource "helm_release" "ingress_nginx" {
+      + atomic                     = false
+      + chart                      = "ingress-nginx"
+      + cleanup_on_fail            = false
+      + create_namespace           = true
+      + dependency_update          = false
+      + disable_crd_hooks          = false
+      + disable_openapi_validation = false
+      + disable_webhooks           = false
+      + force_update               = false
+      + id                         = (known after apply)
+      + lint                       = false
+      + manifest                   = (known after apply)
+      + max_history                = 0
+      + metadata                   = (known after apply)
+      + name                       = "ingress-nginx"
+      + namespace                  = "ingress-nginx"
+      + pass_credentials           = false
+      + recreate_pods              = false
+      + render_subchart_notes      = true
+      + replace                    = false
+      + repository                 = "https://kubernetes.github.io/ingress-nginx"
+      + reset_values               = false
+      + reuse_values               = false
+      + skip_crds                  = false
+      + status                     = "deployed"
+      + timeout                    = 600
+      + values                     = [
+          + <<-EOT
+                controller:
+                  hostPort:
+                    enabled: true          # bind 80/443 on the node, mapped to the runner by kind
+                  service:
+                    type: NodePort
+                  nodeSelector:
+                    ingress-ready: "true"
+                  tolerations:
+                    - key: node-role.kubernetes.io/control-plane
+                      operator: Exists
+                      effect: NoSchedule
+                  watchIngressWithoutClass: true
+            EOT,
+        ]
+      + verify                     = false
+      + version                    = "4.15.1"
+      + wait                       = true
+      + wait_for_jobs              = false
+    }
+
+  # helm_release.metrics_server will be created
+  + resource "helm_release" "metrics_server" {
+      + atomic                     = false
+      + chart                      = "metrics-server"
+      + cleanup_on_fail            = false
+      + create_namespace           = false
+      + dependency_update          = false
+      + disable_crd_hooks          = false
+      + disable_openapi_validation = false
+      + disable_webhooks           = false
+      + force_update               = false
+      + id                         = (known after apply)
+      + lint                       = false
+      + manifest                   = (known after apply)
+      + max_history                = 0
+      + metadata                   = (known after apply)
+      + name                       = "metrics-server"
+      + namespace                  = "kube-system"
+      + pass_credentials           = false
+      + recreate_pods              = false
+      + render_subchart_notes      = true
+      + replace                    = false
+      + repository                 = "https://kubernetes-sigs.github.io/metrics-server/"
+      + reset_values               = false
+      + reuse_values               = false
+      + skip_crds                  = false
+      + status                     = "deployed"
+      + timeout                    = 300
+      + verify                     = false
+      + version                    = "3.14.0"
+      + wait                       = true
+      + wait_for_jobs              = false
+
+      + set {
+          + name  = "args[0]"
+          + value = "--kubelet-insecure-tls"
+            # (1 unchanged attribute hidden)
+        }
+    }
+
+  # helm_release.monitoring[0] will be created
+  + resource "helm_release" "monitoring" {
+      + atomic                     = false
+      + chart                      = "kube-prometheus-stack"
+      + cleanup_on_fail            = false
+      + create_namespace           = true
+      + dependency_update          = false
+      + disable_crd_hooks          = false
+      + disable_openapi_validation = false
+      + disable_webhooks           = false
+      + force_update               = false
+      + id                         = (known after apply)
+      + lint                       = false
+      + manifest                   = (known after apply)
+      + max_history                = 0
+      + metadata                   = (known after apply)
+      + name                       = "kps"
+      + namespace                  = "monitoring"
+      + pass_credentials           = false
+      + recreate_pods              = false
+      + render_subchart_notes      = true
+      + replace                    = false
+      + repository                 = "https://prometheus-community.github.io/helm-charts"
+      + reset_values               = false
+      + reuse_values               = false
+      + skip_crds                  = false
+      + status                     = "deployed"
+      + timeout                    = 900
+      + values                     = [
+          + <<-EOT
+                fullnameOverride: kps
+                prometheus:
+                  prometheusSpec:
+                    scrapeInterval: 15s
+                    serviceMonitorSelectorNilUsesHelmValues: false
+                    ruleSelectorNilUsesHelmValues: false
+                    retention: 2h
+                grafana:
+                  adminPassword: demo-only-not-secret
+                  grafana.ini:
+                    auth.anonymous:
+                      enabled: true
+                      org_role: Viewer
+                kubeEtcd: { enabled: false }
+                kubeControllerManager: { enabled: false }
+                kubeScheduler: { enabled: false }
+                kubeProxy: { enabled: false }
+            EOT,
+        ]
+      + verify                     = false
+      + version                    = "92.1.0"
+      + wait                       = true
+      + wait_for_jobs              = false
+    }
+
+  # kind_cluster.this will be created
+  + resource "kind_cluster" "this" {
+      + client_certificate     = (known after apply)
+      + client_key             = (known after apply)
+      + cluster_ca_certificate = (known after apply)
+      + completed              = (known after apply)
+      + endpoint               = (known after apply)
+      + id                     = (known after apply)
+      + kubeconfig             = (known after apply)
+      + kubeconfig_path        = (known after apply)
+      + name                   = "final-devops"
+      + node_image             = "kindest/node:v1.33.1"
+      + wait_for_ready         = true
+
+      + kind_config {
+          + api_version = "kind.x-k8s.io/v1alpha4"
+          + kind        = "Cluster"
+
+          + node {
+              + kubeadm_config_patches = [
+                  + <<-EOT
+                        kind: InitConfiguration
+                        nodeRegistration:
+                          kubeletExtraArgs:
+                            node-labels: "ingress-ready=true"
+                    EOT,
+                ]
+              + role                   = "control-plane"
+
+              + extra_port_mappings {
+                  + container_port = 80
+                  + host_port      = 80
+                }
+              + extra_port_mappings {
+                  + container_port = 443
+                  + host_port      = 443
+                }
+            }
+          + node {
+              + role = "worker"
+            }
+        }
+    }
+
+Plan: 5 to add, 0 to change, 0 to destroy.
+
+Changes to Outputs:
+  + api_endpoint      = (known after apply)
+  + cluster_name      = "final-devops"
+  + kubeconfig_path   = (known after apply)
+  + platform_releases = [
+      + "ingress-nginx",
+      + "metrics-server",
+      + "argocd",
+      + "kps",
+    ]
+[exit code: 0]
