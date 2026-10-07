@@ -3,23 +3,42 @@ kind: Deployment
 metadata:
   name: {{ .Release.Name }}-deploy
   labels:
-    app: {{ .Release.Name }}
-    environment: {{ .Values.app.environment }}
+    {{- include "notes-chart.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
-      app: {{ .Release.Name }}
+      {{- include "notes-chart.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       labels:
-        app: {{ .Release.Name }}
+        {{- include "notes-chart.selectorLabels" . | nindent 8 }}
+      annotations:
+        # Changing the ConfigMap changes this hash, which forces a rolling restart
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
     spec:
       containers:
         - name: notes
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy | default "IfNotPresent" }}
           ports:
             - containerPort: {{ .Values.service.port }}
           envFrom:
             - configMapRef:
                 name: {{ .Release.Name }}-config
+          readinessProbe:
+            httpGet:
+              path: /
+              port: {{ .Values.service.port }}
+            initialDelaySeconds: 2
+            periodSeconds: 5
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: html
+              mountPath: /usr/share/nginx/html/index.html
+              subPath: index.html
+      volumes:
+        - name: html
+          configMap:
+            name: {{ .Release.Name }}-config
