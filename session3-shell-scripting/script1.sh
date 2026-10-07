@@ -1,5 +1,5 @@
-mkdir test
-cd test
-echo "this is file1" > app.log
-echo "this is file2" >> app.log
+mkdir hello2
+cd hello2
+echo "This is first output" > app.log
+echo "This is second output" >> app.log
 cat app.log

@@ -1,0 +1,43 @@
+UID          PID    PPID  C STIME TTY          TIME CMD
+root           1       0  0 07:48 ?        00:00:00 /sbin/init
+root           2       1  0 07:48 hvc0     00:00:00 /init
+root           6       2  0 07:48 hvc0     00:00:00 plan9 --control-socket 7 --log-level 4 --server-fd 8 --pipe-fd 10 --log-truncate
+root          42       1  0 07:48 ?        00:00:00 /usr/lib/systemd/systemd-journald
+root          94       1  0 07:48 ?        00:00:01 /usr/lib/systemd/systemd-udevd
+systemd+     109       1  0 07:48 ?        00:00:00 /usr/lib/systemd/systemd-resolved
+systemd+     110       1  0 07:48 ?        00:00:00 /usr/lib/systemd/systemd-timesyncd
+root         174       1  0 07:48 ?        00:00:00 /usr/sbin/cron -f -P
+message+     175       1  0 07:48 ?        00:00:00 @dbus-daemon --system --address=systemd: --nofork --nopidfile --systemd-activation --syslog-only
+root         190       1  0 07:48 ?        00:00:00 /usr/lib/systemd/systemd-logind
+root         228       1  0 07:48 tty1     00:00:00 /sbin/agetty -o -p -- \u --noclear - linux
+syslog       229       1  0 07:48 ?        00:00:00 /usr/sbin/rsyslogd -n -iNONE
+root         291       1  0 07:48 ?        00:00:00 /usr/bin/python3 /usr/share/unattended-upgrades/unattended-upgrade-shutdown --wait-for-signal
+root         349       2  0 07:48 ?        00:00:00 /init
+root         350     349  0 07:48 ?        00:00:00 /init
+kavya        351     350  0 07:48 pts/0    00:00:00 -bash
+root         352       2  0 07:48 pts/1    00:00:00 /bin/login -f
+kavya        398       1  0 07:48 ?        00:00:00 /usr/lib/systemd/systemd --user
+kavya        399     398  0 07:48 ?        00:00:00 (sd-pam)
+kavya        459     352  0 07:48 pts/1    00:00:00 -bash
+root         994       2  0 07:49 ?        00:00:00 /init
+root         995     994  0 07:49 ?        00:00:00 /init
+kavya        996     995  0 07:49 pts/2    00:00:00 sh -c "$VSCODE_WSL_EXT_LOCATION/scripts/wslServer.sh" 08d4889f9ec4a1685d257b9b95de036c8e1ce1e5 stable code-server .vscode-server --host=127.0.0.1 --port=0 --connection-token=3359542126-3488478826-392091514-3090240991 --use-host-proxy --without-browser-env-var --disable-websocket-compression --accept-server-license-terms --telemetry-level=all
+kavya        997     996  0 07:49 pts/2    00:00:00 sh /mnt/c/Users/kavya/.vscode/extensions/ms-vscode-remote.remote-wsl-0.104.3/scripts/wslServer.sh 08d4889f9ec4a1685d257b9b95de036c8e1ce1e5 stable code-server .vscode-server --host=127.0.0.1 --port=0 --connection-token=3359542126-3488478826-392091514-3090240991 --use-host-proxy --without-browser-env-var --disable-websocket-compression --accept-server-license-terms --telemetry-level=all
+kavya       1003     997  0 07:49 pts/2    00:00:00 sh /home/kavya/.vscode-server/bin/08d4889f9ec4a1685d257b9b95de036c8e1ce1e5/bin/code-server --host=127.0.0.1 --port=0 --connection-token=3359542126-3488478826-392091514-3090240991 --use-host-proxy --without-browser-env-var --disable-websocket-compression --accept-server-license-terms --telemetry-level=all
+kavya       1007    1003  0 07:49 pts/2    00:00:04 /home/kavya/.vscode-server/bin/08d4889f9ec4a1685d257b9b95de036c8e1ce1e5/node /home/kavya/.vscode-server/bin/08d4889f9ec4a1685d257b9b95de036c8e1ce1e5/out/server-main.js --host=127.0.0.1 --port=0 --connection-token=3359542126-3488478826-392091514-3090240991 --use-host-proxy --without-browser-env-var --disable-websocket-compression --accept-server-license-terms --telemetry-level=all
+root        1019       2  0 07:49 ?        00:00:00 /init
+root        1020    1019  0 07:49 ?        00:00:00 /init
+kavya       1021    1020  0 07:49 pts/3    00:00:01 /home/kavya/.vscode-server/bin/08d4889f9ec4a1685d257b9b95de036c8e1ce1e5/node -e const net = require('net'); process.stdin.pause(); const client = net.createConnection({ host: '127.0.0.1', port: 45077 }, () => { client.pipe(process.stdout); process.stdin.pipe(client); }); client.on('close', function (hadError) { console.error(hadError ? 'Remote close with error' : 'Remote close'); process.exit(hadError ? 1 : 0); }); client.on('error', function (err) { process.stderr.write(err && (err.stack || err.message) || String(err)); });
+root        1028       2  0 07:49 ?        00:00:00 /init
+root        1029    1028  0 07:49 ?        00:00:00 /init
+kavya       1030    1029  0 07:49 pts/4    00:00:02 /home/kavya/.vscode-server/bin/08d4889f9ec4a1685d257b9b95de036c8e1ce1e5/node -e const net = require('net'); process.stdin.pause(); const client = net.createConnection({ host: '127.0.0.1', port: 45077 }, () => { client.pipe(process.stdout); process.stdin.pipe(client); }); client.on('close', function (hadError) { console.error(hadError ? 'Remote close with error' : 'Remote close'); process.exit(hadError ? 1 : 0); }); client.on('error', function (err) { process.stderr.write(err && (err.stack || err.message) || String(err)); });
+kavya       1039    1007  0 07:49 pts/2    00:00:00 /home/kavya/.vscode-server/bin/08d4889f9ec4a1685d257b9b95de036c8e1ce1e5/node /home/kavya/.vscode-server/bin/08d4889f9ec4a1685d257b9b95de036c8e1ce1e5/out/bootstrap-fork --type=fileWatcher
+kavya       1285    1007  2 07:49 pts/2    00:01:01 /home/kavya/.vscode-server/bin/08d4889f9ec4a1685d257b9b95de036c8e1ce1e5/node --dns-result-order=ipv4first /home/kavya/.vscode-server/bin/08d4889f9ec4a1685d257b9b95de036c8e1ce1e5/out/bootstrap-fork --type=extensionHost --transformURIs --useHostProxy=true
+kavya       1291    1007  0 07:49 pts/2    00:00:02 /home/kavya/.vscode-server/bin/08d4889f9ec4a1685d257b9b95de036c8e1ce1e5/node /home/kavya/.vscode-server/bin/08d4889f9ec4a1685d257b9b95de036c8e1ce1e5/out/bootstrap-fork --type=agentHost --logsPath /home/kavya/.vscode-server/data/logs/20260902T074908 --user-data-dir /home/kavya/.vscode-server/data --telemetry-level all
+kavya       1313    1291  0 07:49 pts/2    00:00:01 /home/kavya/.vscode-server/bin/08d4889f9ec4a1685d257b9b95de036c8e1ce1e5/node /home/kavya/.vscode-server/bin/08d4889f9ec4a1685d257b9b95de036c8e1ce1e5/node_modules/@github/copilot-linux-x64/index.js --headless --no-auto-update --log-level info --stdio --no-auto-login
+kavya       1812    1285  0 07:50 pts/2    00:00:01 /home/kavya/.vscode-server/bin/08d4889f9ec4a1685d257b9b95de036c8e1ce1e5/node /home/kavya/.vscode-server/bin/08d4889f9ec4a1685d257b9b95de036c8e1ce1e5/extensions/markdown-language-features/dist/serverWorkerMain --node-ipc --clientProcessId=1285
+root        7546       1  0 08:19 ?        00:00:00 /usr/libexec/wsl-pro-service
+root        8835      94  0 08:26 ?        00:00:00 (udev-worker)
+root        8836      94  0 08:26 ?        00:00:00 (udev-worker)
+kavya       8844     351  0 08:26 pts/0    00:00:00 /bin/bash ./task.sh
+kavya       8873    8844  0 08:26 pts/0    00:00:00 ps -ef

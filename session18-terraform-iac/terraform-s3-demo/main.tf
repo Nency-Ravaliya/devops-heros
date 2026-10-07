@@ -1,4 +1,4 @@
-resource "aws_s3_bucket" "devops553" {
+resource "aws_s3_bucket" "yatri1101187" {
   bucket        = var.bucket_name
   force_destroy = true
   tags = {

@@ -30,6 +30,9 @@ spec:
     spec:
       containers:
         - name: backend
-          image: yatri-backend:non-existent-tag-v999
+          image: python:3.11-alpine3.19
+          command: ["/bin/sh", "-c", "sleep 3600"]
           ports:
             - containerPort: 5000
+
+#fixed
