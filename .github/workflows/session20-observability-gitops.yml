@@ -1,0 +1,67 @@
+# Session 20 - Monitoring, Observability & GitOps demo on a throwaway kind cluster.
+# Outputs (command logs + Grafana/Jaeger screenshots) are committed back to
+# "Monitoring Observability GitOps/outputs/".
+name: Session 20 - Monitoring, Observability & GitOps
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "Monitoring Observability GitOps/monitoring/**"
+      - "Monitoring Observability GitOps/observability/**"
+      - "Monitoring Observability GitOps/gitops/**"
+      - "Monitoring Observability GitOps/scripts/**"
+      - ".github/workflows/session20-observability-gitops.yml"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write        # push the gitops-demo branch + commit outputs
+
+concurrency:
+  group: session20
+  cancel-in-progress: false
+
+jobs:
+  demo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Create kind cluster
+        uses: helm/kind-action@v1.10.0
+        with:
+          cluster_name: session20
+
+      - name: GitOps - (re)create the gitops-demo branch from main
+        run: |
+          git push -f origin HEAD:refs/heads/gitops-demo
+          git fetch -q origin gitops-demo
+
+      - name: Monitoring + observability + GitOps (Argo CD)
+        run: bash "Monitoring Observability GitOps/scripts/run-demo.sh"
+
+      - name: GitOps - drive changes through Git commits
+        run: bash "Monitoring Observability GitOps/scripts/gitops-git-change.sh"
+
+      - name: Environment info
+        if: always()
+        run: |
+          {
+            echo "GitHub Actions run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+            echo "runner: $ImageOS"; kind version; kubectl version 2>/dev/null | head -2; helm version --short; date -u
+          } > "Monitoring Observability GitOps/outputs/00-environment.txt"
+
+      - name: Commit outputs back to main
+        if: always()
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "Monitoring Observability GitOps/outputs"
+          git commit -m "CI: Session 20 demo outputs [skip ci]" || exit 0
+          for i in 1 2 3; do git pull --rebase -q origin main && git push -q origin HEAD:main && break; sleep 5; done

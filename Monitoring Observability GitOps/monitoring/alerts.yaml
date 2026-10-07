@@ -1,0 +1,31 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: demo-app-alerts
+  namespace: session20
+spec:
+  groups:
+    - name: demo-app.rules
+      rules:
+        - alert: DemoAppReplicasLow
+          expr: kube_deployment_status_replicas_available{namespace="session20", deployment="demo-app"} < 2
+          for: 30s
+          labels:
+            severity: warning
+          annotations:
+            summary: "demo-app has fewer than 2 available replicas"
+            description: "Only {{ $value }} replica(s) of demo-app are available."
+        - alert: DemoAppHighRequestRate
+          expr: sum(rate(http_requests_total{namespace="session20"}[1m])) > 5
+          for: 30s
+          labels:
+            severity: info
+          annotations:
+            summary: "demo-app is receiving more than 5 req/s"
+        - alert: DemoAppHighMemory
+          expr: sum(container_memory_working_set_bytes{namespace="session20", container="app"}) by (pod) > 50 * 1024 * 1024
+          for: 1m
+          labels:
+            severity: warning
+          annotations:
+            summary: "{{ $labels.pod }} uses more than 50Mi of memory"

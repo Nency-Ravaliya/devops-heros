@@ -1,0 +1,22 @@
+# Argo CD Application: keeps namespace session20-gitops in sync with gitops/app in this repo.
+# targetRevision is the "gitops-demo" branch so the CI demo can push changes to it.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: session20-app
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/TejasVarshney/devops-heros.git
+    targetRevision: gitops-demo
+    path: Monitoring Observability GitOps/gitops/app
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: session20-gitops
+  syncPolicy:
+    automated:
+      prune: true       # delete resources that were removed from Git
+      selfHeal: true    # undo manual changes made in the cluster
+    syncOptions:
+      - CreateNamespace=true

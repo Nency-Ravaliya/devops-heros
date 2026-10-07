@@ -1,0 +1,28 @@
+# kube-prometheus-stack values for a small kind cluster
+fullnameOverride: kps
+prometheus:
+  prometheusSpec:
+    scrapeInterval: 15s
+    evaluationInterval: 15s
+    # pick up ServiceMonitors / PrometheusRules from every namespace, not only this release's
+    serviceMonitorSelectorNilUsesHelmValues: false
+    podMonitorSelectorNilUsesHelmValues: false
+    ruleSelectorNilUsesHelmValues: false
+    retention: 2h
+    resources:
+      requests: { cpu: 200m, memory: 512Mi }
+grafana:
+  adminPassword: demo-only-not-secret      # throwaway kind cluster inside CI
+  grafana.ini:
+    auth.anonymous:
+      enabled: true
+      org_role: Viewer
+alertmanager:
+  alertmanagerSpec:
+    resources:
+      requests: { cpu: 50m, memory: 64Mi }
+# kind does not expose these control-plane endpoints
+kubeEtcd: { enabled: false }
+kubeControllerManager: { enabled: false }
+kubeScheduler: { enabled: false }
+kubeProxy: { enabled: false }
