@@ -1,0 +1,34 @@
+# Dynamic provisioning: I only write a PVC with a StorageClass,
+# the provisioner (rancher.io/local-path) creates the PV for me.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: dynamic-pvc
+  namespace: p13-vol
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: standard
+  resources:
+    requests:
+      storage: 500Mi
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: dynamic-demo
+  namespace: p13-vol
+spec:
+  containers:
+    - name: app
+      image: busybox:1.36
+      command: ["sh", "-c", "sleep 3600"]
+      resources:
+        requests: { cpu: 10m, memory: 16Mi }
+      volumeMounts:
+        - name: data
+          mountPath: /data
+  volumes:
+    - name: data
+      persistentVolumeClaim:
+        claimName: dynamic-pvc
