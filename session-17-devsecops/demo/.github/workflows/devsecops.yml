@@ -167,20 +167,20 @@ jobs:
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
-          username: nensiravaliya28
+          username: ankeyy
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Build and tag image
         run: |
           docker build \
-            -t nensiravaliya28/hey-cicd:${{ github.sha }} \
-            -t nensiravaliya28/hey-cicd:latest \
+            -t ankeyy/hey-cicd:${{ github.sha }} \
+            -t ankeyy/hey-cicd:latest \
             .
 
       - name: Push image
         run: |
-          docker push nensiravaliya28/hey-cicd:${{ github.sha }}
-          docker push nensiravaliya28/hey-cicd:latest
+          docker push ankeyy/hey-cicd:${{ github.sha }}
+          docker push ankeyy/hey-cicd:latest
 
 
   # ========================================

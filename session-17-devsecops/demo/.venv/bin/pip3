@@ -1,4 +1,4 @@
-#!/Users/ankitatripathi/devops-heros/session-17-devsecops/demo/.venv/bin/python3
+#!/Users/ankitatripathi/devops-heros/session-17-devsecops/demo/.venv/bin/python
 # -*- coding: utf-8 -*-
 import re
 import sys

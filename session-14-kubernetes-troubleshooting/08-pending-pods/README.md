@@ -45,7 +45,7 @@ pending-demo   0/1     Pending   0          10s
 Run:
 
 ```bash
-kubectl describe pod pending-demo
+kubectl get pod pending-demo
 ```
 
 Look at the **Events** section. You should see a scheduling-related message.

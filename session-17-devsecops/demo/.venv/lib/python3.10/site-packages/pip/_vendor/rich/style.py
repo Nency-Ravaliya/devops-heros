@@ -1,6 +1,7 @@
 import sys
 from functools import lru_cache
-from marshal import dumps, loads
+from operator import attrgetter
+from pickle import dumps, loads
 from random import randint
 from typing import Any, Dict, Iterable, List, Optional, Type, Union, cast
 
@@ -8,6 +9,10 @@ from . import errors
 from .color import Color, ColorParseError, ColorSystem, blend_rgb
 from .repr import Result, rich_repr
 from .terminal_theme import DEFAULT_TERMINAL_THEME, TerminalTheme
+
+_hash_getter = attrgetter(
+    "_color", "_bgcolor", "_attributes", "_set_attributes", "_link", "_meta"
+)
 
 # Style instances and style definitions are often interchangeable
 StyleType = Union[str, "Style"]
@@ -432,16 +437,7 @@ class Style:
     def __hash__(self) -> int:
         if self._hash is not None:
             return self._hash
-        self._hash = hash(
-            (
-                self._color,
-                self._bgcolor,
-                self._attributes,
-                self._set_attributes,
-                self._link,
-                self._meta,
-            )
-        )
+        self._hash = hash(_hash_getter(self))
         return self._hash
 
     @property
@@ -524,7 +520,7 @@ class Style:
                 if not word:
                     raise errors.StyleSyntaxError("color expected after 'on'")
                 try:
-                    Color.parse(word) is None
+                    Color.parse(word)
                 except ColorParseError as error:
                     raise errors.StyleSyntaxError(
                         f"unable to parse {word!r} as background color; {error}"
@@ -643,6 +639,29 @@ class Style:
         style._hash = self._hash
         style._null = False
         style._meta = self._meta
+        return style
+
+    @lru_cache(maxsize=128)
+    def clear_meta_and_links(self) -> "Style":
+        """Get a copy of this style with link and meta information removed.
+
+        Returns:
+            Style: New style object.
+        """
+        if self._null:
+            return NULL_STYLE
+        style: Style = self.__new__(Style)
+        style._ansi = self._ansi
+        style._style_definition = self._style_definition
+        style._color = self._color
+        style._bgcolor = self._bgcolor
+        style._attributes = self._attributes
+        style._set_attributes = self._set_attributes
+        style._link = None
+        style._link_id = ""
+        style._hash = None
+        style._null = False
+        style._meta = None
         return style
 
     def update_link(self, link: Optional[str] = None) -> "Style":
