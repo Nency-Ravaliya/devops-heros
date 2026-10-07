@@ -1,0 +1,7 @@
+# Small isolated session21 profile; monitoring/local-stack.yaml supplies metrics.
+monitoring:
+  serviceMonitor:
+    enabled: false
+resources:
+  requests: {cpu: 100m, memory: 128Mi}
+  limits: {cpu: 1000m, memory: 512Mi}

@@ -1,0 +1,4 @@
+aws_region    = "us-east-2"
+instance_type = "t3.micro"
+ssh_cidr      = "0.0.0.0/0" # better: "<your-ip>/32"
+# key_name    = "my-keypair"  # optional

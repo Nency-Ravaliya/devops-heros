@@ -18,6 +18,7 @@ kind: Deployment
 metadata: {name: taskboard-postgres}
 spec:
   replicas: 1
+  strategy: {type: Recreate, rollingUpdate: null}
   selector: {matchLabels: {app: taskboard-postgres}}
   template:
     metadata: {labels: {app: taskboard-postgres}}
@@ -30,7 +31,7 @@ spec:
         - {name: POSTGRES_DB, value: "{{ .Values.postgres.database }}"}
         - {name: POSTGRES_USER, valueFrom: {secretKeyRef: {name: taskboard-postgres, key: username}}}
         - {name: POSTGRES_PASSWORD, valueFrom: {secretKeyRef: {name: taskboard-postgres, key: password}}}
-        readinessProbe: {exec: {command: ["sh","-c","pg_isready -U $POSTGRES_USER -d $POSTGRES_DB"]}, initialDelaySeconds: 5, periodSeconds: 10}
+        readinessProbe: {exec: {command: ["sh","-c","pg_isready -U $POSTGRES_USER -d $POSTGRES_DB"]}, initialDelaySeconds: 5, periodSeconds: 10, timeoutSeconds: 5}
         volumeMounts: [{name: data, mountPath: /var/lib/postgresql/data}]
       volumes: [{name: data, persistentVolumeClaim: {claimName: taskboard-postgres-data}}]
 ---

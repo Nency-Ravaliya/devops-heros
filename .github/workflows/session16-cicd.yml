@@ -1,0 +1,108 @@
+# Session 16 homework — CI/CD pipeline for session-16-github-actions/homework-cicd
+name: Session 16 CI/CD
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "session-16-github-actions/homework-cicd/**"
+      - ".github/workflows/session16-cicd.yml"
+  workflow_dispatch:
+
+env:
+  APP_DIR: session-16-github-actions/homework-cicd
+  IMAGE_NAME: ghcr.io/chhavi07-arch/session16-calculator
+
+defaults:
+  run:
+    working-directory: session-16-github-actions/homework-cicd
+
+jobs:
+  # ---------- CI: build + test ----------
+  build-test:
+    name: Build & Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run tests
+        run: pytest -v --junitxml=test-report.xml
+
+      - name: Build application
+        run: bash build.sh
+
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-report
+          path: ${{ env.APP_DIR }}/test-report.xml
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: calculator-build
+          path: ${{ env.APP_DIR }}/build/
+
+  # ---------- CI: Docker image -> GHCR ----------
+  docker:
+    name: Build & Push Docker Image
+    needs: build-test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push image
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ env.APP_DIR }}
+          push: true
+          tags: |
+            ${{ env.IMAGE_NAME }}:latest
+            ${{ env.IMAGE_NAME }}:${{ github.sha }}
+
+      - name: Smoke test the pushed image
+        run: docker run --rm ${{ env.IMAGE_NAME }}:${{ github.sha }}
+
+  # ---------- CD: (simulated) deploy ----------
+  deploy:
+    name: Deploy (simulated)
+    needs: docker
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: calculator-build
+          path: ./release
+
+      - name: Deploy
+        working-directory: .
+        run: |
+          echo "Deploying ${{ env.IMAGE_NAME }}:${{ github.sha }} to production..."
+          ls -la release
+          cat release/build-info.txt
+          echo "Deployment successful."

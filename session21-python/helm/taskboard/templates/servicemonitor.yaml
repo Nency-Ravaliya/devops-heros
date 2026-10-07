@@ -4,7 +4,7 @@ kind: ServiceMonitor
 metadata:
   name: {{ include "taskboard.fullname" . }}-backend
   labels:
-    release: kube-prometheus-stack
+    release: {{ .Values.monitoring.release | default "monitoring" | quote }}
 spec:
   selector:
     matchLabels: {app: taskboard-backend}

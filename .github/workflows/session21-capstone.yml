@@ -1,0 +1,94 @@
+name: Session 21 - TaskBoard DevOps
+# Kept manual: this submission publishes the two verified local screenshots.
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test-and-security:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: session21-python
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Python dependencies and security tools
+        run: pip install -r backend/requirements.txt bandit pip-audit
+      - name: API tests
+        run: cd backend && pytest -v
+      - name: Frontend build and dependency audit
+        run: cd frontend && npm install && npm run build && npm audit --audit-level=high
+      - name: SAST gate
+        run: bandit -r backend/app -ll
+      - name: SCA gate
+        run: pip-audit -r backend/requirements.txt --strict
+      - name: Secret scan
+        uses: aquasecurity/trivy-action@0.30.0
+        with:
+          scan-type: fs
+          scan-ref: session21-python
+          scanners: secret
+          exit-code: '1'
+      - uses: azure/setup-helm@v4
+      - name: Helm validation
+        run: helm lint helm/taskboard -f helm/taskboard/values-local.yaml
+  build-scan-publish-deploy:
+    needs: test-and-security
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build SHA-tagged images
+        run: |
+          docker build -t ghcr.io/chhavi07-arch/taskboard-backend:${{ github.sha }} session21-python/backend
+          docker build -t ghcr.io/chhavi07-arch/taskboard-frontend:${{ github.sha }} session21-python/frontend
+      - name: Backend container security gate
+        uses: aquasecurity/trivy-action@0.30.0
+        with:
+          image-ref: ghcr.io/chhavi07-arch/taskboard-backend:${{ github.sha }}
+          severity: HIGH,CRITICAL
+          exit-code: '1'
+      - name: Frontend container security gate
+        uses: aquasecurity/trivy-action@0.30.0
+        with:
+          image-ref: ghcr.io/chhavi07-arch/taskboard-frontend:${{ github.sha }}
+          severity: HIGH,CRITICAL
+          exit-code: '1'
+      - uses: docker/login-action@v3
+        if: github.event_name != 'pull_request'
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Publish scanned images
+        if: github.event_name != 'pull_request'
+        run: |
+          docker push ghcr.io/chhavi07-arch/taskboard-backend:${{ github.sha }}
+          docker push ghcr.io/chhavi07-arch/taskboard-frontend:${{ github.sha }}
+      - name: Create isolated CI Kubernetes cluster
+        uses: helm/kind-action@v1.12.0
+        with:
+          cluster_name: session21
+      - uses: azure/setup-helm@v4
+      - name: Deploy exact scanned images and verify
+        run: |
+          kind load docker-image ghcr.io/chhavi07-arch/taskboard-backend:${{ github.sha }} ghcr.io/chhavi07-arch/taskboard-frontend:${{ github.sha }} --name session21
+          helm upgrade --install taskboard session21-python/helm/taskboard -n taskboard --create-namespace \
+            --set backend.image=ghcr.io/chhavi07-arch/taskboard-backend --set backend.tag=${{ github.sha }} \
+            --set frontend.image=ghcr.io/chhavi07-arch/taskboard-frontend --set frontend.tag=${{ github.sha }} \
+            --set monitoring.serviceMonitor.enabled=false --set hpa.enabled=false --wait --timeout 5m
+          kubectl get pods,svc -n taskboard
+          kubectl port-forward -n taskboard svc/taskboard-frontend 3000:80 >/tmp/forward.log 2>&1 &
+          for attempt in $(seq 1 30); do
+            if curl -fsS http://localhost:3000/health; then break; fi
+            sleep 2
+          done
+          curl -fsS http://localhost:3000/api/tasks

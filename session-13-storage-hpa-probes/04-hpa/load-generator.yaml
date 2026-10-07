@@ -1,0 +1,19 @@
+# Load generator for the hpa-demo Deployment.
+# Runs 4 parallel wget loops against hpa-demo-service to push CPU above 50%.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: load-generator
+spec:
+  restartPolicy: Never
+  containers:
+    - name: load
+      image: busybox:1.36
+      command:
+        - sh
+        - -c
+        - |
+          for i in 1 2 3 4; do
+            (while true; do wget -q -O- http://hpa-demo-service > /dev/null; done) &
+          done
+          wait

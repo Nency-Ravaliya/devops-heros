@@ -14,7 +14,7 @@ spec:
       containers:
       - name: frontend
         image: "{{ .Values.frontend.image }}:{{ .Values.frontend.tag }}"
-        ports: [{containerPort: 80}]
-        readinessProbe: {httpGet: {path: /, port: 80}, initialDelaySeconds: 5}
-        livenessProbe: {httpGet: {path: /, port: 80}, initialDelaySeconds: 10}
+        ports: [{containerPort: 8080}]
+        readinessProbe: {httpGet: {path: /, port: 8080}, initialDelaySeconds: 5, timeoutSeconds: 5}
+        livenessProbe: {httpGet: {path: /, port: 8080}, initialDelaySeconds: 10, timeoutSeconds: 5, failureThreshold: 6}
         resources: {requests: {cpu: 50m, memory: 64Mi}, limits: {cpu: 200m, memory: 128Mi}}

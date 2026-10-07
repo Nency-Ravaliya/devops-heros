@@ -10,20 +10,38 @@ spec:
     metadata:
       labels: {app: taskboard-backend}
     spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+{{ toYaml . | indent 8 }}
+      {{- end }}
       containers:
         - name: backend
           image: "{{ .Values.backend.image }}:{{ .Values.backend.tag }}"
           ports: [{containerPort: 8000}]
+          startupProbe:
+            httpGet: {path: /health, port: 8000}
+            periodSeconds: 5
+            timeoutSeconds: 5
+            failureThreshold: 60
+          envFrom:
+            - configMapRef: {name: taskboard-config}
           env:
+            - name: DB_USER
+              valueFrom: {secretKeyRef: {name: taskboard-postgres, key: username}}
+            - name: DB_PASSWORD
+              valueFrom: {secretKeyRef: {name: taskboard-postgres, key: password}}
             - name: DATABASE_URL
-              value: "postgresql+psycopg://{{ .Values.postgres.username }}:{{ .Values.postgres.password }}@{{ .Values.postgres.host }}:5432/{{ .Values.postgres.database }}"
+              value: "postgresql+psycopg://$(DB_USER):$(DB_PASSWORD)@{{ .Values.postgres.host }}:5432/{{ .Values.postgres.database }}"
           readinessProbe:
             httpGet: {path: /ready, port: 8000}
             initialDelaySeconds: 10
             periodSeconds: 10
+            timeoutSeconds: 5
           livenessProbe:
             httpGet: {path: /health, port: 8000}
             initialDelaySeconds: 20
             periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 6
           resources:
 {{ toYaml .Values.resources | indent 12 }}

@@ -1,0 +1,27 @@
+# Picked up by kube-prometheus-stack because of the release label
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: chhavi-alerts
+  namespace: monitoring
+  labels:
+    release: kube-prometheus-stack
+spec:
+  groups:
+    - name: chhavi-demo.rules
+      rules:
+        - alert: HighPodCPU
+          expr: sum by (pod) (rate(container_cpu_usage_seconds_total{namespace="chhavi-demo", container!=""}[2m])) > 0.1
+          for: 1m
+          labels:
+            severity: warning
+          annotations:
+            summary: "High CPU on {{ $labels.pod }}"
+            description: "{{ $labels.pod }} is using more than 0.1 CPU cores for 1m."
+        - alert: PodRestarting
+          expr: increase(kube_pod_container_status_restarts_total{namespace="chhavi-demo"}[5m]) > 0
+          for: 0m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Pod {{ $labels.pod }} restarted"

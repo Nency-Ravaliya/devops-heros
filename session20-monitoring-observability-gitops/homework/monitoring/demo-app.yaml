@@ -1,0 +1,81 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: chhavi-demo
+---
+# Web app with health probes + resource limits (app health, CPU & memory)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: chhavi-web
+  namespace: chhavi-demo
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: chhavi-web
+  template:
+    metadata:
+      labels:
+        app: chhavi-web
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:1.27-alpine
+          ports:
+            - containerPort: 80
+          resources:
+            requests: { cpu: 50m, memory: 32Mi }
+            limits: { cpu: 200m, memory: 128Mi }
+          readinessProbe:
+            httpGet: { path: /, port: 80 }
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          livenessProbe:
+            httpGet: { path: /, port: 80 }
+            initialDelaySeconds: 5
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: chhavi-web
+  namespace: chhavi-demo
+spec:
+  selector:
+    app: chhavi-web
+  ports:
+    - port: 80
+      targetPort: 80
+---
+# Burns CPU and writes logs, so the HighPodCPU alert fires
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cpu-burner
+  namespace: chhavi-demo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cpu-burner
+  template:
+    metadata:
+      labels:
+        app: cpu-burner
+    spec:
+      containers:
+        - name: burner
+          image: busybox:1.36
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              echo "cpu-burner started"
+              while true; do
+                echo "$(date) busy loop running"
+                end=$(( $(date +%s) + 10 ))
+                while [ $(date +%s) -lt $end ]; do :; done
+              done
+          resources:
+            requests: { cpu: 100m, memory: 16Mi }
+            limits: { cpu: 300m, memory: 64Mi }

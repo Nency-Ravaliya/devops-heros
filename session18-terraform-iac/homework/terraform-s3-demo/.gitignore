@@ -1,0 +1,9 @@
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.*
+*.tfplan
+crash.log
+
+# terraform.tfvars is a required deliverable and holds no secrets
+!terraform.tfvars

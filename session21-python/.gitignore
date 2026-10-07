@@ -8,3 +8,10 @@ target/
 .terraform/
 *.tfstate
 *.tfstate.*
+__pycache__/
+.pytest_cache/
+.venv/
+*.db
+*.tfvars
+!*.tfvars.example
+evidence/

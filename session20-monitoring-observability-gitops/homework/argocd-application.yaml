@@ -1,0 +1,21 @@
+# Applied once with kubectl; kept outside gitops-app/ so Argo CD does not manage itself.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: chhavi-gitops-app
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/Chhavi07-arch/devops-heros.git
+    targetRevision: main
+    path: session20-monitoring-observability-gitops/homework/gitops-app
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: chhavi-gitops
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

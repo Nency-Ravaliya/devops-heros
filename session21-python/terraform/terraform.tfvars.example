@@ -1,0 +1,4 @@
+aws_region = "ap-south-1"
+cluster_name = "chhavi-session21-eks"
+environment = "dev"
+# Set kubernetes_version to a currently supported EKS version before planning.

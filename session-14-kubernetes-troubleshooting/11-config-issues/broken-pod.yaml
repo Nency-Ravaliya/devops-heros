@@ -1,0 +1,16 @@
+# CreateContainerConfigError: references key DATABASE_URL, but the ConfigMap only has DB_URL.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: config-demo
+spec:
+  containers:
+    - name: app
+      image: busybox:1.36
+      command: ["sh", "-c", "echo DATABASE_URL=$DATABASE_URL; sleep 3600"]
+      env:
+        - name: DATABASE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: config-demo-cm
+              key: DATABASE_URL

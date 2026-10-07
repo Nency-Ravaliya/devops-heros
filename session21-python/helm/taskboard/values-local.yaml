@@ -1,0 +1,16 @@
+# Teacher demo using images loaded into minikube.
+frontend:
+  image: taskboard-frontend
+  tag: session21
+backend:
+  image: taskboard-backend
+  tag: session21
+replicaCount: 2
+ingress:
+  enabled: true
+  host: taskboard.local
+hpa:
+  enabled: true
+monitoring:
+  serviceMonitor:
+    enabled: true

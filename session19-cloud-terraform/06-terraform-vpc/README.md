@@ -344,3 +344,36 @@ terraform plan
 ```
 
 Do not apply until you understand what Terraform plans to change.
+
+---
+
+# My Lab Submission
+
+**Name:** Chhavi Ahlawat
+**Enrollment Number:** 24BCS10201
+**Email:** chhavi.24bcs10201@sst.scaler.com
+
+**Region:** `us-east-2` (Ohio) · **Resource prefix / Owner tag:** `chhavi`
+
+All resources are named `chhavi-session19-*` and tagged `Owner = chhavi` (via the `student_name` variable in `variables.tf`).
+
+| Resource | Name | ID |
+|---|---|---|
+| VPC | `chhavi-session19-vpc` | `vpc-084d7715d2376ddf9` |
+| Public Subnet | `chhavi-session19-public-subnet` | `subnet-0120e3bda4f1f84e7` |
+| Internet Gateway | `chhavi-session19-igw` | `igw-00c8a400319748fc7` |
+| Route Table | `chhavi-session19-public-rt` | `rtb-05543aed3193e4757` |
+| Route Table Association | — | `rtbassoc-0a82507ae11f269a5` |
+| Security Group | `chhavi-session19-web-sg` | `sg-08cc2a6907ec4852b` |
+
+## 1. `terraform apply` — execution plan
+![terraform apply plan showing chhavi-session19 resources to be created in us-east-2](screenshots/ss3.png)
+
+## 2. Apply complete + `terraform state list`
+![Apply complete: 6 added, outputs, and terraform state list](screenshots/ss1.png)
+
+## 3. `terraform show` — Internet Gateway & Route Table
+![terraform show for the internet gateway and public route table](screenshots/ss2.png)
+
+## 4. `terraform show` — Subnet, VPC & Outputs
+![terraform show for the public subnet, VPC, and outputs](screenshots/ss4.png)

@@ -3,4 +3,4 @@ kind: Service
 metadata: {name: taskboard-frontend}
 spec:
   selector: {app: taskboard-frontend}
-  ports: [{port: 80, targetPort: 80}]
+  ports: [{port: 80, targetPort: 8080}]

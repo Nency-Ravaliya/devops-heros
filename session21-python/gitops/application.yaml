@@ -1,0 +1,27 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: session21-taskboard
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/Chhavi07-arch/devops-heros.git
+    targetRevision: main
+    path: session21-python/helm/taskboard
+    helm:
+      releaseName: taskboard
+      valueFiles: [values-local.yaml]
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: taskboard
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions: [CreateNamespace=true]
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      name: taskboard-backend
+      jsonPointers: [/spec/replicas]

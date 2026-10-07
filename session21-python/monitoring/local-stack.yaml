@@ -1,0 +1,138 @@
+apiVersion: v1
+kind: Namespace
+metadata: {name: monitoring}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata: {name: taskboard-prometheus, namespace: monitoring}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata: {name: taskboard-metrics-discovery, namespace: taskboard}
+rules:
+  - apiGroups: [""]
+    resources: [pods]
+    verbs: [get, list, watch]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata: {name: taskboard-metrics-discovery, namespace: taskboard}
+roleRef: {apiGroup: rbac.authorization.k8s.io, kind: Role, name: taskboard-metrics-discovery}
+subjects:
+  - {kind: ServiceAccount, name: taskboard-prometheus, namespace: monitoring}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata: {name: taskboard-prometheus, namespace: monitoring}
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 15s
+    scrape_configs:
+      - job_name: taskboard
+        kubernetes_sd_configs:
+          - role: pod
+            namespaces:
+              names: [taskboard]
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_pod_label_app]
+            regex: taskboard-backend
+            action: keep
+          - source_labels: [__meta_kubernetes_pod_container_port_number]
+            regex: "8000"
+            action: keep
+          - source_labels: [__meta_kubernetes_namespace]
+            target_label: namespace
+          - source_labels: [__meta_kubernetes_pod_name]
+            target_label: pod
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: taskboard-prometheus, namespace: monitoring}
+spec:
+  replicas: 1
+  selector: {matchLabels: {app: taskboard-prometheus}}
+  template:
+    metadata: {labels: {app: taskboard-prometheus}}
+    spec:
+      serviceAccountName: taskboard-prometheus
+      securityContext: {fsGroup: 65534}
+      containers:
+        - name: prometheus
+          image: quay.io/prometheus/prometheus:v3.15.0-distroless
+          args: ["--config.file=/etc/prometheus/prometheus.yml", "--storage.tsdb.path=/prometheus", "--storage.tsdb.retention.time=1h"]
+          ports: [{containerPort: 9090}]
+          resources: {requests: {cpu: 50m, memory: 96Mi}, limits: {cpu: 500m, memory: 384Mi}}
+          readinessProbe: {httpGet: {path: /-/ready, port: 9090}, timeoutSeconds: 5}
+          volumeMounts:
+            - {name: config, mountPath: /etc/prometheus, readOnly: true}
+            - {name: data, mountPath: /prometheus}
+      volumes:
+        - {name: config, configMap: {name: taskboard-prometheus}}
+        - {name: data, emptyDir: {}}
+---
+apiVersion: v1
+kind: Service
+metadata: {name: taskboard-prometheus, namespace: monitoring}
+spec:
+  selector: {app: taskboard-prometheus}
+  ports: [{port: 9090, targetPort: 9090}]
+---
+apiVersion: v1
+kind: ConfigMap
+metadata: {name: taskboard-grafana-provisioning, namespace: monitoring}
+data:
+  datasource.yaml: |
+    apiVersion: 1
+    datasources:
+      - name: Prometheus
+        uid: prometheus
+        type: prometheus
+        access: proxy
+        url: http://taskboard-prometheus:9090
+        isDefault: true
+  dashboards.yaml: |
+    apiVersion: 1
+    providers:
+      - name: Session21
+        type: file
+        options:
+          path: /var/lib/grafana/dashboards
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: taskboard-grafana, namespace: monitoring}
+spec:
+  replicas: 1
+  selector: {matchLabels: {app: taskboard-grafana}}
+  template:
+    metadata: {labels: {app: taskboard-grafana}}
+    spec:
+      securityContext: {fsGroup: 472}
+      containers:
+        - name: grafana
+          image: docker.io/grafana/grafana:13.2.3-distroless
+          ports: [{containerPort: 3000}]
+          # Viewer-only anonymous access for this local classroom dashboard.
+          env:
+            - {name: GF_AUTH_ANONYMOUS_ENABLED, value: "true"}
+            - {name: GF_AUTH_ANONYMOUS_ORG_ROLE, value: Viewer}
+            - {name: GF_AUTH_DISABLE_LOGIN_FORM, value: "true"}
+          resources: {requests: {cpu: 50m, memory: 128Mi}, limits: {cpu: 500m, memory: 384Mi}}
+          readinessProbe: {httpGet: {path: /api/health, port: 3000}, initialDelaySeconds: 20, timeoutSeconds: 5}
+          volumeMounts:
+            - {name: provisioning, mountPath: /etc/grafana/provisioning/datasources/datasource.yaml, subPath: datasource.yaml, readOnly: true}
+            - {name: provisioning, mountPath: /etc/grafana/provisioning/dashboards/dashboards.yaml, subPath: dashboards.yaml, readOnly: true}
+            - {name: dashboard, mountPath: /var/lib/grafana/dashboards, readOnly: true}
+            - {name: data, mountPath: /var/lib/grafana}
+      volumes:
+        - {name: provisioning, configMap: {name: taskboard-grafana-provisioning}}
+        - {name: dashboard, configMap: {name: session21-taskboard-dashboard}}
+        - {name: data, emptyDir: {}}
+---
+apiVersion: v1
+kind: Service
+metadata: {name: taskboard-grafana, namespace: monitoring}
+spec:
+  selector: {app: taskboard-grafana}
+  ports: [{port: 80, targetPort: 3000}]

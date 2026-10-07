@@ -1,12 +1,12 @@
-FROM node:24-alpine
+FROM node:20-slim
 
 WORKDIR /app
 
-COPY package*.json ./
+COPY package.json .
 
 RUN npm install
 
-COPY . .
+COPY app.js .
 
 EXPOSE 3000
 

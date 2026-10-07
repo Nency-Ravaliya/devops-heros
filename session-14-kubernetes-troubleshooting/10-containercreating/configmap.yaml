@@ -1,0 +1,8 @@
+# Fix: create the missing ConfigMap; kubelet retries the mount and the Pod starts.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cc-demo-config
+data:
+  app.properties: |
+    env=dev
