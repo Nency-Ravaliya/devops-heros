@@ -1,0 +1,5 @@
+build/
+reports/
+.pytest_cache/
+.coverage
+__pycache__/

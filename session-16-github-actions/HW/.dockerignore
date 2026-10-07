@@ -1,0 +1,7 @@
+tests/
+build/
+k8s/
+.pytest_cache/
+.coverage
+**/__pycache__/
+*.md
