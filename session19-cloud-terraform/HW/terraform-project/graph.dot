@@ -1,0 +1,36 @@
+digraph G {
+  rankdir = "RL";
+  node [shape = rect, fontname = "sans-serif"];
+  "data.aws_ami.amazon_linux" [label="data.aws_ami.amazon_linux"];
+  "aws_instance.web" [label="aws_instance.web"];
+  "aws_internet_gateway.main" [label="aws_internet_gateway.main"];
+  "aws_route_table.public" [label="aws_route_table.public"];
+  "aws_route_table_association.public" [label="aws_route_table_association.public"];
+  "aws_s3_bucket.assets" [label="aws_s3_bucket.assets"];
+  "aws_s3_bucket_public_access_block.assets" [label="aws_s3_bucket_public_access_block.assets"];
+  "aws_s3_bucket_versioning.assets" [label="aws_s3_bucket_versioning.assets"];
+  "aws_s3_object.index" [label="aws_s3_object.index"];
+  "aws_security_group.web" [label="aws_security_group.web"];
+  "aws_subnet.public" [label="aws_subnet.public"];
+  "aws_vpc.main" [label="aws_vpc.main"];
+  "aws_vpc_security_group_egress_rule.all" [label="aws_vpc_security_group_egress_rule.all"];
+  "aws_vpc_security_group_ingress_rule.http" [label="aws_vpc_security_group_ingress_rule.http"];
+  "aws_vpc_security_group_ingress_rule.ssh" [label="aws_vpc_security_group_ingress_rule.ssh"];
+  "random_id.bucket_suffix" [label="random_id.bucket_suffix"];
+  "aws_instance.web" -> "data.aws_ami.amazon_linux";
+  "aws_instance.web" -> "aws_route_table_association.public";
+  "aws_instance.web" -> "aws_security_group.web";
+  "aws_internet_gateway.main" -> "aws_vpc.main";
+  "aws_route_table.public" -> "aws_internet_gateway.main";
+  "aws_route_table_association.public" -> "aws_route_table.public";
+  "aws_route_table_association.public" -> "aws_subnet.public";
+  "aws_s3_bucket.assets" -> "random_id.bucket_suffix";
+  "aws_s3_bucket_public_access_block.assets" -> "aws_s3_bucket.assets";
+  "aws_s3_bucket_versioning.assets" -> "aws_s3_bucket.assets";
+  "aws_s3_object.index" -> "aws_s3_bucket.assets";
+  "aws_security_group.web" -> "aws_vpc.main";
+  "aws_subnet.public" -> "aws_vpc.main";
+  "aws_vpc_security_group_egress_rule.all" -> "aws_security_group.web";
+  "aws_vpc_security_group_ingress_rule.http" -> "aws_security_group.web";
+  "aws_vpc_security_group_ingress_rule.ssh" -> "aws_security_group.web";
+}

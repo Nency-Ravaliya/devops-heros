@@ -1,0 +1,14 @@
+# Terraform working directories and state
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+tfplan
+# Crash logs
+crash.log
+crash.*.log
+# The lock file should be committed (the session folder ignores it, I don't)
+!.terraform.lock.hcl
+# terraform.tfvars is part of the deliverable and holds no secrets
+!terraform.tfvars
+.DS_Store
