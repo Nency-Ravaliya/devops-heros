@@ -1,0 +1,20 @@
+# Same kind of rule, but it asks for a controller class that does not
+# exist in this cluster ("traefik"). ingress-nginx ignores it.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: orphan-ingress
+  namespace: s12-hw
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: orphan.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: shop-svc
+                port:
+                  number: 80

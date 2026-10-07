@@ -1,0 +1,39 @@
+# The "application": connects to postgres every 5s using the app Secret
+# and logs whether the login worked.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: booking-app
+  namespace: s12-hw
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: booking-app
+  template:
+    metadata:
+      labels:
+        app: booking-app
+    spec:
+      containers:
+        - name: app
+          image: postgres:16-alpine
+          command: ["sh", "-c"]
+          args:
+            - |
+              while true; do
+                if PGPASSWORD="$DB_PASSWORD" psql -h postgres -U "$DB_USER" -d yatri -tAc "select 'connected as ' || current_user" 2>/tmp/err; then :
+                else echo "ERROR: $(cat /tmp/err)"; fi
+                sleep 5
+              done
+          env:
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: app-db-creds
+                  key: DB_USER
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: app-db-creds
+                  key: DB_PASSWORD
