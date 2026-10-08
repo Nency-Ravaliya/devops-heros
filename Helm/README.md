@@ -1,6 +1,6 @@
 # Session 15: Helm
 
-> 📸 **Screenshots:** the terminal images on this page are rendered from the exact command output captured during my runs (full text is under each *Text output* section).
+> 📸 **Screenshots:** the terminal images are **real screenshots of my terminal window** (Git Bash on Windows 11) taken while I re-ran every command on my minikube cluster. Pod names, IPs and ages therefore differ slightly from the *Text output (original run)* sections, which keep the output from my first run.
 
 **Name:** Tejas Varshney  
 **Tools:** Helm v3.16.2, minikube v1.39.0 (Kubernetes v1.37.0)
@@ -64,16 +64,19 @@ Template syntax used: `{{ .Values.x }}`, `{{ .Release.Name }}`, `{{ include "...
 | `helm search repo / hub` | Search the added repos / Artifact Hub |
 | `helm show chart / values` | Inspect a chart before installing it |
 
-![helm create scratch-chart && find scratch-chart -type f | sort && rm -rf scrat](screenshots/helm-001.png)
-![helm template demo webapp --namespace helm-demo | grep -E '^kind:|^  name:|ima](screenshots/helm-002.png)
-![helm status demo -n helm-demo](screenshots/helm-003.png)
-![helm get values demo -n helm-demo --all | head -20](screenshots/helm-004.png)
-![helm get metadata demo -n helm-demo](screenshots/helm-005.png)
-![helm rollback demo 1 -n helm-demo --wait](screenshots/helm-006.png)
-![helm list -n helm-demo](screenshots/helm-007.png)
-![helm search hub argo-cd --max-col-width 60 | head -5](screenshots/helm-008.png)
+![terminal: Task 1 – Helm commands](terminal-screenshots/s15-001.png)
+![terminal: Task 1 – Helm commands](terminal-screenshots/s15-002.png)
+![terminal: Task 1 – Helm commands](terminal-screenshots/s15-003.png)
+![terminal: Task 1 – Helm commands](terminal-screenshots/s15-004.png)
+![terminal: Task 1 – Helm commands](terminal-screenshots/s15-005.png)
+![terminal: Task 1 – Helm commands](terminal-screenshots/s15-006.png)
+![terminal: Task 1 – Helm commands](terminal-screenshots/s15-007.png)
+![terminal: Task 1 – Helm commands](terminal-screenshots/s15-008.png)
+![terminal: Task 1 – Helm commands](terminal-screenshots/s15-009.png)
+![terminal: Task 1 – Helm commands](terminal-screenshots/s15-010.png)
+![terminal: Task 1 – Helm commands](terminal-screenshots/s15-011.png)
 
-<details><summary>Text output</summary>
+<details><summary>Text output (original run)</summary>
 
 ```text
 ################ helm create ################
@@ -393,13 +396,13 @@ revisionHistoryLimit: 10
 
 Install → Upgrade → Verify → Upgrade again → Verify → **Rollback** → Verify, using release `shop` of my chart.
 
-![helm install shop webapp -n helm-demo --create-namespace --set page.version=v1](screenshots/helm-009.png)
-![helm upgrade shop webapp -n helm-demo --reuse-values --set replicaCount=3 --se](screenshots/helm-010.png)
-![helm upgrade shop webapp -n helm-demo --reuse-values --set image.tag=1.99-does](screenshots/helm-011.png)
-![helm rollback shop 2 -n helm-demo --wait](screenshots/helm-012.png)
-![helm uninstall shop -n helm-demo --wait](screenshots/helm-013.png)
+![terminal: Task 2 – Helm rollback workflow](terminal-screenshots/s15-012.png)
+![terminal: Task 2 – Helm rollback workflow](terminal-screenshots/s15-013.png)
+![terminal: Task 2 – Helm rollback workflow](terminal-screenshots/s15-014.png)
+![terminal: Task 2 – Helm rollback workflow](terminal-screenshots/s15-015.png)
+![terminal: Task 2 – Helm rollback workflow](terminal-screenshots/s15-016.png)
 
-<details><summary>Text output</summary>
+<details><summary>Text output (original run)</summary>
 
 ```text
 ################ 1. INSTALL (revision 1) ################
@@ -576,13 +579,15 @@ release "shop" uninstalled
 
 The chart from the course instructions ([03-mini-project/notes-chart](03-mini-project/notes-chart)): `Chart.yaml`, `values.yaml` (dev: 1 replica, nginx 1.24), `values-prod.yaml` (prod: 3 replicas, nginx 1.25), and templates for the Deployment, a NodePort Service (30090) and a ConfigMap injected with `envFrom`.
 
-![helm lint notes-chart](screenshots/helm-014.png)
-![helm template notes-dev notes-chart](screenshots/helm-015.png)
-![helm install notes-dev notes-chart --wait](screenshots/helm-016.png)
-![kubectl get pods -l app=notes-dev](screenshots/helm-017.png)
-![helm history notes-dev](screenshots/helm-018.png)
+![terminal: Task 3 – Mini project: Notes app chart](terminal-screenshots/s15-017.png)
+![terminal: Task 3 – Mini project: Notes app chart](terminal-screenshots/s15-018.png)
+![terminal: Task 3 – Mini project: Notes app chart](terminal-screenshots/s15-019.png)
+![terminal: Task 3 – Mini project: Notes app chart](terminal-screenshots/s15-020.png)
+![terminal: Task 3 – Mini project: Notes app chart](terminal-screenshots/s15-021.png)
+![terminal: Task 3 – Mini project: Notes app chart](terminal-screenshots/s15-022.png)
+![terminal: Task 3 – Mini project: Notes app chart](terminal-screenshots/s15-023.png)
 
-<details><summary>Text output</summary>
+<details><summary>Text output (original run)</summary>
 
 ```text
 ################ Step 8: lint ################
