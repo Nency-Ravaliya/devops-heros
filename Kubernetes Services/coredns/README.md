@@ -1,6 +1,6 @@
 # CoreDNS
 
-> 📸 **Screenshots:** the terminal images on this page are rendered from the exact command output captured during my runs (full text is under each *Text output* section).
+> 📸 **Screenshots:** the terminal images are **real screenshots of my terminal window** (Git Bash on Windows 11) taken while I re-ran every command on my minikube cluster. Pod names, IPs and ages therefore differ slightly from the *Text output (original run)* sections, which keep the output from my first run.
 
 ## What is CoreDNS?
 
@@ -99,12 +99,14 @@ I scaled CoreDNS to 0 replicas:
 
 ## Hands-on output
 
-![kubectl -n kube-system get deploy,pods,svc -l k8s-app=kube-dns -o wide](screenshots/coredns-001.png)
-![kubectl exec dns -- cat /etc/resolv.conf](screenshots/coredns-002.png)
-![kubectl exec dns -- dig +noall +answer +stats kubernetes.io | grep -E 'IN|Quer](screenshots/coredns-003.png)
-![kubectl exec dns -- nslookup web-clusterip](screenshots/coredns-004.png)
+![terminal: Hands-on output](terminal-screenshots/s11d-001.png)
+![terminal: Hands-on output](terminal-screenshots/s11d-002.png)
+![terminal: Hands-on output](terminal-screenshots/s11d-003.png)
+![terminal: Hands-on output](terminal-screenshots/s11d-004.png)
+![terminal: Hands-on output](terminal-screenshots/s11d-005.png)
+![terminal: Hands-on output](terminal-screenshots/s11d-006.png)
 
-<details><summary>Text output</summary>
+<details><summary>Text output (original run)</summary>
 
 ```text
 $ kubectl -n kube-system get deploy,pods,svc -l k8s-app=kube-dns -o wide

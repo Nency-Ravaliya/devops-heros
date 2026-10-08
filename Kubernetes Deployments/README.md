@@ -1,6 +1,6 @@
 # Session 10: Kubernetes Pods, ReplicaSets & Deployments
 
-> 📸 **Screenshots:** the terminal images on this page are rendered from the exact command output captured during my runs (full text is under each *Text output* section).
+> 📸 **Screenshots:** the terminal images are **real screenshots of my terminal window** (Git Bash on Windows 11) taken while I re-ran every command on my minikube cluster. Pod names, IPs and ages therefore differ slightly from the *Text output (original run)* sections, which keep the output from my first run.
 
 **Name:** Tejas Varshney  
 **Cluster:** minikube v1.39.0 (Kubernetes v1.37.0, docker driver) on Windows 11
@@ -35,13 +35,15 @@ kubectl rollout history deployment/web-rolling
 kubectl rollout undo deployment/web-rolling --to-revision=1
 ```
 
-![kubectl apply -f 01-rolling-update/deployment-v1.yaml](screenshots/kubernetes-deployments-001.png)
-![kubectl rollout status deployment/web-rolling --timeout=180s](screenshots/kubernetes-deployments-002.png)
-![kubectl get pods -l app=web-rolling -w   (captured during the update)](screenshots/kubernetes-deployments-003.png)
-![kubectl get rs -l app=web-rolling](screenshots/kubernetes-deployments-004.png)
-![kubectl rollout undo deployment/web-rolling --to-revision=1](screenshots/kubernetes-deployments-005.png)
+![terminal: 01. Rolling Update](terminal-screenshots/s10-001.png)
+![terminal: 01. Rolling Update](terminal-screenshots/s10-002.png)
+![terminal: 01. Rolling Update](terminal-screenshots/s10-003.png)
+![terminal: 01. Rolling Update](terminal-screenshots/s10-004.png)
+![terminal: 01. Rolling Update](terminal-screenshots/s10-005.png)
+![terminal: 01. Rolling Update](terminal-screenshots/s10-006.png)
+![terminal: 01. Rolling Update](terminal-screenshots/s10-007.png)
 
-<details><summary>Text output</summary>
+<details><summary>Text output (original run)</summary>
 
 ```text
 $ kubectl apply -f 01-rolling-update/deployment-v1.yaml
@@ -226,10 +228,11 @@ kubectl apply -f 02-blue-green/green.yaml                                # green
 kubectl patch service web-bg -p '{"spec":{"selector":{"app":"web-bg","version":"green"}}}'
 ```
 
-![kubectl apply -f 02-blue-green/blue.yaml -f 02-blue-green/service.yaml](screenshots/kubernetes-deployments-006.png)
-![kubectl get endpoints web-bg](screenshots/kubernetes-deployments-007.png)
+![terminal: 02. Blue-Green Deployment](terminal-screenshots/s10-008.png)
+![terminal: 02. Blue-Green Deployment](terminal-screenshots/s10-009.png)
+![terminal: 02. Blue-Green Deployment](terminal-screenshots/s10-010.png)
 
-<details><summary>Text output</summary>
+<details><summary>Text output (original run)</summary>
 
 ```text
 $ kubectl apply -f 02-blue-green/blue.yaml -f 02-blue-green/service.yaml
@@ -324,10 +327,10 @@ kubectl apply -f 03-canary/stable.yaml -f 03-canary/service.yaml   # 9 stable re
 kubectl apply -f 03-canary/canary.yaml                             # 1 canary replica
 ```
 
-![kubectl apply -f 03-canary/stable.yaml -f 03-canary/service.yaml](screenshots/kubernetes-deployments-008.png)
-![kubectl scale deploy web-canary --replicas=10 && kubectl scale deploy web-stab](screenshots/kubernetes-deployments-009.png)
+![terminal: 03. Canary Deployment](terminal-screenshots/s10-011.png)
+![terminal: 03. Canary Deployment](terminal-screenshots/s10-012.png)
 
-<details><summary>Text output</summary>
+<details><summary>Text output (original run)</summary>
 
 ```text
 $ kubectl apply -f 03-canary/stable.yaml -f 03-canary/service.yaml
@@ -401,11 +404,12 @@ kubectl apply -f 04-recreate/deployment-v1.yaml
 kubectl apply -f 04-recreate/deployment-v2.yaml
 ```
 
-![kubectl apply -f 04-recreate/deployment-v1.yaml](screenshots/kubernetes-deployments-010.png)
-![kubectl get pods -l app=web-recreate -w   (captured during the update)](screenshots/kubernetes-deployments-011.png)
-![kubectl get rs -l app=web-recreate](screenshots/kubernetes-deployments-012.png)
+![terminal: 04. Recreate Deployment](terminal-screenshots/s10-013.png)
+![terminal: 04. Recreate Deployment](terminal-screenshots/s10-014.png)
+![terminal: 04. Recreate Deployment](terminal-screenshots/s10-015.png)
+![terminal: 04. Recreate Deployment](terminal-screenshots/s10-016.png)
 
-<details><summary>Text output</summary>
+<details><summary>Text output (original run)</summary>
 
 ```text
 $ kubectl apply -f 04-recreate/deployment-v1.yaml
@@ -513,17 +517,13 @@ kubectl describe pod <name>
 kubectl logs <name>
 ```
 
-![kubectl apply -f 05-pod-lifecycle/](screenshots/kubernetes-deployments-013.png)
-![kubectl describe pod lifecycle-running | sed -n '/^Events:/,$p' | tail -7](screenshots/kubernetes-deployments-014.png)
-![kubectl describe pod lifecycle-succeeded | grep -E '^Status:|State:|Reason:|Ex](screenshots/kubernetes-deployments-015.png)
-![kubectl logs lifecycle-failed --tail=5](screenshots/kubernetes-deployments-016.png)
-![kubectl describe pod lifecycle-image-error | grep -E '^Status:|State:|Reason:|](screenshots/kubernetes-deployments-017.png)
-![kubectl logs lifecycle-readiness --tail=5](screenshots/kubernetes-deployments-018.png)
-![kubectl describe pod lifecycle-startup | grep -E '^Status:|State:|Reason:|Exit](screenshots/kubernetes-deployments-019.png)
-![kubectl describe pod lifecycle-init | sed -n '/^Events:/,$p' | tail -7](screenshots/kubernetes-deployments-020.png)
-![time kubectl delete pod lifecycle-termination](screenshots/kubernetes-deployments-021.png)
+![terminal: Task 2 – Pod lifecycle](terminal-screenshots/s10-017.png)
+![terminal: Task 2 – Pod lifecycle](terminal-screenshots/s10-018.png)
+![terminal: Task 2 – Pod lifecycle](terminal-screenshots/s10-019.png)
+![terminal: Task 2 – Pod lifecycle](terminal-screenshots/s10-020.png)
+![terminal: Task 2 – Pod lifecycle](terminal-screenshots/s10-021.png)
 
-<details><summary>Text output</summary>
+<details><summary>Text output (original run)</summary>
 
 ```text
 $ kubectl apply -f 05-pod-lifecycle/
@@ -860,9 +860,8 @@ sys	0m0.030s
 
 **Note on `lifecycle-pending`:** on my first run this Pod was **Running**. My minikube node has 24 CPUs and about 11.5 GiB of allocatable memory, so the original `9Gi` request fit. I raised the request to `64Gi` and re-applied it. I also re-ran `lifecycle-termination` while streaming its logs, so the SIGTERM handling is visible:
 
-![kubectl describe node minikube | grep -A6 'Allocatable:' | grep -E 'cpu|memory](screenshots/kubernetes-deployments-022.png)
 
-<details><summary>Text output</summary>
+<details><summary>Text output (original run)</summary>
 
 ```text
 #### lifecycle-pending (re-run with 64Gi memory request - more than the node has)

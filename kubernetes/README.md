@@ -1,6 +1,6 @@
 # Session 9: Kubernetes Fundamentals
 
-> 📸 **Screenshots:** the terminal images on this page are rendered from the exact command output captured during my runs (full text is under each *Text output* section).
+> 📸 **Screenshots:** the terminal images are **real screenshots of my terminal window** (Git Bash on Windows 11) taken while I re-ran every command on my minikube cluster. Pod names, IPs and ages therefore differ slightly from the *Text output (original run)* sections, which keep the output from my first run.
 
 **Name:** Tejas Varshney  
 **Environment:** Windows 11, Docker Desktop 28.5.1, minikube v1.39.0 (docker driver), Kubernetes v1.37.0, kubectl v1.34.1
@@ -23,10 +23,11 @@ minikube addons enable ingress
 
 ## Task 2 – Verify cluster status
 
-![minikube version](screenshots/kubernetes-001.png)
-![kubectl get namespaces](screenshots/kubernetes-002.png)
+![terminal: Verify cluster status](terminal-screenshots/s09-001.png)
+![terminal: Verify cluster status](terminal-screenshots/s09-002.png)
+![terminal: Verify cluster status](terminal-screenshots/s09-003.png)
 
-<details><summary>Text output</summary>
+<details><summary>Text output (original run)</summary>
 
 ```text
 $ minikube version
@@ -185,13 +186,16 @@ Kubernetes is **declarative and self-healing**: you describe the desired state, 
 
 I went through every module of the official [Kubernetes Basics](https://kubernetes.io/docs/tutorials/kubernetes-basics/) tutorial on my minikube cluster:
 
-![kubectl create deployment kubernetes-bootcamp --image=gcr.io/google-samples/ku](screenshots/kubernetes-003.png)
-![kubectl exec kubernetes-bootcamp-5cc66bcc9b-zhx94 -- env | grep -E 'HOSTNAME|K](screenshots/kubernetes-004.png)
-![kubectl label pods kubernetes-bootcamp-5cc66bcc9b-zhx94 version=v1](screenshots/kubernetes-005.png)
-![kubectl rollout status deployments/kubernetes-bootcamp --timeout=300s](screenshots/kubernetes-006.png)
-![kubectl rollout status deployments/kubernetes-bootcamp --timeout=300s](screenshots/kubernetes-007.png)
+![terminal: Kubernetes Basics tutorial (hands-on)](terminal-screenshots/s09-004.png)
+![terminal: Kubernetes Basics tutorial (hands-on)](terminal-screenshots/s09-005.png)
+![terminal: Kubernetes Basics tutorial (hands-on)](terminal-screenshots/s09-006.png)
+![terminal: Kubernetes Basics tutorial (hands-on)](terminal-screenshots/s09-007.png)
+![terminal: Kubernetes Basics tutorial (hands-on)](terminal-screenshots/s09-008.png)
+![terminal: Kubernetes Basics tutorial (hands-on)](terminal-screenshots/s09-009.png)
+![terminal: Kubernetes Basics tutorial (hands-on)](terminal-screenshots/s09-010.png)
+![terminal: Kubernetes Basics tutorial (hands-on)](terminal-screenshots/s09-011.png)
 
-<details><summary>Text output</summary>
+<details><summary>Text output (original run)</summary>
 
 ```text
 ### Module 2 - Deploy an app

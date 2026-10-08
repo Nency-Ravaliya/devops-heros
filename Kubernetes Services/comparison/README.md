@@ -1,6 +1,6 @@
 # Kubernetes Object Comparison
 
-> 📸 **Screenshots:** the terminal images on this page are rendered from the exact command output captured during my runs (full text is under each *Text output* section).
+> 📸 **Screenshots:** the terminal images are **real screenshots of my terminal window** (Git Bash on Windows 11) taken while I re-ran every command on my minikube cluster. Pod names, IPs and ages therefore differ slightly from the *Text output (original run)* sections, which keep the output from my first run.
 
 Hands-on output for everything below is at the end of this page ([daemonset.yaml](daemonset.yaml), [replicaset.yaml](replicaset.yaml), plus the `web` Deployment and `db` StatefulSet from the Services demo).
 
@@ -57,11 +57,12 @@ So: **ReplicaSet keeps the Pods alive, and the Service makes them reachable.**
 
 ## Hands-on output
 
-![kubectl get deploy web](screenshots/comparison-001.png)
-![kubectl delete -f comparison/replicaset.yaml](screenshots/comparison-002.png)
-![kubectl scale sts db --replicas=3 && kubectl rollout status sts/db --timeout=6](screenshots/comparison-003.png)
+![terminal: Hands-on output](terminal-screenshots/s11c-001.png)
+![terminal: Hands-on output](terminal-screenshots/s11c-002.png)
+![terminal: Hands-on output](terminal-screenshots/s11c-003.png)
+![terminal: Hands-on output](terminal-screenshots/s11c-004.png)
 
-<details><summary>Text output</summary>
+<details><summary>Text output (original run)</summary>
 
 ```text
 # ---------- Deployment -> ReplicaSet -> Pods (ownerReferences) ----------

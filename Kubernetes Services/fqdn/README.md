@@ -1,6 +1,6 @@
 # FQDN & Kubernetes Service DNS
 
-> 📸 **Screenshots:** the terminal images on this page are rendered from the exact command output captured during my runs (full text is under each *Text output* section).
+> 📸 **Screenshots:** the terminal images are **real screenshots of my terminal window** (Git Bash on Windows 11) taken while I re-ran every command on my minikube cluster. Pod names, IPs and ages therefore differ slightly from the *Text output (original run)* sections, which keep the output from my first run.
 
 ## What is an FQDN?
 
@@ -59,10 +59,12 @@ The last command below shows the reverse direction too: a Pod in `team-b` reachi
 
 ## Hands-on output
 
-![kubectl apply -f fqdn/team-b-api.yaml](screenshots/fqdn-001.png)
-![kubectl exec dns -- dig +noall +answer api.team-b.svc.cluster.local](screenshots/fqdn-002.png)
+![terminal: Hands-on output](terminal-screenshots/s11f-001.png)
+![terminal: Hands-on output](terminal-screenshots/s11f-002.png)
+![terminal: Hands-on output](terminal-screenshots/s11f-003.png)
+![terminal: Hands-on output](terminal-screenshots/s11f-004.png)
 
-<details><summary>Text output</summary>
+<details><summary>Text output (original run)</summary>
 
 ```text
 $ kubectl apply -f fqdn/team-b-api.yaml

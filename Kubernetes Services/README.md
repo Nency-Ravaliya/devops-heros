@@ -1,6 +1,6 @@
 # Session 11: Kubernetes Networking & Services
 
-> 📸 **Screenshots:** the terminal images on this page are rendered from the exact command output captured during my runs (full text is under each *Text output* section).
+> 📸 **Screenshots:** the terminal images are **real screenshots of my terminal window** (Git Bash on Windows 11) taken while I re-ran every command on my minikube cluster. Pod names, IPs and ages therefore differ slightly from the *Text output (original run)* sections, which keep the output from my first run.
 
 **Name:** Tejas Varshney  
 **Cluster:** minikube v1.39.0 (Kubernetes v1.37.0, docker driver, kube-proxy in iptables mode) on Windows 11
@@ -21,9 +21,9 @@ My earlier screenshot-based attempts are in [../clusterip](../clusterip/README.m
 
 One backend Deployment ([app-deployment.yaml](app-deployment.yaml)) with 3 replicas of `http-echo`, each replying `hello from <pod-name>`, so load-balancing is visible. Test clients: a `curl` Pod (`curlimages/curl`) and a `dns` Pod (`agnhost`, which has `dig`/`nslookup`).
 
-![kubectl apply -f app-deployment.yaml](screenshots/kubernetes-services-001.png)
+![terminal: Setup](terminal-screenshots/s11-001.png)
 
-<details><summary>Text output</summary>
+<details><summary>Text output (original run)</summary>
 
 ```text
 $ kubectl apply -f app-deployment.yaml
@@ -54,10 +54,10 @@ web-86bb596c4d-xhfvv   1/1     Running   0          40s   10.244.0.76   minikube
 
 [01-clusterip/service.yaml](01-clusterip/service.yaml): a stable virtual IP that is reachable **only inside the cluster**.
 
-![kubectl apply -f 01-clusterip/service.yaml](screenshots/kubernetes-services-002.png)
-![kubectl port-forward svc/web-clusterip 8080:80   (in background)](screenshots/kubernetes-services-003.png)
+![terminal: 1. ClusterIP (default)](terminal-screenshots/s11-002.png)
+![terminal: 1. ClusterIP (default)](terminal-screenshots/s11-003.png)
 
-<details><summary>Text output</summary>
+<details><summary>Text output (original run)</summary>
 
 ```text
 $ kubectl apply -f 01-clusterip/service.yaml
@@ -122,9 +122,9 @@ hello from web-86bb596c4d-72lwl
 
 [02-nodeport/service.yaml](02-nodeport/service.yaml): a ClusterIP **plus** port `30080` opened on every node.
 
-![kubectl apply -f 02-nodeport/service.yaml](screenshots/kubernetes-services-004.png)
+![terminal: 2. NodePort](terminal-screenshots/s11-004.png)
 
-<details><summary>Text output</summary>
+<details><summary>Text output (original run)</summary>
 
 ```text
 $ kubectl apply -f 02-nodeport/service.yaml
@@ -162,9 +162,10 @@ hello from web-86bb596c4d-72lwl
 
 [03-loadbalancer/service.yaml](03-loadbalancer/service.yaml): a NodePort **plus** an external load balancer. In the cloud, the cloud-controller-manager provisions an AWS ELB / GCP LB. On minikube, `minikube tunnel` plays that role.
 
-![kubectl apply -f 03-loadbalancer/service.yaml](screenshots/kubernetes-services-005.png)
+![terminal: 3. LoadBalancer](terminal-screenshots/s11-005.png)
+![terminal: 3. LoadBalancer](terminal-screenshots/s11-006.png)
 
-<details><summary>Text output</summary>
+<details><summary>Text output (original run)</summary>
 
 ```text
 $ kubectl apply -f 03-loadbalancer/service.yaml
@@ -207,9 +208,9 @@ hello from web-86bb596c4d-nknrw
 
 [04-externalname/service.yaml](04-externalname/service.yaml): **no selector, no ClusterIP, no endpoints.** CoreDNS just returns a **CNAME**.
 
-![kubectl apply -f 04-externalname/service.yaml](screenshots/kubernetes-services-006.png)
+![terminal: 4. ExternalName](terminal-screenshots/s11-007.png)
 
-<details><summary>Text output</summary>
+<details><summary>Text output (original run)</summary>
 
 ```text
 $ kubectl apply -f 04-externalname/service.yaml
@@ -251,9 +252,10 @@ HTTP 200 from 104.20.23.154
 
 [05-headless/statefulset.yaml](05-headless/statefulset.yaml): `clusterIP: None` + a StatefulSet.
 
-![kubectl apply -f 05-headless/statefulset.yaml](screenshots/kubernetes-services-007.png)
+![terminal: 5. Headless](terminal-screenshots/s11-008.png)
+![terminal: 5. Headless](terminal-screenshots/s11-009.png)
 
-<details><summary>Text output</summary>
+<details><summary>Text output (original run)</summary>
 
 ```text
 $ kubectl apply -f 05-headless/statefulset.yaml
