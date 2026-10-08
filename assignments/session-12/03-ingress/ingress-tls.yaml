@@ -1,0 +1,39 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: campus-ingress-tls
+  namespace: default
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - portal.campus.local
+        - api.campus.local
+      secretName: campus-tls-cert
+  rules:
+    # Host 1: Frontend Student Portal (Host-based routing)
+    - host: portal.campus.local
+      http:
+        paths:
+          - path: /()(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: yatri-frontend-service
+                port:
+                  number: 80
+
+    # Host 2: Backend REST API (Host-based routing + Path-based routing)
+    - host: api.campus.local
+      http:
+        paths:
+          - path: /api(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: yatri-backend-service
+                port:
+                  number: 80
