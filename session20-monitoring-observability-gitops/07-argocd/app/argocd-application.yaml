@@ -11,7 +11,7 @@ spec:
   source:
     repoURL: https://github.com/vvsleepy/devops-heros.git
     targetRevision: main
-    path: 06-git-as-source-of-truth/gitops-repo/app
+    path: session20-monitoring-observability-gitops/06-git-as-source-of-truth/gitops-repo/app
 
   destination:
     server: https://kubernetes.default.svc
