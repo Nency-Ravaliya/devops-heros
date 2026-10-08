@@ -48,6 +48,6 @@ wait_rev "$REV4"
 cap "git -C '$WT' log --oneline -5"
 cap "kubectl -n session20-gitops get deploy,svc"
 cap "kubectl -n argocd get application session20-app -o jsonpath='{range .status.history[*]}{.id}  {.revision}  {.deployedAt}{\"\n\"}{end}'"
-} > "$OUT/05-gitops-git-change.txt" 2>&1
+} 2>&1 | tee "$OUT/05-gitops-git-change.txt"
 git worktree remove --force "$WT"
 echo "gitops-git-change.sh finished"

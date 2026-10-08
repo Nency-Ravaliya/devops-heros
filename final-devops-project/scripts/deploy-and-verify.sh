@@ -43,7 +43,7 @@ cap "kubectl -n argocd get applications -o wide"
 cap "kubectl -n argocd get application notes-api -o jsonpath='revision={.status.sync.revisions}{\"\n\"}'"
 echo "(expected GitOps commit: $GITOPS_REV)"; echo
 cap "kubectl -n notes get all,ingress,hpa,pvc,configmap,secret,servicemonitor"
-} > $OUT/20-gitops-deploy.txt 2>&1
+} 2>&1 | tee $OUT/20-gitops-deploy.txt
 
 ######################################## verification
 {
@@ -75,7 +75,7 @@ echo "################ GitOps self-heal: manual change is reverted by Argo CD ##
 cap "kubectl -n notes patch configmap notes-config --type merge -p '{\"data\":{\"WELCOME_MESSAGE\":\"hacked by hand\"}}'"
 sleep 30
 cap "kubectl -n notes get configmap notes-config -o jsonpath='{.data.WELCOME_MESSAGE}'; echo"
-} > $OUT/21-verify.txt 2>&1
+} 2>&1 | tee $OUT/21-verify.txt
 
 ######################################## monitoring
 kubectl apply -f monitoring/alerts.yaml >/dev/null 2>&1
@@ -94,7 +94,7 @@ cap "promq 'sum by (pod) (rate(container_cpu_usage_seconds_total{namespace=\"not
 cap "promq 'sum by (pod) (container_memory_working_set_bytes{namespace=\"notes\", container!=\"\"})'"
 cap "curl -s localhost:9090/api/v1/rules | jq -r '.data.groups[] | select(.name==\"notes-api.rules\") | .rules[] | \"\(.name): \(.state) health=\(.health)\"'"
 cap "kubectl -n notes logs deploy/notes-api --tail=6"
-} > $OUT/22-monitoring.txt 2>&1
+} 2>&1 | tee $OUT/22-monitoring.txt
 uid=$(curl -s -u admin:demo-only-not-secret "localhost:3000/api/search?query=Namespace%20(Pods)" | jq -r '.[0].uid')
 google-chrome --headless=new --no-sandbox --disable-gpu --hide-scrollbars --window-size=1600,1000 --virtual-time-budget=25000 \
   --screenshot="$OUT/grafana-notes-namespace.png" "http://localhost:3000/d/$uid/?orgId=1&kiosk&from=now-15m&to=now&var-namespace=notes&var-datasource=prometheus" >/dev/null 2>&1

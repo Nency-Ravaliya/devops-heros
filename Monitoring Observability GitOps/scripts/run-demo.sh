@@ -58,7 +58,7 @@ cap "curl -s localhost:9090/api/v1/alerts | jq -r '.data.alerts[] | select(.labe
 AM=$(pf -n monitoring svc/kps-alertmanager 9093:9093); sleep 3
 cap "curl -s localhost:9093/api/v2/alerts | jq -r '.[] | select(.labels.alertname|startswith(\"DemoApp\")) | \"Alertmanager received: \(.labels.alertname) [\(.status.state)] \(.annotations.summary)\"'"
 cap "kubectl -n session20 scale deploy demo-app --replicas=2 && kubectl -n session20 rollout status deploy/demo-app --timeout=60s"
-} > "$OUT/01-monitoring.txt" 2>&1
+} 2>&1 | tee "$OUT/01-monitoring.txt"
 
 ############################################################ Grafana screenshots
 GRAF=$(pf -n monitoring svc/kps-grafana 3000:80); sleep 5
@@ -66,7 +66,7 @@ GRAF=$(pf -n monitoring svc/kps-grafana 3000:80); sleep 5
 cap "curl -s localhost:3000/api/health"
 cap "curl -s -u admin:demo-only-not-secret localhost:3000/api/datasources | jq -r '.[] | \"\(.name) \(.type) \(.url)\"'"
 cap "curl -s -u admin:demo-only-not-secret 'localhost:3000/api/search?type=dash-db' | jq -r '.[].title' | sort | head -40"
-} > "$OUT/02-grafana.txt" 2>&1
+} 2>&1 | tee "$OUT/02-grafana.txt"
 shot() {  # shot <file> <title>  - screenshot a dashboard found by title
   uid=$(curl -s -u admin:demo-only-not-secret "localhost:3000/api/search?query=$(jq -rn --arg t "$2" '$t|@uri')" | jq -r '.[0].uid')
   google-chrome --headless=new --no-sandbox --disable-gpu --hide-scrollbars --window-size=1600,1000 \
@@ -99,7 +99,7 @@ cap "curl -s 'localhost:16686/api/traces?service=frontend&limit=1&lookback=1h' |
 google-chrome --headless=new --no-sandbox --disable-gpu --hide-scrollbars --window-size=1600,1000 --virtual-time-budget=20000 \
   --screenshot="$OUT/jaeger-trace.png" "http://localhost:16686/trace/$(curl -s 'localhost:16686/api/traces?service=frontend&limit=1&lookback=1h' | jq -r '.data[0].traceID')" >/dev/null 2>&1
 echo "screenshot jaeger-trace.png"
-} > "$OUT/03-observability.txt" 2>&1
+} 2>&1 | tee "$OUT/03-observability.txt"
 
 ############################################################ 3. GITOPS with Argo CD
 {
@@ -123,5 +123,5 @@ cap "kubectl -n session20-gitops delete svc session20-gitops-app"
 sleep 25
 cap "kubectl -n session20-gitops get svc"
 cap "kubectl -n argocd get application session20-app -o jsonpath='{range .status.history[*]}{.id} {.revision} {.deployedAt}{\"\n\"}{end}'"
-} > "$OUT/04-gitops.txt" 2>&1
+} 2>&1 | tee "$OUT/04-gitops.txt"
 echo "run-demo.sh part 1 finished"

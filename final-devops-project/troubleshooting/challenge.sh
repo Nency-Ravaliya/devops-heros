@@ -87,6 +87,6 @@ cap "kubectl -n $NS get pods,svc,ingress,hpa"
 cap "api / | jq ."
 cap "api /api/notes -X POST -H 'Content-Type: application/json' -d '{\"text\":\"staging fixed\"}' | jq -c ."
 cap "api /api/notes | jq -c '[.[].text]'"
-} > $OUT/30-troubleshooting.txt 2>&1
+} 2>&1 | tee $OUT/30-troubleshooting.txt
 kubectl delete namespace $NS --wait=false >/dev/null 2>&1
 echo "challenge.sh finished"

@@ -1,6 +1,6 @@
 # Session 12: Kubernetes Ingress, ConfigMaps & Secrets
 
-> 📸 **Screenshots:** the terminal images on this page are rendered from the exact command output captured during my runs (full text is under each *Text output* section).
+> 📸 **Screenshots:** the terminal images are **real screenshots of my terminal window** (Git Bash on Windows 11) taken while I re-ran every command on my minikube cluster. Pod names, IPs and ages therefore differ slightly from the *Text output (original run)* sections, which keep the output from my first run.
 
 **Name:** Tejas Varshney  
 **Cluster:** minikube v1.39.0 (Kubernetes v1.37.0) on Windows 11, with the `ingress` add-on (ingress-nginx)
@@ -23,11 +23,12 @@ The ConfigMap holds three plain keys plus a whole `app.properties` file. The Pod
 2. `envFrom`: every key → env vars with the same names
 3. a `configMap` volume: `app.properties` → file `/etc/app/app.properties`
 
-![kubectl apply -f 01-configmap/configmap.yaml](screenshots/kubernetes-ingress-configmaps-secrets-001.png)
-![kubectl logs configmap-demo](screenshots/kubernetes-ingress-configmaps-secrets-002.png)
-![kubectl create configmap cli-config --from-literal=MODE=fast --from-literal=RE](screenshots/kubernetes-ingress-configmaps-secrets-003.png)
+![terminal: Task 1 – ConfigMap](terminal-screenshots/s12-001.png)
+![terminal: Task 1 – ConfigMap](terminal-screenshots/s12-002.png)
+![terminal: Task 1 – ConfigMap](terminal-screenshots/s12-003.png)
+![terminal: Task 1 – ConfigMap](terminal-screenshots/s12-004.png)
 
-<details><summary>Text output</summary>
+<details><summary>Text output (original run)</summary>
 
 ```text
 $ kubectl apply -f 01-configmap/configmap.yaml
@@ -133,10 +134,10 @@ metadata:
 
 ## Task 2 – Secret
 
-![kubectl create secret generic db-credentials --from-literal=DB_USER=app_user -](screenshots/kubernetes-ingress-configmaps-secrets-004.png)
-![kubectl exec secret-demo -- cat /etc/creds/DB_USER; echo](screenshots/kubernetes-ingress-configmaps-secrets-005.png)
+![terminal: Task 2 – Secret](terminal-screenshots/s12-005.png)
+![terminal: Task 2 – Secret](terminal-screenshots/s12-006.png)
 
-<details><summary>Text output</summary>
+<details><summary>Text output (original run)</summary>
 
 ```text
 # --- create the Secret imperatively (values never written to a file in Git) ---
@@ -216,11 +217,12 @@ Two apps (`shop`, `blog`, 2 replicas each) behind ClusterIP Services, plus two I
 - `demo-ingress`: **path-based** on `demo.local` (`/shop`, `/blog`), with `rewrite-target` so the backend receives `/`
 - `host-ingress`: **host-based** (`shop.demo.local`, `blog.demo.local`)
 
-![kubectl get ingressclass](screenshots/kubernetes-ingress-configmaps-secrets-006.png)
-![kubectl get ingress](screenshots/kubernetes-ingress-configmaps-secrets-007.png)
-![kubectl exec curl -- curl -s -H 'Host: shop.demo.local' http://ingress-nginx-c](screenshots/kubernetes-ingress-configmaps-secrets-008.png)
+![terminal: Task 3 – Ingress](terminal-screenshots/s12-007.png)
+![terminal: Task 3 – Ingress](terminal-screenshots/s12-008.png)
+![terminal: Task 3 – Ingress](terminal-screenshots/s12-009.png)
+![terminal: Task 3 – Ingress](terminal-screenshots/s12-010.png)
 
-<details><summary>Text output</summary>
+<details><summary>Text output (original run)</summary>
 
 ```text
 # --- the Ingress Controller (ingress-nginx, installed by `minikube addons enable ingress`) ---
@@ -364,10 +366,11 @@ For each issue: **identify → run troubleshooting commands → find the root ca
 ### 5.1 PostgreSQL rejects the app: the "trailing newline" Secret bug
 Scenario from the course's `troubleshooting/secret-base64-gotcha.md`, reproduced with a real PostgreSQL 16. Files: [05-troubleshooting/01-secret-newline](05-troubleshooting/01-secret-newline)
 
-![kubectl apply -f 01-secret-newline/postgres.yaml](screenshots/kubernetes-ingress-configmaps-secrets-009.png)
-![kubectl apply -f 01-secret-newline/app-secret-fixed.yaml](screenshots/kubernetes-ingress-configmaps-secrets-010.png)
+![terminal: 5.1 PostgreSQL rejects the app](terminal-screenshots/s12-011.png)
+![terminal: 5.1 PostgreSQL rejects the app](terminal-screenshots/s12-012.png)
+![terminal: 5.1 PostgreSQL rejects the app](terminal-screenshots/s12-013.png)
 
-<details><summary>Text output</summary>
+<details><summary>Text output (original run)</summary>
 
 ```text
 ########## BEFORE ##########
@@ -451,9 +454,10 @@ $ kubectl get secret app-db -o jsonpath='{.data.DB_PASSWORD}' | base64 -d | od -
 ### 5.2 Pod stuck in `CreateContainerConfigError`: wrong ConfigMap key
 Files: [05-troubleshooting/02-missing-configmap-key](05-troubleshooting/02-missing-configmap-key)
 
-![kubectl apply -f 02-missing-configmap-key/configmap.yaml -f 02-missing-configm](screenshots/kubernetes-ingress-configmaps-secrets-011.png)
+![terminal: 5.2 Pod stuck in](terminal-screenshots/s12-014.png)
+![terminal: 5.2 Pod stuck in](terminal-screenshots/s12-015.png)
 
-<details><summary>Text output</summary>
+<details><summary>Text output (original run)</summary>
 
 ```text
 ########## BEFORE ##########
@@ -512,10 +516,10 @@ API_URL=http://api.internal:8080 THEME=dark
 ### 5.3 Ingress returns 503: two backend misconfigurations
 Files: [05-troubleshooting/03-ingress-backend](05-troubleshooting/03-ingress-backend)
 
-![kubectl apply -f 03-ingress-backend/app.yaml -f 03-ingress-backend/ingress-bro](screenshots/kubernetes-ingress-configmaps-secrets-012.png)
-![kubectl -n ingress-nginx logs deploy/ingress-nginx-controller --tail=40 | grep](screenshots/kubernetes-ingress-configmaps-secrets-013.png)
+![terminal: 5.3 Ingress returns 503](terminal-screenshots/s12-016.png)
+![terminal: 5.3 Ingress returns 503](terminal-screenshots/s12-017.png)
 
-<details><summary>Text output</summary>
+<details><summary>Text output (original run)</summary>
 
 ```text
 ########## BEFORE ##########
