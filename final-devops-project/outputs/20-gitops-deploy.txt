@@ -1,10 +1,10 @@
 ################ load the image built + scanned by the pipeline into the cluster ################
 $ docker load -i ../image.tar.gz 2>/dev/null || docker load -i image.tar.gz
-Loaded image: ghcr.io/tejasvarshney/final-notes-api:20df250
+Loaded image: ghcr.io/tejasvarshney/final-notes-api:6d3b7ad
 
-$ kind load docker-image ghcr.io/tejasvarshney/final-notes-api:20df250 --name final-devops
-Image: "ghcr.io/tejasvarshney/final-notes-api:20df250" with ID "sha256:6202f5772b88660e1468d3d614fe4ca0c35ecf9bc97a0d4d4738f03a7e3b9ebd" not yet present on node "final-devops-control-plane", loading...
-Image: "ghcr.io/tejasvarshney/final-notes-api:20df250" with ID "sha256:6202f5772b88660e1468d3d614fe4ca0c35ecf9bc97a0d4d4738f03a7e3b9ebd" not yet present on node "final-devops-worker", loading...
+$ kind load docker-image ghcr.io/tejasvarshney/final-notes-api:6d3b7ad --name final-devops
+Image: "ghcr.io/tejasvarshney/final-notes-api:6d3b7ad" with ID "sha256:16e6a19b3fb87454d2ebcb0df486944cb2debf450f8f3e3e43d933e6d15f2889" not yet present on node "final-devops-control-plane", loading...
+Image: "ghcr.io/tejasvarshney/final-notes-api:6d3b7ad" with ID "sha256:16e6a19b3fb87454d2ebcb0df486944cb2debf450f8f3e3e43d933e6d15f2889" not yet present on node "final-devops-worker", loading...
 
 ################ the Secret is created by the pipeline - never committed to Git ################
 $ kubectl create namespace notes
@@ -18,10 +18,10 @@ NAME               TYPE     DATA   AGE
 notes-redis-auth   Opaque   1      0s
 
 ################ GitOps: commit the new image tag to the environment branch ################
-$ git log --oneline -1 && git show --format= HEAD -- gitops/notes-values.yaml
-edd94bd GitOps: deploy notes-api 20df250
+$ git -C /tmp/tmp.tumf31bcFi log --oneline -1 && git -C /tmp/tmp.tumf31bcFi show --format= HEAD
+9e2ea1a GitOps: deploy notes-api 6d3b7ad
 diff --git a/final-devops-project/gitops/notes-values.yaml b/final-devops-project/gitops/notes-values.yaml
-index f16d4fa..67a07ed 100644
+index f16d4fa..bad12e8 100644
 --- a/final-devops-project/gitops/notes-values.yaml
 +++ b/final-devops-project/gitops/notes-values.yaml
 @@ -1,7 +1,7 @@
@@ -29,15 +29,11 @@ index f16d4fa..67a07ed 100644
  # Argo CD watches it (branch "final-gitops") and syncs the cluster to whatever is committed here.
  image:
 -  tag: latest
-+  tag: "20df250"
++  tag: "6d3b7ad"
  config:
    APP_ENV: production
    WELCOME_MESSAGE: "Welcome to the Notes API - deployed by Argo CD"
 
-error: Your local changes to the following files would be overwritten by checkout:
-	final-devops-project/outputs/20-gitops-deploy.txt
-Please commit your changes or stash them before you switch branches.
-Aborting
 ################ Argo CD Application (Helm chart + values from Git) ################
 $ cat gitops/argocd-application.yaml
 # Multi-source Application: the Helm chart + the values file, both from this repo.
@@ -77,45 +73,45 @@ NAME        SYNC STATUS   HEALTH STATUS   REVISION   PROJECT
 notes-api   Synced        Healthy                    default
 
 $ kubectl -n argocd get application notes-api -o jsonpath='revision={.status.sync.revisions}{"\n"}'
-revision=["edd94bd5e7f1f414537d8c974d68d35adef758bd","edd94bd5e7f1f414537d8c974d68d35adef758bd"]
+revision=["9e2ea1a63950a431c1e8f4254cb035e861a9973f","9e2ea1a63950a431c1e8f4254cb035e861a9973f"]
 
-(expected GitOps commit: edd94bd5e7f1f414537d8c974d68d35adef758bd)
+(expected GitOps commit: 9e2ea1a63950a431c1e8f4254cb035e861a9973f)
 
 $ kubectl -n notes get all,ingress,hpa,pvc,configmap,secret,servicemonitor
-NAME                            READY   STATUS    RESTARTS   AGE
-pod/notes-api-fbbf5d9b7-7t9fv   1/1     Running   0          37s
-pod/notes-api-fbbf5d9b7-k6qr8   1/1     Running   0          52s
-pod/notes-redis-0               1/1     Running   0          52s
+NAME                             READY   STATUS    RESTARTS   AGE
+pod/notes-api-8669776bdb-gmqvb   1/1     Running   0          34s
+pod/notes-api-8669776bdb-pj89n   1/1     Running   0          49s
+pod/notes-redis-0                1/1     Running   0          49s
 
-NAME                  TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)    AGE
-service/notes-api     ClusterIP   10.96.210.18   <none>        80/TCP     52s
-service/notes-redis   ClusterIP   10.96.37.25    <none>        6379/TCP   52s
+NAME                  TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)    AGE
+service/notes-api     ClusterIP   10.96.232.211   <none>        80/TCP     49s
+service/notes-redis   ClusterIP   10.96.84.90     <none>        6379/TCP   49s
 
 NAME                        READY   UP-TO-DATE   AVAILABLE   AGE
-deployment.apps/notes-api   2/2     2            2           52s
+deployment.apps/notes-api   2/2     2            2           49s
 
-NAME                                  DESIRED   CURRENT   READY   AGE
-replicaset.apps/notes-api-fbbf5d9b7   2         2         2       52s
+NAME                                   DESIRED   CURRENT   READY   AGE
+replicaset.apps/notes-api-8669776bdb   2         2         2       49s
 
 NAME                           READY   AGE
-statefulset.apps/notes-redis   1/1     52s
+statefulset.apps/notes-redis   1/1     49s
 
 NAME                                            REFERENCE              TARGETS       MINPODS   MAXPODS   REPLICAS   AGE
-horizontalpodautoscaler.autoscaling/notes-api   Deployment/notes-api   cpu: 1%/60%   2         6         2          52s
+horizontalpodautoscaler.autoscaling/notes-api   Deployment/notes-api   cpu: 1%/60%   2         6         2          49s
 
 NAME                                  CLASS   HOSTS         ADDRESS         PORTS   AGE
-ingress.networking.k8s.io/notes-api   nginx   notes.local   10.96.163.157   80      51s
+ingress.networking.k8s.io/notes-api   nginx   notes.local   10.96.176.188   80      49s
 
 NAME                                       STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE
-persistentvolumeclaim/data-notes-redis-0   Bound    pvc-5ab65c79-06f0-46d9-9d21-5a36a01b3cb1   1Gi        RWO            standard       <unset>                 52s
+persistentvolumeclaim/data-notes-redis-0   Bound    pvc-0af6097c-5c0c-4fe6-bd3e-0b5ecc250b7e   1Gi        RWO            standard       <unset>                 49s
 
 NAME                         DATA   AGE
-configmap/kube-root-ca.crt   1      58s
-configmap/notes-config       4      52s
+configmap/kube-root-ca.crt   1      59s
+configmap/notes-config       4      49s
 
 NAME                      TYPE     DATA   AGE
 secret/notes-redis-auth   Opaque   1      58s
 
 NAME                                             AGE
-servicemonitor.monitoring.coreos.com/notes-api   51s
+servicemonitor.monitoring.coreos.com/notes-api   49s
 

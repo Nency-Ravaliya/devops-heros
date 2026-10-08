@@ -1,41 +1,40 @@
 $ kubectl get nodes -o wide
 NAME                         STATUS   ROLES           AGE   VERSION   INTERNAL-IP   EXTERNAL-IP   OS-IMAGE                         KERNEL-VERSION      CONTAINER-RUNTIME
-final-devops-control-plane   Ready    control-plane   88s   v1.33.1   172.18.0.3    <none>        Debian GNU/Linux 12 (bookworm)   6.17.0-1022-azure   containerd://2.1.1
-final-devops-worker          Ready    <none>          78s   v1.33.1   172.18.0.2    <none>        Debian GNU/Linux 12 (bookworm)   6.17.0-1022-azure   containerd://2.1.1
+final-devops-control-plane   Ready    control-plane   94s   v1.33.1   172.18.0.3    <none>        Debian GNU/Linux 12 (bookworm)   6.17.0-1022-azure   containerd://2.1.1
+final-devops-worker          Ready    <none>          84s   v1.33.1   172.18.0.2    <none>        Debian GNU/Linux 12 (bookworm)   6.17.0-1022-azure   containerd://2.1.1
 
 $ helm list -A
 NAME          	NAMESPACE    	REVISION	UPDATED                                	STATUS  	CHART                       	APP VERSION
-argocd        	argocd       	1       	2026-10-07 20:45:19.808675407 +0000 UTC	deployed	argo-cd-10.10.0             	v3.5.4     
-ingress-nginx 	ingress-nginx	1       	2026-10-07 20:45:20.300935973 +0000 UTC	deployed	ingress-nginx-4.15.1        	1.15.1     
-kps           	monitoring   	1       	2026-10-07 20:45:26.038282216 +0000 UTC	deployed	kube-prometheus-stack-92.1.0	v0.94.1    
-metrics-server	kube-system  	1       	2026-10-07 20:45:20.151588946 +0000 UTC	deployed	metrics-server-3.14.0       	0.9.0      
+argocd        	argocd       	1       	2026-10-08 01:07:58.158502705 +0000 UTC	deployed	argo-cd-10.10.0             	v3.5.4     
+ingress-nginx 	ingress-nginx	1       	2026-10-08 01:07:57.517816741 +0000 UTC	deployed	ingress-nginx-4.15.1        	1.15.1     
+kps           	monitoring   	1       	2026-10-08 01:08:04.004255606 +0000 UTC	deployed	kube-prometheus-stack-92.1.0	v0.94.1    
+metrics-server	kube-system  	1       	2026-10-08 01:07:58.276511017 +0000 UTC	deployed	metrics-server-3.14.0       	0.9.0      
 
 $ kubectl get pods -A
-NAMESPACE            NAME                                                 READY   STATUS      RESTARTS   AGE
-argocd               argocd-application-controller-0                      1/1     Running     0          47s
-argocd               argocd-applicationset-controller-6d87689f74-wzkcd    1/1     Running     0          47s
-argocd               argocd-redis-6df6bc684d-9qrvm                        1/1     Running     0          47s
-argocd               argocd-redis-secret-init-hjszp                       0/1     Completed   0          62s
-argocd               argocd-repo-server-74f9d7c6f5-bwt6l                  1/1     Running     0          47s
-argocd               argocd-server-7d77d476f7-hvnz2                       1/1     Running     0          47s
-ingress-nginx        ingress-nginx-controller-7b89b5b654-j598g            1/1     Running     0          60s
-kube-system          coredns-674b8bbfcf-hkbzx                             1/1     Running     0          84s
-kube-system          coredns-674b8bbfcf-wtngv                             1/1     Running     0          84s
-kube-system          etcd-final-devops-control-plane                      1/1     Running     0          91s
-kube-system          kindnet-l4hn6                                        1/1     Running     0          83s
-kube-system          kindnet-tr8n6                                        1/1     Running     0          84s
-kube-system          kube-apiserver-final-devops-control-plane            1/1     Running     0          90s
-kube-system          kube-controller-manager-final-devops-control-plane   1/1     Running     0          90s
-kube-system          kube-proxy-c7mrp                                     1/1     Running     0          83s
-kube-system          kube-proxy-w2dxj                                     1/1     Running     0          84s
-kube-system          kube-scheduler-final-devops-control-plane            1/1     Running     0          90s
-kube-system          metrics-server-65f9479866-bgcqx                      1/1     Running     0          67s
-local-path-storage   local-path-provisioner-7dc846544d-wbjsh              1/1     Running     0          84s
-monitoring           alertmanager-kps-alertmanager-0                      2/2     Running     0          38s
-monitoring           kps-grafana-54c98f5b68-ngmb7                         3/3     Running     0          48s
-monitoring           kps-kube-state-metrics-667b9d7c5-c7nlx               1/1     Running     0          48s
-monitoring           kps-operator-7c5fdd9599-5grb4                        1/1     Running     0          48s
-monitoring           kps-prometheus-node-exporter-tqc22                   1/1     Running     0          48s
-monitoring           kps-prometheus-node-exporter-xbbbl                   1/1     Running     0          48s
-monitoring           prometheus-kps-prometheus-0                          2/2     Running     0          37s
+NAMESPACE            NAME                                                 READY   STATUS    RESTARTS   AGE
+argocd               argocd-application-controller-0                      1/1     Running   0          60s
+argocd               argocd-applicationset-controller-6d87689f74-98pbb    1/1     Running   0          60s
+argocd               argocd-redis-6df6bc684d-mhm2k                        1/1     Running   0          60s
+argocd               argocd-repo-server-74f9d7c6f5-2s8lf                  1/1     Running   0          60s
+argocd               argocd-server-7d77d476f7-4g5ww                       1/1     Running   0          60s
+ingress-nginx        ingress-nginx-controller-7b89b5b654-lhd74            1/1     Running   0          73s
+kube-system          coredns-674b8bbfcf-bbdgz                             1/1     Running   0          97s
+kube-system          coredns-674b8bbfcf-xhmfg                             1/1     Running   0          97s
+kube-system          etcd-final-devops-control-plane                      1/1     Running   0          105s
+kube-system          kindnet-s8wtd                                        1/1     Running   0          96s
+kube-system          kindnet-wmsbs                                        1/1     Running   0          97s
+kube-system          kube-apiserver-final-devops-control-plane            1/1     Running   0          103s
+kube-system          kube-controller-manager-final-devops-control-plane   1/1     Running   0          103s
+kube-system          kube-proxy-8cg92                                     1/1     Running   0          97s
+kube-system          kube-proxy-q6jwd                                     1/1     Running   0          96s
+kube-system          kube-scheduler-final-devops-control-plane            1/1     Running   0          105s
+kube-system          metrics-server-65f9479866-zj7ms                      1/1     Running   0          80s
+local-path-storage   local-path-provisioner-7dc846544d-bwmpb              1/1     Running   0          97s
+monitoring           alertmanager-kps-alertmanager-0                      2/2     Running   0          49s
+monitoring           kps-grafana-54c98f5b68-gt2hf                         3/3     Running   0          59s
+monitoring           kps-kube-state-metrics-667b9d7c5-dvwnc               1/1     Running   0          60s
+monitoring           kps-operator-7c5fdd9599-4sw2f                        1/1     Running   0          60s
+monitoring           kps-prometheus-node-exporter-j9hzq                   1/1     Running   0          60s
+monitoring           kps-prometheus-node-exporter-k294p                   1/1     Running   0          60s
+monitoring           prometheus-kps-prometheus-0                          2/2     Running   0          48s
 

@@ -4,7 +4,7 @@ $ api / | jq .
   "app": "notes-api",
   "environment": "production",
   "message": "Welcome to the Notes API - deployed by Argo CD",
-  "version": "20df250"
+  "version": "6d3b7ad"
 }
 
 $ api /health
@@ -15,15 +15,15 @@ $ api /ready
 
 $ api /api/notes -X POST -H 'Content-Type: application/json' -d '{"text":"Final project deployed by Argo CD"}' | jq .
 {
-  "created": 1791406053.9779809,
-  "id": "d02b8e0a",
+  "created": 1791421825.8966908,
+  "id": "43ac83c1",
   "text": "Final project deployed by Argo CD"
 }
 
 $ api /api/notes -X POST -H 'Content-Type: application/json' -d '{"text":"Notes survive Redis restarts"}' | jq .
 {
-  "created": 1791406053.9871948,
-  "id": "e496ef51",
+  "created": 1791421825.9085565,
+  "id": "b4fb43d7",
   "text": "Notes survive Redis restarts"
 }
 
@@ -34,7 +34,7 @@ Notes survive Redis restarts
 ################ storage: delete the Redis Pod, the PVC keeps the data ################
 $ kubectl -n notes get pvc
 NAME                 STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE
-data-notes-redis-0   Bound    pvc-5ab65c79-06f0-46d9-9d21-5a36a01b3cb1   1Gi        RWO            standard       <unset>                 53s
+data-notes-redis-0   Bound    pvc-0af6097c-5c0c-4fe6-bd3e-0b5ecc250b7e   1Gi        RWO            standard       <unset>                 49s
 
 $ kubectl -n notes delete pod notes-redis-0 && kubectl -n notes wait --for=condition=Ready pod/notes-redis-0 --timeout=120s
 pod "notes-redis-0" deleted from notes namespace
@@ -64,59 +64,59 @@ $ kubectl -n notes describe deploy notes-api | grep -E 'Liveness|Readiness|Start
 ################ HPA: generate CPU load on /api/burn ################
 $ kubectl -n notes get hpa
 NAME        REFERENCE              TARGETS       MINPODS   MAXPODS   REPLICAS   AGE
-notes-api   Deployment/notes-api   cpu: 1%/60%   2         6         2          65s
+notes-api   Deployment/notes-api   cpu: 1%/60%   2         6         2          63s
 
 deployment.apps/load created
 ======== t+45s under load ========
 $ kubectl -n notes get hpa notes-api
 NAME        REFERENCE              TARGETS         MINPODS   MAXPODS   REPLICAS   AGE
-notes-api   Deployment/notes-api   cpu: 397%/60%   2         6         6          110s
+notes-api   Deployment/notes-api   cpu: 407%/60%   2         6         6          108s
 
 ======== t+90s under load ========
 $ kubectl -n notes get hpa notes-api
 NAME        REFERENCE              TARGETS         MINPODS   MAXPODS   REPLICAS   AGE
-notes-api   Deployment/notes-api   cpu: 236%/60%   2         6         6          2m35s
+notes-api   Deployment/notes-api   cpu: 239%/60%   2         6         6          2m33s
 
 ======== t+135s under load ========
 $ kubectl -n notes get hpa notes-api
 NAME        REFERENCE              TARGETS         MINPODS   MAXPODS   REPLICAS   AGE
-notes-api   Deployment/notes-api   cpu: 257%/60%   2         6         6          3m20s
+notes-api   Deployment/notes-api   cpu: 268%/60%   2         6         6          3m18s
 
 ======== t+180s under load ========
 $ kubectl -n notes get hpa notes-api
 NAME        REFERENCE              TARGETS         MINPODS   MAXPODS   REPLICAS   AGE
-notes-api   Deployment/notes-api   cpu: 260%/60%   2         6         6          4m6s
+notes-api   Deployment/notes-api   cpu: 254%/60%   2         6         6          4m3s
 
 $ kubectl -n notes top pods
-NAME                        CPU(cores)   MEMORY(bytes)   
-load-59c59589b5-7nmg9       26m          1Mi             
-load-59c59589b5-84g7d       23m          1Mi             
-load-59c59589b5-9lsvp       24m          1Mi             
-notes-api-fbbf5d9b7-5tcj6   226m         59Mi            
-notes-api-fbbf5d9b7-7t9fv   266m         59Mi            
-notes-api-fbbf5d9b7-k6qr8   252m         59Mi            
-notes-api-fbbf5d9b7-n5pbc   256m         59Mi            
-notes-api-fbbf5d9b7-pnqkc   292m         59Mi            
-notes-api-fbbf5d9b7-xl4lj   269m         59Mi            
-notes-redis-0               6m           10Mi            
+NAME                         CPU(cores)   MEMORY(bytes)   
+load-59c59589b5-5bzcn        27m          0Mi             
+load-59c59589b5-c4zzf        30m          1Mi             
+load-59c59589b5-hc2z8        32m          1Mi             
+notes-api-8669776bdb-8zstj   246m         60Mi            
+notes-api-8669776bdb-b75xp   201m         59Mi            
+notes-api-8669776bdb-bsbnz   301m         59Mi            
+notes-api-8669776bdb-gmqvb   249m         60Mi            
+notes-api-8669776bdb-j6wg2   263m         59Mi            
+notes-api-8669776bdb-pj89n   266m         59Mi            
+notes-redis-0                6m           8Mi             
 
 $ kubectl -n notes get pods -l app=notes-api
-NAME                        READY   STATUS    RESTARTS   AGE
-notes-api-fbbf5d9b7-5tcj6   1/1     Running   0          2m35s
-notes-api-fbbf5d9b7-7t9fv   1/1     Running   0          3m51s
-notes-api-fbbf5d9b7-k6qr8   1/1     Running   0          4m6s
-notes-api-fbbf5d9b7-n5pbc   1/1     Running   0          2m35s
-notes-api-fbbf5d9b7-pnqkc   1/1     Running   0          2m35s
-notes-api-fbbf5d9b7-xl4lj   1/1     Running   0          2m35s
+NAME                         READY   STATUS    RESTARTS   AGE
+notes-api-8669776bdb-8zstj   1/1     Running   0          2m33s
+notes-api-8669776bdb-b75xp   1/1     Running   0          2m33s
+notes-api-8669776bdb-bsbnz   1/1     Running   0          2m33s
+notes-api-8669776bdb-gmqvb   1/1     Running   0          3m48s
+notes-api-8669776bdb-j6wg2   1/1     Running   0          2m33s
+notes-api-8669776bdb-pj89n   1/1     Running   0          4m3s
 
 $ kubectl -n notes describe hpa notes-api | sed -n '/Events:/,$p'
 Events:
   Type     Reason                        Age    From                       Message
   ----     ------                        ----   ----                       -------
-  Normal   SuccessfulRescale             3m51s  horizontal-pod-autoscaler  New size: 2; reason: Current number of replicas below Spec.MinReplicas
-  Warning  FailedGetResourceMetric       3m36s  horizontal-pod-autoscaler  failed to get cpu utilization: did not receive metrics for targeted pods (pods might be unready)
-  Warning  FailedComputeMetricsReplicas  3m36s  horizontal-pod-autoscaler  invalid metrics (1 invalid out of 1), first error is: failed to get cpu resource metric value: failed to get cpu utilization: did not receive metrics for targeted pods (pods might be unready)
-  Normal   SuccessfulRescale             2m35s  horizontal-pod-autoscaler  New size: 6; reason: cpu resource utilization (percentage of request) above target
+  Normal   SuccessfulRescale             3m48s  horizontal-pod-autoscaler  New size: 2; reason: Current number of replicas below Spec.MinReplicas
+  Warning  FailedGetResourceMetric       3m33s  horizontal-pod-autoscaler  failed to get cpu utilization: did not receive metrics for targeted pods (pods might be unready)
+  Warning  FailedComputeMetricsReplicas  3m33s  horizontal-pod-autoscaler  invalid metrics (1 invalid out of 1), first error is: failed to get cpu resource metric value: failed to get cpu utilization: did not receive metrics for targeted pods (pods might be unready)
+  Normal   SuccessfulRescale             2m33s  horizontal-pod-autoscaler  New size: 6; reason: cpu resource utilization (percentage of request) above target
 
 ################ GitOps self-heal: manual change is reverted by Argo CD ################
 $ kubectl -n notes patch configmap notes-config --type merge -p '{"data":{"WELCOME_MESSAGE":"hacked by hand"}}'

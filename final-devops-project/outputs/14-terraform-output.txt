@@ -1,5 +1,5 @@
 $ terraform output
-api_endpoint = "https://127.0.0.1:35639"
+api_endpoint = "https://127.0.0.1:39563"
 cluster_name = "final-devops"
 kubeconfig_path = "/home/runner/work/devops-heros/devops-heros/final-devops-project/terraform/final-devops-config"
 platform_releases = [

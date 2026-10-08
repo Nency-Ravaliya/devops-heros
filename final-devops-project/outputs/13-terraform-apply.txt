@@ -4,33 +4,35 @@ kind_cluster.this: Still creating... [00m10s elapsed]
 kind_cluster.this: Still creating... [00m20s elapsed]
 kind_cluster.this: Still creating... [00m30s elapsed]
 kind_cluster.this: Still creating... [00m40s elapsed]
-kind_cluster.this: Creation complete after 48s [id=final-devops-kindest/node:v1.33.1]
-helm_release.argocd: Creating...
-helm_release.metrics_server: Creating...
-helm_release.monitoring[0]: Creating...
+kind_cluster.this: Creation complete after 46s [id=final-devops-kindest/node:v1.33.1]
 helm_release.ingress_nginx: Creating...
-helm_release.argocd: Still creating... [00m10s elapsed]
-helm_release.metrics_server: Still creating... [00m10s elapsed]
-helm_release.monitoring[0]: Still creating... [00m10s elapsed]
+helm_release.argocd: Creating...
+helm_release.monitoring[0]: Creating...
+helm_release.metrics_server: Creating...
 helm_release.ingress_nginx: Still creating... [00m10s elapsed]
-helm_release.argocd: Still creating... [00m20s elapsed]
-helm_release.metrics_server: Still creating... [00m20s elapsed]
-helm_release.monitoring[0]: Still creating... [00m20s elapsed]
+helm_release.argocd: Still creating... [00m10s elapsed]
+helm_release.monitoring[0]: Still creating... [00m10s elapsed]
+helm_release.metrics_server: Still creating... [00m10s elapsed]
 helm_release.ingress_nginx: Still creating... [00m20s elapsed]
-helm_release.metrics_server: Creation complete after 27s [id=metrics-server]
+helm_release.argocd: Still creating... [00m20s elapsed]
+helm_release.monitoring[0]: Still creating... [00m20s elapsed]
+helm_release.metrics_server: Still creating... [00m20s elapsed]
+helm_release.metrics_server: Creation complete after 25s [id=metrics-server]
+helm_release.ingress_nginx: Still creating... [00m30s elapsed]
 helm_release.argocd: Still creating... [00m30s elapsed]
-helm_release.ingress_nginx: Creation complete after 28s [id=ingress-nginx]
 helm_release.monitoring[0]: Still creating... [00m30s elapsed]
-helm_release.argocd: Creation complete after 37s [id=argocd]
+helm_release.ingress_nginx: Creation complete after 33s [id=ingress-nginx]
+helm_release.argocd: Still creating... [00m40s elapsed]
+helm_release.argocd: Creation complete after 41s [id=argocd]
 helm_release.monitoring[0]: Still creating... [00m40s elapsed]
 helm_release.monitoring[0]: Still creating... [00m50s elapsed]
-helm_release.monitoring[0]: Creation complete after 59s [id=kps]
+helm_release.monitoring[0]: Creation complete after 1m0s [id=kps]
 
 Apply complete! Resources: 5 added, 0 changed, 0 destroyed.
 
 Outputs:
 
-api_endpoint = "https://127.0.0.1:35639"
+api_endpoint = "https://127.0.0.1:39563"
 cluster_name = "final-devops"
 kubeconfig_path = "/home/runner/work/devops-heros/devops-heros/final-devops-project/terraform/final-devops-config"
 platform_releases = [
