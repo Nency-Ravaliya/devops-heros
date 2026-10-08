@@ -1,0 +1,36 @@
+services:
+  web:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: devops-final-app
+    ports:
+      - "8080:8080"
+    environment:
+      - PORT=8080
+      - APP_ENV=development
+      - APP_NAME=devops-hero-microservice
+      - REDIS_HOST=redis
+    depends_on:
+      - redis
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  redis:
+    image: redis:7.2-alpine
+    container_name: devops-final-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - app-network
+    restart: unless-stopped
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  redis-data:

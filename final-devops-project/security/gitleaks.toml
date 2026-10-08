@@ -1,0 +1,15 @@
+title = "Production Gitleaks Secret Detection Config"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Global allowlist for benign test tokens"
+paths = [
+  '''test_app\.py''',
+  '''\.terraform\.lock\.hcl'''
+]
+regexes = [
+  '''example-token''',
+  '''dummy-secret'''
+]

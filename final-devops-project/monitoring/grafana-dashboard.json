@@ -1,0 +1,68 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "title": "HTTP Request Volume (RPS)",
+      "type": "timeseries",
+      "datasource": "Prometheus",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "targets": [
+        {
+          "expr": "sum(rate(http_requests_total[1m])) by (status_code)",
+          "legendFormat": "Status {{status_code}}"
+        }
+      ]
+    },
+    {
+      "title": "P95 Request Latency (Seconds)",
+      "type": "timeseries",
+      "datasource": "Prometheus",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[1m])) by (le))",
+          "legendFormat": "p95 Latency"
+        }
+      ]
+    },
+    {
+      "title": "Pod CPU Utilization",
+      "type": "gauge",
+      "datasource": "Prometheus",
+      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 8 },
+      "targets": [
+        {
+          "expr": "sum(node_namespace_pod_container:container_cpu_usage_seconds_total:sum_irate{container=\"devops-app\"})",
+          "legendFormat": "CPU Usage"
+        }
+      ]
+    },
+    {
+      "title": "Pod Memory Usage (MB)",
+      "type": "gauge",
+      "datasource": "Prometheus",
+      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 8 },
+      "targets": [
+        {
+          "expr": "sum(container_memory_working_set_bytes{container=\"devops-app\"}) / 1024 / 1024",
+          "legendFormat": "Memory MB"
+        }
+      ]
+    }
+  ],
+  "refresh": "5s",
+  "schemaVersion": 38,
+  "style": "dark",
+  "tags": ["production", "devops-app"],
+  "time": { "from": "now-1h", "to": "now" },
+  "timezone": "utc",
+  "title": "DevOps Hero Microservice Production Dashboard",
+  "uid": "devops-hero-prod",
+  "version": 1
+}

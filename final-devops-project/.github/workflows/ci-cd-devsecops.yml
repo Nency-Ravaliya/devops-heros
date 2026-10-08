@@ -1,0 +1,154 @@
+name: Production CI/CD & DevSecOps Pipeline
+
+on:
+  push:
+    branches: [ main, devops-homework ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}/devops-final-app
+  APP_DIR: final-devops-project/application
+  DOCKERFILE: final-devops-project/docker/Dockerfile
+
+jobs:
+  # ----------------------------------------------------
+  # STAGE 1: Code Quality & Unit Testing
+  # ----------------------------------------------------
+  build-and-test:
+    name: Build & Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python Runtime
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r ${{ env.APP_DIR }}/requirements.txt
+
+      - name: Run Unit Tests with Pytest
+        run: |
+          cd ${{ env.APP_DIR }}
+          pytest test_app.py -v --junitxml=test-results.xml
+
+  # ----------------------------------------------------
+  # STAGE 2: DevSecOps (SAST, SCA, Secret Scanning)
+  # ----------------------------------------------------
+  security-scanning:
+    name: DevSecOps Vulnerability Scans
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Secret Scanning with Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: false
+
+      - name: SAST Code Analysis with Semgrep
+        uses: returntocorp/semgrep-action@v1
+        with:
+          config: >-
+            p/security-audit
+            p/secrets
+            p/python
+        continue-on-error: false
+
+      - name: Software Composition Analysis (SCA) with Trivy
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '${{ env.APP_DIR }}'
+          format: 'table'
+          severity: 'CRITICAL,HIGH'
+          exit-code: '0'
+
+  # ----------------------------------------------------
+  # STAGE 3: Container Build & Image Security Scan
+  # ----------------------------------------------------
+  container-build-and-scan:
+    name: Docker Build & Vulnerability Gate
+    needs: security-scanning
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Local Container Image
+        uses: docker/build-push-action@v5
+        with:
+          context: final-devops-project
+          file: ${{ env.DOCKERFILE }}
+          load: true
+          tags: ${{ env.IMAGE_NAME }}:scan-test
+
+      - name: Container Image Vulnerability Scan with Trivy
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: '${{ env.IMAGE_NAME }}:scan-test'
+          format: 'table'
+          exit-code: '0'
+          severity: 'CRITICAL,HIGH'
+
+      - name: Log in to GitHub Container Registry
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build & Push Image to Registry
+        if: github.event_name != 'pull_request'
+        uses: docker/build-push-action@v5
+        with:
+          context: final-devops-project
+          file: ${{ env.DOCKERFILE }}
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+
+  # ----------------------------------------------------
+  # STAGE 4: Kubernetes & Helm GitOps Deployment
+  # ----------------------------------------------------
+  deploy:
+    name: Helm & GitOps Delivery
+    needs: container-build-and-scan
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/devops-homework'
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+
+      - name: Lint Helm Chart
+        run: |
+          helm lint final-devops-project/helm/devops-app
+
+      - name: Dry Run Template Verification
+        run: |
+          helm template final-devops-release final-devops-project/helm/devops-app \
+            --set image.tag=${{ github.sha }} > rendered-manifests.yaml
+          cat rendered-manifests.yaml | head -n 40

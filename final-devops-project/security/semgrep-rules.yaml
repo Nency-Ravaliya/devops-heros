@@ -1,0 +1,14 @@
+rules:
+  - id: python-hardcoded-secret
+    pattern: |
+      $SECRET = "..."
+    message: "Hardcoded secret detected. Use environment variables instead."
+    languages: [python]
+    severity: ERROR
+
+  - id: flask-debug-true
+    pattern: |
+      app.run(..., debug=True, ...)
+    message: "Flask debug mode enabled in production code."
+    languages: [python]
+    severity: WARNING

@@ -1,0 +1,55 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: devops-app-monitor
+  namespace: production
+  labels:
+    release: prometheus
+    app: devops-app
+spec:
+  selector:
+    matchLabels:
+      app: devops-app
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 15s
+      scrapeTimeout: 10s
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: devops-app-alerts
+  namespace: production
+  labels:
+    role: alert-rules
+spec:
+  groups:
+    - name: devops-app-rules
+      rules:
+        - alert: HighHTTPErrorRate
+          expr: rate(http_requests_total{status_code=~"5.."}[5m]) / rate(http_requests_total[5m]) * 100 > 5
+          for: 2m
+          labels:
+            severity: critical
+          annotations:
+            summary: "High HTTP 5xx error rate on devops-app"
+            description: "HTTP 5xx error rate has exceeded 5% over the past 5 minutes."
+
+        - alert: HighLatency
+          expr: histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le)) > 1.0
+          for: 3m
+          labels:
+            severity: warning
+          annotations:
+            summary: "High P95 latency detected"
+            description: "P95 request latency exceeds 1.0 second on endpoint."
+
+        - alert: PodCrashLooping
+          expr: rate(kube_pod_container_status_restarts_total{namespace="production"}[5m]) * 60 > 2
+          for: 1m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Pod is CrashLooping in production namespace"
+            description: "Container restart count is escalating rapidly."
