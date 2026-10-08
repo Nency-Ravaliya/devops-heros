@@ -1,6 +1,6 @@
 # Session 18: Terraform & Infrastructure as Code
 
-> 📸 **Screenshots:** the terminal images on this page are rendered from the exact command output captured during my runs (full text is under each *Text output* section). The GitHub Actions images are real browser screenshots of the run pages.
+> 📸 **Screenshots:** the terminal images are **real screenshots of my terminal window** (Git Bash on Windows 11) taken while I re-ran the same Terraform workflow locally against **Moto** (the AWS API emulator, running in Docker on `localhost:5000`) - the same setup the pipeline uses. Generated IDs (bucket suffix, instance/VPC IDs) therefore differ from the *Text output (original run)* sections, which keep the output from my first run. The GitHub Actions images are real browser screenshots of the run pages.
 
 **Name:** Tejas Varshney
 
@@ -68,9 +68,10 @@ Wed Oct  7 19:52:37 UTC 2026
 
 ### `terraform init`
 Downloads the providers listed in `required_providers` into `.terraform/`, writes `.terraform.lock.hcl`, and sets up the backend (local state here).
-![terraform init -input=false](screenshots/terraform-001.png)
+![terminal: `terraform init`](terminal-screenshots/s18-001.png)
+![terminal: `terraform init`](terminal-screenshots/s18-002.png)
 
-<details><summary>Text output</summary>
+<details><summary>Text output (original run)</summary>
 
 ```text
 $ terraform init -input=false
@@ -96,11 +97,14 @@ $ terraform fmt -check -diff -recursive
 [exit code: 0]
 ```
 
+![terminal: `terraform fmt`](terminal-screenshots/s18-003.png)
+
+
 ### `terraform validate`
 Checks syntax, types and references without contacting AWS.
-![terraform validate](screenshots/terraform-002.png)
+![terminal: `terraform validate`](terminal-screenshots/s18-004.png)
 
-<details><summary>Text output</summary>
+<details><summary>Text output (original run)</summary>
 
 ```text
 $ terraform validate
@@ -113,11 +117,12 @@ Success! The configuration is valid.
 
 ### `terraform plan`
 Compares the desired configuration with the state and the real infrastructure, and shows what would change. `-out=tfplan` saves the exact plan so `apply` does precisely what was reviewed.
-![terraform plan -input=false -out=tfplan](screenshots/terraform-003.png)
-![output](screenshots/terraform-004.png)
-![output](screenshots/terraform-005.png)
+![terminal: `terraform plan`](terminal-screenshots/s18-005.png)
+![terminal: `terraform plan`](terminal-screenshots/s18-006.png)
+![terminal: `terraform plan`](terminal-screenshots/s18-007.png)
+![terminal: `terraform plan`](terminal-screenshots/s18-008.png)
 
-<details><summary>Text output</summary>
+<details><summary>Text output (original run)</summary>
 
 ```text
 $ terraform plan -input=false -out=tfplan
@@ -224,9 +229,9 @@ Changes to Outputs:
 </details>
 
 ### `terraform apply`
-![terraform apply -input=false -auto-approve tfplan](screenshots/terraform-006.png)
+![terminal: `terraform apply`](terminal-screenshots/s18-009.png)
 
-<details><summary>Text output</summary>
+<details><summary>Text output (original run)</summary>
 
 ```text
 $ terraform apply -input=false -auto-approve tfplan
@@ -255,11 +260,11 @@ bucket_region = "ap-south-1"
 
 ### `terraform show`
 Human-readable dump of the **state**, i.e. every attribute Terraform now knows about.
-![terraform show](screenshots/terraform-007.png)
-![output](screenshots/terraform-008.png)
-![output](screenshots/terraform-009.png)
+![terminal: `terraform show`](terminal-screenshots/s18-010.png)
+![terminal: `terraform show`](terminal-screenshots/s18-011.png)
+![terminal: `terraform show`](terminal-screenshots/s18-012.png)
 
-<details><summary>Text output</summary>
+<details><summary>Text output (original run)</summary>
 
 ```text
 $ terraform show
@@ -362,9 +367,9 @@ bucket_region = "ap-south-1"
 </details>
 
 ### `terraform output`
-![terraform output](screenshots/terraform-010.png)
+![terminal: `terraform output`](terminal-screenshots/s18-013.png)
 
-<details><summary>Text output</summary>
+<details><summary>Text output (original run)</summary>
 
 ```text
 $ terraform output
@@ -377,9 +382,9 @@ bucket_region = "ap-south-1"
 </details>
 
 ### State: `terraform state list` and re-plan
-![terraform state list](screenshots/terraform-011.png)
+![terminal: State: `terraform state list` and re-plan](terminal-screenshots/s18-014.png)
 
-<details><summary>Text output</summary>
+<details><summary>Text output (original run)</summary>
 
 ```text
 $ terraform state list
@@ -394,9 +399,8 @@ random_id.suffix
 </details>
 
 Running `plan` again right after `apply` proves the infrastructure matches the code (`-detailed-exitcode` returns **0** = no changes):
-![terraform plan -input=false -detailed-exitcode](screenshots/terraform-012.png)
 
-<details><summary>Text output</summary>
+<details><summary>Text output (original run)</summary>
 
 ```text
 $ terraform plan -input=false -detailed-exitcode
@@ -416,11 +420,14 @@ and found no differences, so no changes are needed.
 </details>
 
 ### `terraform destroy`
-![terraform destroy -input=false -auto-approve](screenshots/terraform-013.png)
-![output](screenshots/terraform-014.png)
-![output](screenshots/terraform-015.png)
+![terminal: `terraform destroy`](terminal-screenshots/s18-015.png)
+![terminal: `terraform destroy`](terminal-screenshots/s18-016.png)
+![terminal: `terraform destroy`](terminal-screenshots/s18-017.png)
+![terminal: `terraform destroy`](terminal-screenshots/s18-018.png)
+![terminal: `terraform destroy`](terminal-screenshots/s18-019.png)
+![terminal: `terraform destroy`](terminal-screenshots/s18-020.png)
 
-<details><summary>Text output</summary>
+<details><summary>Text output (original run)</summary>
 
 ```text
 $ terraform destroy -input=false -auto-approve

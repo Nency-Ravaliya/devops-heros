@@ -1,0 +1,16 @@
+s19-001.png	=init
+s19-002.png	=init
+s19-003.png	=fmt + validate
+s19-004.png	=plan
+s19-005.png	=apply
+s19-006.png	=apply
+s19-007.png	=output
+s19-008.png	=state
+s19-009.png	=state
+s19-010.png	=plan again (drift check)
+s19-011.png	=show (full state after apply)
+s19-012.png	=show (full state after apply)
+s19-013.png	=show (full state after apply)
+s19-014.png	=show (full state after apply)
+s19-015.png	=destroy
+s19-016.png	=destroy

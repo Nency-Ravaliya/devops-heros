@@ -1,6 +1,6 @@
 # Session 19: Cloud & Terraform in Action
 
-> 📸 **Screenshots:** the terminal images on this page are rendered from the exact command output captured during my runs (full text is under each *Text output* section). The GitHub Actions images are real browser screenshots of the run pages.
+> 📸 **Screenshots:** the terminal images are **real screenshots of my terminal window** (Git Bash on Windows 11) taken while I re-ran the same Terraform workflow locally against **Moto** (the AWS API emulator, running in Docker on `localhost:5000`) - the same setup the pipeline uses. Generated IDs (bucket suffix, instance/VPC IDs) therefore differ from the *Text output (original run)* sections, which keep the output from my first run. The GitHub Actions images are real browser screenshots of the run pages.
 
 **Name:** Tejas Varshney
 
@@ -85,9 +85,10 @@ Wed Oct  7 19:55:17 UTC 2026
 ## Terraform commands and output
 
 ### init
-![terraform init -input=false](screenshots/cloud-terraform-001.png)
+![terminal: init](terminal-screenshots/s19-001.png)
+![terminal: init](terminal-screenshots/s19-002.png)
 
-<details><summary>Text output</summary>
+<details><summary>Text output (original run)</summary>
 
 ```text
 $ terraform init -input=false
@@ -115,9 +116,9 @@ Terraform has been successfully initialized!
 $ terraform fmt -check -diff -recursive
 [exit code: 0]
 ```
-![terraform validate](screenshots/cloud-terraform-002.png)
+![terminal: fmt + validate](terminal-screenshots/s19-003.png)
 
-<details><summary>Text output</summary>
+<details><summary>Text output (original run)</summary>
 
 ```text
 $ terraform validate
@@ -129,17 +130,9 @@ Success! The configuration is valid.
 </details>
 
 ### plan
-![terraform plan -input=false -out=tfplan](screenshots/cloud-terraform-003.png)
-![output](screenshots/cloud-terraform-004.png)
-![output](screenshots/cloud-terraform-005.png)
-![output](screenshots/cloud-terraform-006.png)
-![output](screenshots/cloud-terraform-007.png)
-![output](screenshots/cloud-terraform-008.png)
-![output](screenshots/cloud-terraform-009.png)
-![output](screenshots/cloud-terraform-010.png)
-![output](screenshots/cloud-terraform-011.png)
+![terminal: plan](terminal-screenshots/s19-004.png)
 
-<details><summary>Text output</summary>
+<details><summary>Text output (original run)</summary>
 
 ```text
 $ terraform plan -input=false -out=tfplan
@@ -547,9 +540,10 @@ Changes to Outputs:
 
 ### apply
 Notice the order in the log. The **whole S3 branch** (random_id → bucket → versioning/public-access/object) finished **while the VPC was still being created**, because the two branches run in parallel. After the VPC: IGW, subnet and SG in parallel, then the route table, the association, and **only then** the EC2 instance. That's the dependency graph in action.
-![terraform apply -input=false -auto-approve tfplan](screenshots/cloud-terraform-012.png)
+![terminal: apply](terminal-screenshots/s19-005.png)
+![terminal: apply](terminal-screenshots/s19-006.png)
 
-<details><summary>Text output</summary>
+<details><summary>Text output (original run)</summary>
 
 ```text
 $ terraform apply -input=false -auto-approve tfplan
@@ -598,9 +592,9 @@ web_url = "http://54.214.206.0"
 </details>
 
 ### output
-![terraform output](screenshots/cloud-terraform-013.png)
+![terminal: output](terminal-screenshots/s19-007.png)
 
-<details><summary>Text output</summary>
+<details><summary>Text output (original run)</summary>
 
 ```text
 $ terraform output
@@ -617,9 +611,10 @@ web_url = "http://54.214.206.0"
 </details>
 
 ### state
-![terraform state list](screenshots/cloud-terraform-014.png)
+![terminal: state](terminal-screenshots/s19-008.png)
+![terminal: state](terminal-screenshots/s19-009.png)
 
-<details><summary>Text output</summary>
+<details><summary>Text output (original run)</summary>
 
 ```text
 $ terraform state list
@@ -642,9 +637,9 @@ random_id.bucket_suffix
 </details>
 
 ### plan again (drift check)
-![terraform plan -input=false -detailed-exitcode](screenshots/cloud-terraform-015.png)
+![terminal: plan again (drift check)](terminal-screenshots/s19-010.png)
 
-<details><summary>Text output</summary>
+<details><summary>Text output (original run)</summary>
 
 ```text
 $ terraform plan -input=false -detailed-exitcode
@@ -695,18 +690,12 @@ Plan: 0 to add, 1 to change, 0 to destroy.
 **What happened here:** `-detailed-exitcode` returned **2** ("changes present") with a diff on `metadata_options` of the EC2 instance. Moto doesn't store the instance's IMDS `metadata_options`, so on refresh Terraform reads them back as empty and wants to set `http_tokens = "required"` again. On real AWS the setting is stored and this plan returns 0. It's a limitation of the emulator, not of the code, and it's a good example of how `plan` detects **drift** between state/code and the real API.
 
 ### show (full state after apply)
-![terraform show](screenshots/cloud-terraform-016.png)
-![output](screenshots/cloud-terraform-017.png)
-![output](screenshots/cloud-terraform-018.png)
-![output](screenshots/cloud-terraform-019.png)
-![output](screenshots/cloud-terraform-020.png)
-![output](screenshots/cloud-terraform-021.png)
-![output](screenshots/cloud-terraform-022.png)
-![output](screenshots/cloud-terraform-023.png)
-![output](screenshots/cloud-terraform-024.png)
-![output](screenshots/cloud-terraform-025.png)
+![terminal: show (full state after apply)](terminal-screenshots/s19-011.png)
+![terminal: show (full state after apply)](terminal-screenshots/s19-012.png)
+![terminal: show (full state after apply)](terminal-screenshots/s19-013.png)
+![terminal: show (full state after apply)](terminal-screenshots/s19-014.png)
 
-<details><summary>Text output</summary>
+<details><summary>Text output (original run)</summary>
 
 ```text
 $ terraform show
@@ -1123,17 +1112,10 @@ web_url = "http://54.214.206.0"
 </details>
 
 ### destroy
-![terraform destroy -input=false -auto-approve](screenshots/cloud-terraform-026.png)
-![output](screenshots/cloud-terraform-027.png)
-![output](screenshots/cloud-terraform-028.png)
-![output](screenshots/cloud-terraform-029.png)
-![output](screenshots/cloud-terraform-030.png)
-![output](screenshots/cloud-terraform-031.png)
-![output](screenshots/cloud-terraform-032.png)
-![output](screenshots/cloud-terraform-033.png)
-![output](screenshots/cloud-terraform-034.png)
+![terminal: destroy](terminal-screenshots/s19-015.png)
+![terminal: destroy](terminal-screenshots/s19-016.png)
 
-<details><summary>Text output</summary>
+<details><summary>Text output (original run)</summary>
 
 ```text
 $ terraform destroy -input=false -auto-approve

@@ -1,0 +1,20 @@
+s18-001.png	=`terraform init`
+s18-002.png	=`terraform init`
+s18-003.png	=`terraform fmt`
+s18-004.png	=`terraform validate`
+s18-005.png	=`terraform plan`
+s18-006.png	=`terraform plan`
+s18-007.png	=`terraform plan`
+s18-008.png	=`terraform plan`
+s18-009.png	=`terraform apply`
+s18-010.png	=`terraform show`
+s18-011.png	=`terraform show`
+s18-012.png	=`terraform show`
+s18-013.png	=`terraform output`
+s18-014.png	State: `terraform state list` and re-plan
+s18-015.png	=`terraform destroy`
+s18-016.png	=`terraform destroy`
+s18-017.png	=`terraform destroy`
+s18-018.png	=`terraform destroy`
+s18-019.png	=`terraform destroy`
+s18-020.png	=`terraform destroy`
