@@ -1,2 +1,10 @@
 ./node_modules/
 .zip
+
+# Python virtual environments
+.venv/
+venv/
+
+# Python cache
+__pycache__/
+*.pyc
