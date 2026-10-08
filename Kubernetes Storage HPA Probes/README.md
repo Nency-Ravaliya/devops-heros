@@ -1,6 +1,6 @@
 # Session 13: Kubernetes Storage, HPA & Probes
 
-> 📸 **Screenshots:** the terminal images on this page are rendered from the exact command output captured during my runs (full text is under each *Text output* section).
+> 📸 **Screenshots:** the terminal images are **real screenshots of my terminal window** (Git Bash on Windows 11) taken while I re-ran every command on my minikube cluster. Pod names, IPs and ages therefore differ slightly from the *Text output (original run)* sections, which keep the output from my first run.
 
 **Name:** Tejas Varshney  
 **Cluster:** minikube v1.39.0 (Kubernetes v1.37.0) with the `metrics-server` add-on, on Windows 11
@@ -36,16 +36,17 @@ kubectl apply -f 02-hpa/load-generator.yaml                      # 4-5. load
 kubectl top pods ; kubectl get hpa -w                            # 6-7. observe
 ```
 
-![kubectl apply -f deployment.yaml -f service.yaml](screenshots/kubernetes-storage-hpa-probes-001.png)
-![kubectl get hpa](screenshots/kubernetes-storage-hpa-probes-002.png)
-![kubectl top pods -l app=yatri-backend](screenshots/kubernetes-storage-hpa-probes-003.png)
-![kubectl get hpa](screenshots/kubernetes-storage-hpa-probes-004.png)
-![kubectl get pods -l app=yatri-backend -o wide](screenshots/kubernetes-storage-hpa-probes-005.png)
-![kubectl get hpa](screenshots/kubernetes-storage-hpa-probes-006.png)
-![kubectl describe hpa yatri-backend-hpa | sed -n '/Events:/,$p'](screenshots/kubernetes-storage-hpa-probes-007.png)
-![kubectl describe hpa yatri-backend-hpa | sed -n '/Events:/,$p'](screenshots/kubernetes-storage-hpa-probes-008.png)
+![terminal: Task 2 – HPA hands-on](terminal-screenshots/s13h-001.png)
+![terminal: Task 2 – HPA hands-on](terminal-screenshots/s13h-002.png)
+![terminal: Task 2 – HPA hands-on](terminal-screenshots/s13h-003.png)
+![terminal: Task 2 – HPA hands-on](terminal-screenshots/s13h-004.png)
+![terminal: Task 2 – HPA hands-on](terminal-screenshots/s13h-005.png)
+![terminal: Task 2 – HPA hands-on](terminal-screenshots/s13h-006.png)
+![terminal: Task 2 – HPA hands-on](terminal-screenshots/s13h-007.png)
+![terminal: Task 2 – HPA hands-on](terminal-screenshots/s13h-008.png)
+![terminal: Task 2 – HPA hands-on](terminal-screenshots/s13h-009.png)
 
-<details><summary>Text output</summary>
+<details><summary>Text output (original run)</summary>
 
 ```text
 ################ 1. deploy the application ################
@@ -353,14 +354,7 @@ Events:
 
 The course mini project ([03-mini-project](03-mini-project)): namespace `production-webapp`, a 500Mi RWO **PVC** mounted at `/data`, an nginx Deployment with **startup, readiness and liveness probes** and CPU requests/limits, a ClusterIP Service, and an **HPA** (2–5 replicas at 50% CPU).
 
-![kubectl apply -f namespace.yaml](screenshots/kubernetes-storage-hpa-probes-009.png)
-![kubectl describe pod web-app-d45775485-cx8xl -n production-webapp | grep -E 'S](screenshots/kubernetes-storage-hpa-probes-010.png)
-![kubectl run load-generator -n production-webapp --image=busybox:1.36 --restart](screenshots/kubernetes-storage-hpa-probes-011.png)
-![kubectl top pods -n production-webapp](screenshots/kubernetes-storage-hpa-probes-012.png)
-![kubectl get hpa -n production-webapp -w   (full watch log)](screenshots/kubernetes-storage-hpa-probes-013.png)
-![kubectl apply -f deployment.yaml && kubectl rollout status deploy/web-app -n p](screenshots/kubernetes-storage-hpa-probes-014.png)
-
-<details><summary>Text output</summary>
+<details><summary>Text output (original run)</summary>
 
 ```text
 ################ Step 5.1 - 5.4: deploy ################
@@ -577,16 +571,20 @@ NAME                                               ADDRESSTYPE   PORTS   ENDPOIN
 endpointslice.discovery.k8s.io/web-service-p5nlh   IPv4          80      10.244.0.76,10.244.0.77   12m
 ```
 
+![terminal: Task 3 – Mini project](terminal-screenshots/s13m-001.png)
+![terminal: Task 3 – Mini project](terminal-screenshots/s13m-002.png)
+![terminal: Task 3 – Mini project](terminal-screenshots/s13m-003.png)
+![terminal: Task 3 – Mini project](terminal-screenshots/s13m-004.png)
+![terminal: Task 3 – Mini project](terminal-screenshots/s13m-005.png)
+![terminal: Task 3 – Mini project](terminal-screenshots/s13m-006.png)
+![terminal: Task 3 – Mini project](terminal-screenshots/s13m-007.png)
+![terminal: Task 3 – Mini project](terminal-screenshots/s13m-008.png)
+
 </details>
 
 Re-run of Task 2 (my first port-forward capture came out empty), **Bonus 1** (HPA threshold 30%) and **Bonus 2** with the right command (`kubectl get endpoints` shows only *Ready* addresses; `get endpointslices` also lists not-ready ones):
 
-![kubectl get svc,endpoints -n production-webapp](screenshots/kubernetes-storage-hpa-probes-015.png)
-![kubectl get hpa -n production-webapp](screenshots/kubernetes-storage-hpa-probes-016.png)
-![kubectl delete pod load-generator -n production-webapp --now](screenshots/kubernetes-storage-hpa-probes-017.png)
-![kubectl get endpoints web-service -n production-webapp](screenshots/kubernetes-storage-hpa-probes-018.png)
-
-<details><summary>Text output</summary>
+<details><summary>Text output (original run)</summary>
 
 ```text
 ################ Task 2 (re-run): service verification ################
