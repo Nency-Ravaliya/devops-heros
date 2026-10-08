@@ -1,0 +1,50 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    name: Build & Test Stage
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Source Code
+      uses: actions/checkout@v3
+
+    - name: Set up Python Environment
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r assignments/session-16/requirements.txt
+
+    - name: Run Unit Tests
+      run: |
+        PYTHONPATH=assignments/session-16 pytest assignments/session-16/tests/
+
+    - name: Build Docker Image
+      run: |
+        docker build -t calculator-app:latest assignments/session-16/
+
+    - name: Archive Test Artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: test-results
+        path: assignments/session-16/tests/
+
+  deploy:
+    name: Continuous Deployment Stage
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+    - name: Deploy Confirmation
+      run: echo "Deployment stage triggered successfully for main branch."

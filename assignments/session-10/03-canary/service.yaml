@@ -1,0 +1,20 @@
+# Single Service selects BOTH stable and canary pods using the shared label: app=myapp-canary
+# kube-proxy balances requests across ALL 10 pods (9 stable + 1 canary).
+# Traffic split = pod count ratio: 9:1 = 90% stable / 10% canary
+apiVersion: v1
+kind: Service
+metadata:
+  name: myapp-canary-service
+  labels:
+    app: myapp-canary
+spec:
+  type: NodePort
+  selector:
+    # Only the common label — selects BOTH stable and canary pods
+    app: myapp-canary
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
+      nodePort: 30030
+      protocol: TCP
