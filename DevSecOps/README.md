@@ -1,6 +1,6 @@
 # Session 17: Complete CI/CD & DevSecOps
 
-> 📸 **Screenshots:** the terminal images on this page are rendered from the exact command output captured during my runs (full text is under each *Text output* section). The GitHub Actions images are real browser screenshots of the run pages.
+> 📸 **Screenshots:** the terminal images are **real screenshots of my terminal window** (Git Bash on Windows 11) taken while I re-ran every command on my minikube cluster. Pod names, IPs and ages therefore differ slightly from the *Text output (original run)* sections, which keep the output from my first run. The GitHub Actions images are real browser screenshots of the run pages.
 
 **Name:** Tejas Varshney
 
@@ -115,9 +115,11 @@ JOB  9. Deploy to Kubernetes (kind)                          skipped   runner: N
 
 Same Bandit command run locally to read the findings:
 
-![bandit -r DevSecOps/app --severity-level medium --confidence-level medium](screenshots/devsecops-001.png)
+![terminal: Run #1: ❌ blocked by SAST](terminal-screenshots/s17-001.png)
+![terminal: Run #1: ❌ blocked by SAST](terminal-screenshots/s17-002.png)
+![terminal: Run #1: ❌ blocked by SAST](terminal-screenshots/s17-003.png)
 
-<details><summary>Text output</summary>
+<details><summary>Text output (original run)</summary>
 
 ```text
 $ bandit -r DevSecOps/app --severity-level medium --confidence-level medium
@@ -170,9 +172,8 @@ exit code: 1
 
 **Fix** ([app.py](app/app.py)): debug is **opt-in** (`FLASK_DEBUG=1`, off by default), and the bind address comes from `HOST` (default `127.0.0.1`). Only the container sets `ENV HOST=0.0.0.0`, where binding to all interfaces is intended.
 
-![bandit -r DevSecOps/app --severity-level medium --confidence-level medium   (a](screenshots/devsecops-002.png)
 
-<details><summary>Text output</summary>
+<details><summary>Text output (original run)</summary>
 
 ```text
 $ bandit -r DevSecOps/app --severity-level medium --confidence-level medium   (after the fix)
@@ -328,6 +329,11 @@ JOB  9. Deploy to Kubernetes (kind)                          success   runner: G
      10. Post Run actions/checkout@v4                            success
      11. Complete job                                            success
 ```
+
+![terminal: Run #3: ✅ all stages green](terminal-screenshots/s17-004.png)
+![terminal: Run #3: ✅ all stages green](terminal-screenshots/s17-005.png)
+![terminal: Run #3: ✅ all stages green](terminal-screenshots/s17-006.png)
+
 
 ---
 

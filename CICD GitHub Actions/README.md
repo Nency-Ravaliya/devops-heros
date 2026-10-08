@@ -1,6 +1,6 @@
 # Session 16: CI/CD & GitHub Actions
 
-> 📸 **Screenshots:** the terminal images on this page are rendered from the exact command output captured during my runs (full text is under each *Text output* section). The GitHub Actions images are real browser screenshots of the run pages.
+> 📸 **Screenshots:** the terminal images are **real screenshots of my terminal window** (Git Bash on Windows 11) taken while I re-ran every command on my minikube cluster. Pod names, IPs and ages therefore differ slightly from the *Text output (original run)* sections, which keep the output from my first run. The GitHub Actions images are real browser screenshots of the run pages.
 
 **Name:** Tejas Varshney
 
@@ -72,9 +72,11 @@ docker build -t calculator . && docker run -p 8000:8000 calculator
 bash build.sh                              # creates calculator-build.tar.gz
 ```
 
-![pytest -v   (locally, after the fix)](screenshots/cicd-github-actions-001.png)
+![terminal: 4. Running it locally](terminal-screenshots/s16-001.png)
+![terminal: 4. Running it locally](terminal-screenshots/s16-002.png)
+![terminal: 4. Running it locally](terminal-screenshots/s16-003.png)
 
-<details><summary>Text output</summary>
+<details><summary>Text output (original run)</summary>
 
 ```text
 $ pytest -v   (locally, after the fix)
@@ -170,9 +172,10 @@ Artifacts:
 
 I broke `add()` on purpose (`return a + b + 1`) and pushed it.
 
-![pytest -q   (locally, with the bug)](screenshots/cicd-github-actions-002.png)
+![terminal: Run 2: failure scenario](terminal-screenshots/s16-004.png)
+![terminal: Run 2: failure scenario](terminal-screenshots/s16-005.png)
 
-<details><summary>Text output</summary>
+<details><summary>Text output (original run)</summary>
 
 ```text
 $ pytest -q   (locally, with the bug)

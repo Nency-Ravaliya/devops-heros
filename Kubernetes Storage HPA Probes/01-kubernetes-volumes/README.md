@@ -1,6 +1,6 @@
 # Kubernetes Volumes – what I learned
 
-> 📸 **Screenshots:** the terminal images on this page are rendered from the exact command output captured during my runs (full text is under each *Text output* section).
+> 📸 **Screenshots:** the terminal images are **real screenshots of my terminal window** (Git Bash on Windows 11) taken while I re-ran every command on my minikube cluster. Pod names, IPs and ages therefore differ slightly from the *Text output (original run)* sections, which keep the output from my first run.
 
 A container's filesystem is **ephemeral**: when the container restarts, everything written to it is gone, and two containers can't see each other's files. **Volumes** solve this. A volume is declared in `spec.volumes` of the Pod and mounted into containers with `volumeMounts`.
 
@@ -79,12 +79,15 @@ All examples below are in this folder and were run on my minikube cluster. The f
 
 ## Hands-on output
 
-![kubectl apply -f 01-emptydir.yaml](screenshots/01-kubernetes-volumes-001.png)
-![minikube ssh -- cat /tmp/hostpath-demo/visits.txt](screenshots/01-kubernetes-volumes-002.png)
-![kubectl get storageclass](screenshots/01-kubernetes-volumes-003.png)
-![kubectl delete deploy notes && kubectl delete pvc dynamic-claim && sleep 5 && ](screenshots/01-kubernetes-volumes-004.png)
+![terminal: Hands-on output](terminal-screenshots/s13v-001.png)
+![terminal: Hands-on output](terminal-screenshots/s13v-002.png)
+![terminal: Hands-on output](terminal-screenshots/s13v-003.png)
+![terminal: Hands-on output](terminal-screenshots/s13v-004.png)
+![terminal: Hands-on output](terminal-screenshots/s13v-005.png)
+![terminal: Hands-on output](terminal-screenshots/s13v-006.png)
+![terminal: Hands-on output](terminal-screenshots/s13v-007.png)
 
-<details><summary>Text output</summary>
+<details><summary>Text output (original run)</summary>
 
 ```text
 ################ emptyDir ################
