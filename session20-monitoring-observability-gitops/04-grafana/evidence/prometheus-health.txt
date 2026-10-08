@@ -1,0 +1,6 @@
+HTTP/1.1 200 OK
+Date: Thu, 08 Oct 2026 06:53:44 GMT
+Content-Length: 28
+Content-Type: text/plain; charset=utf-8
+
+Prometheus Server is Ready.

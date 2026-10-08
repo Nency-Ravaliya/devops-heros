@@ -1,0 +1,8 @@
+NAME                             READY   UP-TO-DATE   AVAILABLE   AGE   CONTAINERS   IMAGES         SELECTOR
+deployment.apps/session20-demo   1/1     1            1           17s   app          busybox:1.36   app=session20-demo
+
+NAME                                  READY   STATUS    RESTARTS   AGE   IP            NODE                    NOMINATED NODE   READINESS GATES
+pod/session20-demo-548bc6c74f-zq57c   1/1     Running   0          17s   10.244.0.56   desktop-control-plane   <none>           <none>
+
+NAME                     TYPE        CLUSTER-IP    EXTERNAL-IP   PORT(S)    AGE   SELECTOR
+service/session20-demo   ClusterIP   10.96.21.25   <none>        8080/TCP   17s   app=session20-demo

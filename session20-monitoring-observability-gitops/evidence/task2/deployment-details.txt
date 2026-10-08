@@ -1,0 +1,43 @@
+Name:                   session20-demo
+Namespace:              session20-observability
+CreationTimestamp:      Thu, 08 Oct 2026 12:26:27 +0530
+Labels:                 <none>
+Annotations:            deployment.kubernetes.io/revision: 1
+Selector:               app=session20-demo
+Replicas:               1 desired | 1 updated | 1 total | 1 available | 0 unavailable
+StrategyType:           RollingUpdate
+MinReadySeconds:        0
+RollingUpdateStrategy:  25% max unavailable, 25% max surge
+Pod Template:
+  Labels:  app=session20-demo
+  Containers:
+   app:
+    Image:      busybox:1.36
+    Port:       <none>
+    Host Port:  <none>
+    Command:
+      /bin/sh
+      -c
+      echo "Session 20 observability demo started"
+      while true; do
+        echo "Request received"
+        echo "Health check OK"
+        sleep 10
+      done
+      
+    Environment:   <none>
+    Mounts:        <none>
+  Volumes:         <none>
+  Node-Selectors:  <none>
+  Tolerations:     <none>
+Conditions:
+  Type           Status  Reason
+  ----           ------  ------
+  Available      True    MinimumReplicasAvailable
+  Progressing    True    NewReplicaSetAvailable
+OldReplicaSets:  <none>
+NewReplicaSet:   session20-demo-548bc6c74f (1/1 replicas created)
+Events:
+  Type    Reason             Age   From                   Message
+  ----    ------             ----  ----                   -------
+  Normal  ScalingReplicaSet  17s   deployment-controller  Scaled up replica set session20-demo-548bc6c74f from 0 to 1

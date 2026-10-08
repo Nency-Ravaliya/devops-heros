@@ -11,6 +11,6 @@ services:
     image: grafana/grafana:12.1.1
     container_name: session20-grafana
     ports:
-      - "3000:3000"
+      - "3001:3000"
     depends_on:
       - prometheus

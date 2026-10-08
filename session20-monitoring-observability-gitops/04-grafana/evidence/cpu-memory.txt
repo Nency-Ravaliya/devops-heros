@@ -1,0 +1,3 @@
+CONTAINER ID   NAME                   CPU %     MEM USAGE / LIMIT     MEM %     NET I/O          BLOCK I/O        PIDS
+66ad9e850008   session20-prometheus   0.00%     54.9MiB / 3.825GiB    1.40%     101kB / 78.7kB   113MB / 3.32MB   14
+9632807e8537   session20-grafana      0.58%     213.2MiB / 3.825GiB   5.44%     31.7MB / 33MB    107MB / 87.9MB   18

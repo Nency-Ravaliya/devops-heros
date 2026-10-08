@@ -1,0 +1,7 @@
+LAST SEEN   TYPE     REASON              OBJECT                                 MESSAGE
+17s         Normal   SuccessfulCreate    replicaset/session20-demo-548bc6c74f   Created pod: session20-demo-548bc6c74f-zq57c
+17s         Normal   ScalingReplicaSet   deployment/session20-demo              Scaled up replica set session20-demo-548bc6c74f from 0 to 1
+16s         Normal   Scheduled           pod/session20-demo-548bc6c74f-zq57c    Successfully assigned session20-observability/session20-demo-548bc6c74f-zq57c to desktop-control-plane
+14s         Normal   Pulled              pod/session20-demo-548bc6c74f-zq57c    Container image "busybox:1.36" already present on machine and can be accessed by the pod
+14s         Normal   Created             pod/session20-demo-548bc6c74f-zq57c    Container created
+14s         Normal   Started             pod/session20-demo-548bc6c74f-zq57c    Container started

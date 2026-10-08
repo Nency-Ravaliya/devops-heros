@@ -1,0 +1,5 @@
+2026-10-08T06:56:30.693881221Z Session 20 observability demo started
+2026-10-08T06:56:30.694230638Z Request received
+2026-10-08T06:56:30.694241888Z Health check OK
+2026-10-08T06:56:40.693902336Z Request received
+2026-10-08T06:56:40.694066253Z Health check OK
