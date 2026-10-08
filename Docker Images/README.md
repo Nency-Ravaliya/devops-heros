@@ -30,6 +30,9 @@ EXPOSE 3000
 CMD ["npm", "start"]
 ```
 
+![terminal: 1. Dockerfile Directives](terminal-screenshots/s07-001.png)
+
+
 ---
 
 ## 2. Building & Tagging Images
@@ -41,6 +44,10 @@ docker build -t my-app:v1.0 .
 docker build -t my-app:latest -f Dockerfile.dev .
 docker tag my-app:v1.0 username/my-app:v1.0
 ```
+
+![terminal: 2. Building & Tagging Images](terminal-screenshots/s07-002.png)
+![terminal: 2. Building & Tagging Images](terminal-screenshots/s07-003.png)
+
 
 ---
 
@@ -55,6 +62,10 @@ docker history my-app:v1.0
 docker inspect my-app:v1.0
 ```
 
+![terminal: 3. Image Management & Inspection](terminal-screenshots/s07-004.png)
+![terminal: 3. Image Management & Inspection](terminal-screenshots/s07-005.png)
+
+
 ---
 
 ## 4. Docker Hub & Registry Operations
@@ -68,6 +79,17 @@ docker push username/my-app:latest
 docker pull ubuntu:22.04
 docker logout
 ```
+
+![terminal: 4. Docker Hub & Registry Operations](terminal-screenshots/s07-006.png)
+![terminal: 4. Docker Hub & Registry Operations](terminal-screenshots/s07-007.png)
+![terminal: 4. Docker Hub & Registry Operations](terminal-screenshots/s07-008.png)
+![terminal: 4. Docker Hub & Registry Operations](terminal-screenshots/s07-009.png)
+![terminal: 4. Docker Hub & Registry Operations](terminal-screenshots/s07-010.png)
+![terminal: 4. Docker Hub & Registry Operations](terminal-screenshots/s07-011.png)
+![terminal: 4. Docker Hub & Registry Operations](terminal-screenshots/s07-012.png)
+
+
+> **Note on the screenshots:** logging in to Docker Hub needs my account password, so for the push/pull demo I ran a **local registry** (`registry:2` on `localhost:5000`) and tagged the image `localhost:5000/tejas/my-app` - the same `docker tag` / `docker push` / `docker pull` workflow, verified through the registry API (`/v2/_catalog`). The demo app is a tiny Node.js server built with exactly the Dockerfile above.
 
 ---
 
@@ -89,6 +111,10 @@ EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]
 ```
 
+![terminal: 5. Multi-Stage Dockerfile Builds](terminal-screenshots/s07-013.png)
+![terminal: 5. Multi-Stage Dockerfile Builds](terminal-screenshots/s07-014.png)
+
+
 ---
 
 ## 6. Image Cleanup Operations
@@ -102,3 +128,7 @@ docker rmi $(docker images -q)
 docker rmi -f $(docker images -q)
 docker image prune -a -f
 ```
+
+![terminal: 6. Image Cleanup Operations](terminal-screenshots/s07-015.png)
+![terminal: 6. Image Cleanup Operations](terminal-screenshots/s07-016.png)
+

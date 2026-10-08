@@ -18,6 +18,9 @@ This directory contains key computer networking concepts, IP addressing standard
 
 ## 1. IP Addressing & Subnetting
 
+![terminal: 1. IP Addressing & Subnetting](terminal-screenshots/s04-001.png)
+
+
 IP addresses uniquely identify network devices. CIDR notation defines the network and host portions.
 
 ### IPv4 Address Classes & Private Ranges
@@ -45,6 +48,10 @@ tracepath google.com
 mtr google.com
 ```
 
+![terminal: 2. Network Connectivity Diagnostics](terminal-screenshots/s04-002.png)
+![terminal: 2. Network Connectivity Diagnostics](terminal-screenshots/s04-003.png)
+
+
 ---
 
 ## 3. Interface & Routing Inspection
@@ -58,6 +65,11 @@ ifconfig
 netstat -tulpn
 ss -tulpn
 ```
+
+![terminal: 3. Interface & Routing Inspection](terminal-screenshots/s04-004.png)
+![terminal: 3. Interface & Routing Inspection](terminal-screenshots/s04-005.png)
+![terminal: 3. Interface & Routing Inspection](terminal-screenshots/s04-006.png)
+
 
 ---
 
@@ -73,6 +85,14 @@ dig +short google.com
 host google.com
 ```
 
+![terminal: 4. Domain Name Resolution (DNS)](terminal-screenshots/s04-007.png)
+![terminal: 4. Domain Name Resolution (DNS)](terminal-screenshots/s04-008.png)
+![terminal: 4. Domain Name Resolution (DNS)](terminal-screenshots/s04-009.png)
+![terminal: 4. Domain Name Resolution (DNS)](terminal-screenshots/s04-010.png)
+![terminal: 4. Domain Name Resolution (DNS)](terminal-screenshots/s04-011.png)
+![terminal: 4. Domain Name Resolution (DNS)](terminal-screenshots/s04-012.png)
+
+
 ---
 
 ## 5. HTTP & API Testing
@@ -85,6 +105,10 @@ curl -X POST -H "Content-Type: application/json" -d '{"key":"value"}' https://ap
 curl -o file.zip https://example.com/file.zip
 wget https://example.com/file.zip
 ```
+
+![terminal: 5. HTTP & API Testing](terminal-screenshots/s04-013.png)
+![terminal: 5. HTTP & API Testing](terminal-screenshots/s04-014.png)
+
 
 ---
 
@@ -99,6 +123,9 @@ telnet 192.168.1.1 22
 nmap -sS -p 1-1000 192.168.1.1
 ```
 
+![terminal: 6. Port Scanning & Socket Testing](terminal-screenshots/s04-015.png)
+
+
 ---
 
 ## 7. Secure Remote Access & File Transfer
@@ -111,3 +138,6 @@ ssh -i ~/.ssh/id_rsa user@192.168.1.50 -p 2222
 scp app.tar.gz user@192.168.1.50:/var/www/
 rsync -avz --progress ./src/ user@192.168.1.50:/var/www/src/
 ```
+
+![terminal: 7. Secure Remote Access & File Transfer](terminal-screenshots/s04-016.png)
+

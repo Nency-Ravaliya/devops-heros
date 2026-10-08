@@ -23,6 +23,11 @@ docker version
 docker info
 ```
 
+![terminal: 1. Engine Architecture & Verification](terminal-screenshots/s06-001.png)
+![terminal: 1. Engine Architecture & Verification](terminal-screenshots/s06-002.png)
+![terminal: 1. Engine Architecture & Verification](terminal-screenshots/s06-003.png)
+
+
 ---
 
 ## 2. Container Execution & Lifecycle
@@ -38,6 +43,10 @@ docker restart web-server
 docker pause web-server
 docker unpause web-server
 ```
+
+![terminal: 2. Container Execution & Lifecycle](terminal-screenshots/s06-004.png)
+![terminal: 2. Container Execution & Lifecycle](terminal-screenshots/s06-005.png)
+
 
 ---
 
@@ -56,6 +65,12 @@ docker stats web-server
 docker top web-server
 ```
 
+![terminal: 3. Inspecting & Monitoring Containers](terminal-screenshots/s06-006.png)
+![terminal: 3. Inspecting & Monitoring Containers](terminal-screenshots/s06-007.png)
+![terminal: 3. Inspecting & Monitoring Containers](terminal-screenshots/s06-008.png)
+![terminal: 3. Inspecting & Monitoring Containers](terminal-screenshots/s06-009.png)
+
+
 ---
 
 ## 4. Container Shell Access & Execution
@@ -68,6 +83,11 @@ docker exec -it web-server /bin/sh
 docker exec web-server cat /etc/nginx/nginx.conf
 docker attach web-server
 ```
+
+![terminal: 4. Container Shell Access & Execution](terminal-screenshots/s06-010.png)
+![terminal: 4. Container Shell Access & Execution](terminal-screenshots/s06-011.png)
+![terminal: 4. Container Shell Access & Execution](terminal-screenshots/s06-012.png)
+
 
 ---
 
@@ -82,3 +102,9 @@ docker rm $(docker ps -aq)
 docker rm -f $(docker ps -aq)
 docker system prune -a --volumes
 ```
+
+![terminal: 5. Container Cleanup Operations](terminal-screenshots/s06-013.png)
+![terminal: 5. Container Cleanup Operations](terminal-screenshots/s06-014.png)
+
+
+> **Note on the screenshots:** on my machine Docker also runs my minikube Kubernetes cluster (and other images I use), so I ran the cleanup commands **scoped** to the demo containers (`--filter`, `docker container prune` on stopped containers only) instead of the global `docker rm -f $(docker ps -aq)` / `docker system prune -a --volumes`, which would have deleted the cluster too. `docker system df` shows what a prune would reclaim.

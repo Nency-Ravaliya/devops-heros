@@ -31,6 +31,9 @@ echo "Rollno is $rollno"
 echo "Current Batch : $batch"
 ```
 
+![terminal: 1. Variables (`variable.sh`)](terminal-screenshots/s03-001.png)
+
+
 ---
 
 ## 2. User Input (`input.sh`)
@@ -44,6 +47,9 @@ read -p "Anddd your comment: " comment
 
 echo "My name is $name, rollno: $rollno and your comment is $comment"
 ```
+
+![terminal: 2. User Input (`input.sh`)](terminal-screenshots/s03-002.png)
+
 
 ---
 
@@ -65,6 +71,9 @@ else
 fi
 ```
 
+![terminal: 3. Conditionals (`condition.sh`)](terminal-screenshots/s03-003.png)
+
+
 ---
 
 ## 4. For Loop (`for.sh`)
@@ -77,6 +86,9 @@ do
     echo ${i}
 done
 ```
+
+![terminal: 4. For Loop (`for.sh`)](terminal-screenshots/s03-004.png)
+
 
 ---
 
@@ -96,6 +108,9 @@ done
 echo "Sum : $sum"
 ```
 
+![terminal: 5. Sum Calculation (`sum.sh`)](terminal-screenshots/s03-005.png)
+
+
 ---
 
 ## 6. While Loop (`while.sh`)
@@ -112,6 +127,9 @@ do
 done
 ```
 
+![terminal: 6. While Loop (`while.sh`)](terminal-screenshots/s03-006.png)
+
+
 ---
 
 ## 7. File & Directory Operations (`hello.sh`)
@@ -127,6 +145,9 @@ cat app.log
 echo "This is another new log" > app.log
 cat app.log
 ```
+
+![terminal: 7. File & Directory Operations (`hello.sh`)](terminal-screenshots/s03-007.png)
+
 
 ---
 
@@ -149,3 +170,25 @@ read -p "Anddd your comment: " comment
 
 echo "My name is $name, rollno: $rollno and your comment is $comment"
 ```
+
+![terminal: 8. System Info & Task Operations (`task.sh`)](terminal-screenshots/s03-008.png)
+
+
+---
+
+## 9. Homework: System Information Script (`system_info.sh`)
+
+![terminal: Homework: System Information Script (`system_info.sh`)](terminal-screenshots/s03-009.png)
+![terminal: Homework: System Information Script (`system_info.sh`)](terminal-screenshots/s03-010.png)
+
+
+[system_info.sh](system_info.sh) covers every requirement of the homework:
+
+| Requirement | How |
+|---|---|
+| Current date, hostname, username | `$(date)`, `$(hostname)`, `$(whoami)` stored in **variables** |
+| Disk usage | `df -h /` |
+| Running processes | `ps aux --sort=-%cpu \| head -6` |
+| User input | `read -p "Enter a name for the report directory: " report_dir` |
+| Create a directory / file | `mkdir -p "$report_dir"`, `touch "$report_dir/processes.txt"` |
+| Output redirection | `ps aux > "$report_dir/processes.txt"` |

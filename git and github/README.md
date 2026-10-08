@@ -29,6 +29,9 @@ git config --global init.defaultBranch main
 git config --list
 ```
 
+![terminal: 1. Git Configuration & Setup](terminal-screenshots/s05-001.png)
+
+
 ---
 
 ## 2. Repository Initialization & Cloning
@@ -40,6 +43,9 @@ git init
 git clone https://github.com/username/repository-name.git
 git clone https://github.com/username/repository-name.git my-project
 ```
+
+![terminal: 2. Repository Initialization & Cloning](terminal-screenshots/s05-002.png)
+
 
 ---
 
@@ -55,6 +61,10 @@ git commit -m "feat: add initial project structure and README"
 git commit -am "fix: resolve navigation bar alignment issue"
 ```
 
+![terminal: 3. Staging & Committing Changes](terminal-screenshots/s05-003.png)
+![terminal: 3. Staging & Committing Changes](terminal-screenshots/s05-004.png)
+
+
 ---
 
 ## 4. Inspecting History & Differences
@@ -68,6 +78,10 @@ git log -n 5
 git diff
 git diff --staged
 ```
+
+![terminal: 4. Inspecting History & Differences](terminal-screenshots/s05-005.png)
+![terminal: 4. Inspecting History & Differences](terminal-screenshots/s05-006.png)
+
 
 ---
 
@@ -85,6 +99,10 @@ git merge feature/user-profile
 git branch -d feature/user-profile
 ```
 
+![terminal: 5. Branching & Merging](terminal-screenshots/s05-007.png)
+![terminal: 5. Branching & Merging](terminal-screenshots/s05-008.png)
+
+
 ---
 
 ## 6. Remote Management & GitHub Sync
@@ -100,6 +118,9 @@ git fetch origin
 git pull origin main
 ```
 
+![terminal: 6. Remote Management & GitHub Sync](terminal-screenshots/s05-009.png)
+
+
 ---
 
 ## 7. Undoing & Discarding Changes
@@ -113,6 +134,10 @@ git revert <commit-hash>
 git reset --soft HEAD~1
 git reset --hard HEAD~1
 ```
+
+![terminal: 7. Undoing & Discarding Changes](terminal-screenshots/s05-010.png)
+![terminal: 7. Undoing & Discarding Changes](terminal-screenshots/s05-011.png)
+
 
 ---
 
@@ -128,6 +153,10 @@ git stash pop
 git cherry-pick <commit-hash>
 ```
 
+![terminal: 8. Stashing & Cherry-Picking](terminal-screenshots/s05-012.png)
+![terminal: 8. Stashing & Cherry-Picking](terminal-screenshots/s05-013.png)
+
+
 ---
 
 ## 9. GitHub Workflow & Pull Requests
@@ -139,3 +168,31 @@ Standard collaboration workflow for team development on GitHub:
 3. **Commit Changes**: Make local edits and commit (`git commit -m "feat: add awesome feature"`).
 4. **Push Branch**: Push branch to GitHub (`git push -u origin feature/awesome-feature`).
 5. **Open Pull Request (PR)**: Navigate to GitHub UI, open a PR against `main`, request review, and merge after checks pass.
+
+---
+
+## 10. Homework Tasks
+
+### Task 1: git commit -a -m vs git commit -m
+
+![terminal: Task 1: git commit -a -m vs git commit -m](terminal-screenshots/s05-014.png)
+![terminal: Task 1: git commit -a -m vs git commit -m](terminal-screenshots/s05-015.png)
+
+
+| | `git commit -m "msg"` | `git commit -a -m "msg"` |
+|---|---|---|
+| What gets committed | Only what is already **staged** (`git add`) | Automatically stages **all modified and deleted tracked files**, then commits |
+| New (untracked) files | Not included | **Still not included**: `-a` never adds untracked files |
+| When to use | Normal workflow, precise commits | Quick commits of edits to files Git already knows about |
+
+In the demo I changed the tracked `README.md` and created an untracked `newfile.txt`. `git commit -m` committed **nothing** ("no changes added to commit") because nothing was staged. `git commit -a -m` committed `README.md` but left `newfile.txt` untracked (`?? newfile.txt`).
+
+### Task 2: Git Cherry-Pick
+
+![terminal: Task 2: Git Cherry-Pick](terminal-screenshots/s05-016.png)
+![terminal: Task 2: Git Cherry-Pick](terminal-screenshots/s05-017.png)
+
+
+`git cherry-pick <hash>` applies the changes of **one specific commit** from another branch on top of the current branch, as a new commit with a new hash.
+
+Steps I did: 3 commits on `main` → created `feature/cherry` → 3 commits there (A, B, C) → found commit **B** with `git log` → `git checkout main` → `git cherry-pick <hash of B>`. `main` now has `feature commit B` (and `feature-B.txt`) but **not** A or C.
