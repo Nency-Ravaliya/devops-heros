@@ -1,10 +1,12 @@
-resource "aws_s3_bucket" "yatri1107" {
+resource "aws_s3_bucket" "demo_bucket" {
   bucket        = var.bucket_name
   force_destroy = true
+
   tags = {
     Name        = var.bucket_name
-    Environment = "dev"
+    Environment = var.environment
     ManagedBy   = "Terraform"
     Project     = "Session18"
+    Owner       = "Sahasra"
   }
 }
