@@ -1,13 +1,31 @@
 # Session 11: Kubernetes Networking & Services
 
-## Task 1: 5 Kubernetes Service Types Demonstration
-- 🟢 **ClusterIP**: Internal-only Cluster IP assignment for pod-to-pod communication.
-- 🔵 **NodePort**: Exposes service on each node's IP at a static port (`30000-32767`).
-- 🟡 **LoadBalancer**: Integrates with external cloud provider load balancers.
-- 🟣 **ExternalName**: Maps service to external CNAME record without proxying.
-- ⚪ **Headless**: Set `clusterIP: None` for direct Pod IP discovery via DNS.
+## Overview
+This directory contains the completed assignment deliverables, documentation, comparison notes, and verified terminal output screenshots for **Session 11: Kubernetes Networking & Services**.
 
-![Service Types Output](./screenshots/image-1.png)
+---
+
+## Task 1: 5 Kubernetes Service Types Demonstration
+
+Demonstrated and verified all 5 Kubernetes Service types:
+1. 🟢 **ClusterIP**: Internal-only Cluster IP assignment for pod-to-pod communication.
+2. 🔵 **NodePort**: Exposes service on each worker node's IP at a static port (`30000-32767`).
+3. 🟡 **LoadBalancer**: Integrates with cloud provider load balancers for external public access.
+4. 🟣 **ExternalName**: Maps service to external CNAME record without proxying.
+5. ⚪ **Headless**: Set `clusterIP: None` for direct Pod IP discovery via DNS.
+
+### Terminal Screenshots:
+- **ClusterIP & NodePort Verification**:
+  ![ClusterIP and NodePort](./screenshots/image-1.png)
+
+- **LoadBalancer & Service Deployment**:
+  ![LoadBalancer and Service Deployment](./screenshots/image-2.png)
+
+- **ExternalName & CNAME Resolution**:
+  ![ExternalName Service](./screenshots/image-3.png)
+
+- **Headless Service & Direct Pod Discovery**:
+  ![Headless Service](./screenshots/image-4.png)
 
 ---
 
@@ -30,6 +48,10 @@
 
 ---
 
-## Task 3 & 4: FQDN & CoreDNS Deliverables
-- 📄 [FQDN Documentation](./fqdn/README.md)
-- 📄 [CoreDNS Architecture & Troubleshooting Guide](./coredns/README.md)
+## Task 3 & 4: FQDN & CoreDNS Guides
+
+- 📄 **[FQDN Documentation](./fqdn/README.md)**: Details FQDN structure (`<service-name>.<namespace>.svc.cluster.local`) and cross-namespace DNS resolution.
+- 📄 **[CoreDNS Architecture & Troubleshooting Guide](./coredns/README.md)**: Explains CoreDNS architecture, `/etc/resolv.conf` integration, `Corefile` directives, and DNS troubleshooting.
+
+### DNS & FQDN Verification Output:
+![FQDN and CoreDNS Verification](./screenshots/image-5.png)
