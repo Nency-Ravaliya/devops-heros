@@ -1,0 +1,2 @@
+# Container image scanning: Trivy fails the pipeline on fixable HIGH/CRITICAL CVEs.
+# Accepted risks go here (one CVE per line, with a reason and review date). Currently none.

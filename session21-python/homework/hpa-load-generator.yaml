@@ -1,0 +1,18 @@
+# Load generator for the HPA demo: 6 workers hitting the backend API inside the cluster
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hpa-load-generator
+  namespace: taskboard
+spec:
+  replicas: 6
+  selector:
+    matchLabels: {app: hpa-load-generator}
+  template:
+    metadata:
+      labels: {app: hpa-load-generator}
+    spec:
+      containers:
+        - name: curl
+          image: curlimages/curl:8.6.0
+          command: ["sh", "-c", "while true; do curl -s -o /dev/null http://taskboard-taskboard-backend:8000/api/tasks; curl -s -o /dev/null http://taskboard-taskboard-backend:8000/api/tasks/stats; done"]

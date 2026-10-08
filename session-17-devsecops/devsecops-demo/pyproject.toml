@@ -1,0 +1,5 @@
+[tool.bandit]
+# B311 (random module) is skipped on purpose: `random` only picks greetings and simulates
+# pipeline durations in this demo -- it is never used for tokens, passwords or crypto.
+skips = ["B311"]
+exclude_dirs = ["tests", ".venv"]

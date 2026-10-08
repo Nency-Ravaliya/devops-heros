@@ -1,0 +1,22 @@
+# FIX: provide DATABASE_URL so the app can start.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: orders-api
+spec:
+  containers:
+    - name: app
+      image: python:3.11-alpine
+      env:
+        - name: DATABASE_URL
+          value: postgres://orders-db:5432/orders
+      command: ["python3", "-c"]
+      args:
+        - |
+          import os, sys, time
+          db = os.environ.get("DATABASE_URL")
+          if not db:
+              print("[FATAL] DATABASE_URL environment variable is missing", file=sys.stderr)
+              sys.exit(1)
+          print(f"orders-api started, db={db}", flush=True)
+          while True: time.sleep(30)

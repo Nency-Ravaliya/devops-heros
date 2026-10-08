@@ -1,0 +1,46 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: podinfo-alerts
+  namespace: shop
+spec:
+  groups:
+    - name: podinfo.rules
+      rules:
+        - alert: PodinfoDown
+          expr: sum(up{job="podinfo", namespace="shop"}) == 0 or absent(up{job="podinfo", namespace="shop"})
+          for: 30s
+          labels:
+            severity: critical
+          annotations:
+            summary: "podinfo has no healthy targets"
+            description: "Prometheus cannot scrape any podinfo instance in namespace shop."
+        - alert: PodinfoHighCPU
+          expr: |
+            sum by (pod) (rate(container_cpu_usage_seconds_total{namespace="shop", container="podinfo"}[1m]))
+              / sum by (pod) (kube_pod_container_resource_limits{namespace="shop", container="podinfo", resource="cpu"}) > 0.8
+          for: 1m
+          labels:
+            severity: warning
+          annotations:
+            summary: "podinfo pod {{ $labels.pod }} CPU above 80% of its limit"
+            description: "CPU is at {{ $value | humanizePercentage }} of the limit."
+        - alert: PodinfoHighMemory
+          expr: |
+            sum by (pod) (container_memory_working_set_bytes{namespace="shop", container="podinfo"})
+              / sum by (pod) (kube_pod_container_resource_limits{namespace="shop", container="podinfo", resource="memory"}) > 0.8
+          for: 1m
+          labels:
+            severity: warning
+          annotations:
+            summary: "podinfo pod {{ $labels.pod }} memory above 80% of its limit"
+            description: "Memory is at {{ $value | humanizePercentage }} of the limit."
+        - alert: PodinfoHighErrorRate
+          expr: |
+            sum(rate(http_requests_total{namespace="shop", job="podinfo", status=~"5.."}[2m]))
+              / sum(rate(http_requests_total{namespace="shop", job="podinfo"}[2m])) > 0.05
+          for: 1m
+          labels:
+            severity: warning
+          annotations:
+            summary: "podinfo 5xx error rate above 5%"

@@ -1,0 +1,15 @@
+# Incident simulation, step 1: make podinfo hold ~95MB of memory (limit 128Mi).
+# (An earlier attempt with --stress-cpu=1 starved the HTTP server under the 200m limit: probes failed and the
+#  kubelet restarted the pods in a loop. CPU load now comes from a traffic spike instead, see incident-spike.yaml.)
+# Applied with: kubectl patch deploy podinfo -n shop --type=json --patch-file app/incident-stress.yaml
+- op: replace
+  path: /spec/template/spec/containers/0/command
+  value: ["./podinfo", "--port=9898", "--level=info", "--stress-memory=95"]
+# Under full CPU throttling the default 1s probe timeout fails and the kubelet kills the container
+# (exit 137, CrashLoopBackOff). Give the probes more headroom so the pods stay up while stressed.
+- op: add
+  path: /spec/template/spec/containers/0/livenessProbe/timeoutSeconds
+  value: 5
+- op: add
+  path: /spec/template/spec/containers/0/readinessProbe/timeoutSeconds
+  value: 5

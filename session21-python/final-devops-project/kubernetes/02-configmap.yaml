@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: taskboard-taskboard-config
+data:
+  DB_HOST: "taskboard-postgres"
+  DB_PORT: "5432"
+  DB_NAME: "taskboard"
+  BACKEND_HOST: "taskboard-taskboard-backend:8000"

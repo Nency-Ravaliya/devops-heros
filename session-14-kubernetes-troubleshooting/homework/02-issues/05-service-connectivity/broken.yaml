@@ -1,0 +1,11 @@
+# Two bugs: selector label typo AND targetPort points at a port nginx doesn't listen on.
+apiVersion: v1
+kind: Service
+metadata:
+  name: catalog
+spec:
+  selector:
+    app: catalogue
+  ports:
+    - port: 80
+      targetPort: 8080

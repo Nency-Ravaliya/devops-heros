@@ -1,0 +1,9 @@
+# Gitleaks configuration: use the built-in ruleset (AWS keys, GitHub tokens, private keys, ...)
+title = "devsecops-demo gitleaks config"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Paths that never contain real secrets"
+paths = ['''^\.venv/''', '''^reports/''']

@@ -1,0 +1,9 @@
+# Image tag typo: "1.27.99" does not exist on Docker Hub.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: web-frontend
+spec:
+  containers:
+    - name: nginx
+      image: nginx:1.27.99

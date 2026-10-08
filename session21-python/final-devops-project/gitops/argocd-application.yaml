@@ -1,0 +1,25 @@
+# Argo CD watches the Helm chart + values-gitops.yaml in the TaskBoard repo.
+# CI writes the new image tag to values-gitops.yaml; Argo CD syncs the cluster to it.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: taskboard
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/MadaraUchiha-tech/taskboard-devops.git
+    targetRevision: main
+    path: helm/taskboard
+    helm:
+      valueFiles:
+        - values-gitops.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: taskboard-prod
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

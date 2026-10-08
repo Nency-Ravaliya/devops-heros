@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: web-content
+  namespace: gitops-web
+data:
+  index.html: |
+    <html><body style="font-family:sans-serif;background:#1e3a5f;color:white;text-align:center;padding-top:80px">
+      <h1>GitOps demo</h1>
+      <h2>version: v1</h2>
+      <p>Deployed by Argo CD from github.com/MadaraUchiha-tech/gitops-demo</p>
+    </body></html>

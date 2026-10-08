@@ -1,0 +1,8 @@
+# Secret scanning: Gitleaks scans the full git history with the default ruleset.
+#   gitleaks git . --config security/.gitleaks.toml --redact
+title = "taskboard gitleaks config"
+[extend]
+useDefault = true
+[allowlist]
+description = "Downloaded Terraform modules and local virtualenvs are not our code"
+paths = ['''(^|/)\.terraform/''', '''(^|/)\.venv/''']

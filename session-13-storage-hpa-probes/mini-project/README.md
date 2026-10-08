@@ -230,3 +230,71 @@ kubectl get hpa -n production-webapp -w
 1. **Challenge 1 (Target Tuning)**: Lower the HPA CPU threshold from `50%` to `30%` in `hpa.yaml`, reapply, and observe how much faster the workload scales out.
 2. **Challenge 2 (Readiness Gating)**: Modify `readinessProbe.httpGet.path` to `/does-not-exist`. Run `kubectl get endpoints -n production-webapp web-service`. Notice that Pod status is `Running`, but `READY` is `0/1` and the endpoints list is completely empty!
 3. **Challenge 3 (Liveness Restart Loop)**: Modify `livenessProbe.httpGet.path` to `/crash`. Observe the `RESTARTS` count increment every 15 seconds in `kubectl get pods -w`.
+
+---
+
+## 10. My Results (hands-on run)
+
+Run on minikube (Docker driver, `metrics-server` enabled). Each screenshot below is a real terminal capture of the commands being run. The load generator used for Task 3 is saved as [load-generator.yaml](load-generator.yaml): 3 busybox replicas instead of one `kubectl run` Pod, so there's enough load to cross 50%.
+
+### Deployment
+
+PVC `web-data` bound to a dynamically provisioned 500Mi volume, 2 replicas Running, HPA created. It shows `<unknown>` until metrics-server reports, about a minute later.
+
+![deploy](outputs/01-deploy.png)
+
+### Probes and resources
+
+Startup (`failureThreshold 30 × 2s`), readiness and liveness probes, all `httpGet /:80`. Requests are `100m / 64Mi` and limits `200m / 128Mi`.
+
+![probes](outputs/02-probes.png)
+
+### Task 1: Storage persistence ✅
+
+I wrote `Student: navjeetsingh` to `/data/student.txt`, deleted that Pod, and read the file back from the newly created Pod. The data survived because it lives on the PVC, not in the container.
+
+![storage](outputs/03-storage-persistence.png)
+
+> Note: the PVC is `ReadWriteOnce`, but two replicas mount it. That only works because minikube has a single node (RWO means one *node*, not one Pod). On a multi-node cluster the second replica could get stuck in `ContainerCreating` with a `Multi-Attach error`. Use `ReadWriteMany` storage, or a StatefulSet with one PVC per replica.
+
+### Task 2: Service verification ✅
+
+The EndpointSlice lists both Pod IPs, and `curl` through `kubectl port-forward svc/web-service 8080:80` returns the nginx welcome page.
+
+![service](outputs/04-service.png)
+
+### Task 3: HPA elastic scaling ✅
+
+Under load the average CPU rose to 61% of the request (target 50%), and the HPA scaled **2 → 3** (`ceil(2 × 61/50) = 3`). Load then spread to ~42m per Pod (42%), so it stayed at 3.
+
+![hpa](outputs/05-hpa-scaling.png)
+
+### Bonus 1: Target 50% → 30%
+
+With the same load the HPA went from 3 to the maximum of **5** within 20 seconds (`ceil(3 × 42/30) = 5`), then settled at ~25% per Pod. A lower target means more headroom per Pod, but more Pods for the same traffic.
+
+![bonus1](outputs/06-bonus1-target-30.png)
+
+### Bonus 2: Broken readiness probe
+
+Both new Pods are `Running` but `0/1` Ready, the EndpointSlice marks both addresses `ready=false`, and the events show `Readiness probe failed: ... statuscode: 404`. The container is never restarted; it's just taken out of the Service. This Deployment uses `strategy: Recreate`, so all old Pods were already gone. That makes this a **full outage**, and `rollout status` times out. With `RollingUpdate`, the old Ready Pods would have kept serving and the rollout would just have stalled.
+
+![bonus2](outputs/07-bonus2-readiness.png)
+
+### Bonus 3: Broken liveness probe
+
+`Liveness probe failed: ... 404` → `Container nginx failed liveness probe, will be restarted`. After 3 restarts in 75s both Pods are in `CrashLoopBackOff`, even though nginx itself is healthy. A wrong liveness path can take down a perfectly good app.
+
+![bonus3](outputs/08-bonus3-liveness.png)
+
+### Final state
+
+I reverted both bonus changes with `kubectl rollout undo` (the rollout history is visible) and re-applied the HPA.
+
+![final](outputs/09-final-state.png)
+
+### Cleanup
+
+```bash
+kubectl delete namespace production-webapp
+```

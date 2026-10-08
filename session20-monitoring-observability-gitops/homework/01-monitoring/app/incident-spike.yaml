@@ -1,0 +1,20 @@
+# Incident simulation, step 3: traffic spike. 6 clients hammer /token (JWT signing is CPU-heavy)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: traffic-spike
+  namespace: shop
+spec:
+  replicas: 6
+  selector:
+    matchLabels:
+      app: traffic-spike
+  template:
+    metadata:
+      labels:
+        app: traffic-spike
+    spec:
+      containers:
+        - name: curl
+          image: curlimages/curl:8.6.0
+          command: ["sh", "-c", "while true; do curl -s -o /dev/null -X POST http://podinfo.shop:9898/token; done"]

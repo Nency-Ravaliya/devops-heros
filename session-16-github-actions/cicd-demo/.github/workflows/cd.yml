@@ -1,0 +1,77 @@
+name: CD
+
+# Runs only after the CI workflow finished successfully on main.
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  IMAGE: ghcr.io/${{ github.repository_owner }}/calculator-api
+
+jobs:
+  push-image:
+    name: Push image to GHCR
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.meta.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+      - id: meta
+        run: echo "tag=$(git rev-parse --short=7 HEAD)" >> "$GITHUB_OUTPUT"
+      - name: Log in to GHCR (uses the built-in GITHUB_TOKEN secret)
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and push
+        run: |
+          IMAGE_LC=$(echo "$IMAGE" | tr '[:upper:]' '[:lower:]')
+          docker build --build-arg APP_VERSION=${{ steps.meta.outputs.tag }} \
+            -t $IMAGE_LC:${{ steps.meta.outputs.tag }} -t $IMAGE_LC:latest .
+          docker push $IMAGE_LC:${{ steps.meta.outputs.tag }}
+          docker push $IMAGE_LC:latest
+
+  deploy-staging:
+    name: Deploy to staging (Kubernetes)
+    needs: push-image
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+      - name: Create Kubernetes cluster (kind)
+        uses: helm/kind-action@v1
+      - name: Create app Secret from repository secret
+        env:
+          APP_SECRET_KEY: ${{ secrets.APP_SECRET_KEY }}
+        run: |
+          if [ -z "$APP_SECRET_KEY" ]; then echo "::error::APP_SECRET_KEY secret not set"; exit 1; fi
+          kubectl create secret generic calculator-api --from-literal=SECRET_KEY="$APP_SECRET_KEY"
+          echo "Secret value is masked in logs: $APP_SECRET_KEY"
+      - name: Deploy
+        run: |
+          IMAGE_LC=$(echo "$IMAGE" | tr '[:upper:]' '[:lower:]')
+          sed "s#IMAGE_PLACEHOLDER#$IMAGE_LC:${{ needs.push-image.outputs.tag }}#" k8s/deployment.yaml | kubectl apply -f -
+          kubectl apply -f k8s/service.yaml
+          kubectl rollout status deployment/calculator-api --timeout=180s
+          kubectl get deploy,pods,svc -o wide
+      - name: Smoke test
+        run: |
+          kubectl port-forward svc/calculator-api 8080:80 &
+          sleep 3
+          curl -fs localhost:8080/ && echo
+          curl -fs "localhost:8080/calc/multiply?a=6&b=7" && echo
+          test "$(curl -fs localhost:8080/ | python3 -c 'import json,sys;print(json.load(sys.stdin)["version"])')" = "${{ needs.push-image.outputs.tag }}"
+          echo "Deployed version ${{ needs.push-image.outputs.tag }} is serving traffic."

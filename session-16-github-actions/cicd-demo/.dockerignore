@@ -1,0 +1,9 @@
+.git
+.github
+tests
+docs
+k8s
+__pycache__
+*.pyc
+.pytest_cache
+.venv

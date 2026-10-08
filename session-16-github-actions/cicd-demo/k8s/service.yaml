@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: calculator-api
+spec:
+  selector:
+    app: calculator-api
+  ports:
+    - port: 80
+      targetPort: 8080

@@ -1,0 +1,253 @@
+name: DevSecOps Pipeline
+
+# Code -> Build -> Unit Test -> SAST -> SCA -> Secret Scan -> Docker Build
+#      -> Container Image Scan -> Security Gate -> Push Image -> Deploy to Kubernetes
+on:
+  push:
+    branches: [main]
+    paths-ignore: ["**.md", "docs/**"]
+  pull_request:
+    branches: [main]
+    paths-ignore: ["**.md", "docs/**"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  IMAGE_NAME: devsecops-dashboard
+
+jobs:
+  build:
+    name: 1. Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install dependencies
+        run: pip install -r requirements-dev.txt
+      - name: Compile all modules (syntax check)
+        run: python -m compileall -q app
+      - name: Import the application
+        run: python -c "from app.app import app; print('routes:', len(list(app.url_map.iter_rules())))"
+
+  unit-test:
+    name: 2. Unit tests
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements-dev.txt
+      - name: Run pytest with coverage
+        run: |
+          mkdir -p reports
+          pytest -v --junitxml=reports/junit.xml --cov=app --cov-report=term-missing --cov-fail-under=70
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: unit-test-report
+          path: reports/
+
+  sast:
+    name: 3. SAST (Bandit + CodeQL)
+    needs: unit-test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - run: pip install "bandit[toml]==1.9.4"
+      - name: Bandit (fails on MEDIUM or HIGH severity)
+        run: |
+          mkdir -p reports
+          bandit -c pyproject.toml -r app -f json -o reports/bandit.json || true
+          bandit -c pyproject.toml -r app --severity-level medium
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: bandit-report
+          path: reports/bandit.json
+      - name: CodeQL init
+        uses: github/codeql-action/init@v4
+        with:
+          languages: python
+          queries: security-extended
+      - name: CodeQL analyze
+        uses: github/codeql-action/analyze@v4
+
+  sca:
+    name: 4. SCA (pip-audit + Trivy fs)
+    needs: sast
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - run: pip install pip-audit
+      - name: pip-audit (fails on any known vulnerable dependency)
+        run: pip-audit -r requirements.txt --desc on
+      - name: Trivy filesystem scan of dependency manifests
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          scanners: vuln
+          severity: HIGH,CRITICAL
+          exit-code: "1"
+          trivyignores: .trivyignore
+
+  secret-scan:
+    name: 5. Secret scan (Gitleaks)
+    needs: sca
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0   # scan the whole git history, not just the last commit
+      - name: Gitleaks (fails if any secret is found)
+        run: |
+          docker run --rm -v "$PWD:/repo" ghcr.io/gitleaks/gitleaks:v8.30.1 \
+            git /repo --config /repo/.gitleaks.toml --redact --verbose
+
+  docker-build:
+    name: 6. Docker build
+    needs: secret-scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Build image
+        run: |
+          docker build -t $IMAGE_NAME:${GITHUB_SHA::7} .
+          docker image ls $IMAGE_NAME
+          docker save $IMAGE_NAME:${GITHUB_SHA::7} -o image.tar
+      - uses: actions/upload-artifact@v7
+        with:
+          name: docker-image
+          path: image.tar
+          retention-days: 3
+
+  image-scan:
+    name: 7. Container image scan (Trivy)
+    needs: docker-build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with:
+          name: docker-image
+      - name: Trivy report (all severities, SARIF -> GitHub Security tab)
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          input: image.tar
+          format: sarif
+          output: trivy-image.sarif
+          exit-code: "0"
+      - uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: trivy-image.sarif
+          category: trivy-image
+      - name: Trivy gate (fails on fixable HIGH/CRITICAL)
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          input: image.tar
+          format: table
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"
+          trivyignores: .trivyignore
+          skip-setup-trivy: true
+
+  security-gate:
+    name: 8. Security gate
+    needs: [build, unit-test, sast, sca, secret-scan, docker-build, image-scan]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Evaluate all security checks
+        run: |
+          {
+            echo "## Security gate"
+            echo "| Check | Result |"
+            echo "|---|---|"
+            echo "| Unit tests | ${{ needs.unit-test.result }} |"
+            echo "| SAST (Bandit + CodeQL) | ${{ needs.sast.result }} |"
+            echo "| SCA (pip-audit + Trivy fs) | ${{ needs.sca.result }} |"
+            echo "| Secret scan (Gitleaks) | ${{ needs.secret-scan.result }} |"
+            echo "| Image scan (Trivy) | ${{ needs.image-scan.result }} |"
+          } >> "$GITHUB_STEP_SUMMARY"
+          for r in "${{ needs.unit-test.result }}" "${{ needs.sast.result }}" "${{ needs.sca.result }}" \
+                   "${{ needs.secret-scan.result }}" "${{ needs.image-scan.result }}"; do
+            if [ "$r" != "success" ]; then
+              echo "::error::Security gate FAILED - image will not be pushed or deployed"
+              echo "**GATE: FAILED** - push and deploy blocked" >> "$GITHUB_STEP_SUMMARY"
+              exit 1
+            fi
+          done
+          echo "Security gate PASSED"
+          echo "**GATE: PASSED**" >> "$GITHUB_STEP_SUMMARY"
+
+  push-image:
+    name: 9. Push image (GHCR)
+    needs: security-gate
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image: ${{ steps.push.outputs.image }}
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: docker-image
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - id: push
+        name: Tag and push the exact image that was scanned
+        run: |
+          docker load -i image.tar
+          REPO=ghcr.io/$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')/$IMAGE_NAME
+          docker tag $IMAGE_NAME:${GITHUB_SHA::7} $REPO:${GITHUB_SHA::7}
+          docker tag $IMAGE_NAME:${GITHUB_SHA::7} $REPO:latest
+          docker push $REPO:${GITHUB_SHA::7}
+          docker push $REPO:latest
+          echo "image=$REPO:${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+
+  deploy:
+    name: 10. Deploy to Kubernetes
+    needs: push-image
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - uses: actions/checkout@v7
+      - uses: helm/kind-action@v1.15.1
+      - name: Deploy
+        run: |
+          sed "s#IMAGE_PLACEHOLDER#${{ needs.push-image.outputs.image }}#" k8s/deployment.yaml | kubectl apply -f -
+          kubectl apply -f k8s/service.yaml
+          kubectl rollout status deployment/devsecops-dashboard --timeout=180s
+          kubectl get deploy,pods,svc -o wide
+      - name: Smoke test
+        run: |
+          kubectl port-forward svc/devsecops-dashboard 5001:80 &
+          sleep 3
+          curl -fs localhost:5001/health && echo
+          curl -fs localhost:5001/api/status && echo

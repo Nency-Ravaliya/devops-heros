@@ -1,0 +1,20 @@
+# Incident simulation, step 2: a client that keeps hitting an endpoint returning HTTP 500
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bad-client
+  namespace: shop
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: bad-client
+  template:
+    metadata:
+      labels:
+        app: bad-client
+    spec:
+      containers:
+        - name: curl
+          image: curlimages/curl:8.6.0
+          command: ["sh", "-c", "while true; do curl -s -o /dev/null http://podinfo.shop:9898/status/500; sleep 0.3; done"]

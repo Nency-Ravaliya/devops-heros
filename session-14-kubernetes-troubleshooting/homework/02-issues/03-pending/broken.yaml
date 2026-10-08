@@ -1,0 +1,13 @@
+# Requests far more CPU/memory than any node has -> scheduler can't place it.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: report-worker
+spec:
+  containers:
+    - name: worker
+      image: nginx:1.27
+      resources:
+        requests:
+          cpu: "500"
+          memory: 1000Gi

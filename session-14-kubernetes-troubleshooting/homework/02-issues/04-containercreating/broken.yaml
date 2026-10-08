@@ -1,0 +1,17 @@
+# Pod mounts a Secret that was never created -> kubelet can't set up the volume.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: payment-svc
+spec:
+  containers:
+    - name: app
+      image: nginx:1.27
+      volumeMounts:
+        - name: tls
+          mountPath: /etc/payment/tls
+          readOnly: true
+  volumes:
+    - name: tls
+      secret:
+        secretName: payment-tls

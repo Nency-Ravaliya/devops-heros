@@ -1,0 +1,19 @@
+# App exits with code 1 at startup because a required env var is missing.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: orders-api
+spec:
+  containers:
+    - name: app
+      image: python:3.11-alpine
+      command: ["python3", "-c"]
+      args:
+        - |
+          import os, sys, time
+          db = os.environ.get("DATABASE_URL")
+          if not db:
+              print("[FATAL] DATABASE_URL environment variable is missing", file=sys.stderr)
+              sys.exit(1)
+          print(f"orders-api started, db={db}", flush=True)
+          while True: time.sleep(30)

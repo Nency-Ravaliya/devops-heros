@@ -1,0 +1,15 @@
+# Client in namespace s14 calls the short name "inventory" -> resolves s14.svc.cluster.local -> NXDOMAIN.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: checkout
+spec:
+  containers:
+    - name: client
+      image: curlimages/curl:8.6.0
+      env:
+        - name: INVENTORY_URL
+          value: http://inventory
+      command: ["sh", "-c"]
+      args:
+        - while true; do curl -s -m 3 -o /dev/null -w "inventory -> HTTP %{http_code}\n" $INVENTORY_URL || echo "inventory -> FAILED ($INVENTORY_URL)"; sleep 5; done

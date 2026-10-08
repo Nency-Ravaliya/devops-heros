@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: notify-config
+data:
+  SMTP_HOST: smtp.example.com
+  SMTP_PORT: "587"

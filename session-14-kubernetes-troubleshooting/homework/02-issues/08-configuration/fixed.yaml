@@ -1,0 +1,21 @@
+# FIX: reference the key that actually exists in the ConfigMap.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: notify-svc
+spec:
+  containers:
+    - name: app
+      image: busybox:1.36
+      command: ["sh", "-c", "echo SMTP=$SMTP_HOST:$SMTP_PORT; sleep 3600"]
+      env:
+        - name: SMTP_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: notify-config
+              key: SMTP_HOST
+        - name: SMTP_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: notify-config
+              key: SMTP_PORT

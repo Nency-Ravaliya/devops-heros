@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "taskboard.fullname" . }}-config
+data:
+  DB_HOST: {{ .Values.postgres.host | quote }}
+  DB_PORT: "5432"
+  DB_NAME: {{ .Values.postgres.database | quote }}
+  BACKEND_HOST: "{{ include "taskboard.fullname" . }}-backend:8000"

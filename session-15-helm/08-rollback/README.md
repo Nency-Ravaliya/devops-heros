@@ -165,3 +165,9 @@ helm rollback <release> N  = go back to revision N
 ## Reference
 
 * **Helm rollback:** https://helm.sh/docs/helm/helm_rollback/
+
+---
+
+## Hands-on homework output
+
+I ran the real commands and captured their output in [../homework/README.md](../homework/README.md) (Task 1 commands and the Task 2 install → upgrade → bad upgrade → rollback workflow).

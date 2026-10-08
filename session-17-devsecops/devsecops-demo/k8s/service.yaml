@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: devsecops-dashboard
+spec:
+  selector:
+    app: devsecops-dashboard
+  ports:
+    - port: 80
+      targetPort: 5001

@@ -342,3 +342,9 @@ Students should remember this:
 * Troubleshoot Services
 * Test Kubernetes DNS
 * Identify root causes instead of guessing
+---
+
+## Homework
+
+- Task 1 (commands) and Task 2 (9 troubleshooting scenarios): [homework/README.md](homework/README.md)
+- Task 3 (mini project, answers and evidence): [mini-project/README.md](mini-project/README.md)

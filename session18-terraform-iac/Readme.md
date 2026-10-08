@@ -17,3 +17,8 @@ https://developer.hashicorp.com/terraform/tutorials/aws-get-started/aws-create
 ```
 https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html
 ```
+---
+
+## Homework
+
+See [homework/README.md](homework/README.md).

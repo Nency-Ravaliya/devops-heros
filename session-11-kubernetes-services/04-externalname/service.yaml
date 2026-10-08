@@ -4,4 +4,4 @@ metadata:
   name: external-database-service
 spec:
   type: ExternalName
-  externalName: nencyravaliya.me
+  externalName: api.github.com

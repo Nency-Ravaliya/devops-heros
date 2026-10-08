@@ -1,0 +1,35 @@
+digraph arch {
+  graph [rankdir=LR, fontname="Helvetica", bgcolor="white", pad=0.4, nodesep=0.5, ranksep=0.7, label="Session 19 - Terraform cloud project (region ap-south-1)", labelloc=t, fontsize=20];
+  node  [fontname="Helvetica", fontsize=12, shape=box, style="rounded,filled", fillcolor="#ffffff", color="#5a6b7c"];
+  edge  [fontname="Helvetica", fontsize=10, color="#5a6b7c"];
+
+  user [label="User / browser", shape=ellipse, fillcolor="#eef2f7"];
+  tf   [label="Terraform\n(plan / apply / destroy)\nstate: terraform.tfstate", fillcolor="#ede4fb", color="#7b42bc"];
+
+  subgraph cluster_aws {
+    label="AWS account"; style="rounded"; color="#ff9900"; fontcolor="#232f3e";
+    s3  [label="S3 bucket\nsession19-web-site-<random>\nindex.html\nSSE-S3, Block Public Access", fillcolor="#e8f5e9", color="#3f8624"];
+    iam [label="IAM role + instance profile\nread site bucket\nAmazonSSMManagedInstanceCore", fillcolor="#fdecea", color="#dd344c"];
+    ssm [label="SSM Parameter\nlatest Amazon Linux 2023 AMI", fillcolor="#fdecea", color="#dd344c"];
+
+    subgraph cluster_vpc {
+      label="VPC 10.19.0.0/16"; style="rounded,dashed"; color="#8c4fff";
+      igw [label="Internet Gateway", fillcolor="#f3eaff", color="#8c4fff"];
+      rt  [label="Route table\n0.0.0.0/0 -> IGW", fillcolor="#f3eaff", color="#8c4fff"];
+      subgraph cluster_subnet {
+        label="Public subnet 10.19.1.0/24 (AZ a)"; style="rounded"; color="#3f8624";
+        sg  [label="Security group web-sg\nin: 80/tcp from 0.0.0.0/0\n(22 from my IP if allow_ssh)\nout: all", fillcolor="#fff8e1", color="#c38800"];
+        ec2 [label="EC2 t3.micro\nAmazon Linux 2023 + nginx\nIMDSv2, encrypted gp3", fillcolor="#fff3e0", color="#ff9900"];
+      }
+    }
+  }
+
+  user -> igw [label="HTTP :80"];
+  igw -> rt -> ec2;
+  sg -> ec2 [style=dashed, arrowhead=none, label="attached"];
+  ec2 -> s3 [label="user data: aws s3 cp\n(via IAM role)"];
+  iam -> ec2 [style=dashed, label="instance profile"];
+  ssm -> ec2 [style=dashed, label="AMI ID"];
+  tf -> s3 [style=dotted, color="#7b42bc"];
+  tf -> igw [style=dotted, color="#7b42bc", label="creates all"];
+}

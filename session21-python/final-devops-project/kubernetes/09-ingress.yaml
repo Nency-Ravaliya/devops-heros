@@ -1,0 +1,11 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata: {name: taskboard}
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: taskboard.local
+    http:
+      paths:
+      - {path: /api, pathType: Prefix, backend: {service: {name: taskboard-taskboard-backend, port: {number: 8000}}}}
+      - {path: /, pathType: Prefix, backend: {service: {name: taskboard-frontend, port: {number: 80}}}}

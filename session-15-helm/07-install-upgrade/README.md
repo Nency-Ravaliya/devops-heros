@@ -190,3 +190,9 @@ Every install or upgrade creates a new revision. This enables rollback.
 
 * **Helm install:** https://helm.sh/docs/helm/helm_install/
 * **Helm upgrade:** https://helm.sh/docs/helm/helm_upgrade/
+
+---
+
+## Hands-on homework output
+
+I ran the real commands and captured their output in [../homework/README.md](../homework/README.md) (Task 1 commands and the Task 2 install → upgrade → bad upgrade → rollback workflow).

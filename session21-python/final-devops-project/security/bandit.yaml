@@ -1,0 +1,4 @@
+# SAST: Bandit runs on application/backend/app and fails the pipeline on MEDIUM or HIGH findings.
+#   bandit -r application/backend/app -c security/bandit.yaml --severity-level medium
+exclude_dirs: ["tests", ".venv"]
+skips: []

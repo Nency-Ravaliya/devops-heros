@@ -1,0 +1,16 @@
+# Desired state watched by Argo CD (GitOps). The CI pipeline updates the image tags below
+# after a commit passes tests, security scans and the Kubernetes deploy test.
+backend:
+  image: ghcr.io/madarauchiha-tech/taskboard-backend
+  tag: ae3b575
+frontend:
+  image: ghcr.io/madarauchiha-tech/taskboard-frontend
+  tag: ae3b575
+replicaCount: 2
+ingress:
+  enabled: true
+  host: gitops.taskboard.127.0.0.1.nip.io
+hpa:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 4

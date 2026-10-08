@@ -1,0 +1,5 @@
+# Lab only: read-only anonymous access to the Argo CD UI (so screenshots need no login form),
+# and a 30s Git polling interval instead of the default 3 minutes.
+data:
+  users.anonymous.enabled: "true"
+  timeout.reconciliation: 30s

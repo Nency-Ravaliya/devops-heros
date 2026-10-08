@@ -1,0 +1,21 @@
+# Applied once by the cluster admin; lives OUTSIDE the watched path (apps/web).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: gitops-web
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/MadaraUchiha-tech/gitops-demo.git
+    targetRevision: main
+    path: apps/web
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: gitops-web
+  syncPolicy:
+    automated:
+      prune: true      # delete resources that were removed from Git
+      selfHeal: true   # revert manual changes made in the cluster
+    syncOptions:
+      - CreateNamespace=true

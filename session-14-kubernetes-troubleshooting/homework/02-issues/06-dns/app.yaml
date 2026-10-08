@@ -1,0 +1,35 @@
+# "inventory" Service lives in namespace s14-backend.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: s14-backend
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: inventory
+  namespace: s14-backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: inventory
+  template:
+    metadata:
+      labels:
+        app: inventory
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:1.27
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: inventory
+  namespace: s14-backend
+spec:
+  selector:
+    app: inventory
+  ports:
+    - port: 80

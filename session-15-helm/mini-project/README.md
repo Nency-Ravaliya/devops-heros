@@ -338,3 +338,59 @@ All resources are gone.
 
 * **Helm best practices:** https://helm.sh/docs/chart_best_practices/
 * **Helm CLI reference:** https://helm.sh/docs/helm/
+
+---
+
+## My Run — Evidence
+
+Executed on minikube with Helm v4.3.0 in namespace `helm-hw`. Every step has a real terminal screenshot (embedded below the table).
+
+| Step | Result | Output |
+|---|---|---|
+| Lint + render (Steps 8–9) | `1 chart(s) linted, 0 chart(s) failed` for both `values.yaml` and `values-prod.yaml`; `helm template` fully rendered every `{{ }}` (ConfigMap `notes-dev-config`, NodePort Service `30090`, Deployment `nginx:1.24`) | [01a-lint](outputs/01a-lint.png), [01b-template](outputs/01b-template.png) |
+| Install dev (Step 10) | `REVISION: 1`, 1 Pod `nginx:1.24`, Service `80:30090/TCP`, env `APP_NAME=notes-app ENVIRONMENT=development` from the ConfigMap; `http://<minikube-ip>:30090` → **HTTP 200** | [02-install-dev](outputs/02-install-dev.png) |
+| Upgrade to prod (Step 11) | `REVISION: 2`, 3 Pods `nginx:1.25`, env now `ENVIRONMENT=production` | [03-upgrade-prod](outputs/03-upgrade-prod.png) |
+| History (Step 12) | 1 superseded, 2 deployed | [04-history](outputs/04-history.png) |
+| Bad upgrade (Step 13) | `UPGRADE FAILED ... context deadline exceeded`; new Pod stuck pulling `nginx:broken-tag-does-not-exist`; revision 3 = **failed** | [05-bad-upgrade](outputs/05-bad-upgrade.png) |
+| Rollback (Step 14) | `helm rollback notes-dev 2` → revision 4 "Rollback to 2"; Deployment back to `replicas=3 image=nginx:1.25 environment=production` | [06-rollback](outputs/06-rollback.png) |
+| Clean up (Step 15) | `helm uninstall` → no Pods, no Services, `helm list` empty | [07-uninstall](outputs/07-uninstall.png) |
+
+### Screenshots
+
+#### 01a-lint
+
+![01a-lint](outputs/01a-lint.png)
+
+#### 01b-template
+
+![01b-template](outputs/01b-template.png)
+
+#### 02-install-dev
+
+![02-install-dev](outputs/02-install-dev.png)
+
+#### 03-upgrade-prod
+
+![03-upgrade-prod](outputs/03-upgrade-prod.png)
+
+#### 04-history
+
+![04-history](outputs/04-history.png)
+
+#### 05-bad-upgrade
+
+![05-bad-upgrade](outputs/05-bad-upgrade.png)
+
+#### 06-rollback
+
+![06-rollback](outputs/06-rollback.png)
+
+#### 07-uninstall
+
+![07-uninstall](outputs/07-uninstall.png)
+
+### Things I noticed
+
+1. **The bad upgrade also silently reverted to dev settings.** Step 13 runs `helm upgrade notes-dev notes-chart --set image.tag=...` *without* `-f values-prod.yaml`. A plain `helm upgrade` starts again from the chart's `values.yaml`, so revision 3 also meant `replicaCount: 1` and `environment: development`. That is why only **one** old Pod stayed running during the failed upgrade, instead of three. In real life: always pass the same `-f` files on every upgrade, or use `--reuse-values` / `--reset-then-reuse-values`.
+2. ConfigMap changes don't restart Pods by themselves. Here the image tag changed at the same time, so Pods were replaced. A common chart trick is a `checksum/config` annotation on the Pod template, so that a config change triggers a rollout.
+3. `nodePort: 30090` is hard-coded in both values files. Two releases of this chart in one cluster would conflict, so it's better to leave nodePort empty and let Kubernetes assign one.

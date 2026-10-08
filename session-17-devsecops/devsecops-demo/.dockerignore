@@ -1,0 +1,9 @@
+.git
+.github
+tests
+k8s
+security
+__pycache__
+*.pyc
+.pytest_cache
+.coverage

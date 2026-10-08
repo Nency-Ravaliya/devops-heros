@@ -1,0 +1,60 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: taskboard-taskboard-backend
+  labels: {app: taskboard-backend}
+spec:
+  selector: {app: taskboard-backend}
+  ports:
+    - port: 8000
+      targetPort: 8000
+      name: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: taskboard-taskboard-backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: taskboard-backend}
+  template:
+    metadata:
+      labels: {app: taskboard-backend}
+    spec:
+      # Wait for PostgreSQL before the backend runs its Alembic migration (avoids crash-restarts at startup)
+      initContainers:
+        - name: wait-for-postgres
+          image: postgres:16-alpine
+          command: ["sh", "-c", "until pg_isready -h taskboard-postgres -p 5432; do echo waiting for postgres; sleep 2; done"]
+      containers:
+        - name: backend
+          image: "taskboard-backend:v1"
+          ports: [{containerPort: 8000}]
+          # Non-secret settings from the ConfigMap, credentials from the Secret;
+          # DATABASE_URL is assembled from them with Kubernetes $(VAR) expansion.
+          envFrom:
+            - configMapRef:
+                name: taskboard-taskboard-config
+          env:
+            - name: DB_USER
+              valueFrom: {secretKeyRef: {name: taskboard-postgres, key: username}}
+            - name: DB_PASSWORD
+              valueFrom: {secretKeyRef: {name: taskboard-postgres, key: password}}
+            - name: DATABASE_URL
+              value: "postgresql+psycopg://$(DB_USER):$(DB_PASSWORD)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)"
+          readinessProbe:
+            httpGet: {path: /ready, port: 8000}
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: {path: /health, port: 8000}
+            initialDelaySeconds: 20
+            periodSeconds: 15
+          resources:
+            limits:
+              cpu: 500m
+              memory: 512Mi
+            requests:
+              cpu: 100m
+              memory: 256Mi

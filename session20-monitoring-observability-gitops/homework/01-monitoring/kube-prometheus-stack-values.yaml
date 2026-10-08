@@ -1,0 +1,34 @@
+# Minimal kube-prometheus-stack for a single-node minikube lab
+grafana:
+  adminPassword: session20-admin   # lab only
+  service:
+    type: ClusterIP
+  grafana.ini:
+    auth.anonymous:          # lab only: lets screenshots be taken without a login form
+      enabled: true
+      org_role: Admin
+  additionalDataSources:
+    - name: Loki
+      type: loki
+      url: http://loki.monitoring.svc.cluster.local:3100
+      access: proxy
+prometheus:
+  prometheusSpec:
+    scrapeInterval: 15s
+    evaluationInterval: 15s
+    retention: 2d
+    # pick up ServiceMonitors / PrometheusRules from any namespace, not only ones labelled with the release
+    serviceMonitorSelectorNilUsesHelmValues: false
+    podMonitorSelectorNilUsesHelmValues: false
+    ruleSelectorNilUsesHelmValues: false
+alertmanager:
+  alertmanagerSpec:
+    retention: 24h
+kubeEtcd:
+  enabled: false
+kubeControllerManager:
+  enabled: false
+kubeScheduler:
+  enabled: false
+kubeProxy:
+  enabled: false

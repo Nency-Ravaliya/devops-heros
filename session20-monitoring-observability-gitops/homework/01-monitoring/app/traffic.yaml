@@ -1,0 +1,22 @@
+# Steady background traffic so request-rate and latency graphs have data
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: traffic
+  namespace: shop
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: traffic
+  template:
+    metadata:
+      labels:
+        app: traffic
+    spec:
+      containers:
+        - name: curl
+          image: curlimages/curl:8.6.0
+          command: ["sh", "-c"]
+          args:
+            - while true; do curl -s -o /dev/null http://podinfo.shop:9898/; curl -s -o /dev/null http://podinfo.shop:9898/api/info; sleep 0.5; done

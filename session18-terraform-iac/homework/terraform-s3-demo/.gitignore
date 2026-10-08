@@ -1,0 +1,7 @@
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+crash.log
+# terraform.tfvars here contains no secrets and is part of the deliverable
+!terraform.tfvars

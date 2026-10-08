@@ -1,0 +1,103 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+    paths-ignore: ["**.md", "docs/**"]
+  pull_request:
+    branches: [main]
+    paths-ignore: ["**.md", "docs/**"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install flake8==7.3.0
+      - run: flake8 app tests
+
+  test:
+    name: Test (Python ${{ matrix.python-version }})
+    needs: lint
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+      - name: Install dependencies
+        run: pip install -r requirements-dev.txt
+      - name: Run pytest
+        run: |
+          mkdir -p test-results
+          pytest -v --junitxml=test-results/junit.xml \
+            --cov=app --cov-report=term-missing --cov-report=xml:test-results/coverage.xml
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-results-py${{ matrix.python-version }}
+          path: test-results/
+          retention-days: 7
+
+  security-check:
+    name: Security check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Fail if sensitive files are committed
+        run: |
+          found=$(git ls-files | grep -E '(^|/)\.env$|\.pem$|\.key$|id_rsa' || true)
+          if [ -n "$found" ]; then
+            echo "::error::Sensitive files committed:"; echo "$found"; exit 1
+          fi
+          echo "No sensitive files found."
+
+  build:
+    name: Build Docker image
+    needs: [test, security-check]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Build image
+        run: |
+          docker build --build-arg APP_VERSION=${GITHUB_SHA::7} -t calculator-api:${GITHUB_SHA::7} .
+          docker image ls calculator-api
+      - name: Smoke test the container
+        run: |
+          docker run -d --name api -p 8080:8080 calculator-api:${GITHUB_SHA::7}
+          for i in $(seq 1 15); do curl -fs localhost:8080/health && break; sleep 1; done
+          curl -fs "localhost:8080/calc/add?a=2&b=3"
+          docker rm -f api
+      - name: Save image and build info
+        run: |
+          mkdir -p build
+          docker save calculator-api:${GITHUB_SHA::7} | gzip > build/calculator-api.tar.gz
+          cat > build/build-info.txt <<INFO
+          image:   calculator-api:${GITHUB_SHA::7}
+          commit:  ${GITHUB_SHA}
+          ref:     ${GITHUB_REF}
+          run:     ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}
+          built:   $(date -u +%Y-%m-%dT%H:%M:%SZ)
+          INFO
+          ls -lh build
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: calculator-api-image
+          path: build/
+          retention-days: 7
