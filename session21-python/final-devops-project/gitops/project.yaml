@@ -13,6 +13,8 @@ spec:
   destinations:
     - server: https://kubernetes.default.svc
       namespace: taskboard
+    - server: https://kubernetes.default.svc
+      namespace: taskboard-prod
   clusterResourceWhitelist:
     - group: ""
       kind: Namespace

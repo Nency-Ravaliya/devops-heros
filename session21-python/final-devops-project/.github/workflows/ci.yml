@@ -236,6 +236,7 @@ jobs:
         run: |
           docker run --rm -v "$PWD:/repo" "$GITLEAKS_IMAGE" \
             git /repo --config "/repo/$APP_DIR/security/.gitleaks.toml" \
+            --gitleaks-ignore-path "/repo/$APP_DIR/security/.gitleaksignore" \
             --log-opts="-- $APP_DIR" --redact --no-banner -v
 
   # ───────────────────────────────────────────── 7. Dockerfile lint / misconfig

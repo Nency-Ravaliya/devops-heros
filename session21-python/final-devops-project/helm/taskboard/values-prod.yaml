@@ -2,7 +2,7 @@
 backend:
   image:
     repository: ghcr.io/jenyyy4/taskboard-backend
-    tag: "1.0.0"
+    tag: "86cb243959fcc953e9cd538ec4e02b91288ba4d1"
     pullPolicy: IfNotPresent
   resources:
     requests: {cpu: 250m, memory: 256Mi}
@@ -10,7 +10,7 @@ backend:
 frontend:
   image:
     repository: ghcr.io/jenyyy4/taskboard-frontend
-    tag: "1.0.0"
+    tag: "86cb243959fcc953e9cd538ec4e02b91288ba4d1"
   replicaCount: 2
 postgres:
   auth:

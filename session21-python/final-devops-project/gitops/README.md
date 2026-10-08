@@ -5,7 +5,7 @@ Argo CD deploys the **same Helm chart** (`helm/taskboard`) from Git, using autom
 ```
 gitops/
 ├── argocd-application.yaml          LOCAL demo Application (applied): git://host.minikube.internal/taskboard-gitops
-├── argocd-application-github.yaml   real-world Application -> github.com/jenyyy4/devops-heros (NOT applied)
+├── argocd-application-github.yaml   real-world Application -> github.com/jenyyy4/devops-heros (applied -> ns taskboard-prod)
 ├── project.yaml                     AppProject "taskboard": allowed repos + only namespace taskboard
 ├── apps/taskboard/values-local.yaml environment values for the local cluster (THIS is what you edit + commit)
 ├── sync-local-repo.sh               copy chart + apps/ into the local git repo, commit, start git daemon
@@ -17,7 +17,7 @@ gitops/
 | Application | Source | Value files | Image tag keys that CD bumps |
 |-------------|--------|-------------|------------------------------|
 | `taskboard` (local, applied) | `git://host.minikube.internal/taskboard-gitops`, path `helm/taskboard` | `values.yaml` and `../../gitops/apps/taskboard/values-local.yaml` | `.backend.image.tag` and `.frontend.image.tag` in `gitops/apps/taskboard/values-local.yaml` |
-| `taskboard-prod` (GitHub, not applied) | `https://github.com/jenyyy4/devops-heros.git`, path `session21-python/final-devops-project/helm/taskboard` | `values.yaml` and `values-prod.yaml` | `.backend.image.tag` and `.frontend.image.tag` in `helm/taskboard/values-prod.yaml` |
+| `taskboard-prod` (GitHub, applied to ns `taskboard-prod`) | `https://github.com/jenyyy4/devops-heros.git`, path `session21-python/final-devops-project/helm/taskboard` | `values.yaml`, `values-prod.yaml`, `apps/taskboard/values-prod-minikube.yaml` | `.backend.image.tag` and `.frontend.image.tag` in `helm/taskboard/values-prod.yaml` |
 
 The flow is the same in both cases. CI builds the images and pushes them to GHCR. CD commits the new tag into the values file. Argo CD notices the commit and rolls the cluster forward.
 

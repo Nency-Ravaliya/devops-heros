@@ -328,15 +328,24 @@ lint → pytest + coverage → frontend build → SAST → SCA → gitleaks (tre
 
 Because every image is tagged with the commit SHA, each running pod can be traced to an exact commit.
 
-All four workflow files pass **actionlint** with 0 errors. They haven't run on GitHub yet because nothing has been pushed. [`ci-local` screenshots](screenshots/26-local-ci-run-part1.png) show the same stages run locally. Before the first real GitHub run:
-- Settings → Actions → General → **Read and write permissions**, needed for the GHCR push and the CD commit.
-- Make the GHCR packages public, or create an `imagePullSecret` in the cluster.
-- Optional: a `KUBECONFIG` secret (base64) and a `production` environment for `helm-deploy`.
+All four workflow files pass **actionlint** with 0 errors. Before pushing, the same stages were also run locally (screenshots 26-27).
+
+### Real runs on GitHub Actions
+
+| Run | Result |
+|---|---|
+| [CI #1](https://github.com/jenyyy4/devops-heros/actions/runs/37687160487) (`c246ec7`) | ❌ **Blocked by the secret-scanning gate.** gitleaks' custom DB-URL rule matched an example URL in `security/README.md`. The job failed, so nothing was built or pushed, and CD was skipped. |
+| Fix (`86cb243`) | Reworded the example. The historical fingerprint was reviewed and added to `security/.gitleaksignore`, which the history scan reads through `--gitleaks-ignore-path`. |
+| [CI #2](https://github.com/jenyyy4/devops-heros/actions/runs/37687498287) (`86cb243`) | ✅ All 12 jobs green: lint, tests, frontend, SAST, SCA, secrets, Dockerfile lint, build + smoke, Trivy (backend and frontend), **push to GHCR** |
+| [CD](https://github.com/jenyyy4/devops-heros/actions/runs/37687968090) | ✅ `gitops-update` pinned `86cb243…` in `values-prod.yaml` and pushed commit `bee0ddb` as `github-actions[bot]`. `helm-deploy` skipped (no `KUBECONFIG` secret). Argo CD did the deploy, see [GitOps](#13-gitops). |
 
 | | |
 |---|---|
 | ![](screenshots/25-actionlint-workflows.png) | ![](screenshots/26-local-ci-run-part1.png) |
 | ![](screenshots/27-local-ci-run-part2.png) | ![](screenshots/28-cd-gitops-tag-bump-dry-run.png) |
+| ![](screenshots/100-gh-actions-run-list.png) | ![](screenshots/101-gh-ci-run1-blocked-by-gitleaks.png) |
+| ![](screenshots/102-gh-ci-run2-all-jobs-green.png) | ![](screenshots/103-gh-cd-run-gitops.png) |
+| ![](screenshots/104-gh-cd-job-log-tag-bump.png) | ![](screenshots/105-gitops-commit-by-actions-bot.png) |
 
 ---
 
@@ -413,7 +422,7 @@ Argo CD deploys the Helm chart from Git with `syncPolicy.automated: {prune: true
 | File | Use |
 |---|---|
 | `gitops/argocd-application.yaml` | **Applied** in the local demo. The source is a local git repo served by `git daemon` (`git://host.minikube.internal/taskboard-gitops`), the same approach as Session 20; values come from `values.yaml` + `gitops/apps/taskboard/values-local.yaml` |
-| `gitops/argocd-application-github.yaml` | The real version: watches `session21-python/final-devops-project/helm/taskboard` on GitHub with `values-prod.yaml`, the file the CD workflow bumps. Passes a server-side dry run |
+| `gitops/argocd-application-github.yaml` | **Applied** (namespace `taskboard-prod`). Watches `session21-python/final-devops-project/helm/taskboard` on **GitHub** with `values-prod.yaml`, the file the CD workflow bumps, plus `gitops/apps/taskboard/values-prod-minikube.yaml`. That file holds laptop-only overrides (no cert-manager, no Prometheus Operator CRDs, smaller PVC and requests) and is dropped on EKS |
 | `gitops/project.yaml` | AppProject that restricts the allowed source repos and destinations |
 
 What was demonstrated:
@@ -429,6 +438,26 @@ What was demonstrated:
 | ![](screenshots/72-argocd-app-synced-healthy.png) | ![](screenshots/73-argocd-git-commit-auto-sync.png) |
 | ![](screenshots/74-argocd-self-heal-drift.png) | ![](screenshots/75-argocd-prune-hpa.png) |
 | ![](screenshots/76-argocd-history-final-state.png) | |
+
+### End to end: GitHub → CI → GHCR → CD → Argo CD → Kubernetes
+
+The final step closes the loop with real artifacts. Argo CD on the cluster tracks the GitHub repo and deploys the exact images CI pushed to GHCR, using the tag the CD bot committed:
+
+```bash
+kubectl create namespace taskboard-prod
+kubectl -n taskboard-prod create secret generic taskboard-db-prod \
+  --from-literal=DB_USER=taskboard --from-literal=DB_PASSWORD="$(openssl rand -hex 16)"   # prod: External/Sealed Secrets
+kubectl apply -f gitops/project.yaml -f gitops/argocd-application-github.yaml
+```
+
+Result: `taskboard-prod` is **Synced / Healthy** at Git revision `9bc8f5b`, running `ghcr.io/jenyyy4/taskboard-{backend,frontend}:86cb243…`, which is the commit that passed CI. A task created through the `taskboard-prod.local` ingress was stored in Postgres (PVC Bound).
+
+The first backend pull from GHCR failed with `ImagePullBackOff` (`DeadlineExceeded` on a slow network). Pre-pulling the same GHCR image on the node with `crictl pull` and deleting the pod fixed it. See [Real issues](#real-issues-hit-while-building-the-project).
+
+| | |
+|---|---|
+| ![](screenshots/106-argocd-github-app-created.png) | ![](screenshots/107-ghcr-images-running-in-cluster.png) |
+| ![](screenshots/108-argocd-github-app-synced-healthy.png) | ![](screenshots/109-prod-smoke-test-via-ingress.png) |
 
 ---
 
@@ -474,6 +503,8 @@ These weren't planted. They happened during the build and were debugged the same
 | `minikube image build` failed | `.dockerignore` excludes `Dockerfile` | `docker build` on the host + `minikube image load` |
 | Terraform on Moto failed with `NoSuchEntity` | Moto doesn't load AWS-managed IAM policies by default | Start Moto with `MOTO_IAM_LOAD_MANAGED_POLICIES=true` |
 | Trivy: 44 HIGH CVEs with no fix | Debian slim base image | Switched to the Alpine base |
+| First GitHub CI run failed at `Secret scan (gitleaks)` | The custom DB-URL rule matched an example URL in `security/README.md` (a false positive, but the gate did its job) | Reworded the doc; added the reviewed historical fingerprint to `security/.gitleaksignore` |
+| `taskboard-prod` backend `ImagePullBackOff`; events show `DeadlineExceeded` pulling from GHCR | Slow network: the 27 MB layer didn't finish within kubelet's pull deadline (frontend, 26 MB, had just made it) | `crictl pull` of the same GHCR image on the node, then `kubectl delete pod`. Argo then reported Healthy once the HPA got metrics |
 
 ---
 
@@ -491,6 +522,8 @@ These weren't planted. They happened during the build and were debugged the same
 | 60-66 | Prometheus, alerts, Grafana |
 | 70-76 | Argo CD GitOps |
 | 80-97 | Troubleshooting scenarios |
+| 100-105 | Real GitHub Actions runs: CI blocked, CI green, CD GitOps commit |
+| 106-109 | Argo CD tracking GitHub, GHCR images running, prod smoke test |
 
 ---
 

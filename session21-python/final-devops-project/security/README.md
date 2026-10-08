@@ -29,7 +29,7 @@ Reports (JSON) go to `security/reports/`, which is gitignored.
 | Container images | trivy 0.75.0 `image` | `trivy.yaml`, `.trivyignore` | any **HIGH/CRITICAL CVE that has a fix**, or any secret baked into a layer |
 
 `.gitleaks.toml` extends gitleaks' built-in rules with a project rule, `taskboard-database-url-password`, which catches
-`postgresql://user:<password>@host` connection strings. It allowlists only the local-dev password `taskboard` and `${VAR}`
+database URLs that embed a password (`<scheme>://<user>:<password>@<host>`). It allowlists only the local-dev password `taskboard` and `${VAR}`
 placeholders, and it skips `node_modules/`, `.venv/`, `dist/` and the lockfiles.
 
 Trivy uses `ignore-unfixed: true`. An OS CVE with no upstream fix can't be fixed by a rebuild, so it is reported but
