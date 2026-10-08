@@ -335,9 +335,12 @@ All four workflow files pass **actionlint** with 0 errors. Before pushing, the s
 | Run | Result |
 |---|---|
 | [CI #1](https://github.com/jenyyy4/devops-heros/actions/runs/37687160487) (`c246ec7`) | ❌ **Blocked by the secret-scanning gate.** gitleaks' custom DB-URL rule matched an example URL in `security/README.md`. The job failed, so nothing was built or pushed, and CD was skipped. |
-| Fix (`86cb243`) | Reworded the example. The historical fingerprint was reviewed and added to `security/.gitleaksignore`, which the history scan reads through `--gitleaks-ignore-path`. |
-| [CI #2](https://github.com/jenyyy4/devops-heros/actions/runs/37687498287) (`86cb243`) | ✅ All 12 jobs green: lint, tests, frontend, SAST, SCA, secrets, Dockerfile lint, build + smoke, Trivy (backend and frontend), **push to GHCR** |
-| [CD](https://github.com/jenyyy4/devops-heros/actions/runs/37687968090) | ✅ `gitops-update` pinned `86cb243…` in `values-prod.yaml` and pushed commit `bee0ddb` as `github-actions[bot]`. `helm-deploy` skipped (no `KUBECONFIG` secret). Argo CD did the deploy, see [GitOps](#13-gitops). |
+| Fix | Reworded the example. The historical fingerprint was reviewed and added to `security/.gitleaksignore`, which the history scan reads through `--gitleaks-ignore-path`. |
+| [CI #2](https://github.com/jenyyy4/devops-heros/actions/runs/37687498287) | ✅ All 12 jobs green: lint, tests, frontend, SAST, SCA, secrets, Dockerfile lint, build + smoke, Trivy (backend and frontend), **push to GHCR** with image tag `86cb243…` |
+| [CD](https://github.com/jenyyy4/devops-heros/actions/runs/37687968090) | ✅ `gitops-update` pinned `86cb243…` in `values-prod.yaml` and pushed the change back to `main` as `github-actions[bot]`. `helm-deploy` skipped (no `KUBECONFIG` secret). Argo CD did the deploy, see [GitOps](#13-gitops). |
+| [CI #3](https://github.com/jenyyy4/devops-heros/actions/runs/37767562646) (`6fc08e3`) | ✅ All jobs green again on the final commit |
+
+> The intermediate commits from these runs were later squashed into `6fc08e3`, so the SHAs shown in the screenshots (e.g. `86cb243`, `bee0ddb`, `9bc8f5b`) are no longer on `main`. The image tag `86cb243…` is still the one pinned in `values-prod.yaml` and stored in GHCR.
 
 | | |
 |---|---|
@@ -450,7 +453,7 @@ kubectl -n taskboard-prod create secret generic taskboard-db-prod \
 kubectl apply -f gitops/project.yaml -f gitops/argocd-application-github.yaml
 ```
 
-Result: `taskboard-prod` is **Synced / Healthy** at Git revision `9bc8f5b`, running `ghcr.io/jenyyy4/taskboard-{backend,frontend}:86cb243…`, which is the commit that passed CI. A task created through the `taskboard-prod.local` ingress was stored in Postgres (PVC Bound).
+Result: `taskboard-prod` is **Synced / Healthy** at the latest `main` revision (`6fc08e3`; screenshot 108 shows the pre-squash revision), running `ghcr.io/jenyyy4/taskboard-{backend,frontend}:86cb243…`, the images built and scanned by CI. A task created through the `taskboard-prod.local` ingress was stored in Postgres (PVC Bound).
 
 The first backend pull from GHCR failed with `ImagePullBackOff` (`DeadlineExceeded` on a slow network). Pre-pulling the same GHCR image on the node with `crictl pull` and deleting the pod fixed it. See [Real issues](#real-issues-hit-while-building-the-project).
 
