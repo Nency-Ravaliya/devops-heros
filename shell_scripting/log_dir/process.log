@@ -1,0 +1,4 @@
+  PID TTY           TIME CMD
+66142 ttys003    0:00.03 /bin/zsh -il
+66253 ttys005    0:00.08 /bin/zsh -il
+67505 ttys005    0:00.01 sh ./process_task.sh

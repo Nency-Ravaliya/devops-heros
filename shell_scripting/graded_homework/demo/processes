@@ -1,0 +1,10 @@
+  PID TTY           TIME CMD
+ 4350 ttys005    0:00.03 /bin/zsh -il
+ 5579 ttys006    0:00.78 -zsh
+ 7922 ttys006    0:00.08 /bin/sh /usr/bin/man history
+ 7954 ttys006    0:00.00 /bin/sh /usr/bin/man history
+ 7957 ttys006    0:00.02 /usr/bin/less -s
+12614 ttys009    0:00.82 /bin/zsh -il
+37197 ttys009    0:00.01 sh task.sh
+13167 ttys010    0:00.01 /bin/zsh -i
+18613 ttys011    0:00.01 -zsh
