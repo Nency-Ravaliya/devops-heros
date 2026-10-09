@@ -1,0 +1,3 @@
+  PID TTY           TIME CMD
+65934 ttys001    0:00.18 /bin/zsh -l
+85180 ttys001    0:00.02 /bin/bash ./t1.sh
