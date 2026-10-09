@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-headless
+spec:
+  clusterIP: None          # headless - DNS returns the POD IPs, not a virtual IP
+  selector:
+    app: backend
+  ports:
+    - name: http
+      port: 80
+      targetPort: 5678

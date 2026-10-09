@@ -1,0 +1,174 @@
+
+=====[0-BACKEND-DEPLOYMENT]=====
+deployment.apps/backend created
+Waiting for deployment "backend" rollout to finish: 0 of 3 updated replicas are available...
+Waiting for deployment "backend" rollout to finish: 1 of 3 updated replicas are available...
+Waiting for deployment "backend" rollout to finish: 2 of 3 updated replicas are available...
+deployment "backend" successfully rolled out
+NAME                       READY   STATUS    RESTARTS   AGE   IP            NODE                NOMINATED NODE   READINESS GATES
+backend-745f9b998b-8f7qf   1/1     Running   0          11s   10.244.2.16   devops-hw-worker    <none>           <none>
+backend-745f9b998b-n6vr6   1/1     Running   0          11s   10.244.1.16   devops-hw-worker2   <none>           <none>
+backend-745f9b998b-pm98n   1/1     Running   0          11s   10.244.2.15   devops-hw-worker    <none>           <none>
+
+=====[0-CLIENT-POD]=====
+pod/client created
+pod/client condition met
+
+=====[1-CLUSTERIP-CREATE]=====
+service/backend-clusterip created
+NAME                TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)   AGE
+backend-clusterip   ClusterIP   10.96.115.106   <none>        80/TCP    0s
+
+=====[1-CLUSTERIP-ENDPOINTS]=====
+NAME                ENDPOINTS                                            AGE
+backend-clusterip   10.244.1.16:5678,10.244.2.15:5678,10.244.2.16:5678   0s
+10.244.2.15 10.244.1.16 10.244.2.16
+
+=====[1-CLUSTERIP-CURL-BY-NAME]=====
+Hello from backend pod
+
+=====[1-CLUSTERIP-CURL-BY-IP]=====
+ClusterIP=10.96.115.106
+Hello from backend pod
+
+=====[1-CLUSTERIP-LOAD-BALANCING]=====
+--- 8 requests, counting which pod answered (via the pod hostname header) ---
+200 200 200 200 200 200 200 200 
+
+=====[1-DNS-RESOLUTION]=====
+;; Got recursion not available from 10.96.0.10
+Server:		10.96.0.10
+Address:	10.96.0.10#53
+
+Name:	backend-clusterip.default.svc.cluster.local
+Address: 10.96.115.106
+;; Got recursion not available from 10.96.0.10
+
+
+=====[1-FQDN]=====
+;; Got recursion not available from 10.96.0.10
+;; Got recursion not available from 10.96.0.10
+;; Got recursion not available from 10.96.0.10
+;; Got recursion not available from 10.96.0.10
+Server:		10.96.0.10
+Address:	10.96.0.10#53
+
+Name:	backend-clusterip.default.svc.cluster.local
+Address: 10.96.115.106
+;; Got recursion not available from 10.96.0.10
+
+
+=====[1-RESOLV-CONF]=====
+cat: can't open 'C:/Program Files/Git/etc/resolv.conf': No such file or directory
+command terminated with exit code 1
+
+=====[2-NODEPORT-CREATE]=====
+service/backend-nodeport created
+NAME               TYPE       CLUSTER-IP     EXTERNAL-IP   PORT(S)        AGE
+backend-nodeport   NodePort   10.96.237.99   <none>        80:30080/TCP   0s
+
+=====[2-NODEPORT-FROM-INSIDE]=====
+Hello from backend pod
+
+=====[2-NODEPORT-VIA-NODE-IP]=====
+node 172.22.0.4:30080 -> Hello from backend pod
+node 172.22.0.2:30080 -> Hello from backend pod
+node 172.22.0.3:30080 -> Hello from backend pod
+
+=====[3-LOADBALANCER-CREATE]=====
+service/backend-loadbalancer created
+NAME                   TYPE           CLUSTER-IP      EXTERNAL-IP   PORT(S)        AGE
+backend-loadbalancer   LoadBalancer   10.96.140.163   <pending>     80:32544/TCP   8s
+
+=====[3-LOADBALANCER-EXPLAIN]=====
+Type:                     LoadBalancer
+IP Family Policy:         SingleStack
+IP Families:              IPv4
+IP:                       10.96.140.163
+IPs:                      10.96.140.163
+Port:                     http  80/TCP
+TargetPort:               5678/TCP
+NodePort:                 http  32544/TCP
+Endpoints:                10.244.2.15:5678,10.244.1.16:5678,10.244.2.16:5678
+Session Affinity:         None
+External Traffic Policy:  Cluster
+Internal Traffic Policy:  Cluster
+Events:                   <none>
+
+=====[4-EXTERNALNAME-CREATE]=====
+service/external-github created
+NAME              TYPE           CLUSTER-IP   EXTERNAL-IP   PORT(S)   AGE
+external-github   ExternalName   <none>       github.com    <none>    0s
+
+=====[4-EXTERNALNAME-RESOLVE]=====
+;; Got recursion not available from 10.96.0.10
+;; Got recursion not available from 10.96.0.10
+;; Got recursion not available from 10.96.0.10
+;; Got recursion not available from 10.96.0.10
+Server:		10.96.0.10
+Address:	10.96.0.10#53
+
+external-github.default.svc.cluster.local	canonical name = github.com.
+Name:	github.com
+Address: 20.207.73.82
+
+
+=====[4-EXTERNALNAME-NO-ENDPOINTS]=====
+Error from server (NotFound): endpoints "external-github" not found
+
+=====[5-HEADLESS-CREATE]=====
+service/backend-headless created
+NAME               TYPE        CLUSTER-IP   EXTERNAL-IP   PORT(S)   AGE
+backend-headless   ClusterIP   None         <none>        80/TCP    0s
+
+=====[5-HEADLESS-DNS-RETURNS-POD-IPS]=====
+;; Got recursion not available from 10.96.0.10
+;; Got recursion not available from 10.96.0.10
+;; Got recursion not available from 10.96.0.10
+;; Got recursion not available from 10.96.0.10
+Server:		10.96.0.10
+Address:	10.96.0.10#53
+
+Name:	backend-headless.default.svc.cluster.local
+Address: 10.244.1.16
+Name:	backend-headless.default.svc.cluster.local
+Address: 10.244.2.16
+Name:	backend-headless.default.svc.cluster.local
+Address: 10.244.2.15
+;; Got recursion not available from 10.96.0.10
+
+
+=====[5-COMPARE-POD-IPS]=====
+backend-745f9b998b-8f7qf	10.244.2.16
+backend-745f9b998b-n6vr6	10.244.1.16
+backend-745f9b998b-pm98n	10.244.2.15
+
+=====[5-HEADLESS-HAS-NO-CLUSTERIP]=====
+clusterIP=None
+
+=====[6-ALL-SERVICES]=====
+NAME                   TYPE           CLUSTER-IP      EXTERNAL-IP   PORT(S)        AGE
+backend-clusterip      ClusterIP      10.96.115.106   <none>        80/TCP         13s
+backend-headless       ClusterIP      None            <none>        80/TCP         1s
+backend-loadbalancer   LoadBalancer   10.96.140.163   <pending>     80:32544/TCP   10s
+backend-nodeport       NodePort       10.96.237.99    <none>        80:30080/TCP   11s
+external-github        ExternalName   <none>          github.com    <none>         2s
+kubernetes             ClusterIP      10.96.0.1       <none>        443/TCP        23m
+
+=====[6-SERVICE-TYPES-SUMMARY]=====
+NAME                   TYPE           CLUSTER-IP      PORT     NODEPORT   EXTERNALNAME
+backend-clusterip      ClusterIP      10.96.115.106   80       <none>     <none>
+backend-headless       ClusterIP      None            80       <none>     <none>
+backend-loadbalancer   LoadBalancer   10.96.140.163   80       32544      <none>
+backend-nodeport       NodePort       10.96.237.99    80       30080      <none>
+external-github        ExternalName   <none>          <none>   <none>     github.com
+kubernetes             ClusterIP      10.96.0.1       443      <none>     <none>
+
+=====[7-SELECTOR-MISMATCH-DEMO]=====
+NAME         ENDPOINTS   AGE
+broken-svc   <none>      0s
+(a Service whose selector matches no pods has NO endpoints - the #1 cause of 'connection refused' through a Service)
+
+=====[8-KUBE-PROXY-RULES]=====
+10.96.115.106
+(kube-proxy programs iptables/IPVS rules on every node so this virtual IP load-balances to the pod IPs above)

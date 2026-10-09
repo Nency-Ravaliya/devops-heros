@@ -1,0 +1,46 @@
+
+=====[RESOLV-CONF-IN-POD]=====
+search default.svc.cluster.local svc.cluster.local cluster.local
+nameserver 10.96.0.10
+options ndots:5
+
+=====[WHOAMI-DEPLOY]=====
+Waiting for deployment "whoami" rollout to finish: 0 of 3 updated replicas are available...
+Waiting for deployment "whoami" rollout to finish: 1 of 3 updated replicas are available...
+Waiting for deployment "whoami" rollout to finish: 2 of 3 updated replicas are available...
+deployment "whoami" successfully rolled out
+whoami-769454856f-cfmjc	10.244.2.17
+whoami-769454856f-tmjx5	10.244.1.18
+whoami-769454856f-vfrp7	10.244.1.19
+
+=====[ENDPOINTS]=====
+NAME         ENDPOINTS                                      AGE
+whoami-svc   10.244.1.18:80,10.244.1.19:80,10.244.2.17:80   8s
+
+=====[LOAD-BALANCING-20-REQUESTS]=====
+      8 Hostname: whoami-769454856f-vfrp7
+      6 Hostname: whoami-769454856f-tmjx5
+      6 Hostname: whoami-769454856f-cfmjc
+
+=====[SINGLE-REQUEST-FULL-RESPONSE]=====
+Hostname: whoami-769454856f-tmjx5
+IP: 127.0.0.1
+IP: ::1
+IP: 10.244.1.18
+IP: fe80::286d:6cff:fe81:1dae
+RemoteAddr: 10.244.1.17:39736
+GET / HTTP/1.1
+Host: whoami-svc
+
+=====[SCALE-DOWN-ENDPOINTS-SHRINK]=====
+NAME         ENDPOINTS        AGE
+whoami-svc   10.244.2.17:80   17s
+
+=====[SCALE-UP-ENDPOINTS-GROW]=====
+NAME         ENDPOINTS                                      AGE
+whoami-svc   10.244.1.20:80,10.244.1.21:80,10.244.2.17:80   29s
+
+=====[DNS-SHORT-NAMES-WORK]=====
+whoami-svc -> 200
+whoami-svc.default -> 200
+whoami-svc.default.svc.cluster.local -> 200

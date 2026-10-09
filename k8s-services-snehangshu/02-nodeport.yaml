@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-nodeport
+spec:
+  type: NodePort           # opens the same port on EVERY node
+  selector:
+    app: backend
+  ports:
+    - name: http
+      port: 80
+      targetPort: 5678
+      nodePort: 30080      # must be in 30000-32767
