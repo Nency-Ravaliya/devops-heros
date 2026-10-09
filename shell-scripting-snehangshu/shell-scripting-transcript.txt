@@ -1,0 +1,117 @@
+
+=====[01_system_info.sh]=====
+===== System Info =====
+Date     : Thu Sep 17 21:08:51 UTC 2026
+Hostname : ee647242261e
+Username : root
+
+===== Running Processes =====
+UID          PID    PPID  C STIME TTY          TIME CMD
+root           1       0  1 21:08 ?        00:00:00 sleep 600
+root          13       0  2 21:08 ?        00:00:00 bash /root/run.sh
+root          20      13  0 21:08 ?        00:00:00 /bin/bash ./01_system_info.sh
+root          24      20  0 21:08 ?        00:00:00 ps -ef
+root          25      20  0 21:08 ?        00:00:00 head -15
+
+Process info saved in process.log
+
+=====[01-generated-log]=====
+process.log line count: 5
+UID          PID    PPID  C STIME TTY          TIME CMD
+root           1       0  1 21:08 ?        00:00:00 sleep 600
+root          13       0  2 21:08 ?        00:00:00 bash /root/run.sh
+
+=====[02_variables.sh]=====
+Name    : Snehangshu Roy
+Roll No : 24BCS10155
+Comment : Shell scripting makes repetitive DevOps work a lot easier
+
+=====[03_input.sh]=====
+
+Name    : Snehangshu Roy
+Roll No : 24BCS10155
+Comment : Shell scripting makes repetitive DevOps work a lot easier
+
+=====[04_create_dir_file.sh]=====
+Directory my_details created
+
+Details written to my_details/details.txt
+Date     : Thu Sep 17 21:08:51 UTC 2026
+Hostname : ee647242261e
+Username : root
+Name     : Snehangshu Roy
+Roll No  : 24BCS10155
+Comment  : Automating system reports with shell scripts
+
+=====[04-verify-files]=====
+total 8
+-rw-r--r-- 1 root root 184 Sep 17 21:08 details.txt
+-rw-r--r-- 1 root root 333 Sep 17 21:08 process.log
+--- details.txt ---
+Date     : Thu Sep 17 21:08:51 UTC 2026
+Hostname : ee647242261e
+Username : root
+Name     : Snehangshu Roy
+Roll No  : 24BCS10155
+Comment  : Automating system reports with shell scripts
+
+=====[05_system_info_complete.sh]=====
+===================================================
+            SYSTEM INFORMATION REPORT
+===================================================
+Date      : Thu Sep 17 21:08:51 UTC 2026
+Hostname  : ee647242261e
+Username  : root
+
+===== Disk Usage (df -h) =====
+Filesystem      Size  Used Avail Use% Mounted on
+overlay        1007G   18G  939G   2% /
+tmpfs            64M     0   64M   0% /dev
+shm              64M     0   64M   0% /dev/shm
+/dev/sde       1007G   18G  939G   2% /etc/hosts
+tmpfs           5.7G     0  5.7G   0% /proc/acpi
+tmpfs           5.7G     0  5.7G   0% /proc/scsi
+tmpfs           5.7G     0  5.7G   0% /sys/firmware
+
+===== Running Processes (ps -ef | head -10) =====
+UID          PID    PPID  C STIME TTY          TIME CMD
+root           1       0  1 21:08 ?        00:00:00 sleep 600
+root          13       0  2 21:08 ?        00:00:00 bash /root/run.sh
+root          44      13  0 21:08 ?        00:00:00 /bin/bash ./05_system_info_complete.sh
+root          49      44  0 21:08 ?        00:00:00 ps -ef
+root          50      44  0 21:08 ?        00:00:00 head -10
+
+
+Directory 'system_report' created with mkdir
+Empty files created with touch:
+total 0
+-rw-r--r-- 1 root root 0 Sep 17 21:08 processes.txt
+-rw-r--r-- 1 root root 0 Sep 17 21:08 summary.txt
+
+Running processes stored in system_report/processes.txt using > redirection
+Lines captured: 5
+
+===== Contents of system_report/summary.txt =====
+===== System Summary =====
+Date      : Thu Sep 17 21:08:51 UTC 2026
+Hostname  : ee647242261e
+Username  : root
+Disk used : 18G of 1007G (2%)
+Processes : 6 running
+Name      : Snehangshu Roy
+Roll No   : 24BCS10155
+Comment   : One script covering every task requirement
+
+===== First 5 lines of system_report/processes.txt =====
+UID          PID    PPID  C STIME TTY          TIME CMD
+root           1       0  1 21:08 ?        00:00:00 sleep 600
+root          13       0  2 21:08 ?        00:00:00 bash /root/run.sh
+root          44      13  0 21:08 ?        00:00:00 /bin/bash ./05_system_info_complete.sh
+root          55      44  0 21:08 ?        00:00:00 ps -ef
+
+Report complete.
+
+=====[05-verify-files]=====
+total 8
+-rw-r--r-- 1 root root 338 Sep 17 21:08 processes.txt
+-rw-r--r-- 1 root root 267 Sep 17 21:08 summary.txt
