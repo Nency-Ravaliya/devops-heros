@@ -18,6 +18,7 @@ spec:
       containers:
         - name: notes
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy | default "IfNotPresent" }}
           ports:
             - containerPort: {{ .Values.service.port }}
           envFrom:
