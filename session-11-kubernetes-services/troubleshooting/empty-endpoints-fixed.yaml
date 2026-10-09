@@ -1,0 +1,21 @@
+# ==============================================================================
+# FIX for empty-endpoints.yaml
+# Root cause: the Service selector (app: wrong-backend-name) did not match any
+# running pod's labels, so kube-proxy had nothing to route to and
+# `kubectl get endpoints broken-backend-service` showed <none>.
+# Fix: correct the selector to match the actual backend pod label (app: yatri-backend).
+# ==============================================================================
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: broken-backend-service
+spec:
+  type: ClusterIP
+  selector:
+    app: yatri-backend
+  ports:
+    - name: http
+      port: 80
+      targetPort: 5000
+      protocol: TCP
