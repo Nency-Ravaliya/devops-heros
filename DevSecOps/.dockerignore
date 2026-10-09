@@ -1,0 +1,6 @@
+tests
+original-pipeline
+.pytest_cache
+__pycache__
+.coverage
+*.md

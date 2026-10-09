@@ -1,0 +1,138 @@
+# Session 16 - CI/CD demo with GitHub Actions
+# App lives in "CICD GitHub Actions/". CI = test + security check + build artifact.
+# CD = Docker image -> GitHub Container Registry -> deploy to a throwaway Kubernetes (kind) cluster.
+name: Session 16 - CI/CD Pipeline
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "CICD GitHub Actions/**"
+      - ".github/workflows/session16-cicd.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "CICD GitHub Actions/**"
+  workflow_dispatch: {}          # manual "Run workflow" button
+
+env:
+  APP_DIR: "CICD GitHub Actions"
+  IMAGE_NAME: ghcr.io/tejasvarshney/session16-calculator
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  # ---------------- CI ----------------
+  test:
+    name: Test (pytest)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ env.APP_DIR }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: "${{ env.APP_DIR }}/requirements-dev.txt"
+      - name: Install dependencies
+        run: pip install -r requirements-dev.txt
+      - name: Run unit tests with coverage
+        run: pytest -v --junitxml=test-results.xml --cov=app --cov-report=term-missing --cov-report=xml
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-report
+          path: |
+            ${{ env.APP_DIR }}/test-results.xml
+            ${{ env.APP_DIR }}/coverage.xml
+
+  security-check:
+    name: Security check (sensitive files)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fail if private keys / .env files are committed
+        working-directory: ${{ env.APP_DIR }}
+        run: |
+          found=$(find . -type f \( -name ".env" -o -name "*.pem" -o -name "*.key" -o -name "id_rsa*" \) | tee /dev/stderr | wc -l)
+          if [ "$found" -gt 0 ]; then echo "::error::Sensitive files found"; exit 1; fi
+          echo "No sensitive files found"
+
+  build:
+    name: Build artifact
+    needs: [test, security-check]       # only after CI checks pass
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ env.APP_DIR }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run build script
+        run: bash build.sh
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: calculator-build
+          path: ${{ env.APP_DIR }}/calculator-build.tar.gz
+          retention-days: 7
+
+  # ---------------- CD ----------------
+  docker:
+    name: Docker build & push (GHCR)
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write                  # lets GITHUB_TOKEN push to ghcr.io
+    outputs:
+      image: ${{ steps.meta.outputs.image }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: meta
+        run: echo "image=${IMAGE_NAME}:${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+      - name: Build image
+        run: docker build --build-arg APP_VERSION=${GITHUB_SHA::7} -t ${{ steps.meta.outputs.image }} -t ${IMAGE_NAME}:latest "$APP_DIR"
+      - name: Smoke-test the container
+        run: |
+          docker run -d --name calc -p 8000:8000 ${{ steps.meta.outputs.image }}
+          for i in $(seq 1 20); do curl -fs localhost:8000/health && break; sleep 1; done
+          curl -fs "localhost:8000/api/multiply?a=6&b=7"
+      - name: Log in to GHCR (secret = GITHUB_TOKEN)
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Push image
+        if: github.event_name != 'pull_request'
+        run: |
+          docker push ${{ steps.meta.outputs.image }}
+          docker push ${IMAGE_NAME}:latest
+
+  deploy:
+    name: Deploy to Kubernetes (kind)
+    needs: docker
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create kind cluster
+        uses: helm/kind-action@v1.10.0
+      - name: Deploy
+        run: |
+          sed -i "s|IMAGE_PLACEHOLDER|${{ needs.docker.outputs.image }}|" "$APP_DIR/k8s/deployment.yaml"
+          kubectl apply -f "$APP_DIR/k8s/deployment.yaml"
+          kubectl rollout status deployment/calculator --timeout=120s
+          kubectl get pods,svc -o wide
+      - name: Verify the deployed app
+        run: |
+          kubectl port-forward svc/calculator 8080:80 &
+          sleep 3
+          curl -fs localhost:8080/
+          curl -fs "localhost:8080/api/add?a=40&b=2"

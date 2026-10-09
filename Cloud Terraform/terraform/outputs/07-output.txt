@@ -1,0 +1,9 @@
+$ terraform output
+instance_id = "i-55dec0a4b6d90e3b7"
+instance_public_ip = "54.214.206.0"
+public_subnet_id = "subnet-f3ca32c36d673e14f"
+s3_bucket = "devops-heros-assets-a6343404"
+security_group_id = "sg-f0fedcb4eb31f6697"
+vpc_id = "vpc-32ac50ea35a85331d"
+web_url = "http://54.214.206.0"
+[exit code: 0]

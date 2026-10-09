@@ -1,0 +1,120 @@
+# --- the Ingress Controller (ingress-nginx, installed by `minikube addons enable ingress`) ---
+$ kubectl get ingressclass
+NAME              CONTROLLER             PARAMETERS   AGE
+nginx (default)   k8s.io/ingress-nginx   <none>       30m
+
+$ kubectl -n ingress-nginx get deploy,pods,svc
+NAME                                       READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/ingress-nginx-controller   1/1     1            1           30m
+
+NAME                                           READY   STATUS      RESTARTS   AGE
+pod/ingress-nginx-admission-create-jqqt9       0/1     Completed   0          30m
+pod/ingress-nginx-admission-patch-nvtmr        0/1     Completed   0          30m
+pod/ingress-nginx-controller-d7cd8c989-lkj56   1/1     Running     0          30m
+
+NAME                                         TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)                      AGE
+service/ingress-nginx-controller             NodePort    10.107.245.208   <none>        80:30088/TCP,443:32417/TCP   30m
+service/ingress-nginx-controller-admission   ClusterIP   10.103.108.150   <none>        443/TCP                      30m
+
+# --- 1. deploy applications + 2. create services ---
+$ kubectl apply -f 03-ingress/apps.yaml
+deployment.apps/shop unchanged
+service/shop unchanged
+deployment.apps/blog unchanged
+service/blog unchanged
+
+$ kubectl get pods -l 'app in (shop,blog)' -o wide
+NAME                    READY   STATUS    RESTARTS   AGE   IP             NODE       NOMINATED NODE   READINESS GATES
+blog-68d655f9b6-59gtd   1/1     Running   0          67s   10.244.0.100   minikube   <none>           <none>
+blog-68d655f9b6-bpx9j   1/1     Running   0          67s   10.244.0.102   minikube   <none>           <none>
+shop-7c9c4b7666-ffq4w   1/1     Running   0          67s   10.244.0.99    minikube   <none>           <none>
+shop-7c9c4b7666-rbzrn   1/1     Running   0          67s   10.244.0.101   minikube   <none>           <none>
+
+$ kubectl get svc shop blog
+NAME   TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)   AGE
+shop   ClusterIP   10.108.194.211   <none>        80/TCP    67s
+blog   ClusterIP   10.108.41.181    <none>        80/TCP    67s
+
+# --- 3. configure Ingress ---
+$ kubectl apply -f 03-ingress/ingress.yaml
+ingress.networking.k8s.io/demo-ingress unchanged
+ingress.networking.k8s.io/host-ingress unchanged
+
+$ kubectl get ingress
+NAME           CLASS   HOSTS                             ADDRESS        PORTS   AGE
+demo-ingress   nginx   demo.local                        192.168.49.2   80      64s
+host-ingress   nginx   shop.demo.local,blog.demo.local   192.168.49.2   80      64s
+
+$ kubectl describe ingress demo-ingress
+Name:             demo-ingress
+Labels:           <none>
+Namespace:        default
+Address:          192.168.49.2
+Ingress Class:    nginx
+Default backend:  <default>
+Rules:
+  Host        Path  Backends
+  ----        ----  --------
+  demo.local  
+              /shop(/|$)(.*)   shop:80 (10.244.0.99:8080,10.244.0.101:8080)
+              /blog(/|$)(.*)   blog:80 (10.244.0.102:8080,10.244.0.100:8080)
+Annotations:  nginx.ingress.kubernetes.io/rewrite-target: /$2
+Events:
+  Type    Reason  Age                From                      Message
+  ----    ------  ----               ----                      -------
+  Normal  Sync    56s (x2 over 64s)  nginx-ingress-controller  Scheduled for sync
+
+$ kubectl describe ingress host-ingress | sed -n '/Rules:/,/Annotations:/p'
+Rules:
+  Host             Path  Backends
+  ----             ----  --------
+  shop.demo.local  
+                   /   shop:80 (10.244.0.99:8080,10.244.0.101:8080)
+  blog.demo.local  
+                   /   blog:80 (10.244.0.102:8080,10.244.0.100:8080)
+Annotations:       <none>
+
+# --- 4. access the apps THROUGH the ingress controller (from the curl Pod, Host header picks the rule) ---
+$ kubectl exec curl -- curl -s -H 'Host: demo.local' http://ingress-nginx-controller.ingress-nginx.svc.cluster.local/shop
+SHOP service
+
+$ kubectl exec curl -- curl -s -H 'Host: demo.local' http://ingress-nginx-controller.ingress-nginx.svc.cluster.local/blog
+BLOG service
+
+$ kubectl exec curl -- curl -s -H 'Host: demo.local' http://ingress-nginx-controller.ingress-nginx.svc.cluster.local/blog/some/page
+BLOG service
+
+$ kubectl exec curl -- curl -s -H 'Host: shop.demo.local' http://ingress-nginx-controller.ingress-nginx.svc.cluster.local/
+SHOP service
+
+$ kubectl exec curl -- curl -s -H 'Host: blog.demo.local' http://ingress-nginx-controller.ingress-nginx.svc.cluster.local/
+BLOG service
+
+# --- the controller NodePort (80:30088) on the node IP works the same way ---
+$ kubectl exec curl -- curl -s -H 'Host: demo.local' http://192.168.49.2:30088/shop
+SHOP service
+
+# --- 5. verify routing: unmatched path / host -> 404 from the default backend ---
+$ kubectl exec curl -- curl -s -o /dev/null -w 'demo.local/admin -> HTTP %{http_code}\n' -H 'Host: demo.local' http://ingress-nginx-controller.ingress-nginx.svc.cluster.local/admin
+demo.local/admin -> HTTP 404
+
+$ kubectl exec curl -- curl -s -o /dev/null -w 'unknown.local/ -> HTTP %{http_code}\n' -H 'Host: unknown.local' http://ingress-nginx-controller.ingress-nginx.svc.cluster.local/
+unknown.local/ -> HTTP 404
+
+# --- load balancing across the 2 shop Pods (see upstream IPs in the controller log) ---
+$ kubectl exec curl -- sh -c 'for i in 1 2 3 4; do curl -s -H "Host: shop.demo.local" http://ingress-nginx-controller.ingress-nginx.svc.cluster.local/ >/dev/null; done'; kubectl -n ingress-nginx logs deploy/ingress-nginx-controller --tail=4 | awk '{print $7, $9, $15, "upstream="$17}'
+/ 200 [default-shop-80] upstream=10.244.0.101:8080
+/ 200 [default-shop-80] upstream=10.244.0.101:8080
+/ 200 [default-shop-80] upstream=10.244.0.99:8080
+/ 200 [default-shop-80] upstream=10.244.0.99:8080
+
+# --- from my Windows laptop: `minikube tunnel` exposes the controller on 127.0.0.1:80 ---
+$ curl -s --resolve demo.local:80:127.0.0.1 http://demo.local/shop
+SHOP service
+
+$ curl -s --resolve demo.local:80:127.0.0.1 http://demo.local/blog
+BLOG service
+
+$ curl -s --resolve blog.demo.local:80:127.0.0.1 http://blog.demo.local/
+BLOG service
+

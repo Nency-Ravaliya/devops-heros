@@ -1,0 +1,44 @@
+########## 1. BREAK ##########
+$ kubectl apply -f 02-imagepullbackoff/broken.yaml
+pod/web-tag created
+
+########## 2. INVESTIGATE ##########
+$ kubectl get pod web-tag
+NAME      READY   STATUS         RESTARTS   AGE
+web-tag   0/1     ErrImagePull   0          40s
+
+$ kubectl get pod web-tag -o jsonpath='{.status.containerStatuses[0].state.waiting}'; echo
+{"message":"rpc error: code = NotFound desc = failed to pull and unpack image \"docker.io/library/nginx:1.277\": failed to resolve reference \"docker.io/library/nginx:1.277\": docker.io/library/nginx:1.277: not found","reason":"ErrImagePull"}
+
+$ kubectl describe pod web-tag | sed -n '/^Events:/,$p'
+Events:
+  Type     Reason     Age                From               Message
+  ----     ------     ----               ----               -------
+  Normal   Scheduled  40s                default-scheduler  Successfully assigned default/web-tag to minikube
+  Normal   Pulling    24s (x2 over 40s)  kubelet            Pulling image "nginx:1.277"
+  Warning  Failed     23s (x2 over 37s)  kubelet            Failed to pull image "nginx:1.277": rpc error: code = NotFound desc = failed to pull and unpack image "docker.io/library/nginx:1.277": failed to resolve reference "docker.io/library/nginx:1.277": docker.io/library/nginx:1.277: not found
+  Warning  Failed     23s (x2 over 37s)  kubelet            Error: ErrImagePull
+  Normal   BackOff    10s (x2 over 37s)  kubelet            Back-off pulling image "nginx:1.277"
+  Warning  Failed     10s (x2 over 37s)  kubelet            Error: ImagePullBackOff
+
+# ROOT CAUSE: tag nginx:1.277 does not exist on Docker Hub (typo of 1.27). kubelet retries with back-off -> ImagePullBackOff
+########## 3. FIX ##########
+$ diff 02-imagepullbackoff/broken.yaml 02-imagepullbackoff/fixed.yaml
+8c8
+<       image: nginx:1.277        # typo - this tag does not exist
+---
+>       image: nginx:1.27
+
+$ kubectl delete pod web-tag --now && kubectl apply -f 02-imagepullbackoff/fixed.yaml && kubectl wait --for=condition=Ready pod/web-tag --timeout=90s
+pod "web-tag" deleted from default namespace
+pod/web-tag created
+pod/web-tag condition met
+
+########## 4. VERIFY ##########
+$ kubectl get pod web-tag
+NAME      READY   STATUS    RESTARTS   AGE
+web-tag   1/1     Running   0          1s
+
+$ kubectl get pod web-tag -o jsonpath='{.status.containerStatuses[0].image}'; echo
+docker.io/library/nginx:1.27
+

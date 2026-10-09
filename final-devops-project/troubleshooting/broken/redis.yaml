@@ -1,0 +1,47 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: notes-redis
+spec:
+  selector: { app: notes-redis }
+  ports:
+    - name: redis
+      port: 6379
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: notes-redis
+spec:
+  serviceName: notes-redis
+  replicas: 1
+  selector:
+    matchLabels: { app: notes-redis }
+  template:
+    metadata:
+      labels: { app: notes-redis }
+    spec:
+      containers:
+        - name: redis
+          image: redis:7.4-alpine
+          command: ["sh", "-c", "exec redis-server --appendonly yes --requirepass \"$REDIS_PASSWORD\""]
+          env:
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef: { name: notes-redis-auth, key: password }
+          ports:
+            - containerPort: 6379
+          readinessProbe:
+            exec:
+              command: ["sh", "-c", "redis-cli -a \"$REDIS_PASSWORD\" --no-auth-warning ping | grep -q PONG"]
+          volumeMounts:
+            - name: data
+              mountPath: /data
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 1Gi

@@ -1,0 +1,28 @@
+# Multi-source Application: the Helm chart + the values file, both from this repo.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: notes-api
+  namespace: argocd
+spec:
+  project: default
+  sources:
+    - repoURL: https://github.com/TejasVarshney/devops-heros.git
+      targetRevision: final-gitops
+      path: final-devops-project/helm/notes-api
+      helm:
+        releaseName: notes
+        valueFiles:
+          - $values/final-devops-project/gitops/notes-values.yaml
+    - repoURL: https://github.com/TejasVarshney/devops-heros.git
+      targetRevision: final-gitops
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: notes
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

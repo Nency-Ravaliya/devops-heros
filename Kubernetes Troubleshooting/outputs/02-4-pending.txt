@@ -1,0 +1,45 @@
+########## 1. BREAK ##########
+$ kubectl apply -f 04-pending/broken.yaml
+pod/gpu-job created
+
+########## 2. INVESTIGATE ##########
+$ kubectl get pod gpu-job -o wide
+NAME      READY   STATUS    RESTARTS   AGE   IP       NODE     NOMINATED NODE   READINESS GATES
+gpu-job   0/1     Pending   0          8s    <none>   <none>   <none>           <none>
+
+$ kubectl describe pod gpu-job | grep -A2 'Node-Selectors'
+Node-Selectors:              hardware=gpu
+Tolerations:                 node.kubernetes.io/not-ready:NoExecute op=Exists for 300s
+                             node.kubernetes.io/unreachable:NoExecute op=Exists for 300s
+
+$ kubectl describe pod gpu-job | sed -n '/^Events:/,$p'
+Events:
+  Type     Reason            Age   From               Message
+  ----     ------            ----  ----               -------
+  Warning  FailedScheduling  9s    default-scheduler  0/1 nodes are available: 1 node(s) didn't match Pod's node affinity/selector. preemption: 0/1 nodes are available: 1 Preemption is not helpful for scheduling.
+
+$ kubectl get nodes --show-labels
+NAME       STATUS   ROLES           AGE   VERSION   LABELS
+minikube   Ready    control-plane   71m   v1.37.0   beta.kubernetes.io/arch=amd64,beta.kubernetes.io/os=linux,kubernetes.io/arch=amd64,kubernetes.io/hostname=minikube,kubernetes.io/os=linux,minikube.k8s.io/commit=7a9f6a841470a207de8cf4bafcccee0969d8ba10,minikube.k8s.io/name=minikube,minikube.k8s.io/primary=true,minikube.k8s.io/updated_at=2026_10_08T00_09_48_0700,minikube.k8s.io/version=v1.39.0,node-role.kubernetes.io/control-plane=,node.kubernetes.io/exclude-from-external-load-balancers=
+
+# ROOT CAUSE: nodeSelector hardware=gpu matches no node -> scheduler cannot place the Pod (no node, no IP)
+########## 3. FIX ##########
+$ diff 04-pending/broken.yaml 04-pending/fixed.yaml
+7c7
+<     hardware: gpu              # no node has this label
+---
+>     kubernetes.io/os: linux    # a label the node really has (alternative: kubectl label node)
+
+$ kubectl delete pod gpu-job --now && kubectl apply -f 04-pending/fixed.yaml && kubectl wait --for=condition=Ready pod/gpu-job --timeout=60s
+pod "gpu-job" deleted from default namespace
+pod/gpu-job created
+pod/gpu-job condition met
+
+########## 4. VERIFY ##########
+$ kubectl get pod gpu-job -o wide
+NAME      READY   STATUS    RESTARTS   AGE   IP            NODE       NOMINATED NODE   READINESS GATES
+gpu-job   1/1     Running   0          1s    10.244.0.37   minikube   <none>           <none>
+
+$ kubectl logs gpu-job
+running on gpu-job
+

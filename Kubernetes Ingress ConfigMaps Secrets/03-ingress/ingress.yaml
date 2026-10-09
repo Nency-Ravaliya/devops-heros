@@ -1,0 +1,45 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: demo-ingress
+  annotations:
+    # /shop/anything -> /anything at the backend
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+spec:
+  ingressClassName: nginx
+  rules:
+    # path-based routing on one host
+    - host: demo.local
+      http:
+        paths:
+          - path: /shop(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service: { name: shop, port: { number: 80 } }
+          - path: /blog(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service: { name: blog, port: { number: 80 } }
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: host-ingress
+spec:
+  ingressClassName: nginx
+  rules:
+    # host-based routing
+    - host: shop.demo.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service: { name: shop, port: { number: 80 } }
+    - host: blog.demo.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service: { name: blog, port: { number: 80 } }

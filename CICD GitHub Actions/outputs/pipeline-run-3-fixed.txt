@@ -1,0 +1,53 @@
+Workflow: Session 16 - CI/CD Pipeline
+Run #3  event=push  commit=01726fb  "Session 16: fix add() - pipeline should go green again"
+Status: completed / success
+Started 2026-10-07T19:52:49Z  updated 2026-10-07T19:54:45Z
+URL: https://github.com/TejasVarshney/devops-heros/actions/runs/37677819623
+
+JOB  Security check (sensitive files)                        success   runner: GitHub Actions 1000000055 (ubuntu-latest)
+      1. Set up job                                              success
+      2. Run actions/checkout@v4                                 success
+      3. Fail if private keys / .env files are committed         success
+      6. Post Run actions/checkout@v4                            success
+      7. Complete job                                            success
+JOB  Test (pytest)                                           success   runner: GitHub Actions 1000000056 (ubuntu-latest)
+      1. Set up job                                              success
+      2. Run actions/checkout@v4                                 success
+      3. Run actions/setup-python@v5                             success
+      4. Install dependencies                                    success
+      5. Run unit tests with coverage                            success
+      6. Upload test report                                      success
+     11. Post Run actions/setup-python@v5                        success
+     12. Post Run actions/checkout@v4                            success
+     13. Complete job                                            success
+JOB  Build artifact                                          success   runner: GitHub Actions 1000000057 (ubuntu-latest)
+      1. Set up job                                              success
+      2. Run actions/checkout@v4                                 success
+      3. Run build script                                        success
+      4. Upload build artifact                                   success
+      8. Post Run actions/checkout@v4                            success
+      9. Complete job                                            success
+JOB  Docker build & push (GHCR)                              success   runner: GitHub Actions 1000000058 (ubuntu-latest)
+      1. Set up job                                              success
+      2. Run actions/checkout@v4                                 success
+      3. Run echo "image=${IMAGE_NAME}:${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT" success
+      4. Build image                                             success
+      5. Smoke-test the container                                success
+      6. Log in to GHCR (secret = GITHUB_TOKEN)                  success
+      7. Push image                                              success
+     13. Post Log in to GHCR (secret = GITHUB_TOKEN)             success
+     14. Post Run actions/checkout@v4                            success
+     15. Complete job                                            success
+JOB  Deploy to Kubernetes (kind)                             success   runner: GitHub Actions 1000000059 (ubuntu-latest)
+      1. Set up job                                              success
+      2. Run actions/checkout@v4                                 success
+      3. Create kind cluster                                     success
+      4. Deploy                                                  success
+      5. Verify the deployed app                                 success
+      9. Post Create kind cluster                                success
+     10. Post Run actions/checkout@v4                            success
+     11. Complete job                                            success
+
+Artifacts:
+  - test-report  (1123 bytes)
+  - calculator-build  (1222 bytes)

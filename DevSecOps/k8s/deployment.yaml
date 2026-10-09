@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: session17-python
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: session17-python
+  template:
+    metadata:
+      labels:
+        app: session17-python
+    spec:
+      securityContext:
+        runAsNonRoot: true
+      containers:
+        - name: session17-python
+          image: __IMAGE__            # replaced by the pipeline with the exact image it scanned + pushed
+          ports:
+            - containerPort: 5001
+          readinessProbe:
+            httpGet: { path: /health, port: 5001 }
+          livenessProbe:
+            httpGet: { path: /health, port: 5001 }
+          resources:
+            requests: { cpu: 50m, memory: 64Mi }
+            limits: { cpu: 250m, memory: 128Mi }
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]

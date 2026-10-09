@@ -1,0 +1,50 @@
+########## 1. BREAK ##########
+$ kubectl apply -f 03-errimagepull/broken.yaml
+pod/web-registry created
+
+########## 2. INVESTIGATE ##########
+$ kubectl get pod web-registry
+NAME           READY   STATUS         RESTARTS   AGE
+web-registry   0/1     ErrImagePull   0          6s
+
+$ kubectl describe pod web-registry | sed -n '/^Events:/,$p'
+Events:
+  Type     Reason     Age   From               Message
+  ----     ------     ----  ----               -------
+  Normal   Scheduled  6s    default-scheduler  Successfully assigned default/web-registry to minikube
+  Normal   Pulling    6s    kubelet            Pulling image "registry.example.invalid/team/nginx:1.27"
+  Warning  Failed     6s    kubelet            Failed to pull image "registry.example.invalid/team/nginx:1.27": failed to pull and unpack image "registry.example.invalid/team/nginx:1.27": failed to resolve reference "registry.example.invalid/team/nginx:1.27": failed to do request: Head "https://registry.example.invalid/v2/team/nginx/manifests/1.27": dial tcp: lookup registry.example.invalid on 192.168.65.254:53: no such host
+  Warning  Failed     6s    kubelet            Error: ErrImagePull
+  Normal   BackOff    5s    kubelet            Back-off pulling image "registry.example.invalid/team/nginx:1.27"
+  Warning  Failed     5s    kubelet            Error: ImagePullBackOff
+
+$ kubectl run dnscheck --rm -i --restart=Never --image=busybox:1.36 -- nslookup registry.example.invalid 2>&1 | grep -v 'pod "dnscheck" deleted' || true
+All commands and output from this session will be recorded in container logs, including credentials and sensitive information passed through the command prompt.
+If you don't see a command prompt, try pressing enter.
+Server:		10.96.0.10
+Address:	10.96.0.10:53
+
+Non-authoritative answer:
+
+** server can't find registry.example.invalid: NXDOMAIN
+
+pod default/dnscheck terminated (Error)
+
+# ROOT CAUSE: registry host registry.example.invalid cannot be resolved -> ErrImagePull (first failure); after retries it becomes ImagePullBackOff
+########## 3. FIX ##########
+$ diff 03-errimagepull/broken.yaml 03-errimagepull/fixed.yaml
+8c8
+<       image: registry.example.invalid/team/nginx:1.27   # registry host does not exist
+---
+>       image: docker.io/library/nginx:1.27
+
+$ kubectl delete pod web-registry --now && kubectl apply -f 03-errimagepull/fixed.yaml && kubectl wait --for=condition=Ready pod/web-registry --timeout=90s
+pod "web-registry" deleted from default namespace
+pod/web-registry created
+pod/web-registry condition met
+
+########## 4. VERIFY ##########
+$ kubectl get pod web-registry
+NAME           READY   STATUS    RESTARTS   AGE
+web-registry   1/1     Running   0          1s
+

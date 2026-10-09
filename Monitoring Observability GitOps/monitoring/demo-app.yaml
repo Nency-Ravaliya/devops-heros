@@ -1,0 +1,59 @@
+# An application that exposes Prometheus metrics (http_requests_total, version) on /metrics
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: session20
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo-app
+  namespace: session20
+spec:
+  replicas: 2
+  selector:
+    matchLabels: { app: demo-app }
+  template:
+    metadata:
+      labels: { app: demo-app }
+    spec:
+      containers:
+        - name: app
+          image: quay.io/brancz/prometheus-example-app:v0.5.0
+          ports:
+            - name: http
+              containerPort: 8080
+          readinessProbe:
+            httpGet: { path: /, port: http }
+          livenessProbe:
+            httpGet: { path: /, port: http }
+          resources:
+            requests: { cpu: 20m, memory: 32Mi }
+            limits: { cpu: 200m, memory: 64Mi }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: demo-app
+  namespace: session20
+  labels: { app: demo-app }
+spec:
+  selector: { app: demo-app }
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+---
+# Tells the Prometheus Operator to scrape the Service's /metrics every 15s
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: demo-app
+  namespace: session20
+spec:
+  selector:
+    matchLabels: { app: demo-app }
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 15s

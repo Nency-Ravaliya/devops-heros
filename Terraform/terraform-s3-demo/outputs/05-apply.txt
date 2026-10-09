@@ -1,0 +1,20 @@
+$ terraform apply -input=false -auto-approve tfplan
+random_id.suffix: Creating...
+random_id.suffix: Creation complete after 0s [id=173XPg]
+aws_s3_bucket.demo: Creating...
+aws_s3_bucket.demo: Creation complete after 1s [id=tejas-devops-heros-d7bdd73e]
+aws_s3_bucket_public_access_block.demo: Creating...
+aws_s3_bucket_versioning.demo: Creating...
+aws_s3_bucket_server_side_encryption_configuration.demo: Creating...
+aws_s3_bucket_public_access_block.demo: Creation complete after 0s [id=tejas-devops-heros-d7bdd73e]
+aws_s3_bucket_server_side_encryption_configuration.demo: Creation complete after 0s [id=tejas-devops-heros-d7bdd73e]
+aws_s3_bucket_versioning.demo: Creation complete after 1s [id=tejas-devops-heros-d7bdd73e]
+
+Apply complete! Resources: 5 added, 0 changed, 0 destroyed.
+
+Outputs:
+
+bucket_arn = "arn:aws:s3:::tejas-devops-heros-d7bdd73e"
+bucket_name = "tejas-devops-heros-d7bdd73e"
+bucket_region = "ap-south-1"
+[exit code: 0]

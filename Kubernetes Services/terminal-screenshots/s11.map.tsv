@@ -1,0 +1,9 @@
+s11-001.png	Setup
+s11-002.png	1. ClusterIP (default)
+s11-003.png	1. ClusterIP (default)
+s11-004.png	2. NodePort
+s11-005.png	3. LoadBalancer
+s11-006.png	3. LoadBalancer
+s11-007.png	4. ExternalName
+s11-008.png	5. Headless
+s11-009.png	5. Headless

@@ -1,0 +1,28 @@
+Workflow: Session 16 - CI/CD Pipeline
+Run #2  event=push  commit=cdb9f3f  "Session 16: failure scenario - break add() on purpose"
+Status: completed / failure
+Started 2026-10-07T19:51:16Z  updated 2026-10-07T19:51:35Z
+URL: https://github.com/TejasVarshney/devops-heros/actions/runs/37677624867
+
+JOB  Test (pytest)                                           failure   runner: GitHub Actions 1000000053 (ubuntu-latest)
+      1. Set up job                                              success
+      2. Run actions/checkout@v4                                 success
+      3. Run actions/setup-python@v5                             success
+      4. Install dependencies                                    success
+      5. Run unit tests with coverage                            failure
+      6. Upload test report                                      success
+     11. Post Run actions/setup-python@v5                        skipped
+     12. Post Run actions/checkout@v4                            success
+     13. Complete job                                            success
+JOB  Security check (sensitive files)                        success   runner: GitHub Actions 1000000052 (ubuntu-latest)
+      1. Set up job                                              success
+      2. Run actions/checkout@v4                                 success
+      3. Fail if private keys / .env files are committed         success
+      6. Post Run actions/checkout@v4                            success
+      7. Complete job                                            success
+JOB  Build artifact                                          skipped   runner: None (ubuntu-latest)
+JOB  Deploy to Kubernetes (kind)                             skipped   runner: None (ubuntu-latest)
+JOB  Docker build & push (GHCR)                              skipped   runner: None (ubuntu-latest)
+
+Artifacts:
+  - test-report  (1354 bytes)

@@ -1,0 +1,44 @@
+########## BEFORE ##########
+$ kubectl apply -f 02-missing-configmap-key/configmap.yaml -f 02-missing-configmap-key/deployment-broken.yaml
+configmap/web-settings created
+deployment.apps/web-settings created
+
+$ kubectl get pods -l app=web-settings
+NAME                            READY   STATUS                       RESTARTS   AGE
+web-settings-58ccc9c979-t7rrl   0/1     CreateContainerConfigError   0          13s
+
+########## INVESTIGATE ##########
+$ kubectl describe pod -l app=web-settings | sed -n '/^Events:/,$p' | tail -4
+  ----     ------     ----               ----               -------
+  Normal   Scheduled  13s                default-scheduler  Successfully assigned default/web-settings-58ccc9c979-t7rrl to minikube
+  Normal   Pulled     11s (x2 over 12s)  kubelet            Container image "busybox:1.36" already present on machine and can be accessed by the pod
+  Warning  Failed     11s (x2 over 12s)  kubelet            Error: couldn't find key API_URL in ConfigMap default/web-settings
+
+$ kubectl get configmap web-settings -o jsonpath='{.data}'; echo
+{"api_url":"http://api.internal:8080","theme":"dark"}
+
+# ROOT CAUSE: configMapKeyRef key "API_URL" does not exist - the ConfigMap key is "api_url" (keys are case-sensitive)
+########## FIX ##########
+$ diff 02-missing-configmap-key/deployment-broken.yaml 02-missing-configmap-key/deployment-fixed.yaml
+20c20
+<                 configMapKeyRef: { name: web-settings, key: API_URL }   # BUG: key is api_url
+---
+>                 configMapKeyRef: { name: web-settings, key: api_url }   # FIXED: keys are case-sensitive
+
+$ kubectl apply -f 02-missing-configmap-key/deployment-fixed.yaml && kubectl rollout status deploy/web-settings --timeout=90s
+deployment.apps/web-settings configured
+Waiting for deployment "web-settings" rollout to finish: 1 old replicas are pending termination...
+Waiting for deployment "web-settings" rollout to finish: 1 old replicas are pending termination...
+Waiting for deployment "web-settings" rollout to finish: 1 old replicas are pending termination...
+deployment "web-settings" successfully rolled out
+
+########## AFTER ##########
+$ kubectl get pods -l app=web-settings
+NAME                            READY   STATUS        RESTARTS   AGE
+web-settings-58ccc9c979-t7rrl   0/1     Terminating   0          14s
+web-settings-759644ff5-6xrc2    1/1     Running       0          1s
+
+$ kubectl logs deploy/web-settings
+Found 2 pods, using pod/web-settings-759644ff5-6xrc2
+API_URL=http://api.internal:8080 THEME=dark
+

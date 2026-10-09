@@ -1,0 +1,16 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: catalog
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: catalog.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: catalog
+                port: { number: 8080 }    # BUG 2: the Service listens on 80, not 8080

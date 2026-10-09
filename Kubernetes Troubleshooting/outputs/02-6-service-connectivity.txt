@@ -1,0 +1,56 @@
+########## 1. BREAK ##########
+$ kubectl apply -f 06-service-connectivity/app.yaml -f 06-service-connectivity/service-broken.yaml
+deployment.apps/orders unchanged
+service/orders created
+
+########## 2. INVESTIGATE ##########
+$ kubectl exec curl -- curl -s -m 5 http://orders || echo "curl exit code: $?"
+command terminated with exit code 7
+curl exit code: 7
+
+$ kubectl exec curl -- sh -c 'curl -sS -m 5 http://orders 2>&1; true'
+curl: (7) Failed to connect to orders port 80 after 1 ms: Could not connect to server
+
+$ kubectl get pods -l app=orders -o wide
+NAME                      READY   STATUS    RESTARTS   AGE   IP            NODE       NOMINATED NODE   READINESS GATES
+orders-77d97767cd-mjq4l   1/1     Running   0          7s    10.244.0.41   minikube   <none>           <none>
+orders-77d97767cd-s56r6   1/1     Running   0          7s    10.244.0.40   minikube   <none>           <none>
+
+$ kubectl get svc orders -o wide
+NAME     TYPE        CLUSTER-IP    EXTERNAL-IP   PORT(S)   AGE   SELECTOR
+orders   ClusterIP   10.103.1.14   <none>        80/TCP    6s    app=orders
+
+$ kubectl get endpointslices -l kubernetes.io/service-name=orders
+NAME           ADDRESSTYPE   PORTS   ENDPOINTS                 AGE
+orders-g9j2w   IPv4          8080    10.244.0.40,10.244.0.41   6s
+
+$ kubectl exec curl -- sh -c 'curl -sS -m 3 http://10.244.0.41:8080 2>&1; true'
+curl: (7) Failed to connect to 10.244.0.41 port 8080 after 0 ms: Could not connect to server
+
+$ kubectl exec curl -- curl -s -m 3 http://10.244.0.41:5678
+orders OK
+
+$ kubectl get deploy orders -o jsonpath='{.spec.template.spec.containers[0].args}'; echo
+["-text=orders OK","-listen=:5678"]
+
+# ROOT CAUSE: endpoints exist (selector OK) but Service targetPort 8080 != container port 5678 -> connection refused
+########## 3. FIX ##########
+$ diff 06-service-connectivity/service-broken.yaml 06-service-connectivity/service-fixed.yaml
+9c9
+<       targetPort: 8080          # BUG: the app listens on 5678
+---
+>       targetPort: 5678
+
+$ kubectl apply -f 06-service-connectivity/service-fixed.yaml
+service/orders configured
+
+########## 4. VERIFY ##########
+$ kubectl get endpointslices -l kubernetes.io/service-name=orders
+NAME           ADDRESSTYPE   PORTS   ENDPOINTS                 AGE
+orders-g9j2w   IPv4          5678    10.244.0.40,10.244.0.41   13s
+
+$ kubectl exec curl -- sh -c 'for i in 1 2 3; do curl -s http://orders; done'
+orders OK
+orders OK
+orders OK
+

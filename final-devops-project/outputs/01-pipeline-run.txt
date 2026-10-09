@@ -1,0 +1,19 @@
+Workflow: Session 21 - Final DevOps Project   (final-devops-project.yml, on: push)
+Run #3   commit 20df250   "Session 21: stronger troubleshooting evidence ..."
+URL: https://github.com/TejasVarshney/devops-heros/actions/runs/37684007899
+Status: Success      Total duration: 15m 42s
+
+JOB                                                      RESULT    DURATION
+Build & Unit Test                                        success   12s
+SAST - Bandit                                            success   9s
+SAST - CodeQL                                            success   59s
+SCA - pip-audit                                          success   14s
+Secret scan - Gitleaks                                   success   5s
+Docker build, Trivy scan, security gate, push            success   46s
+Terraform + GitOps deploy + verify + troubleshooting     success   13m 31s
+
+Artifacts:
+  image          48.2 MB   (docker save of ghcr.io/tejasvarshney/final-notes-api:20df250)
+  test-results   455 B     (JUnit XML)
+
+(Copied from the public run page; the per-step logs on GitHub require signing in.)

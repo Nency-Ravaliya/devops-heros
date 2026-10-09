@@ -1,0 +1,135 @@
+$ kubectl -n kube-system get deploy,pods,svc -l k8s-app=kube-dns -o wide
+NAME                      READY   UP-TO-DATE   AVAILABLE   AGE   CONTAINERS   IMAGES                                    SELECTOR
+deployment.apps/coredns   1/1     1            1           24m   coredns      registry.k8s.io/coredns/coredns:v1.14.6   k8s-app=kube-dns
+
+NAME                           READY   STATUS    RESTARTS   AGE   IP            NODE       NOMINATED NODE   READINESS GATES
+pod/coredns-559f6c778d-v49qj   1/1     Running   0          61s   10.244.0.85   minikube   <none>           <none>
+
+NAME               TYPE        CLUSTER-IP   EXTERNAL-IP   PORT(S)                  AGE   SELECTOR
+service/kube-dns   ClusterIP   10.96.0.10   <none>        53/UDP,53/TCP,9153/TCP   24m   k8s-app=kube-dns
+
+$ kubectl -n kube-system get endpointslices -l kubernetes.io/service-name=kube-dns
+NAME             ADDRESSTYPE   PORTS        ENDPOINTS     AGE
+kube-dns-6wnzv   IPv4          53,53,9153   10.244.0.85   24m
+
+$ kubectl -n kube-system get configmap coredns -o jsonpath='{.data.Corefile}'
+.:53 {
+    log
+    errors
+    health {
+       lameduck 5s
+    }
+    ready
+    kubernetes cluster.local in-addr.arpa ip6.arpa {
+       pods insecure
+       fallthrough in-addr.arpa ip6.arpa
+       ttl 30
+    }
+    prometheus :9153
+    hosts {
+       192.168.65.254 host.minikube.internal
+       fallthrough
+    }
+    forward . /etc/resolv.conf {
+       max_concurrent 1000
+    }
+    cache 30 {
+       disable success cluster.local
+       disable denial cluster.local
+    }
+    loop
+    reload
+    loadbalance
+}
+
+$ kubectl exec dns -- cat /etc/resolv.conf
+search default.svc.cluster.local svc.cluster.local cluster.local
+nameserver 10.96.0.10
+options ndots:5
+
+$ kubectl exec dns -- dig web-clusterip.default.svc.cluster.local
+
+; <<>> DiG 9.18.24 <<>> web-clusterip.default.svc.cluster.local
+;; global options: +cmd
+;; Got answer:
+;; WARNING: .local is reserved for Multicast DNS
+;; You are currently testing what happens when an mDNS query is leaked to DNS
+;; ->>HEADER<<- opcode: QUERY, status: NOERROR, id: 58969
+;; flags: qr aa rd; QUERY: 1, ANSWER: 1, AUTHORITY: 0, ADDITIONAL: 1
+;; WARNING: recursion requested but not available
+
+;; OPT PSEUDOSECTION:
+; EDNS: version: 0, flags:; udp: 1232
+; COOKIE: 3be3a2db162c8232 (echoed)
+;; QUESTION SECTION:
+;web-clusterip.default.svc.cluster.local. IN A
+
+;; ANSWER SECTION:
+web-clusterip.default.svc.cluster.local. 30 IN A 10.102.13.85
+
+;; Query time: 0 msec
+;; SERVER: 10.96.0.10#53(10.96.0.10) (UDP)
+;; WHEN: Wed Oct 07 19:04:04 UTC 2026
+;; MSG SIZE  rcvd: 135
+
+
+$ kubectl -n kube-system logs deploy/coredns --tail=6
+[INFO] 10.244.0.79:35291 - 36583 "PTR IN 85.13.102.10.in-addr.arpa. udp 66 false 1232" NOERROR qr,aa,rd 121 0.000196914s
+[INFO] 10.244.0.87:56426 - 39270 "AAAA IN web-clusterip.default.team-b.svc.cluster.local. udp 64 false 512" NXDOMAIN qr,aa,rd 157 0.000243026s
+[INFO] 10.244.0.87:56426 - 38997 "A IN web-clusterip.default.team-b.svc.cluster.local. udp 64 false 512" NXDOMAIN qr,aa,rd 157 0.000297824s
+[INFO] 10.244.0.87:39410 - 55573 "AAAA IN web-clusterip.default.svc.cluster.local. udp 57 false 512" NOERROR qr,aa,rd 150 0.000131914s
+[INFO] 10.244.0.87:39410 - 55318 "A IN web-clusterip.default.svc.cluster.local. udp 57 false 512" NOERROR qr,aa,rd 112 0.000157843s
+[INFO] 10.244.0.79:58716 - 58969 "A IN web-clusterip.default.svc.cluster.local. udp 80 false 1232" NOERROR qr,aa,rd 112 0.000156754s
+
+# --- external names are forwarded upstream (forward . /etc/resolv.conf) ---
+$ kubectl exec dns -- dig +noall +answer +stats kubernetes.io | grep -E 'IN|Query time|SERVER'
+kubernetes.io.		30	IN	A	3.33.186.135
+kubernetes.io.		30	IN	A	15.197.167.90
+;; Query time: 56 msec
+;; SERVER: 10.96.0.10#53(10.96.0.10) (UDP)
+
+# ===== Troubleshooting: simulate a DNS outage by scaling CoreDNS to 0 =====
+$ kubectl -n kube-system scale deploy coredns --replicas=0
+deployment.apps/coredns scaled
+
+$ kubectl exec dns -- nslookup -timeout=2 -retry=1 web-clusterip || true
+;; communications error to 10.96.0.10#53: connection refused
+;; no servers could be reached
+
+
+command terminated with exit code 1
+
+$ kubectl exec dns -- curl -s --max-time 5 http://web-clusterip || true
+command terminated with exit code 6
+
+$ kubectl exec dns -- curl -s --max-time 5 http://10.102.13.85
+hello from web-86bb596c4d-nknrw
+
+$ kubectl -n kube-system get pods -l k8s-app=kube-dns
+No resources found in kube-system namespace.
+
+$ kubectl -n kube-system get endpointslices -l kubernetes.io/service-name=kube-dns
+NAME             ADDRESSTYPE   PORTS     ENDPOINTS   AGE
+kube-dns-6wnzv   IPv4          <unset>   <unset>     24m
+
+# root cause: kube-dns Service has no endpoints -> fix: bring CoreDNS back
+$ kubectl -n kube-system scale deploy coredns --replicas=1 && kubectl -n kube-system rollout status deploy coredns --timeout=120s
+deployment.apps/coredns scaled
+Waiting for deployment "coredns" rollout to finish: 0 of 1 updated replicas are available...
+deployment "coredns" successfully rolled out
+
+$ kubectl -n kube-system get endpointslices -l kubernetes.io/service-name=kube-dns
+NAME             ADDRESSTYPE   PORTS        ENDPOINTS     AGE
+kube-dns-6wnzv   IPv4          53,53,9153   10.244.0.88   24m
+
+$ kubectl exec dns -- nslookup web-clusterip
+Server:		10.96.0.10
+Address:	10.96.0.10#53
+
+Name:	web-clusterip.default.svc.cluster.local
+Address: 10.102.13.85
+
+
+$ kubectl exec dns -- curl -s http://web-clusterip
+hello from web-86bb596c4d-nknrw
+

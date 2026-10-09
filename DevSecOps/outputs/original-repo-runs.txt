@@ -1,0 +1,70 @@
+Repository: https://github.com/TejasVarshney/devsecops_demo   workflow: Python DevSecOps Pipeline
+
+Run 1 - commit "first commit"  (2026-09-26)  -> failure
+https://github.com/TejasVarshney/devsecops_demo/actions/runs/36235458560
+  JOB SCA - Dependency Scan            success
+      - Checkout code                                      success
+      - Setup Python                                       success
+      - Install dependencies                               success
+      - Run dependency scan                                success
+  JOB SAST - CodeQL                    success
+      - Checkout code                                      success
+      - Initialize CodeQL                                  success
+      - Analyze code                                       success
+  JOB Unit Tests                       success
+      - Checkout code                                      success
+      - Setup Python                                       success
+      - Install dependencies                               success
+      - Run tests                                          success
+  JOB Docker Build                     success
+      - Checkout code                                      success
+      - Build Docker image                                 success
+  JOB Image Scan - Trivy               success
+      - Checkout code                                      success
+      - Build Docker image                                 success
+      - Install Trivy                                      success
+      - Scan image                                         success
+  JOB Push Image to Docker Hub         failure
+      - Checkout code                                      success
+      - Login to Docker Hub                                failure
+      - Build and tag image                                skipped
+      - Push image                                         skipped
+  JOB Deploy to Kubernetes             skipped
+
+Run 2 - commit "crendentials changed"  (2026-09-26)  -> success
+https://github.com/TejasVarshney/devsecops_demo/actions/runs/36235832202
+  JOB Unit Tests                       success
+      - Checkout code                                      success
+      - Setup Python                                       success
+      - Install dependencies                               success
+      - Run tests                                          success
+  JOB SCA - Dependency Scan            success
+      - Checkout code                                      success
+      - Setup Python                                       success
+      - Install dependencies                               success
+      - Run dependency scan                                success
+  JOB SAST - CodeQL                    success
+      - Checkout code                                      success
+      - Initialize CodeQL                                  success
+      - Analyze code                                       success
+  JOB Docker Build                     success
+      - Checkout code                                      success
+      - Build Docker image                                 success
+  JOB Image Scan - Trivy               success
+      - Checkout code                                      success
+      - Build Docker image                                 success
+      - Install Trivy                                      success
+      - Scan image                                         success
+  JOB Push Image to Docker Hub         success
+      - Checkout code                                      success
+      - Login to Docker Hub                                success
+      - Build and tag image                                success
+      - Push image                                         success
+  JOB Deploy to Kubernetes             success
+      - Checkout code                                      success
+      - Create k8s Kind Cluster (For testing deployment)   success
+      - Update deployment with new image tag               success
+      - Deploy to Kubernetes                               success
+      - Check rollout status                               success
+      - Test running website in CI (Curl)                  success
+

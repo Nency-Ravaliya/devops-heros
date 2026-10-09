@@ -1,0 +1,7 @@
+# Environment-specific values - THE file the CI pipeline changes.
+# Argo CD watches it (branch "final-gitops") and syncs the cluster to whatever is committed here.
+image:
+  tag: latest
+config:
+  APP_ENV: production
+  WELCOME_MESSAGE: "Welcome to the Notes API - deployed by Argo CD"

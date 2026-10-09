@@ -1,0 +1,159 @@
+################ install kube-prometheus-stack (Prometheus, Alertmanager, Grafana, node-exporter, kube-state-metrics) ################
+$ helm repo add prometheus-community https://prometheus-community.github.io/helm-charts && helm repo update
+"prometheus-community" has been added to your repositories
+Hang tight while we grab the latest from your chart repositories...
+...Successfully got an update from the "prometheus-community" chart repository
+Update Complete. ⎈Happy Helming!⎈
+
+$ helm install kps prometheus-community/kube-prometheus-stack -n monitoring --create-namespace -f monitoring/kps-values.yaml --wait --timeout 10m
+NAME: kps
+LAST DEPLOYED: Thu Oct  8 01:04:57 2026
+NAMESPACE: monitoring
+STATUS: deployed
+REVISION: 1
+NOTES:
+kube-prometheus-stack has been installed. Check its status by running:
+  kubectl --namespace monitoring get pods -l "release=kps"
+
+Get Grafana 'admin' user password by running:
+
+  kubectl --namespace monitoring get secrets kps-grafana -o jsonpath="{.data.admin-password}" | base64 -d ; echo
+
+Access Grafana local instance:
+
+  export POD_NAME=$(kubectl --namespace monitoring get pod -l "app.kubernetes.io/name=grafana,app.kubernetes.io/instance=kps" -oname)
+  kubectl --namespace monitoring port-forward $POD_NAME 3000
+
+Get your grafana admin user password by running:
+
+  kubectl get secret --namespace monitoring -l app.kubernetes.io/component=admin-secret -o jsonpath="{.items[0].data.admin-password}" | base64 --decode ; echo
+
+
+Visit https://github.com/prometheus-operator/kube-prometheus for instructions on how to create & configure Alertmanager and Prometheus instances using the Operator.
+
+$ kubectl get pods -n monitoring
+NAME                                      READY   STATUS    RESTARTS   AGE
+alertmanager-kps-alertmanager-0           2/2     Running   0          34s
+kps-grafana-7bc98b4bc5-925sk              3/3     Running   0          38s
+kps-kube-state-metrics-7cf7845df4-pcpf2   1/1     Running   0          38s
+kps-operator-5f8bff94d8-wsfpt             1/1     Running   0          38s
+kps-prometheus-node-exporter-2wn9q        1/1     Running   0          38s
+prometheus-kps-prometheus-0               2/2     Running   0          33s
+
+$ kubectl get svc -n monitoring
+NAME                           TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)                      AGE
+alertmanager-operated          ClusterIP   None            <none>        9093/TCP,9094/TCP,9094/UDP   34s
+kps-alertmanager               ClusterIP   10.96.129.170   <none>        9093/TCP,8080/TCP            38s
+kps-grafana                    ClusterIP   10.96.178.116   <none>        80/TCP                       38s
+kps-kube-state-metrics         ClusterIP   10.96.9.201     <none>        8080/TCP                     38s
+kps-operator                   ClusterIP   10.96.135.236   <none>        443/TCP                      38s
+kps-prometheus                 ClusterIP   10.96.15.206    <none>        9090/TCP,8080/TCP            38s
+kps-prometheus-node-exporter   ClusterIP   10.96.72.85     <none>        9100/TCP                     38s
+prometheus-operated            ClusterIP   None            <none>        9090/TCP                     33s
+
+################ deploy an instrumented app + ServiceMonitor + alert rules ################
+$ kubectl apply -f monitoring/demo-app.yaml && kubectl apply -f monitoring/alerts.yaml
+namespace/session20 created
+deployment.apps/demo-app created
+service/demo-app created
+servicemonitor.monitoring.coreos.com/demo-app created
+prometheusrule.monitoring.coreos.com/demo-app-alerts created
+
+$ kubectl -n session20 rollout status deploy/demo-app --timeout=120s
+Waiting for deployment "demo-app" rollout to finish: 0 of 2 updated replicas are available...
+Waiting for deployment "demo-app" rollout to finish: 1 of 2 updated replicas are available...
+deployment "demo-app" successfully rolled out
+
+$ kubectl get pods,svc,servicemonitor,prometheusrule -n session20
+NAME                            READY   STATUS    RESTARTS   AGE
+pod/demo-app-787d5698c9-26hl8   1/1     Running   0          3s
+pod/demo-app-787d5698c9-gdw7n   1/1     Running   0          3s
+
+NAME               TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)   AGE
+service/demo-app   ClusterIP   10.96.129.42   <none>        80/TCP    3s
+
+NAME                                            AGE
+servicemonitor.monitoring.coreos.com/demo-app   3s
+
+NAME                                                   AGE
+prometheusrule.monitoring.coreos.com/demo-app-alerts   3s
+
+$ curl -s localhost:8081/ ; curl -s localhost:8081/err >/dev/null; curl -s localhost:8081/metrics | grep -E '^# (HELP|TYPE) http_requests_total|^http_requests_total|^version'
+Hello from example application.# HELP http_requests_total Count of all HTTP requests
+# TYPE http_requests_total counter
+http_requests_total{code="200",method="get"} 2
+http_requests_total{code="404",method="get"} 1
+version{version="v0.5.0"} 1
+
+################ generate traffic ################
+pod/traffic created
+################ Prometheus: targets ################
+$ curl -s localhost:9090/api/v1/targets | jq -r '.data.activeTargets[] | "\(.labels.job) \(.labels.instance) health=\(.health)"' | sort | uniq
+apiserver 172.18.0.2:6443 health=up
+coredns 10.244.0.2:9153 health=up
+coredns 10.244.0.3:9153 health=up
+demo-app 10.244.0.12:8080 health=up
+demo-app 10.244.0.13:8080 health=up
+kps-alertmanager 10.244.0.9:8080 health=up
+kps-alertmanager 10.244.0.9:9093 health=up
+kps-grafana 10.244.0.8:3000 health=up
+kps-operator 10.244.0.6:10250 health=up
+kps-prometheus 10.244.0.10:8080 health=up
+kps-prometheus 10.244.0.10:9090 health=up
+kube-state-metrics 10.244.0.7:8080 health=up
+kubelet 172.18.0.2:10250 health=up
+node-exporter 172.18.0.2:9100 health=up
+
+################ Metrics: application health ################
+$ promq 'up{namespace="session20"}'
+container=app,endpoint=http,instance=10.244.0.13:8080,job=demo-app,namespace=session20,pod=demo-app-787d5698c9-26hl8,service=demo-app => 1
+container=app,endpoint=http,instance=10.244.0.12:8080,job=demo-app,namespace=session20,pod=demo-app-787d5698c9-gdw7n,service=demo-app => 1
+
+$ promq 'sum by (code) (rate(http_requests_total{namespace="session20"}[1m]))'
+code=200 => 14.335417777777778
+code=404 => 14.053393888888888
+
+$ promq 'kube_deployment_status_replicas_available{namespace="session20"}'
+container=kube-state-metrics,deployment=demo-app,endpoint=http,instance=10.244.0.7:8080,job=kube-state-metrics,namespace=session20,pod=kps-kube-state-metrics-7cf7845df4-pcpf2,service=kps-kube-state-metrics => 2
+
+################ Metrics: CPU utilization ################
+$ promq 'sum by (pod) (rate(container_cpu_usage_seconds_total{namespace="session20", container!=""}[2m]))'
+pod=demo-app-787d5698c9-26hl8 => 0.00564365913131265
+pod=demo-app-787d5698c9-gdw7n => 0.005271245331637519
+pod=traffic => 0.05936400138603697
+
+$ promq '100 * (1 - avg(rate(node_cpu_seconds_total{mode="idle"}[2m])))'
+ => 8.219047619047636
+
+################ Metrics: memory utilization ################
+$ promq 'sum by (pod) (container_memory_working_set_bytes{namespace="session20", container!=""})'
+pod=demo-app-787d5698c9-26hl8 => 15052800
+pod=demo-app-787d5698c9-gdw7n => 15286272
+pod=traffic => 1560576
+
+$ promq '100 * (1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)'
+container=node-exporter,endpoint=http-metrics,instance=172.18.0.2:9100,job=node-exporter,namespace=monitoring,pod=kps-prometheus-node-exporter-2wn9q,service=kps-prometheus-node-exporter => 18.428445859418254
+
+################ Alerts: rules loaded ################
+$ curl -s localhost:9090/api/v1/rules | jq -r '.data.groups[] | select(.name=="demo-app.rules") | .rules[] | "\(.name): \(.state) health=\(.health)"'
+DemoAppReplicasLow: inactive health=ok
+DemoAppHighRequestRate: pending health=ok
+DemoAppHighMemory: inactive health=ok
+
+################ Alerts: break something - scale demo-app to 1 replica ################
+$ kubectl -n session20 scale deploy demo-app --replicas=1
+deployment.apps/demo-app scaled
+
+$ curl -s localhost:9090/api/v1/alerts | jq -r '.data.alerts[] | select(.labels.namespace=="session20" or (.labels.alertname|startswith("DemoApp"))) | "\(.labels.alertname) state=\(.state) severity=\(.labels.severity) value=\(.value) since=\(.activeAt)"'
+DemoAppReplicasLow state=firing severity=warning value=1e+00 since=2026-10-08T01:07:58.953140914Z
+DemoAppHighRequestRate state=firing severity=info value=3.733333333333333e+01 since=2026-10-08T01:07:13.953140914Z
+
+$ curl -s localhost:9093/api/v2/alerts | jq -r '.[] | select(.labels.alertname|startswith("DemoApp")) | "Alertmanager received: \(.labels.alertname) [\(.status.state)] \(.annotations.summary)"'
+Alertmanager received: DemoAppHighRequestRate [suppressed] demo-app is receiving more than 5 req/s
+Alertmanager received: DemoAppReplicasLow [active] demo-app has fewer than 2 available replicas
+
+$ kubectl -n session20 scale deploy demo-app --replicas=2 && kubectl -n session20 rollout status deploy/demo-app --timeout=60s
+deployment.apps/demo-app scaled
+Waiting for deployment "demo-app" rollout to finish: 1 of 2 updated replicas are available...
+deployment "demo-app" successfully rolled out
+

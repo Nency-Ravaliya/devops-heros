@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+data:
+  # simple key/value pairs -> environment variables
+  APP_ENV: "staging"
+  APP_COLOR: "blue"
+  LOG_LEVEL: "debug"
+  # a whole file -> mounted as /etc/app/app.properties
+  app.properties: |
+    server.port=8080
+    feature.newCheckout=true
+    cache.ttlSeconds=300

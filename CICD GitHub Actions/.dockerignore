@@ -1,0 +1,6 @@
+tests
+build
+*.tar.gz
+__pycache__
+.pytest_cache
+.coverage

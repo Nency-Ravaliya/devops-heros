@@ -1,0 +1,301 @@
+################ helm create ################
+$ helm create scratch-chart && find scratch-chart -type f | sort && rm -rf scratch-chart
+Creating scratch-chart
+scratch-chart/.helmignore
+scratch-chart/Chart.yaml
+scratch-chart/templates/NOTES.txt
+scratch-chart/templates/_helpers.tpl
+scratch-chart/templates/deployment.yaml
+scratch-chart/templates/hpa.yaml
+scratch-chart/templates/ingress.yaml
+scratch-chart/templates/service.yaml
+scratch-chart/templates/serviceaccount.yaml
+scratch-chart/templates/tests/test-connection.yaml
+scratch-chart/values.yaml
+
+# (my customised chart "webapp" was created the same way: helm create webapp, then edited)
+$ find webapp -type f | sort
+webapp/.helmignore
+webapp/Chart.yaml
+webapp/templates/NOTES.txt
+webapp/templates/_helpers.tpl
+webapp/templates/configmap.yaml
+webapp/templates/deployment.yaml
+webapp/templates/hpa.yaml
+webapp/templates/ingress.yaml
+webapp/templates/service.yaml
+webapp/templates/serviceaccount.yaml
+webapp/templates/tests/test-connection.yaml
+webapp/values.yaml
+
+################ helm lint / helm template (render locally, nothing installed) ################
+$ helm lint webapp
+==> Linting webapp
+[INFO] Chart.yaml: icon is recommended
+
+1 chart(s) linted, 0 chart(s) failed
+
+$ helm template demo webapp --namespace helm-demo | grep -E '^kind:|^  name:|image:|replicas:'
+kind: ServiceAccount
+  name: demo-webapp
+kind: ConfigMap
+  name: demo-webapp-site
+kind: Service
+  name: demo-webapp
+kind: Deployment
+  name: demo-webapp
+  replicas: 2
+          image: "nginx:1.27"
+kind: Pod
+  name: "demo-webapp-test-connection"
+      image: busybox
+
+################ helm install ################
+$ helm install demo webapp --namespace helm-demo --create-namespace --wait --timeout 3m
+NAME: demo
+LAST DEPLOYED: Thu Oct  8 01:30:13 2026
+NAMESPACE: helm-demo
+STATUS: deployed
+REVISION: 1
+NOTES:
+1. Get the application URL by running these commands:
+  export POD_NAME=$(kubectl get pods --namespace helm-demo -l "app.kubernetes.io/name=webapp,app.kubernetes.io/instance=demo" -o jsonpath="{.items[0].metadata.name}")
+  export CONTAINER_PORT=$(kubectl get pod --namespace helm-demo $POD_NAME -o jsonpath="{.spec.containers[0].ports[0].containerPort}")
+  echo "Visit http://127.0.0.1:8080 to use your application"
+  kubectl --namespace helm-demo port-forward $POD_NAME 8080:$CONTAINER_PORT
+
+################ helm list ################
+$ helm list -n helm-demo
+NAME	NAMESPACE	REVISION	UPDATED                              	STATUS  	CHART       	APP VERSION
+demo	helm-demo	1       	2026-10-08 01:30:13.1030599 +0530 IST	deployed	webapp-0.1.0	1.27       
+
+$ helm list -A
+NAME	NAMESPACE	REVISION	UPDATED                              	STATUS  	CHART       	APP VERSION
+demo	helm-demo	1       	2026-10-08 01:30:13.1030599 +0530 IST	deployed	webapp-0.1.0	1.27       
+
+################ helm status ################
+$ helm status demo -n helm-demo
+NAME: demo
+LAST DEPLOYED: Thu Oct  8 01:30:13 2026
+NAMESPACE: helm-demo
+STATUS: deployed
+REVISION: 1
+NOTES:
+1. Get the application URL by running these commands:
+  export POD_NAME=$(kubectl get pods --namespace helm-demo -l "app.kubernetes.io/name=webapp,app.kubernetes.io/instance=demo" -o jsonpath="{.items[0].metadata.name}")
+  export CONTAINER_PORT=$(kubectl get pod --namespace helm-demo $POD_NAME -o jsonpath="{.spec.containers[0].ports[0].containerPort}")
+  echo "Visit http://127.0.0.1:8080 to use your application"
+  kubectl --namespace helm-demo port-forward $POD_NAME 8080:$CONTAINER_PORT
+
+$ kubectl get all -n helm-demo
+NAME                               READY   STATUS    RESTARTS   AGE
+pod/demo-webapp-65d8d75cdf-6dqtx   1/1     Running   0          2s
+pod/demo-webapp-65d8d75cdf-x2n5f   1/1     Running   0          2s
+
+NAME                  TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)   AGE
+service/demo-webapp   ClusterIP   10.111.152.98   <none>        80/TCP    2s
+
+NAME                          READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/demo-webapp   2/2     2            2           2s
+
+NAME                                     DESIRED   CURRENT   READY   AGE
+replicaset.apps/demo-webapp-65d8d75cdf   2         2         2       2s
+
+$ kubectl exec curl -- curl -s http://demo-webapp.helm-demo
+<html><body style="font-family:sans-serif;color:#2563eb">
+<h1>Hello from Helm</h1>
+<p>version=v1 release=demo revision=1 chart=webapp-0.1.0</p>
+</body></html>
+
+################ helm get ################
+$ helm get values demo -n helm-demo
+USER-SUPPLIED VALUES:
+null
+
+$ helm get values demo -n helm-demo --all | head -20
+COMPUTED VALUES:
+affinity: {}
+autoscaling:
+  enabled: false
+  maxReplicas: 100
+  minReplicas: 1
+  targetCPUUtilizationPercentage: 80
+fullnameOverride: ""
+image:
+  pullPolicy: IfNotPresent
+  repository: nginx
+  tag: ""
+imagePullSecrets: []
+ingress:
+  annotations: {}
+  className: ""
+  enabled: false
+  hosts:
+  - host: chart-example.local
+    paths:
+
+$ helm get manifest demo -n helm-demo | grep -E '^# Source|^kind:'
+# Source: webapp/templates/serviceaccount.yaml
+kind: ServiceAccount
+# Source: webapp/templates/configmap.yaml
+kind: ConfigMap
+# Source: webapp/templates/service.yaml
+kind: Service
+# Source: webapp/templates/deployment.yaml
+kind: Deployment
+
+$ helm get notes demo -n helm-demo
+NOTES:
+1. Get the application URL by running these commands:
+  export POD_NAME=$(kubectl get pods --namespace helm-demo -l "app.kubernetes.io/name=webapp,app.kubernetes.io/instance=demo" -o jsonpath="{.items[0].metadata.name}")
+  export CONTAINER_PORT=$(kubectl get pod --namespace helm-demo $POD_NAME -o jsonpath="{.spec.containers[0].ports[0].containerPort}")
+  echo "Visit http://127.0.0.1:8080 to use your application"
+  kubectl --namespace helm-demo port-forward $POD_NAME 8080:$CONTAINER_PORT
+
+
+$ helm get metadata demo -n helm-demo
+NAME: demo
+CHART: webapp
+VERSION: 0.1.0
+APP_VERSION: 1.27
+NAMESPACE: helm-demo
+REVISION: 1
+STATUS: deployed
+DEPLOYED_AT: 2026-10-08T01:30:13+05:30
+
+################ helm upgrade ################
+$ helm upgrade demo webapp -n helm-demo --set replicaCount=3 --set page.version=v2 --set page.message='Upgraded with helm upgrade' --wait
+Release "demo" has been upgraded. Happy Helming!
+NAME: demo
+LAST DEPLOYED: Thu Oct  8 01:30:17 2026
+NAMESPACE: helm-demo
+STATUS: deployed
+REVISION: 2
+NOTES:
+1. Get the application URL by running these commands:
+  export POD_NAME=$(kubectl get pods --namespace helm-demo -l "app.kubernetes.io/name=webapp,app.kubernetes.io/instance=demo" -o jsonpath="{.items[0].metadata.name}")
+  export CONTAINER_PORT=$(kubectl get pod --namespace helm-demo $POD_NAME -o jsonpath="{.spec.containers[0].ports[0].containerPort}")
+  echo "Visit http://127.0.0.1:8080 to use your application"
+  kubectl --namespace helm-demo port-forward $POD_NAME 8080:$CONTAINER_PORT
+
+$ kubectl get pods -n helm-demo
+NAME                           READY   STATUS    RESTARTS   AGE
+demo-webapp-565cb976c6-gqwtb   1/1     Running   0          2s
+demo-webapp-565cb976c6-gwf48   1/1     Running   0          4s
+demo-webapp-565cb976c6-hr4n7   1/1     Running   0          3s
+
+$ kubectl exec curl -- curl -s http://demo-webapp.helm-demo
+<html><body style="font-family:sans-serif;color:#2563eb">
+<h1>Upgraded with helm upgrade</h1>
+<p>version=v2 release=demo revision=2 chart=webapp-0.1.0</p>
+</body></html>
+
+################ helm history ################
+$ helm history demo -n helm-demo
+REVISION	UPDATED                 	STATUS    	CHART       	APP VERSION	DESCRIPTION     
+1       	Thu Oct  8 01:30:13 2026	superseded	webapp-0.1.0	1.27       	Install complete
+2       	Thu Oct  8 01:30:17 2026	deployed  	webapp-0.1.0	1.27       	Upgrade complete
+
+################ helm rollback ################
+$ helm rollback demo 1 -n helm-demo --wait
+Rollback was a success! Happy Helming!
+
+$ helm history demo -n helm-demo
+REVISION	UPDATED                 	STATUS    	CHART       	APP VERSION	DESCRIPTION     
+1       	Thu Oct  8 01:30:13 2026	superseded	webapp-0.1.0	1.27       	Install complete
+2       	Thu Oct  8 01:30:17 2026	superseded	webapp-0.1.0	1.27       	Upgrade complete
+3       	Thu Oct  8 01:30:21 2026	deployed  	webapp-0.1.0	1.27       	Rollback to 1   
+
+$ kubectl exec curl -- curl -s http://demo-webapp.helm-demo
+<html><body style="font-family:sans-serif;color:#2563eb">
+<h1>Hello from Helm</h1>
+<p>version=v1 release=demo revision=1 chart=webapp-0.1.0</p>
+</body></html>
+
+$ kubectl get secrets -n helm-demo -l owner=helm
+NAME                         TYPE                 DATA   AGE
+sh.helm.release.v1.demo.v1   helm.sh/release.v1   1      13s
+sh.helm.release.v1.demo.v2   helm.sh/release.v1   1      9s
+sh.helm.release.v1.demo.v3   helm.sh/release.v1   1      5s
+
+################ helm test ################
+$ helm test demo -n helm-demo
+NAME: demo
+LAST DEPLOYED: Thu Oct  8 01:30:21 2026
+NAMESPACE: helm-demo
+STATUS: deployed
+REVISION: 3
+TEST SUITE:     demo-webapp-test-connection
+Last Started:   Thu Oct  8 01:30:26 2026
+Last Completed: Thu Oct  8 01:30:37 2026
+Phase:          Succeeded
+NOTES:
+1. Get the application URL by running these commands:
+  export POD_NAME=$(kubectl get pods --namespace helm-demo -l "app.kubernetes.io/name=webapp,app.kubernetes.io/instance=demo" -o jsonpath="{.items[0].metadata.name}")
+  export CONTAINER_PORT=$(kubectl get pod --namespace helm-demo $POD_NAME -o jsonpath="{.spec.containers[0].ports[0].containerPort}")
+  echo "Visit http://127.0.0.1:8080 to use your application"
+  kubectl --namespace helm-demo port-forward $POD_NAME 8080:$CONTAINER_PORT
+
+################ helm uninstall ################
+$ helm uninstall demo -n helm-demo --wait
+release "demo" uninstalled
+
+$ helm list -n helm-demo
+NAME	NAMESPACE	REVISION	UPDATED	STATUS	CHART	APP VERSION
+
+$ kubectl get all -n helm-demo
+NAME                               READY   STATUS      RESTARTS   AGE
+pod/demo-webapp-65d8d75cdf-5gchc   0/1     Completed   0          16s
+pod/demo-webapp-65d8d75cdf-mclmh   0/1     Completed   0          14s
+pod/demo-webapp-test-connection    0/1     Completed   0          11s
+
+################ helm repo ################
+$ helm repo add bitnami https://charts.bitnami.com/bitnami
+"bitnami" has been added to your repositories
+
+$ helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+"prometheus-community" has been added to your repositories
+
+$ helm repo update
+Hang tight while we grab the latest from your chart repositories...
+...Successfully got an update from the "prometheus-community" chart repository
+...Successfully got an update from the "bitnami" chart repository
+Update Complete. ⎈Happy Helming!⎈
+
+$ helm repo list
+NAME                	URL                                               
+bitnami             	https://charts.bitnami.com/bitnami                
+prometheus-community	https://prometheus-community.github.io/helm-charts
+
+################ helm search ################
+$ helm search repo nginx | head -6
+NAME                                          	CHART VERSION	APP VERSION	DESCRIPTION                                       
+bitnami/nginx                                 	25.2.1       	1.31.6     	NGINX Open Source is a web server that can be a...
+bitnami/nginx-ingress-controller              	12.0.7       	1.13.1     	NGINX Ingress Controller is an Ingress controll...
+bitnami/nginx-intel                           	2.1.15       	0.4.9      	DEPRECATED NGINX Open Source for Intel is a lig...
+prometheus-community/prometheus-nginx-exporter	1.23.1       	1.5.3      	A Helm chart for NGINX Prometheus Exporter        
+
+$ helm search repo prometheus-community/kube-prometheus-stack --versions | head -4
+NAME                                      	CHART VERSION	APP VERSION	DESCRIPTION                                       
+prometheus-community/kube-prometheus-stack	92.1.0       	v0.94.1    	kube-prometheus-stack collects Kubernetes manif...
+prometheus-community/kube-prometheus-stack	92.0.0       	v0.94.1    	kube-prometheus-stack collects Kubernetes manif...
+prometheus-community/kube-prometheus-stack	91.9.0       	v0.94.1    	kube-prometheus-stack collects Kubernetes manif...
+
+$ helm search hub argo-cd --max-col-width 60 | head -5
+URL                                                         	CHART VERSION	APP VERSION	DESCRIPTION                                                 
+https://artifacthub.io/packages/helm/spnngl-argo-cd-crds/...	3.5.6        	3.5.4      	CustomResourceDefinitions for Argo CD (Applications, Appl...
+https://artifacthub.io/packages/helm/emberstack/argo-cd-e...	1.0.22       	1.0.0      	A Helm chart for Argo CD extensions                         
+https://artifacthub.io/packages/helm/argo-cd-oci/argo-cd    	10.10.0      	v3.5.4     	A Helm chart for Argo CD, a declarative, GitOps continuou...
+https://artifacthub.io/packages/helm/mesosphere-stable/ar...	0.5.4        	1.2.0      	A Helm chart for Argo-CD                                    
+
+$ helm show chart bitnami/nginx | head -12
+Error: failed to do request: Head "https://registry-1.docker.io/v2/bitnamicharts/nginx/manifests/25.2.1": dial tcp: lookup registry-1.docker.io: no such host
+# (DNS lookups of registry-1.docker.io were intermittently failing on my network; the retry failed too.
+#  The next command, helm show values, reached the same OCI chart successfully.)
+
+$ helm show values bitnami/nginx | grep -A3 '^replicaCount' 
+replicaCount: 1
+## @param revisionHistoryLimit The number of old history to retain to allow rollback
+##
+revisionHistoryLimit: 10
+

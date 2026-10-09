@@ -1,0 +1,230 @@
+############################ THE REPORT: "notes-staging.local is down" ############################
+$ api / ; echo "HTTP $(curl -s -o /dev/null -w '%{http_code}' -H 'Host: notes-staging.local' http://localhost/)"
+<html>
+<head><title>503 Service Temporarily Unavailable</title></head>
+<body>
+<center><h1>503 Service Temporarily Unavailable</h1></center>
+<hr><center>nginx</center>
+</body>
+</html>
+HTTP 503
+
+$ kubectl -n notes-staging get pods,svc,ingress,hpa
+NAME                             READY   STATUS         RESTARTS   AGE
+pod/notes-api-56b69b486d-ppmp5   0/1     ErrImagePull   0          61s
+pod/notes-api-56b69b486d-v98c8   0/1     ErrImagePull   0          61s
+pod/notes-redis-0                1/1     Running        0          61s
+
+NAME                  TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)    AGE
+service/notes-api     ClusterIP   10.96.39.113   <none>        80/TCP     60s
+service/notes-redis   ClusterIP   10.96.82.81    <none>        6379/TCP   61s
+
+NAME                                  CLASS   HOSTS                 ADDRESS         PORTS   AGE
+ingress.networking.k8s.io/notes-api   nginx   notes-staging.local   10.96.176.188   80      61s
+
+NAME                                            REFERENCE              TARGETS              MINPODS   MAXPODS   REPLICAS   AGE
+horizontalpodautoscaler.autoscaling/notes-api   Deployment/notes-api   cpu: <unknown>/60%   2         6         2          61s
+
+############################ ISSUE 1: ImagePullBackOff ############################
+$ kubectl -n notes-staging get pods -l app=notes-api
+NAME                         READY   STATUS         RESTARTS   AGE
+notes-api-56b69b486d-ppmp5   0/1     ErrImagePull   0          61s
+notes-api-56b69b486d-v98c8   0/1     ErrImagePull   0          61s
+
+$ kubectl -n notes-staging describe pod -l app=notes-api | grep -m1 'Image:'
+    Image:          ghcr.io/tejasvarshney/final-notes-api:6d3b7adx
+
+$ kubectl -n notes-staging get events --field-selector reason=Failed -o custom-columns=OBJECT:.involvedObject.name,MESSAGE:.message | grep notes-api | sort -u | head -3
+notes-api-56b69b486d-ppmp5   Error: ErrImagePull
+notes-api-56b69b486d-ppmp5   Error: ImagePullBackOff
+notes-api-56b69b486d-ppmp5   Failed to pull image "ghcr.io/tejasvarshney/final-notes-api:6d3b7adx": rpc error: code = NotFound desc = failed to pull and unpack image "ghcr.io/tejasvarshney/final-notes-api:6d3b7adx": failed to resolve reference "ghcr.io/tejasvarshney/final-notes-api:6d3b7adx": ghcr.io/tejasvarshney/final-notes-api:6d3b7adx: not found
+
+# ROOT CAUSE: image tag has a typo (extra 'x') - that tag was never built or pushed
+# FIX: use the image the pipeline built (ghcr.io/tejasvarshney/final-notes-api:6d3b7ad)
+$ kubectl -n notes-staging set image deploy/notes-api api=ghcr.io/tejasvarshney/final-notes-api:6d3b7ad
+deployment.apps/notes-api image updated
+
+$ kubectl -n notes-staging get pods -l app=notes-api
+NAME                         READY   STATUS                       RESTARTS   AGE
+notes-api-56b69b486d-ppmp5   0/1     ImagePullBackOff             0          91s
+notes-api-56b69b486d-v98c8   0/1     ImagePullBackOff             0          91s
+notes-api-66df89b54-b5xrp    0/1     CreateContainerConfigError   0          30s
+
+############################ ISSUE 2: CreateContainerConfigError ############################
+$ kubectl -n notes-staging get events --field-selector reason=Failed -o custom-columns=MESSAGE:.message | grep -i secret | sort -u | head -2
+Error: couldn't find key redis-password in Secret notes-staging/notes-redis-auth
+
+$ kubectl -n notes-staging get secret notes-redis-auth -o jsonpath='{.data}' | jq 'keys'
+[
+  "password"
+]
+
+# ROOT CAUSE: Deployment reads key 'redis-password' but the Secret's key is 'password'
+$ diff <(sed 's#IMAGE_PLACEHOLDER_TYPO#IMG#' troubleshooting/broken/deployment.yaml) <(sed 's#IMAGE_PLACEHOLDER#IMG#' kubernetes/deployment.yaml)
+1d0
+< # BUG 1: image tag typo   BUG 2: wrong Secret key   BUG 4: no resource requests (HPA cannot compute %)
+26c25
+<                 secretKeyRef: { name: notes-redis-auth, key: redis-password }
+---
+>                 secretKeyRef: { name: notes-redis-auth, key: password }
+31a31,33
+>           resources:
+>             requests: { cpu: 100m, memory: 96Mi }
+>             limits:   { cpu: 500m, memory: 192Mi }
+
+# FIX: apply the corrected Deployment (also adds resource requests - see issue 4)
+$ sed 's#IMAGE_PLACEHOLDER#ghcr.io/tejasvarshney/final-notes-api:6d3b7ad#' kubernetes/deployment.yaml | kubectl -n notes-staging apply -f -
+deployment.apps/notes-api configured
+
+$ kubectl -n notes-staging get pods -l app=notes-api
+NAME                         READY   STATUS                       RESTARTS   AGE
+notes-api-56b69b486d-ppmp5   0/1     ImagePullBackOff             0          2m11s
+notes-api-66df89b54-b5xrp    0/1     CreateContainerConfigError   0          70s
+notes-api-b8847c4f7-j29jv    0/1     Running                      0          40s
+
+############################ ISSUE 3: Pods Running but never Ready ############################
+$ kubectl -n notes-staging get pod notes-api-b8847c4f7-j29jv
+NAME                        READY   STATUS    RESTARTS   AGE
+notes-api-b8847c4f7-j29jv   0/1     Running   0          40s
+
+$ kubectl -n notes-staging get events --field-selector involvedObject.name=notes-api-b8847c4f7-j29jv,reason=Unhealthy -o custom-columns=MESSAGE:.message | sort -u | head -2
+MESSAGE
+Readiness probe failed: HTTP probe failed with statuscode: 503
+
+$ kubectl -n notes-staging exec notes-api-b8847c4f7-j29jv -- python -c "import urllib.request as u; print(u.urlopen('http://127.0.0.1:8000/health').read().decode())"
+{"status":"ok"}
+
+
+$ kubectl -n notes-staging exec notes-api-b8847c4f7-j29jv -- python -c "import urllib.request as u, urllib.error as e
+try: u.urlopen('http://127.0.0.1:8000/ready')
+except e.HTTPError as x: print(x.code, x.read().decode())"
+503 {"reason":"Error -3 connecting to redis:6379. Temporary failure in name resolution.","status":"not ready"}
+
+
+$ kubectl -n notes-staging get endpoints notes-api
+Warning: v1 Endpoints is deprecated in v1.33+; use discovery.k8s.io/v1 EndpointSlice
+NAME        ENDPOINTS   AGE
+notes-api               2m11s
+
+$ kubectl -n notes-staging get configmap notes-config -o jsonpath='{.data.REDIS_HOST}'; echo; kubectl -n notes-staging get svc
+redis
+NAME          TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)    AGE
+notes-api     ClusterIP   10.96.39.113   <none>        80/TCP     2m11s
+notes-redis   ClusterIP   10.96.82.81    <none>        6379/TCP   2m12s
+
+# ROOT CAUSE: REDIS_HOST=redis, but the Redis Service is named notes-redis -> name does not resolve -> /ready 503 -> no endpoints
+$ kubectl -n notes-staging apply -f kubernetes/configmap.yaml && kubectl -n notes-staging rollout restart deploy/notes-api && kubectl -n notes-staging rollout status deploy/notes-api --timeout=120s
+configmap/notes-config configured
+deployment.apps/notes-api restarted
+Waiting for deployment "notes-api" rollout to finish: 1 out of 2 new replicas have been updated...
+Waiting for deployment "notes-api" rollout to finish: 1 out of 2 new replicas have been updated...
+Waiting for deployment "notes-api" rollout to finish: 1 out of 2 new replicas have been updated...
+Waiting for deployment "notes-api" rollout to finish: 1 out of 2 new replicas have been updated...
+Waiting for deployment "notes-api" rollout to finish: 1 old replicas are pending termination...
+Waiting for deployment "notes-api" rollout to finish: 1 old replicas are pending termination...
+Waiting for deployment "notes-api" rollout to finish: 1 old replicas are pending termination...
+deployment "notes-api" successfully rolled out
+
+$ kubectl -n notes-staging get endpoints notes-api
+Warning: v1 Endpoints is deprecated in v1.33+; use discovery.k8s.io/v1 EndpointSlice
+NAME        ENDPOINTS                           AGE
+notes-api   10.244.1.36:8000,10.244.1.37:8000   2m15s
+
+############################ ISSUE 4: HPA shows <unknown> ############################
+(state with the original broken manifest, captured at the start:)
+$ kubectl -n notes-staging get hpa notes-api
+NAME        REFERENCE              TARGETS              MINPODS   MAXPODS   REPLICAS   AGE
+notes-api   Deployment/notes-api   cpu: <unknown>/60%   2         6         2          61s
+
+$ kubectl -n notes-staging describe hpa notes-api | grep -iE 'missing request|FailedGetResourceMetric|unable' | head -3
+  ScalingActive  False   FailedGetResourceMetric  the HPA was unable to compute the replica count: failed to get cpu utilization: unable to get metrics for resource cpu: no metrics returned from resource metrics API
+  Warning  FailedGetResourceMetric       1s (x4 over 46s)  horizontal-pod-autoscaler  failed to get cpu utilization: unable to get metrics for resource cpu: no metrics returned from resource metrics API
+  Warning  FailedComputeMetricsReplicas  1s (x4 over 46s)  horizontal-pod-autoscaler  invalid metrics (1 invalid out of 1), first error is: failed to get cpu resource metric value: failed to get cpu utilization: unable to get metrics for resource cpu: no metrics returned from resource metrics API
+
+# At that point no Pod was even running. To isolate the real config bug, deploy the broken manifest
+# with only issues 1+2 corrected, i.e. still WITHOUT resources.requests:
+$ sed 's#IMAGE_PLACEHOLDER_TYPO#ghcr.io/tejasvarshney/final-notes-api:6d3b7ad#; s#key: redis-password#key: password#' troubleshooting/broken/deployment.yaml | kubectl -n notes-staging apply -f - && kubectl -n notes-staging rollout status deploy/notes-api --timeout=120s
+deployment.apps/notes-api configured
+Waiting for deployment "notes-api" rollout to finish: 1 out of 2 new replicas have been updated...
+Waiting for deployment "notes-api" rollout to finish: 1 out of 2 new replicas have been updated...
+Waiting for deployment "notes-api" rollout to finish: 1 out of 2 new replicas have been updated...
+Waiting for deployment "notes-api" rollout to finish: 1 old replicas are pending termination...
+Waiting for deployment "notes-api" rollout to finish: 1 old replicas are pending termination...
+deployment "notes-api" successfully rolled out
+
+$ kubectl -n notes-staging get hpa notes-api
+NAME        REFERENCE              TARGETS              MINPODS   MAXPODS   REPLICAS   AGE
+notes-api   Deployment/notes-api   cpu: <unknown>/60%   2         6         2          3m24s
+
+$ kubectl -n notes-staging describe hpa notes-api | grep -iE 'missing request|FailedGetResourceMetric' | sort -u | head -3
+  ScalingActive  False   FailedGetResourceMetric  the HPA was unable to compute the replica count: failed to get cpu utilization: missing request for cpu in container api of Pod notes-api-79c4589c88-8jfmt
+  Warning  FailedComputeMetricsReplicas  24s                 horizontal-pod-autoscaler  invalid metrics (1 invalid out of 1), first error is: failed to get cpu resource metric value: failed to get cpu utilization: missing request for cpu in container api of Pod notes-api-79c4589c88-8jfmt
+  Warning  FailedGetResourceMetric       39s (x3 over 84s)   horizontal-pod-autoscaler  failed to get cpu utilization: did not receive metrics for targeted pods (pods might be unready)
+
+$ kubectl -n notes-staging get deploy notes-api -o jsonpath='{.spec.template.spec.containers[0].resources}'; echo '<- empty'
+{}<- empty
+
+# ROOT CAUSE: no resources.requests.cpu -> HPA utilization is a % OF THE REQUEST, so it cannot be computed
+$ sed 's#IMAGE_PLACEHOLDER#ghcr.io/tejasvarshney/final-notes-api:6d3b7ad#' kubernetes/deployment.yaml | kubectl -n notes-staging apply -f - && kubectl -n notes-staging rollout status deploy/notes-api --timeout=120s
+deployment.apps/notes-api configured
+Waiting for deployment "notes-api" rollout to finish: 1 out of 2 new replicas have been updated...
+Waiting for deployment "notes-api" rollout to finish: 1 out of 2 new replicas have been updated...
+Waiting for deployment "notes-api" rollout to finish: 1 out of 2 new replicas have been updated...
+Waiting for deployment "notes-api" rollout to finish: 1 old replicas are pending termination...
+Waiting for deployment "notes-api" rollout to finish: 1 old replicas are pending termination...
+deployment "notes-api" successfully rolled out
+
+$ kubectl -n notes-staging get hpa notes-api
+NAME        REFERENCE              TARGETS       MINPODS   MAXPODS   REPLICAS   AGE
+notes-api   Deployment/notes-api   cpu: 1%/60%   2         6         2          4m43s
+
+############################ ISSUE 5: Ingress returns 503 ############################
+$ echo HTTP $(curl -s -o /dev/null -w '%{http_code}' -H 'Host: notes-staging.local' http://localhost/)
+HTTP 503
+
+$ kubectl -n notes-staging describe ingress notes-api | sed -n '/Rules:/,/Annotations:/p'
+Rules:
+  Host                 Path  Backends
+  ----                 ----  --------
+  notes-staging.local  
+                       /   notes-api:8000 ()
+Annotations:           <none>
+
+$ kubectl -n notes-staging get svc notes-api -o jsonpath='{.spec.ports}'; echo
+[{"name":"http","port":80,"protocol":"TCP","targetPort":"http"}]
+
+# ROOT CAUSE: Ingress backend port 8000, but the Service port is 80 (8000 is the targetPort)
+$ kubectl -n notes-staging apply -f kubernetes/ingress.yaml
+ingress.networking.k8s.io/notes-api configured
+
+############################ VERIFY: everything fixed ############################
+$ kubectl -n notes-staging get pods,svc,ingress,hpa
+NAME                             READY   STATUS    RESTARTS   AGE
+pod/notes-api-55867866bf-f9p2s   1/1     Running   0          87s
+pod/notes-api-55867866bf-h6cwh   1/1     Running   0          89s
+pod/notes-redis-0                1/1     Running   0          4m53s
+
+NAME                  TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)    AGE
+service/notes-api     ClusterIP   10.96.39.113   <none>        80/TCP     4m52s
+service/notes-redis   ClusterIP   10.96.82.81    <none>        6379/TCP   4m53s
+
+NAME                                  CLASS   HOSTS                 ADDRESS         PORTS   AGE
+ingress.networking.k8s.io/notes-api   nginx   notes-staging.local   10.96.176.188   80      4m53s
+
+NAME                                            REFERENCE              TARGETS       MINPODS   MAXPODS   REPLICAS   AGE
+horizontalpodautoscaler.autoscaling/notes-api   Deployment/notes-api   cpu: 1%/60%   2         6         2          4m53s
+
+$ api / | jq .
+{
+  "app": "notes-api",
+  "environment": "staging",
+  "message": "Welcome to the Notes API (plain manifests)",
+  "version": "6d3b7ad"
+}
+
+$ api /api/notes -X POST -H 'Content-Type: application/json' -d '{"text":"staging fixed"}' | jq -c .
+{"created":1791422440.004874,"id":"dbbc7bd8","text":"staging fixed"}
+
+$ api /api/notes | jq -c '[.[].text]'
+["staging fixed"]
+

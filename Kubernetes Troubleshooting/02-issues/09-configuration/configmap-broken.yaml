@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gateway-nginx
+data:
+  default.conf: |
+    server {
+        listen 80;
+        location / {
+            return 200 'gateway up\n'      # BUG: missing ;
+        }
+    }

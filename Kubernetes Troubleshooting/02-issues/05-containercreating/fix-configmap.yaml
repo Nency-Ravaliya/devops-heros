@@ -1,0 +1,9 @@
+# FIX: create the ConfigMap the Pod mounts
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: report-config
+data:
+  report.conf: |
+    schedule=daily
+    format=pdf

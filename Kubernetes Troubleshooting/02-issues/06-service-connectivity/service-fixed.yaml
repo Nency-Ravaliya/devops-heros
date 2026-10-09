@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: orders
+spec:
+  selector: { app: orders }
+  ports:
+    - port: 80
+      targetPort: 5678

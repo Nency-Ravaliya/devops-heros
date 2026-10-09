@@ -1,0 +1,55 @@
+########## 1. BREAK ##########
+$ kubectl apply -f 01-crashloopbackoff/broken.yaml
+pod/payment-api created
+
+########## 2. INVESTIGATE ##########
+$ kubectl get pod payment-api
+NAME          READY   STATUS   RESTARTS      AGE
+payment-api   0/1     Error    3 (32s ago)   45s
+
+$ kubectl describe pod payment-api | grep -E 'State:|Reason:|Exit Code:|Last State:|Restart Count:'
+    State:          Terminated
+      Reason:       Error
+      Exit Code:    1
+    Last State:     Terminated
+      Reason:       Error
+      Exit Code:    1
+    Restart Count:  3
+
+$ kubectl describe pod payment-api | sed -n '/^Events:/,$p' | tail -5
+  Normal   Scheduled  46s               default-scheduler  Successfully assigned default/payment-api to minikube
+  Normal   Pulled     9s (x4 over 46s)  kubelet            Container image "busybox:1.36" already present on machine and can be accessed by the pod
+  Normal   Created    9s (x4 over 45s)  kubelet            Container created
+  Normal   Started    9s (x4 over 45s)  kubelet            Container started
+  Warning  BackOff    9s (x3 over 44s)  kubelet            Back-off restarting failed container app in pod payment-api_default(abf33acd-2b3e-4319-972d-8a3ff331ab4a)
+
+$ kubectl logs payment-api
+FATAL: DB_HOST is not set
+
+$ kubectl logs payment-api --previous
+unable to retrieve container logs for containerd://2556f6a78c17cbaf54f1c54166f4b32b272fc6c7354d39f4560bbe38ce706614
+# ROOT CAUSE: the container exits with code 1 because env var DB_HOST is missing; kubelet keeps restarting it with growing back-off
+########## 3. FIX ##########
+$ diff 01-crashloopbackoff/broken.yaml 01-crashloopbackoff/fixed.yaml
+1c1
+< # App exits immediately because a required env var is missing
+---
+> # FIXED: provide the required DB_HOST env var
+10a11,13
+>       env:
+>         - name: DB_HOST
+>           value: postgres.default.svc.cluster.local
+
+$ kubectl delete pod payment-api --now && kubectl apply -f 01-crashloopbackoff/fixed.yaml && kubectl wait --for=condition=Ready pod/payment-api --timeout=60s
+pod "payment-api" deleted from default namespace
+pod/payment-api created
+pod/payment-api condition met
+
+########## 4. VERIFY ##########
+$ kubectl get pod payment-api
+NAME          READY   STATUS    RESTARTS   AGE
+payment-api   1/1     Running   0          0s
+
+$ kubectl logs payment-api
+connected to postgres.default.svc.cluster.local
+

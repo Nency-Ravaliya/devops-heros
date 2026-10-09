@@ -1,0 +1,30 @@
+digraph G {
+  rankdir = "RL";
+  node [shape = rect, fontname = "sans-serif"];
+  "data.aws_availability_zones.available" [label="data.aws_availability_zones.available"];
+  "aws_instance.web" [label="aws_instance.web"];
+  "aws_internet_gateway.igw" [label="aws_internet_gateway.igw"];
+  "aws_route_table.public" [label="aws_route_table.public"];
+  "aws_route_table_association.public" [label="aws_route_table_association.public"];
+  "aws_s3_bucket.assets" [label="aws_s3_bucket.assets"];
+  "aws_s3_bucket_public_access_block.assets" [label="aws_s3_bucket_public_access_block.assets"];
+  "aws_s3_bucket_versioning.assets" [label="aws_s3_bucket_versioning.assets"];
+  "aws_s3_object.welcome" [label="aws_s3_object.welcome"];
+  "aws_security_group.web" [label="aws_security_group.web"];
+  "aws_subnet.public" [label="aws_subnet.public"];
+  "aws_vpc.main" [label="aws_vpc.main"];
+  "random_id.bucket_suffix" [label="random_id.bucket_suffix"];
+  "aws_instance.web" -> "aws_route_table_association.public";
+  "aws_instance.web" -> "aws_security_group.web";
+  "aws_internet_gateway.igw" -> "aws_vpc.main";
+  "aws_route_table.public" -> "aws_internet_gateway.igw";
+  "aws_route_table_association.public" -> "aws_route_table.public";
+  "aws_route_table_association.public" -> "aws_subnet.public";
+  "aws_s3_bucket.assets" -> "random_id.bucket_suffix";
+  "aws_s3_bucket_public_access_block.assets" -> "aws_s3_bucket.assets";
+  "aws_s3_bucket_versioning.assets" -> "aws_s3_bucket.assets";
+  "aws_s3_object.welcome" -> "aws_s3_bucket.assets";
+  "aws_security_group.web" -> "aws_vpc.main";
+  "aws_subnet.public" -> "data.aws_availability_zones.available";
+  "aws_subnet.public" -> "aws_vpc.main";
+}

@@ -1,0 +1,13 @@
+# Frontend in namespace "default" calls the stock service
+apiVersion: v1
+kind: Pod
+metadata:
+  name: frontend
+spec:
+  containers:
+    - name: frontend
+      image: curlimages/curl:8.10.1
+      env:
+        - name: STOCK_URL
+          value: http://stock.inventory.svc.cluster.local
+      command: ["sh", "-c", "while true; do curl -s -m 3 $STOCK_URL || echo \"$(date +%T) ERROR calling $STOCK_URL\"; sleep 5; done"]

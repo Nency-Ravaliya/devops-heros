@@ -1,0 +1,16 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: notes-api
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: notes-staging.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: notes-api
+                port: { number: 80 }

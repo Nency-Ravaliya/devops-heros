@@ -1,0 +1,76 @@
+$ minikube version
+minikube version: v1.39.0
+commit: 7a9f6a841470a207de8cf4bafcccee0969d8ba10
+
+$ minikube status
+minikube
+type: Control Plane
+host: Running
+kubelet: Running
+apiserver: Running
+kubeconfig: Configured
+
+
+$ kubectl version
+Client Version: v1.34.1
+Kustomize Version: v5.7.1
+Server Version: v1.37.0
+Warning: version difference between client (1.34) and server (1.37) exceeds the supported minor version skew of +/-1
+
+$ kubectl cluster-info
+Kubernetes control plane is running at https://127.0.0.1:42231
+CoreDNS is running at https://127.0.0.1:42231/api/v1/namespaces/kube-system/services/kube-dns:dns/proxy
+
+To further debug and diagnose cluster problems, use 'kubectl cluster-info dump'.
+
+$ kubectl get nodes -o wide
+NAME       STATUS   ROLES           AGE     VERSION   INTERNAL-IP    EXTERNAL-IP   OS-IMAGE                         KERNEL-VERSION                             CONTAINER-RUNTIME
+minikube   Ready    control-plane   3m14s   v1.37.0   192.168.49.2   <none>        Debian GNU/Linux 12 (bookworm)   6.6.87.2-microsoft-standard-WSL2 (amd64)   containerd://2.3.4
+
+$ kubectl get pods -n kube-system -o wide
+NAME                               READY   STATUS    RESTARTS   AGE     IP             NODE       NOMINATED NODE   READINESS GATES
+coredns-559f6c778d-5jmmm           1/1     Running   0          3m5s    10.244.0.2     minikube   <none>           <none>
+etcd-minikube                      1/1     Running   0          3m11s   192.168.49.2   minikube   <none>           <none>
+kindnet-48kkl                      1/1     Running   0          3m5s    192.168.49.2   minikube   <none>           <none>
+kube-apiserver-minikube            1/1     Running   0          3m13s   192.168.49.2   minikube   <none>           <none>
+kube-controller-manager-minikube   1/1     Running   0          3m11s   192.168.49.2   minikube   <none>           <none>
+kube-proxy-2255r                   1/1     Running   0          3m5s    192.168.49.2   minikube   <none>           <none>
+kube-scheduler-minikube            1/1     Running   0          3m11s   192.168.49.2   minikube   <none>           <none>
+metrics-server-768f9f6999-cs6xl    1/1     Running   0          74s     10.244.0.4     minikube   <none>           <none>
+storage-provisioner                1/1     Running   0          3m10s   192.168.49.2   minikube   <none>           <none>
+
+$ kubectl get namespaces
+NAME              STATUS   AGE
+default           Active   3m14s
+ingress-nginx     Active   73s
+kube-node-lease   Active   3m14s
+kube-public       Active   3m14s
+kube-system       Active   3m14s
+
+$ kubectl api-resources | head -25
+NAME                                SHORTNAMES   APIVERSION                        NAMESPACED   KIND
+bindings                                         v1                                true         Binding
+componentstatuses                   cs           v1                                false        ComponentStatus
+configmaps                          cm           v1                                true         ConfigMap
+endpoints                           ep           v1                                true         Endpoints
+events                              ev           v1                                true         Event
+limitranges                         limits       v1                                true         LimitRange
+namespaces                          ns           v1                                false        Namespace
+nodes                               no           v1                                false        Node
+persistentvolumeclaims              pvc          v1                                true         PersistentVolumeClaim
+persistentvolumes                   pv           v1                                false        PersistentVolume
+pods                                po           v1                                true         Pod
+podtemplates                                     v1                                true         PodTemplate
+replicationcontrollers              rc           v1                                true         ReplicationController
+resourcequotas                      quota        v1                                true         ResourceQuota
+secrets                                          v1                                true         Secret
+serviceaccounts                     sa           v1                                true         ServiceAccount
+services                            svc          v1                                true         Service
+mutatingadmissionpolicies                        admissionregistration.k8s.io/v1   false        MutatingAdmissionPolicy
+mutatingadmissionpolicybindings                  admissionregistration.k8s.io/v1   false        MutatingAdmissionPolicyBinding
+mutatingwebhookconfigurations                    admissionregistration.k8s.io/v1   false        MutatingWebhookConfiguration
+validatingadmissionpolicies                      admissionregistration.k8s.io/v1   false        ValidatingAdmissionPolicy
+validatingadmissionpolicybindings                admissionregistration.k8s.io/v1   false        ValidatingAdmissionPolicyBinding
+validatingwebhookconfigurations                  admissionregistration.k8s.io/v1   false        ValidatingWebhookConfiguration
+customresourcedefinitions           crd,crds     apiextensions.k8s.io/v1           false        CustomResourceDefinition
+

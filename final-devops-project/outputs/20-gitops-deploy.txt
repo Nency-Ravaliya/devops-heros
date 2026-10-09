@@ -1,0 +1,117 @@
+################ load the image built + scanned by the pipeline into the cluster ################
+$ docker load -i ../image.tar.gz 2>/dev/null || docker load -i image.tar.gz
+Loaded image: ghcr.io/tejasvarshney/final-notes-api:6d3b7ad
+
+$ kind load docker-image ghcr.io/tejasvarshney/final-notes-api:6d3b7ad --name final-devops
+Image: "ghcr.io/tejasvarshney/final-notes-api:6d3b7ad" with ID "sha256:16e6a19b3fb87454d2ebcb0df486944cb2debf450f8f3e3e43d933e6d15f2889" not yet present on node "final-devops-control-plane", loading...
+Image: "ghcr.io/tejasvarshney/final-notes-api:6d3b7ad" with ID "sha256:16e6a19b3fb87454d2ebcb0df486944cb2debf450f8f3e3e43d933e6d15f2889" not yet present on node "final-devops-worker", loading...
+
+################ the Secret is created by the pipeline - never committed to Git ################
+$ kubectl create namespace notes
+namespace/notes created
+
+$ kubectl -n notes create secret generic notes-redis-auth --from-literal=password=$(openssl rand -hex 16)
+secret/notes-redis-auth created
+
+$ kubectl -n notes get secret notes-redis-auth
+NAME               TYPE     DATA   AGE
+notes-redis-auth   Opaque   1      0s
+
+################ GitOps: commit the new image tag to the environment branch ################
+$ git -C /tmp/tmp.tumf31bcFi log --oneline -1 && git -C /tmp/tmp.tumf31bcFi show --format= HEAD
+9e2ea1a GitOps: deploy notes-api 6d3b7ad
+diff --git a/final-devops-project/gitops/notes-values.yaml b/final-devops-project/gitops/notes-values.yaml
+index f16d4fa..bad12e8 100644
+--- a/final-devops-project/gitops/notes-values.yaml
++++ b/final-devops-project/gitops/notes-values.yaml
+@@ -1,7 +1,7 @@
+ # Environment-specific values - THE file the CI pipeline changes.
+ # Argo CD watches it (branch "final-gitops") and syncs the cluster to whatever is committed here.
+ image:
+-  tag: latest
++  tag: "6d3b7ad"
+ config:
+   APP_ENV: production
+   WELCOME_MESSAGE: "Welcome to the Notes API - deployed by Argo CD"
+
+################ Argo CD Application (Helm chart + values from Git) ################
+$ cat gitops/argocd-application.yaml
+# Multi-source Application: the Helm chart + the values file, both from this repo.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: notes-api
+  namespace: argocd
+spec:
+  project: default
+  sources:
+    - repoURL: https://github.com/TejasVarshney/devops-heros.git
+      targetRevision: final-gitops
+      path: final-devops-project/helm/notes-api
+      helm:
+        releaseName: notes
+        valueFiles:
+          - $values/final-devops-project/gitops/notes-values.yaml
+    - repoURL: https://github.com/TejasVarshney/devops-heros.git
+      targetRevision: final-gitops
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: notes
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+
+$ kubectl apply -f gitops/argocd-application.yaml
+application.argoproj.io/notes-api created
+
+$ kubectl -n argocd get applications -o wide
+NAME        SYNC STATUS   HEALTH STATUS   REVISION   PROJECT
+notes-api   Synced        Healthy                    default
+
+$ kubectl -n argocd get application notes-api -o jsonpath='revision={.status.sync.revisions}{"\n"}'
+revision=["9e2ea1a63950a431c1e8f4254cb035e861a9973f","9e2ea1a63950a431c1e8f4254cb035e861a9973f"]
+
+(expected GitOps commit: 9e2ea1a63950a431c1e8f4254cb035e861a9973f)
+
+$ kubectl -n notes get all,ingress,hpa,pvc,configmap,secret,servicemonitor
+NAME                             READY   STATUS    RESTARTS   AGE
+pod/notes-api-8669776bdb-gmqvb   1/1     Running   0          34s
+pod/notes-api-8669776bdb-pj89n   1/1     Running   0          49s
+pod/notes-redis-0                1/1     Running   0          49s
+
+NAME                  TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)    AGE
+service/notes-api     ClusterIP   10.96.232.211   <none>        80/TCP     49s
+service/notes-redis   ClusterIP   10.96.84.90     <none>        6379/TCP   49s
+
+NAME                        READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/notes-api   2/2     2            2           49s
+
+NAME                                   DESIRED   CURRENT   READY   AGE
+replicaset.apps/notes-api-8669776bdb   2         2         2       49s
+
+NAME                           READY   AGE
+statefulset.apps/notes-redis   1/1     49s
+
+NAME                                            REFERENCE              TARGETS       MINPODS   MAXPODS   REPLICAS   AGE
+horizontalpodautoscaler.autoscaling/notes-api   Deployment/notes-api   cpu: 1%/60%   2         6         2          49s
+
+NAME                                  CLASS   HOSTS         ADDRESS         PORTS   AGE
+ingress.networking.k8s.io/notes-api   nginx   notes.local   10.96.176.188   80      49s
+
+NAME                                       STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE
+persistentvolumeclaim/data-notes-redis-0   Bound    pvc-0af6097c-5c0c-4fe6-bd3e-0b5ecc250b7e   1Gi        RWO            standard       <unset>                 49s
+
+NAME                         DATA   AGE
+configmap/kube-root-ca.crt   1      59s
+configmap/notes-config       4      49s
+
+NAME                      TYPE     DATA   AGE
+secret/notes-redis-auth   Opaque   1      58s
+
+NAME                                             AGE
+servicemonitor.monitoring.coreos.com/notes-api   49s
+

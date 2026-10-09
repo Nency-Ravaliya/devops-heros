@@ -1,0 +1,53 @@
+$ kubectl apply -f 01-clusterip/service.yaml
+service/web-clusterip unchanged
+
+$ kubectl get svc web-clusterip -o wide
+NAME            TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)   AGE    SELECTOR
+web-clusterip   ClusterIP   10.102.13.85   <none>        80/TCP    4m2s   app=web
+
+$ kubectl get endpointslices -l kubernetes.io/service-name=web-clusterip
+NAME                  ADDRESSTYPE   PORTS   ENDPOINTS                             AGE
+web-clusterip-qh5s6   IPv4          8080    10.244.0.78,10.244.0.77,10.244.0.76   4m2s
+
+$ kubectl describe svc web-clusterip
+Name:                     web-clusterip
+Namespace:                default
+Labels:                   <none>
+Annotations:              <none>
+Selector:                 app=web
+Type:                     ClusterIP
+IP Family Policy:         SingleStack
+IP Families:              IPv4
+IP:                       10.102.13.85
+IPs:                      10.102.13.85
+Port:                     http  80/TCP
+TargetPort:               http/TCP
+Endpoints:                10.244.0.78:8080,10.244.0.77:8080,10.244.0.76:8080
+Session Affinity:         None
+Internal Traffic Policy:  Cluster
+Events:                   <none>
+
+$ kubectl exec curl -- sh -c 'for i in 1 2 3 4 5 6; do curl -s http://web-clusterip; done'
+hello from web-86bb596c4d-72lwl
+hello from web-86bb596c4d-xhfvv
+hello from web-86bb596c4d-xhfvv
+hello from web-86bb596c4d-72lwl
+hello from web-86bb596c4d-72lwl
+hello from web-86bb596c4d-nknrw
+
+$ kubectl exec curl -- curl -s http://10.102.13.85
+hello from web-86bb596c4d-xhfvv
+
+$ kubectl exec curl -- curl -s http://web-clusterip.default.svc.cluster.local
+hello from web-86bb596c4d-nknrw
+
+$ curl -s --max-time 3 http://10.102.13.85 || echo 'not reachable from my laptop (ClusterIP is internal only)'
+not reachable from my laptop (ClusterIP is internal only)
+
+$ kubectl port-forward svc/web-clusterip 8080:80   (in background)
+Forwarding from 127.0.0.1:8080 -> 8080
+Forwarding from [::1]:8080 -> 8080
+
+$ curl -s http://localhost:8080
+hello from web-86bb596c4d-72lwl
+

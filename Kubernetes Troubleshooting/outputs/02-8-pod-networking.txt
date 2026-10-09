@@ -1,0 +1,68 @@
+########## 1. BREAK ##########
+$ kubectl apply -f 08-pod-networking/broken.yaml
+deployment.apps/profile unchanged
+service/profile unchanged
+
+########## 2. INVESTIGATE ##########
+$ kubectl get pods -l app=profile -o wide
+NAME                       READY   STATUS    RESTARTS   AGE   IP            NODE       NOMINATED NODE   READINESS GATES
+profile-656f6b9cdd-slkj8   1/1     Running   0          1s    10.244.0.50   minikube   <none>           <none>
+
+$ kubectl get endpointslices -l kubernetes.io/service-name=profile
+NAME            ADDRESSTYPE   PORTS   ENDPOINTS     AGE
+profile-r7kcb   IPv4          8080    10.244.0.50   1s
+
+$ kubectl exec curl -- sh -c 'curl -sS -m 5 http://profile 2>&1; true'
+curl: (7) Failed to connect to profile port 80 after 1 ms: Could not connect to server
+
+$ kubectl exec curl -- sh -c 'curl -sS -m 5 http://10.244.0.50:8080 2>&1; true'
+curl: (7) Failed to connect to 10.244.0.50 port 8080 after 0 ms: Could not connect to server
+
+$ kubectl exec curl -- ping -c 2 -W 2 10.244.0.50
+PING 10.244.0.50 (10.244.0.50): 56 data bytes
+64 bytes from 10.244.0.50: seq=0 ttl=42 time=0.364 ms
+64 bytes from 10.244.0.50: seq=1 ttl=42 time=0.108 ms
+
+--- 10.244.0.50 ping statistics ---
+2 packets transmitted, 2 packets received, 0% packet loss
+round-trip min/avg/max = 0.108/0.236/0.364 ms
+
+$ kubectl debug profile-656f6b9cdd-slkj8 -q -i --image=busybox:1.36 --target=profile --profile=general -- sh -c 'echo from inside the Pod:; wget -qO- http://127.0.0.1:8080; netstat -tln'
+warning: couldn't attach to pod/profile-656f6b9cdd-slkj8, falling back to streaming logs: Internal error occurred: Internal error occurred: error attaching to container: container is in CONTAINER_EXITED state
+from inside the Pod:
+profile service
+Active Internet connections (only servers)
+Proto Recv-Q Send-Q Local Address           Foreign Address         State       
+tcp        0      0 127.0.0.1:8080          0.0.0.0:*               LISTEN      
+
+$ kubectl logs deploy/profile
+Defaulted container "profile" out of: profile, debugger-6nhfb (ephem)
+2026/10/07 19:53:35 [INFO] server is listening on 127.0.0.1:8080
+2026/10/07 19:53:39 127.0.0.1:8080 127.0.0.1:54798 "GET / HTTP/1.1" 200 16 "Wget" 26.865µs
+
+# ROOT CAUSE: Pod networking itself works (ping OK, endpoints OK) but the process listens on 127.0.0.1:8080 (loopback only), so traffic arriving on the Pod IP is refused
+########## 3. FIX ##########
+$ diff 08-pod-networking/broken.yaml 08-pod-networking/fixed.yaml
+1c1
+< # BUG: the app binds to 127.0.0.1, so it only answers from INSIDE its own Pod
+---
+> # FIXED: bind to all interfaces of the Pod's network namespace
+17c17
+<           args: ["-text=profile service", "-listen=127.0.0.1:8080"]
+---
+>           args: ["-text=profile service", "-listen=0.0.0.0:8080"]
+
+$ kubectl apply -f 08-pod-networking/fixed.yaml && kubectl rollout status deploy/profile --timeout=90s
+deployment.apps/profile configured
+service/profile unchanged
+Waiting for deployment "profile" rollout to finish: 1 old replicas are pending termination...
+Waiting for deployment "profile" rollout to finish: 1 old replicas are pending termination...
+deployment "profile" successfully rolled out
+
+########## 4. VERIFY ##########
+$ kubectl logs deploy/profile
+2026/10/07 19:53:40 [INFO] server is listening on 0.0.0.0:8080
+
+$ kubectl exec curl -- curl -s http://profile
+profile service
+

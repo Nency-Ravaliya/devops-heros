@@ -1,0 +1,6 @@
+[extend]
+useDefault = true
+
+[allowlist]
+description = "documented placeholders"
+regexes = ["change-me", "demo-only-not-secret"]

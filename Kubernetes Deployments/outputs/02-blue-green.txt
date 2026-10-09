@@ -1,0 +1,76 @@
+$ kubectl apply -f 02-blue-green/blue.yaml -f 02-blue-green/service.yaml
+deployment.apps/web-blue created
+service/web-bg created
+
+$ kubectl get deploy,pods -l app=web-bg -L version
+NAME                            READY   STATUS    RESTARTS   AGE   VERSION
+pod/web-blue-5bfb566c97-2jhz9   1/1     Running   0          1s    blue
+pod/web-blue-5bfb566c97-9ksz9   1/1     Running   0          1s    blue
+pod/web-blue-5bfb566c97-lbh2p   1/1     Running   0          1s    blue
+
+$ for i in 1 2 3; do kubectl exec curl -- curl -s http://web-bg; done
+command terminated with exit code 7
+BLUE (v1)
+BLUE (v1)
+
+# --- deploy GREEN next to BLUE (no traffic yet) ---
+$ kubectl apply -f 02-blue-green/green.yaml
+deployment.apps/web-green created
+
+$ kubectl get pods -l app=web-bg -L version
+NAME                         READY   STATUS    RESTARTS   AGE   VERSION
+web-blue-5bfb566c97-2jhz9    1/1     Running   0          2s    blue
+web-blue-5bfb566c97-9ksz9    1/1     Running   0          2s    blue
+web-blue-5bfb566c97-lbh2p    1/1     Running   0          2s    blue
+web-green-7f8f7fffd6-j5ztb   1/1     Running   0          0s    green
+web-green-7f8f7fffd6-lzhf8   1/1     Running   0          0s    green
+web-green-7f8f7fffd6-qr7l6   1/1     Running   0          0s    green
+
+$ kubectl get endpoints web-bg
+Warning: v1 Endpoints is deprecated in v1.33+; use discovery.k8s.io/v1 EndpointSlice
+NAME     ENDPOINTS                                            AGE
+web-bg   10.244.0.32:8080,10.244.0.33:8080,10.244.0.34:8080   3s
+
+$ for i in 1 2 3; do kubectl exec curl -- curl -s http://web-bg; done
+BLUE (v1)
+BLUE (v1)
+BLUE (v1)
+
+# --- switch traffic: patch the Service selector to green ---
+$ kubectl patch service web-bg -p '{"spec":{"selector":{"app":"web-bg","version":"green"}}}'
+service/web-bg patched
+
+$ kubectl get svc web-bg -o jsonpath='{.spec.selector}'; echo
+{"app":"web-bg","version":"green"}
+
+$ kubectl get endpoints web-bg
+Warning: v1 Endpoints is deprecated in v1.33+; use discovery.k8s.io/v1 EndpointSlice
+NAME     ENDPOINTS                                            AGE
+web-bg   10.244.0.35:8080,10.244.0.36:8080,10.244.0.37:8080   4s
+
+$ for i in 1 2 3; do kubectl exec curl -- curl -s http://web-bg; done
+GREEN (v2)
+GREEN (v2)
+GREEN (v2)
+
+# --- instant rollback: switch back to blue ---
+$ kubectl patch service web-bg -p '{"spec":{"selector":{"version":"blue"}}}'
+service/web-bg patched
+
+$ kubectl exec curl -- curl -s http://web-bg
+BLUE (v1)
+
+$ kubectl patch service web-bg -p '{"spec":{"selector":{"version":"green"}}}'
+service/web-bg patched
+
+$ kubectl delete deployment web-blue
+deployment.apps "web-blue" deleted from default namespace
+
+$ kubectl exec curl -- curl -s http://web-bg
+command terminated with exit code 28
+
+$ kubectl delete -f 02-blue-green/
+deployment.apps "web-green" deleted from default namespace
+service "web-bg" deleted from default namespace
+Error from server (NotFound): error when deleting "02-blue-green\\blue.yaml": deployments.apps "web-blue" not found
+

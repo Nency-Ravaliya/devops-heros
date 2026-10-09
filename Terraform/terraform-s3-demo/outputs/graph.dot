@@ -1,0 +1,13 @@
+digraph G {
+  rankdir = "RL";
+  node [shape = rect, fontname = "sans-serif"];
+  "aws_s3_bucket.demo" [label="aws_s3_bucket.demo"];
+  "aws_s3_bucket_public_access_block.demo" [label="aws_s3_bucket_public_access_block.demo"];
+  "aws_s3_bucket_server_side_encryption_configuration.demo" [label="aws_s3_bucket_server_side_encryption_configuration.demo"];
+  "aws_s3_bucket_versioning.demo" [label="aws_s3_bucket_versioning.demo"];
+  "random_id.suffix" [label="random_id.suffix"];
+  "aws_s3_bucket.demo" -> "random_id.suffix";
+  "aws_s3_bucket_public_access_block.demo" -> "aws_s3_bucket.demo";
+  "aws_s3_bucket_server_side_encryption_configuration.demo" -> "aws_s3_bucket.demo";
+  "aws_s3_bucket_versioning.demo" -> "aws_s3_bucket.demo";
+}

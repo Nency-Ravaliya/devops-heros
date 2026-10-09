@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: web-tag
+spec:
+  containers:
+    - name: web
+      image: nginx:1.277        # typo - this tag does not exist

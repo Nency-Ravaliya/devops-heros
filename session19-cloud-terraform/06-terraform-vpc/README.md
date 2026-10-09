@@ -79,7 +79,7 @@ Open `terraform.tfvars` and change the Region if required.
 Example:
 
 ```hcl
-aws_region = "ap-south-1"
+aws_region = "eu-west-1"
 ```
 
 ---

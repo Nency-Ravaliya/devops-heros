@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notes-api
+spec:
+  replicas: 2
+  selector:
+    matchLabels: { app: notes-api }
+  template:
+    metadata:
+      labels: { app: notes-api }
+    spec:
+      containers:
+        - name: api
+          image: IMAGE_PLACEHOLDER
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8000
+          envFrom:
+            - configMapRef: { name: notes-config }
+          env:
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef: { name: notes-redis-auth, key: password }
+          readinessProbe:
+            httpGet: { path: /ready, port: http }
+            periodSeconds: 5
+          livenessProbe:
+            httpGet: { path: /health, port: http }
+          resources:
+            requests: { cpu: 100m, memory: 96Mi }
+            limits:   { cpu: 500m, memory: 192Mi }

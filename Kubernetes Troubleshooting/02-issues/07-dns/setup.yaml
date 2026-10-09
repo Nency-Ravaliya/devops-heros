@@ -1,0 +1,32 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: inventory
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: stock
+  namespace: inventory
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: stock }
+  template:
+    metadata:
+      labels: { app: stock }
+    spec:
+      containers:
+        - name: stock
+          image: hashicorp/http-echo:1.0
+          args: ["-text=stock service", "-listen=:8080"]
+          ports: [{ containerPort: 8080 }]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: stock
+  namespace: inventory
+spec:
+  selector: { app: stock }
+  ports: [{ port: 80, targetPort: 8080 }]

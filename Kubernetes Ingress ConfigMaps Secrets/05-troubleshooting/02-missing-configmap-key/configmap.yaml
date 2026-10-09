@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: web-settings
+data:
+  api_url: "http://api.internal:8080"
+  theme: "dark"

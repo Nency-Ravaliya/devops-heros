@@ -1,0 +1,26 @@
+# FIXED: bind to all interfaces of the Pod's network namespace
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: profile
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: profile }
+  template:
+    metadata:
+      labels: { app: profile }
+    spec:
+      containers:
+        - name: profile
+          image: hashicorp/http-echo:1.0
+          args: ["-text=profile service", "-listen=0.0.0.0:8080"]
+          ports: [{ containerPort: 8080 }]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: profile
+spec:
+  selector: { app: profile }
+  ports: [{ port: 80, targetPort: 8080 }]

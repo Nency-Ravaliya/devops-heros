@@ -1,0 +1,14 @@
+{{- if .Values.serviceMonitor.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: notes-api
+  labels: {{- include "notes.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels: { app: notes-api }
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 15s
+{{- end }}

@@ -1,0 +1,12 @@
+controller:
+  hostPort:
+    enabled: true          # bind 80/443 on the node, mapped to the runner by kind
+  service:
+    type: NodePort
+  nodeSelector:
+    ingress-ready: "true"
+  tolerations:
+    - key: node-role.kubernetes.io/control-plane
+      operator: Exists
+      effect: NoSchedule
+  watchIngressWithoutClass: true

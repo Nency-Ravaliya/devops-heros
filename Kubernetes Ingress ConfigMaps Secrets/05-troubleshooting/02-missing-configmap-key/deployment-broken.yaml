@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-settings
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: web-settings }
+  template:
+    metadata:
+      labels: { app: web-settings }
+    spec:
+      containers:
+        - name: web
+          image: busybox:1.36
+          command: ["sh", "-c", "echo API_URL=$API_URL THEME=$THEME; sleep 3600"]
+          env:
+            - name: API_URL
+              valueFrom:
+                configMapKeyRef: { name: web-settings, key: API_URL }   # BUG: key is api_url
+            - name: THEME
+              valueFrom:
+                configMapKeyRef: { name: web-settings, key: theme }

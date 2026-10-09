@@ -1,0 +1,125 @@
+# Sessions 18 & 19 - run the full Terraform workflow for both projects.
+# No AWS account is configured for this repo, so the AWS provider is pointed at Moto
+# (an open-source AWS API emulator running as a service container). The Terraform code
+# itself is unchanged and targets real AWS when run without the override file.
+# All command output is saved and committed back to <project>/outputs/ for the README.
+name: Sessions 18-19 - Terraform workflow
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "Terraform/terraform-s3-demo/*.tf"
+      - "Terraform/terraform-s3-demo/*.tfvars"
+      - "Cloud Terraform/terraform/*.tf"
+      - "Cloud Terraform/terraform/*.tfvars"
+      - ".github/workflows/terraform-sessions-18-19.yml"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write          # to commit the captured outputs back
+
+concurrency:
+  group: terraform-outputs
+  cancel-in-progress: false
+
+jobs:
+  terraform:
+    name: Terraform - ${{ matrix.project.name }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      max-parallel: 1      # both jobs commit to the repo - run one after the other
+      matrix:
+        project:
+          - { name: "Session 18 - S3 demo",       dir: "Terraform/terraform-s3-demo" }
+          - { name: "Session 19 - VPC/EC2/S3",    dir: "Cloud Terraform/terraform" }
+    services:
+      moto:
+        image: motoserver/moto:5.1.4
+        ports: ["5000:5000"]
+    env:
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
+      AWS_DEFAULT_REGION: ap-south-1
+      TF_IN_AUTOMATION: "true"
+      TF_CLI_ARGS: "-no-color"
+    defaults:
+      run:
+        shell: bash
+        working-directory: ${{ matrix.project.dir }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.13.3
+          terraform_wrapper: false
+
+      - name: Point the AWS provider at Moto (CI only, not committed)
+        run: |
+          cat > ci_moto_override.tf <<'HCL'
+          provider "aws" {
+            access_key                  = "test"
+            secret_key                  = "test"
+            skip_credentials_validation = true
+            skip_metadata_api_check     = true
+            skip_requesting_account_id  = true
+            s3_use_path_style           = true
+            endpoints {
+              s3  = "http://localhost:5000"
+              ec2 = "http://localhost:5000"
+              sts = "http://localhost:5000"
+              iam = "http://localhost:5000"
+            }
+          }
+          HCL
+          # Moto only knows its own AMI catalogue - pick one for the EC2 project
+          AMI=$(aws --endpoint-url http://localhost:5000 ec2 describe-images --owners amazon \
+                  --query 'Images[0].ImageId' --output text 2>/dev/null || true)
+          echo "TF_VAR_ami_id=$AMI" >> "$GITHUB_ENV"
+          echo "Moto AMI: $AMI"
+
+      - name: Run init / fmt / validate / plan / apply / show / output / state / destroy
+        run: |
+          set +e
+          mkdir -p outputs
+          run() {            # run "<file>" <command...>  -> output saved to outputs/<file>.txt
+            f="outputs/$1.txt"; shift
+            { echo "\$ $*"; "$@" 2>&1; echo "[exit code: $?]"; } | tee "$f"
+          }
+          run 01-init        terraform init -input=false
+          run 02-fmt         terraform fmt -check -diff -recursive
+          run 03-validate    terraform validate
+          run 04-plan        terraform plan -input=false -out=tfplan
+          run 05-apply       terraform apply -input=false -auto-approve tfplan
+          run 06-show        terraform show
+          run 07-output      terraform output
+          run 08-state-list  terraform state list
+          run 09-plan-again  terraform plan -input=false -detailed-exitcode
+          run 10-destroy     terraform destroy -input=false -auto-approve
+          run 11-state-after terraform state list
+          # dependency graph (Session 19 architecture/dependencies)
+          terraform graph > outputs/graph.dot 2> outputs/graph-error.txt || true
+          sudo apt-get install -y -qq graphviz >/dev/null 2>&1 || true
+          dot -Tsvg outputs/graph.dot -o outputs/graph.svg 2>> outputs/graph-error.txt || true
+          [ -s outputs/graph-error.txt ] || rm -f outputs/graph-error.txt
+          # fail the job (after saving everything) if apply or destroy failed
+          grep -q "Apply complete" outputs/05-apply.txt && grep -q "Destroy complete" outputs/10-destroy.txt; echo $? > outputs/.status
+          # environment info
+          { echo "runner: $RUNNER_OS / $ImageOS"; terraform version; echo "AWS API: Moto $(curl -s localhost:5000/moto-api/ -o /dev/null -w '%{http_code}') (motoserver/moto:5.1.4)"; date -u; } > outputs/00-environment.txt
+          # never commit state / plan / override / provider binaries
+          rm -rf .terraform tfplan terraform.tfstate* ci_moto_override.tf
+
+      - name: Commit outputs back to the repo
+        if: always()
+        working-directory: .
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          rm -f "${{ matrix.project.dir }}/outputs/.status.bak"; git add "${{ matrix.project.dir }}/outputs" "${{ matrix.project.dir }}/.terraform.lock.hcl" || true
+          git commit -m "CI: Terraform outputs for ${{ matrix.project.name }} [skip ci]" || exit 0
+          for i in 1 2 3; do git pull --rebase --autostash -q && git push -q && break; sleep 5; done
+
+      - name: Result
+        run: exit $(cat outputs/.status 2>/dev/null || echo 1)

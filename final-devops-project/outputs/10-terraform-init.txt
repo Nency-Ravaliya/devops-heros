@@ -1,0 +1,15 @@
+$ terraform init -input=false
+Initializing the backend...
+Initializing provider plugins...
+- Reusing previous version of tehcyx/kind from the dependency lock file
+- Reusing previous version of hashicorp/helm from the dependency lock file
+- Installing tehcyx/kind v0.11.0...
+- Installed tehcyx/kind v0.11.0 (self-signed, key ID F471C773A530ED1B)
+- Installing hashicorp/helm v2.17.0...
+- Installed hashicorp/helm v2.17.0 (signed by HashiCorp)
+Partner and community providers are signed by their developers.
+If you'd like to know more about provider signing, you can read about it here:
+https://developer.hashicorp.com/terraform/cli/plugins/signing
+
+Terraform has been successfully initialized!
+[exit code: 0]

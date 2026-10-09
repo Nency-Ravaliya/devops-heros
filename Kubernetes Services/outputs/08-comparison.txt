@@ -1,0 +1,94 @@
+# ---------- Deployment -> ReplicaSet -> Pods (ownerReferences) ----------
+$ kubectl get deploy web
+NAME   READY   UP-TO-DATE   AVAILABLE   AGE
+web    3/3     3            3           9m20s
+
+$ kubectl get rs -l app=web
+NAME             DESIRED   CURRENT   READY   AGE
+web-86bb596c4d   3         3         3       9m20s
+
+$ kubectl get rs web-86bb596c4d -o jsonpath='{.metadata.ownerReferences[0].kind}/{.metadata.ownerReferences[0].name}'; echo
+Deployment/web
+
+$ kubectl get pod web-86bb596c4d-72lwl -o jsonpath='{.metadata.ownerReferences[0].kind}/{.metadata.ownerReferences[0].name}'; echo
+ReplicaSet/web-86bb596c4d
+
+# ---------- self-healing: delete a Pod, the ReplicaSet replaces it ----------
+$ kubectl delete pod web-86bb596c4d-72lwl --wait=false && sleep 3 && kubectl get pods -l app=web
+pod "web-86bb596c4d-72lwl" deleted from default namespace
+NAME                   READY   STATUS    RESTARTS   AGE
+web-86bb596c4d-h6s54   1/1     Running   0          3s
+web-86bb596c4d-nknrw   1/1     Running   0          9m24s
+web-86bb596c4d-xhfvv   1/1     Running   0          9m24s
+
+# ---------- a bare ReplicaSet: scales, but changing the image does NOT roll out ----------
+$ kubectl apply -f comparison/replicaset.yaml
+replicaset.apps/bare-rs created
+
+$ kubectl scale rs bare-rs --replicas=3 && sleep 3 && kubectl get pods -l app=bare-rs
+replicaset.apps/bare-rs scaled
+NAME            READY   STATUS    RESTARTS   AGE
+bare-rs-7bkg5   1/1     Running   0          3s
+bare-rs-kk2tr   1/1     Running   0          4s
+bare-rs-m6wpg   1/1     Running   0          4s
+
+$ kubectl set image rs/bare-rs web=nginx:1.27 && sleep 3 && kubectl get pods -l app=bare-rs -o custom-columns=NAME:.metadata.name,IMAGE:.spec.containers[0].image
+replicaset.apps/bare-rs image updated
+NAME            IMAGE
+bare-rs-7bkg5   nginx:1.25
+bare-rs-kk2tr   nginx:1.25
+bare-rs-m6wpg   nginx:1.25
+
+$ kubectl get rs bare-rs -o jsonpath='{.spec.template.spec.containers[0].image}'; echo
+nginx:1.27
+
+$ kubectl delete -f comparison/replicaset.yaml
+replicaset.apps "bare-rs" deleted from default namespace
+
+# ---------- DaemonSet: exactly one Pod per node, no replicas field ----------
+$ kubectl apply -f comparison/daemonset.yaml
+daemonset.apps/node-agent created
+
+$ kubectl get ds node-agent -o wide
+NAME         DESIRED   CURRENT   READY   UP-TO-DATE   AVAILABLE   NODE SELECTOR   AGE   CONTAINERS   IMAGES         SELECTOR
+node-agent   1         1         1       1            1           <none>          1s    agent        busybox:1.36   app=node-agent
+
+$ kubectl get pods -l app=node-agent -o wide
+NAME               READY   STATUS    RESTARTS   AGE   IP            NODE       NOMINATED NODE   READINESS GATES
+node-agent-5shnp   1/1     Running   0          1s    10.244.0.93   minikube   <none>           <none>
+
+$ kubectl -n kube-system get ds
+NAME         DESIRED   CURRENT   READY   UP-TO-DATE   AVAILABLE   NODE SELECTOR            AGE
+kindnet      1         1         1       1            1           <none>                   25m
+kube-proxy   1         1         1       1            1           kubernetes.io/os=linux   25m
+
+$ kubectl delete -f comparison/daemonset.yaml
+daemonset.apps "node-agent" deleted from default namespace
+
+# ---------- StatefulSet: ordered, stable names, per-Pod DNS ----------
+$ kubectl get sts db
+NAME   READY   AGE
+db     3/3     4m35s
+
+$ kubectl get pods -l app=db -o wide
+NAME   READY   STATUS    RESTARTS   AGE     IP            NODE       NOMINATED NODE   READINESS GATES
+db-0   1/1     Running   0          4m35s   10.244.0.80   minikube   <none>           <none>
+db-1   1/1     Running   0          4m30s   10.244.0.83   minikube   <none>           <none>
+db-2   1/1     Running   0          4m34s   10.244.0.82   minikube   <none>           <none>
+
+$ kubectl scale sts db --replicas=1 && sleep 6 && kubectl get pods -l app=db
+statefulset.apps/db scaled
+NAME   READY   STATUS    RESTARTS   AGE
+db-0   1/1     Running   0          4m41s
+
+$ kubectl scale sts db --replicas=3 && kubectl rollout status sts/db --timeout=60s && kubectl get pods -l app=db
+statefulset.apps/db scaled
+Waiting for 2 pods to be ready...
+Waiting for 1 pods to be ready...
+Waiting for 1 pods to be ready...
+partitioned roll out complete: 3 new pods have been updated...
+NAME   READY   STATUS    RESTARTS   AGE
+db-0   1/1     Running   0          4m42s
+db-1   1/1     Running   0          1s
+db-2   1/1     Running   0          0s
+

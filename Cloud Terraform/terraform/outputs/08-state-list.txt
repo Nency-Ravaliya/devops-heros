@@ -1,0 +1,15 @@
+$ terraform state list
+data.aws_availability_zones.available
+aws_instance.web
+aws_internet_gateway.igw
+aws_route_table.public
+aws_route_table_association.public
+aws_s3_bucket.assets
+aws_s3_bucket_public_access_block.assets
+aws_s3_bucket_versioning.assets
+aws_s3_object.welcome
+aws_security_group.web
+aws_subnet.public
+aws_vpc.main
+random_id.bucket_suffix
+[exit code: 0]

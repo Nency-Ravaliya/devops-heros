@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: web-bg
+spec:
+  selector:
+    app: web-bg
+    version: blue     # switch to "green" to cut traffic over
+  ports:
+    - port: 80
+      targetPort: 8080

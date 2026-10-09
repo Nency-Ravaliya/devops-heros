@@ -1,0 +1,72 @@
+# Traces pillar: Jaeger (collector + UI + storage in one) and the HotROD demo app,
+# which is instrumented with OpenTelemetry and sends spans over OTLP.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: tracing
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jaeger
+  namespace: tracing
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: jaeger }
+  template:
+    metadata:
+      labels: { app: jaeger }
+    spec:
+      containers:
+        - name: jaeger
+          image: jaegertracing/all-in-one:1.62.0
+          ports:
+            - { name: ui, containerPort: 16686 }
+            - { name: otlp-http, containerPort: 4318 }
+            - { name: otlp-grpc, containerPort: 4317 }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: jaeger
+  namespace: tracing
+spec:
+  selector: { app: jaeger }
+  ports:
+    - { name: ui, port: 16686 }
+    - { name: otlp-http, port: 4318 }
+    - { name: otlp-grpc, port: 4317 }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hotrod
+  namespace: tracing
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: hotrod }
+  template:
+    metadata:
+      labels: { app: hotrod }
+    spec:
+      containers:
+        - name: hotrod
+          image: jaegertracing/example-hotrod:1.62.0
+          args: ["all"]
+          env:
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://jaeger.tracing.svc:4318
+          ports:
+            - { name: http, containerPort: 8080 }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hotrod
+  namespace: tracing
+spec:
+  selector: { app: hotrod }
+  ports:
+    - { name: http, port: 8080 }

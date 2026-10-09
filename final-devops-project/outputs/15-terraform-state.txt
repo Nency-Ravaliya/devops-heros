@@ -1,0 +1,7 @@
+$ terraform state list
+helm_release.argocd
+helm_release.ingress_nginx
+helm_release.metrics_server
+helm_release.monitoring[0]
+kind_cluster.this
+[exit code: 0]

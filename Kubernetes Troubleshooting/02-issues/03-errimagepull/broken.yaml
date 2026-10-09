@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: web-registry
+spec:
+  containers:
+    - name: web
+      image: registry.example.invalid/team/nginx:1.27   # registry host does not exist

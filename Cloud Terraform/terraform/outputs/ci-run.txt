@@ -1,0 +1,30 @@
+Workflow: Sessions 18-19 - Terraform workflow
+Run #2  event=push  commit=1b9df1e  "CI: always save/commit Terraform outputs, then report status"
+Status: completed / success
+Started 2026-10-07T19:50:35Z  updated 2026-10-07T19:55:25Z
+URL: https://github.com/TejasVarshney/devops-heros/actions/runs/37677537575
+
+JOB  Terraform - Session 18 - S3 demo                        success   runner: GitHub Actions 1000000051 (ubuntu-latest)
+      1. Set up job                                              success
+      2. Initialize containers                                   success
+      3. Run actions/checkout@v4                                 success
+      4. Run hashicorp/setup-terraform@v3                        success
+      5. Point the AWS provider at Moto (CI only, not committed) success
+      6. Run init / fmt / validate / plan / apply / show / output / state / destroy success
+      7. Commit outputs back to the repo                         success
+      8. Result                                                  success
+     15. Post Run actions/checkout@v4                            success
+     16. Stop containers                                         success
+     17. Complete job                                            success
+JOB  Terraform - Session 19 - VPC/EC2/S3                     success   runner: GitHub Actions 1000000054 (ubuntu-latest)
+      1. Set up job                                              success
+      2. Initialize containers                                   success
+      3. Run actions/checkout@v4                                 success
+      4. Run hashicorp/setup-terraform@v3                        success
+      5. Point the AWS provider at Moto (CI only, not committed) success
+      6. Run init / fmt / validate / plan / apply / show / output / state / destroy success
+      7. Commit outputs back to the repo                         success
+      8. Result                                                  success
+     15. Post Run actions/checkout@v4                            success
+     16. Stop containers                                         success
+     17. Complete job                                            success

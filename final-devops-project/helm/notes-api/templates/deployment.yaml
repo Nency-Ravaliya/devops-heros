@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notes-api
+  labels: {{- include "notes.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels: { app: notes-api }
+  template:
+    metadata:
+      labels:
+        app: notes-api
+        {{- include "notes.labels" . | nindent 8 }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+    spec:
+      securityContext:
+        runAsNonRoot: true
+      containers:
+        - name: api
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: notes-config
+          env:
+            - name: APP_VERSION
+              value: {{ .Values.image.tag | quote }}
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.redis.existingSecret }}
+                  key: password
+          startupProbe:
+            httpGet: { path: /health, port: http }
+            periodSeconds: 2
+            failureThreshold: 30
+          livenessProbe:
+            httpGet: { path: /health, port: http }
+            periodSeconds: 10
+          readinessProbe:
+            httpGet: { path: /ready, port: http }     # not Ready while Redis is unreachable
+            periodSeconds: 5
+            failureThreshold: 2
+          resources: {{- toYaml .Values.resources | nindent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: ["ALL"] }
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
