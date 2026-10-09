@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-config
+  namespace: default
+data:
+  APP_ENV: "production"
+  APP_PORT: "80"
+  WELCOME_MESSAGE: "Hello from Kubernetes ConfigMap!"

@@ -5,7 +5,11 @@ metadata:
   labels:
     app: session20-gitops-app
 spec:
+<<<<<<< HEAD
+  replicas: 2
+=======
   replicas: 5
+>>>>>>> upstream/main
   selector:
     matchLabels:
       app: session20-gitops-app

@@ -6,6 +6,13 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 6.0"
     }
+<<<<<<< HEAD
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.5"
+    }
+=======
+>>>>>>> upstream/main
   }
 }
 

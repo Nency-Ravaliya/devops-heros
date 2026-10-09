@@ -1,0 +1,11 @@
+{
+"name": "nodejs-hello",
+"vesion": "1.0.0",
+"main": "server.js",
+"scipts": {
+   "start": "node  serve.js"
+},
+"dependencies": {
+"express":  "^4.18.2"
+}
+}

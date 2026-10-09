@@ -1,0 +1,41 @@
+name: Continuous Delivery (CD) Pipeline
+
+on:
+  workflow_run:
+    workflows: ["Continuous Integration (CI) Pipeline"]
+    types:
+      - completed
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deliver-container:
+    name: Build & Package Docker Image
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: actions/setup-buildx-action@v3
+
+      - name: Build Container Image
+        run: |
+          echo "Building production Docker container..."
+          docker build \
+            --tag devops-calculator:${{ github.sha }} \
+            --tag devops-calculator:latest \
+            .
+
+      - name: Run Container Self-Check
+        run: |
+          echo "Testing packaged container image..."
+          docker run --rm devops-calculator:latest add 100 250
+          docker run --rm devops-calculator:latest mul 12 12
+
+      - name: Simulate Container Registry Publishing
+        run: |
+          echo "Container verified successfully."
+          echo "Image devops-calculator:${{ github.sha }} ready for Kubernetes / Cloud deployment."

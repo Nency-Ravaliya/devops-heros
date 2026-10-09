@@ -2,7 +2,11 @@ replicaCount: 5
 
 image:
   repository: nginx
+<<<<<<< HEAD
+  tag: v2.0.0
+=======
   tag: latest
+>>>>>>> upstream/main
 
 service:
   port: 80
