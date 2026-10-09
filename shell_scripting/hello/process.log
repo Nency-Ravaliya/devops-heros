@@ -1,0 +1,6 @@
+  PID TTY           TIME CMD
+30908 ttys000    0:00.25 -zsh
+31344 ttys002    0:00.40 /bin/zsh -il
+32756 ttys002    0:00.01 //bin/bash /Users/aryansirohi/Desktop/Devops/hello.sh
+Aryans-MacBook-Air-5.local
+aryansirohi
