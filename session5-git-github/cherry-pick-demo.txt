@@ -1,0 +1,53 @@
+----- 1) create commits on main -----
+$ echo "step1" > work.txt && git add . && git commit -m "main: commit 1"
+$ echo "step2" >> work.txt && git add . && git commit -m "main: commit 2"
+$ echo "step3" >> work.txt && git add . && git commit -m "main: commit 3"
+
+$ git log --oneline
+cdb71ef main: commit 3
+3bcd7dc main: commit 2
+647cc06 main: commit 1
+
+----- 2) create a feature branch with its own commits -----
+$ git checkout -b feature
+$ echo "feature-A" > feature.txt && git add . && git commit -m "feature: add feature.txt"
+$ echo "feature-B" >> feature.txt && git add . && git commit -m "feature: extend feature.txt"
+$ echo "hotfix content" > hotfix.txt && git add . && git commit -m "feature: important hotfix"
+
+$ git log --oneline
+1f7d1cb feature: important hotfix
+dd1f178 feature: extend feature.txt
+3f77a65 feature: add feature.txt
+cdb71ef main: commit 3
+3bcd7dc main: commit 2
+647cc06 main: commit 1
+----- 3) identify the commit to cherry-pick -----
+$ git log --oneline feature   (picking "feature: important hotfix")
+1f7d1cb feature: important hotfix
+dd1f178 feature: extend feature.txt
+3f77a65 feature: add feature.txt
+cdb71ef main: commit 3
+3bcd7dc main: commit 2
+647cc06 main: commit 1
+
+Target commit: 1f7d1cb
+
+----- 4) switch to main and cherry-pick it -----
+$ git checkout main
+$ git cherry-pick 1f7d1cb
+[main 6ea1941] feature: important hotfix
+ Date: Thu Sep 3 23:03:16 2026 +0530
+ 1 file changed, 1 insertion(+)
+ create mode 100644 hotfix.txt
+
+----- 5) verify: commit is now on main, feature.txt commits are NOT -----
+$ git log --oneline
+6ea1941 feature: important hotfix
+cdb71ef main: commit 3
+3bcd7dc main: commit 2
+647cc06 main: commit 1
+$ ls
+hotfix.txt
+work.txt
+$ cat hotfix.txt
+hotfix content
