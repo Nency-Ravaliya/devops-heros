@@ -1,0 +1,78 @@
+name: CI Pipeline
+
+# CI = Continuous Integration: every push / PR is automatically tested and built.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest          # runner: GitHub-hosted Ubuntu VM
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v6
+      - name: Setup Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install dependencies
+        run: pip install -r requirements.txt -r requirements-dev.txt
+      - name: Run tests
+        run: pytest -v --junitxml=test-results/junit.xml
+      - name: Upload test report
+        if: always()                # keep the report even when tests fail
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-report
+          path: test-results/
+
+  security-check:
+    name: Security Check
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Check for sensitive files
+        run: |
+          if find . -type f \( -name ".env" -o -name "*.pem" -o -name "*.key" \) | grep -q .; then
+            echo "Potential sensitive file found."
+            exit 1
+          fi
+          echo "No common sensitive files found."
+
+  build:
+    name: Build
+    needs: test                     # only runs if tests passed
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Build application
+        run: ./build.sh
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: calculator-build
+          path: build/
+
+  docker-build:
+    name: Docker Build and Smoke Test
+    needs: [test, security-check]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Build image (not pushed)
+        run: docker build -t calculator-api:ci --build-arg APP_VERSION=${{ github.sha }} .
+      - name: Smoke test container
+        run: |
+          docker run -d --name api -p 5000:5000 calculator-api:ci
+          for i in $(seq 1 15); do
+            curl -fs http://localhost:5000/health && break
+            sleep 1
+          done
+          curl -fs "http://localhost:5000/calc/add?a=2&b=3"
+          docker rm -f api

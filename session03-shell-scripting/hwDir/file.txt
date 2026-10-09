@@ -1,0 +1,62 @@
+current date: Sun Sep  6 19:24:28 UTC 2026
+Hostname: NaviLegion
+Username: root
+Filesystem      Size  Used Avail Use% Mounted on
+none            3.9G     0  3.9G   0% /usr/lib/modules/6.6.87.2-microsoft-standard-WSL2
+none            3.9G  4.0K  3.9G   1% /mnt/wsl
+drivers         586G  242G  344G  42% /usr/lib/wsl/drivers
+/dev/sdd       1007G   88G  868G  10% /
+none            3.9G   88K  3.9G   1% /mnt/wslg
+none            3.9G     0  3.9G   0% /usr/lib/wsl/lib
+rootfs          3.9G  2.7M  3.9G   1% /init
+none            3.9G  812K  3.9G   1% /run
+none            3.9G     0  3.9G   0% /run/lock
+none            3.9G  1.1M  3.9G   1% /run/shm
+none            3.9G   76K  3.9G   1% /mnt/wslg/versions.txt
+none            3.9G   76K  3.9G   1% /mnt/wslg/doc
+C:\             586G  242G  344G  42% /mnt/c
+D:\             1.1T  915G  165G  85% /mnt/d
+E:\             346G  145G  202G  42% /mnt/e
+F:\             785G  447G  338G  57% /mnt/f
+tmpfs           795M   36K  795M   1% /run/user/1000
+USER         PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND
+root           1  0.0  0.1  21904 12380 ?        Ss   18:44   0:00 /sbin/init
+root           2  0.0  0.0   3120  1920 ?        Sl   18:44   0:00 /init
+root           9  0.0  0.0   3120  1792 ?        Sl   18:44   0:00 plan9 --control-socket 7 --log-level 4 --server-fd 8 --pipe-fd 10 --log-truncate
+root          49  0.0  0.1  66756 15100 ?        S<s  18:44   0:00 /usr/lib/systemd/systemd-journald
+root         102  0.0  0.0  25868  6784 ?        Ss   18:44   0:00 /usr/lib/systemd/systemd-udevd
+systemd+     116  0.0  0.1  21340 11776 ?        Ss   18:44   0:00 /usr/lib/systemd/systemd-resolved
+systemd+     117  0.0  0.0  91056  7424 ?        Ssl  18:44   0:00 /usr/lib/systemd/systemd-timesyncd
+avahi        170 14.7  0.1  14428 10112 ?        Ss   18:44   5:58 avahi-daemon: running [NaviLegion.local]
+root         171  0.0  0.0   4236  2432 ?        Ss   18:44   0:00 /usr/sbin/cron -f -P
+message+     172  0.0  0.0   9776  4992 ?        Ss   18:44   0:00 @dbus-daemon --system --address=systemd: --nofork --nopidfile --systemd-activation --syslog-only
+polkitd      177  0.0  0.0 308168  7424 ?        Ssl  18:44   0:00 /usr/lib/polkit-1/polkitd --no-debug
+root         183  0.0  0.1  17972  8192 ?        Ss   18:44   0:00 /usr/lib/systemd/systemd-logind
+avahi        186  0.0  0.0   8428  1280 ?        S    18:44   0:00 avahi-daemon: chroot helper
+root         190  0.0  0.0  17388  5888 ?        Ss   18:44   0:00 /usr/sbin/wpa_supplicant -u -s -O DIR=/run/wpa_supplicant GROUP=netdev
+syslog       195  0.0  0.0 222512  5376 ?        Ssl  18:44   0:00 /usr/sbin/rsyslogd -n -iNONE
+root         207  0.0  0.0   3160  1920 hvc0     Ss+  18:44   0:00 /sbin/agetty -o -p -- \u --noclear --keep-baud - 115200,38400,9600 vt220
+root         220  0.0  0.0   3116  1792 tty1     Ss+  18:44   0:00 /sbin/agetty -o -p -- \u --noclear - linux
+root         235  0.0  0.2 107032 22272 ?        Ssl  18:44   0:00 /usr/bin/python3 /usr/share/unattended-upgrades/unattended-upgrade-shutdown --wait-for-signal
+postgres     263  0.0  0.4 228648 33536 ?        Ss   18:44   0:00 /usr/lib/postgresql/18/bin/postgres -D /var/lib/postgresql/18/main -c config_file=/etc/postgresql/18/main/postgresql.conf
+postgres     275  0.0  0.0 228648  7952 ?        Ss   18:44   0:00 postgres: 18/main: io worker 0
+postgres     276  0.0  0.0 228648  6672 ?        Ss   18:44   0:00 postgres: 18/main: io worker 1
+postgres     277  0.0  0.0 228648  5904 ?        Ss   18:44   0:00 postgres: 18/main: io worker 2
+postgres     278  0.0  0.1 228784  9104 ?        Ss   18:44   0:00 postgres: 18/main: checkpointer 
+postgres     279  0.0  0.0 228800  7312 ?        Ss   18:44   0:00 postgres: 18/main: background writer 
+postgres     285  0.0  0.1 229672 10640 ?        Ss   18:44   0:00 postgres: 18/main: walwriter 
+postgres     286  0.0  0.1 230224  9236 ?        Ss   18:44   0:00 postgres: 18/main: autovacuum launcher 
+postgres     287  0.0  0.1 230224  8468 ?        Ss   18:44   0:00 postgres: 18/main: logical replication launcher 
+root         356  0.0  0.0   3124   896 ?        Ss   18:44   0:00 /init
+root         357  0.0  0.0   3140  1156 ?        S    18:44   0:00 /init
+navi         358  0.0  0.1  12928 11904 pts/0    Ss   18:44   0:00 -bash
+root         359  0.0  0.0   6848  4224 pts/1    Ss   18:44   0:00 /bin/login -f
+navi         402  0.0  0.1  20400 11136 ?        Ss   18:44   0:00 /usr/lib/systemd/systemd --user
+navi         403  0.0  0.0  21200  3524 ?        S    18:44   0:00 (sd-pam)
+navi         429  0.0  0.1  12800 11776 pts/1    S+   18:44   0:00 -bash
+navi         692  0.0  0.0   8448  3124 ?        Ss   18:44   0:00 ssh-agent -s
+root        1268  0.0  0.1 1756620 12928 ?       Ssl  19:15   0:00 /usr/libexec/wsl-pro-service
+root        1463  0.3  0.0  14356  7004 pts/0    S+   19:24   0:00 sudo ./homework.sh
+root        1464  0.0  0.0  14356  2548 pts/2    Ss   19:24   0:00 sudo ./homework.sh
+root        1465  0.0  0.0   4752  3200 pts/2    S+   19:24   0:00 /bin/bash ./homework.sh
+root        1474  0.0  0.0   8336  4224 pts/2    R+   19:24   0:00 ps aux
