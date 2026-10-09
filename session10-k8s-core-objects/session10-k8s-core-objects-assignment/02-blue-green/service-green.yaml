@@ -1,0 +1,16 @@
+# THE CUTOVER: same Service, selector flipped to Green (slot=green) => instant traffic switch.
+apiVersion: v1
+kind: Service
+metadata:
+  name: myapp-service
+  labels:
+    app: myapp
+spec:
+  type: NodePort
+  selector:
+    app: myapp
+    slot: green
+  ports:
+    - port: 80
+      targetPort: 80
+      nodePort: 30020

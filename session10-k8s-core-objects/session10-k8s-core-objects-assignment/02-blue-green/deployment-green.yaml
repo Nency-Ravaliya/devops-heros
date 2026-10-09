@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-green
+  labels:
+    app: myapp
+    slot: green
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: myapp
+      slot: green
+  template:
+    metadata:
+      labels:
+        app: myapp
+        slot: green
+    spec:
+      containers:
+        - name: app
+          image: nginx:alpine
+          command: ["/bin/sh", "-c", "echo '<p>GREEN ENVIRONMENT</p>' > /usr/share/nginx/html/index.html && exec nginx -g 'daemon off;'"]
+          ports:
+            - containerPort: 80

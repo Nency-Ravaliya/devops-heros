@@ -1,0 +1,17 @@
+# initContainer runs to completion before the main nginx container starts.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: lifecycle-init
+  labels:
+    demo: lifecycle
+spec:
+  initContainers:
+    - name: init-setup
+      image: busybox
+      command: ["sh", "-c", "echo initializing && sleep 5"]
+  containers:
+    - name: nginx
+      image: nginx:alpine
+      ports:
+        - containerPort: 80

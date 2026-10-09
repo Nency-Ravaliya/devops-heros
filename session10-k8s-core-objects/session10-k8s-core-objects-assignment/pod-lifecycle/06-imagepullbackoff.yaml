@@ -1,0 +1,13 @@
+# Non-existent image tag => ErrImagePull then ImagePullBackOff.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: lifecycle-image-error
+  labels:
+    demo: lifecycle
+spec:
+  containers:
+    - name: nginx
+      image: nginx:this-tag-does-not-exist-123
+      ports:
+        - containerPort: 80
