@@ -1,0 +1,33 @@
+$ docker pull httpd    (the "apache2" image)
+Using default tag: latest
+latest: Pulling from library/httpd
+cea950926c89: Pulling fs layer
+fff91e36faf1: Pulling fs layer
+91eac6ee2743: Pulling fs layer
+01289bdb7344: Pulling fs layer
+4f4fb700ef54: Pulling fs layer
+4f4fb700ef54: Already exists
+fff91e36faf1: Download complete
+cea950926c89: Download complete
+01289bdb7344: Download complete
+91eac6ee2743: Download complete
+01289bdb7344: Pull complete
+4f4fb700ef54: Pull complete
+cea950926c89: Pull complete
+fff91e36faf1: Pull complete
+91eac6ee2743: Pull complete
+d461d957ad8a: Download complete
+e78b009430d6: Download complete
+Digest: sha256:979c38c2228d28c2edfd45c6e27dcee1c7b4a101a5526721ae8ece454e89e99e
+Status: Downloaded newer image for httpd:latest
+docker.io/library/httpd:latest
+
+$ docker run -d --name apache-host-c --network host httpd
+33802cc0bec4b48c3f3d0abd787abc26c73376f56f974ba4840c941498eec931
+
+$ docker ps --filter name=apache-host-c
+CONTAINER ID   IMAGE     COMMAND              CREATED                  STATUS                  PORTS     NAMES
+33802cc0bec4   httpd     "httpd-foreground"   Less than a second ago   Up Less than a second             apache-host-c
+
+$ curl -s http://localhost:80
+(curl exit code: 7)

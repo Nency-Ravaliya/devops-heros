@@ -1,0 +1,30 @@
+=== connectivity checks ===
+$ docker exec net-frontend-c ping -c 2 net-backend-c    (same network: net-frontend -> should work)
+PING net-backend-c (172.19.0.3): 56 data bytes
+64 bytes from 172.19.0.3: seq=0 ttl=64 time=0.134 ms
+64 bytes from 172.19.0.3: seq=1 ttl=64 time=0.204 ms
+
+--- net-backend-c ping statistics ---
+2 packets transmitted, 2 packets received, 0% packet loss
+round-trip min/avg/max = 0.134/0.169/0.204 ms
+
+$ docker exec net-frontend-c ping -c 2 net-database-c   (different network -> should FAIL)
+ping: bad address 'net-database-c'
+
+$ docker exec net-backend-c ping -c 2 net-frontend-c    (shared net-frontend -> should work)
+PING net-frontend-c (172.19.0.2): 56 data bytes
+64 bytes from 172.19.0.2: seq=0 ttl=64 time=0.046 ms
+64 bytes from 172.19.0.2: seq=1 ttl=64 time=0.143 ms
+
+--- net-frontend-c ping statistics ---
+2 packets transmitted, 2 packets received, 0% packet loss
+round-trip min/avg/max = 0.046/0.094/0.143 ms
+
+$ docker exec net-backend-c ping -c 2 net-database-c    (shared net-database -> should work)
+PING net-database-c (172.21.0.2): 56 data bytes
+64 bytes from 172.21.0.2: seq=0 ttl=64 time=0.102 ms
+64 bytes from 172.21.0.2: seq=1 ttl=64 time=0.184 ms
+
+--- net-database-c ping statistics ---
+2 packets transmitted, 2 packets received, 0% packet loss
+round-trip min/avg/max = 0.102/0.143/0.184 ms
