@@ -1,0 +1,17 @@
+=== curl (HTTP/HTTPS connectivity + response headers) ===
+HTTP/2 301 
+location: https://www.google.com/
+content-type: text/html; charset=UTF-8
+content-security-policy-report-only: object-src 'none';base-uri 'self';script-src 'nonce-OP2PfXsIf89R6ECjhMP6tQ' 'strict-dynamic' 'report-sample' 'unsafe-eval' 'unsafe-inline' https: http:;report-uri https://csp.withgoogle.com/csp/gws/other-hp
+date: Thu, 03 Sep 2026 17:31:54 GMT
+expires: Sat, 03 Oct 2026 17:31:54 GMT
+cache-control: public, max-age=2592000
+server: gws
+content-length: 220
+x-xss-protection: 0
+=== telnet / nc (test TCP port connectivity) ===
+Connection to google.com port 443 [tcp/https] succeeded!
+Connection to google.com port 80 [tcp/http] succeeded!
+
+=== tcpdump (packet capture, requires root - run with sudo on a real box) ===
+tcpdump: ioctl(SIOCIFCREATE): Operation not permitted

@@ -1,0 +1,52 @@
+=== nslookup (resolve domain to IP) ===
+Server:		10.114.0.1
+Address:	10.114.0.1#53
+
+Non-authoritative answer:
+Name:	google.com
+Address: 172.217.160.142
+
+
+=== dig (detailed DNS query) ===
+
+; <<>> DiG 9.10.6 <<>> google.com +noall +answer
+;; global options: +cmd
+google.com.		169	IN	A	172.217.160.142
+
+; <<>> DiG 9.10.6 <<>> google.com
+;; global options: +cmd
+;; Got answer:
+;; ->>HEADER<<- opcode: QUERY, status: NOERROR, id: 60667
+;; flags: qr rd ra; QUERY: 1, ANSWER: 1, AUTHORITY: 8, ADDITIONAL: 8
+
+;; QUESTION SECTION:
+;google.com.			IN	A
+
+;; ANSWER SECTION:
+google.com.		169	IN	A	172.217.160.142
+
+;; AUTHORITY SECTION:
+google.com.		48531	IN	NS	ns3.GOOGLE.COM.
+google.com.		48531	IN	NS	ns4.GOOGLE.COM.
+google.com.		48531	IN	NS	ns2.GOOGLE.COM.
+google.com.		48531	IN	NS	ns2.google.com.
+google.com.		48531	IN	NS	ns3.google.com.
+google.com.		48531	IN	NS	ns1.google.com.
+google.com.		48531	IN	NS	ns4.google.com.
+google.com.		48531	IN	NS	ns1.GOOGLE.COM.
+
+;; ADDITIONAL SECTION:
+ns3.GOOGLE.COM.		63516	IN	A	216.239.36.10
+ns4.GOOGLE.COM.		5611	IN	A	216.239.38.10
+ns2.GOOGLE.COM.		60464	IN	A	216.239.34.10
+ns2.google.com.		60464	IN	A	216.239.34.10
+ns3.google.com.		63516	IN	A	216.239.36.10
+ns1.google.com.		70803	IN	A	216.239.32.10
+ns4.google.com.		5611	IN	A	216.239.38.10
+ns1.GOOGLE.COM.		70803	IN	A	216.239.32.10
+
+;; Query time: 100 msec
+;; SERVER: 10.114.0.1#53(10.114.0.1)
+;; WHEN: Thu Sep 03 23:01:25 IST 2026
+;; MSG SIZE  rcvd: 326
+
