@@ -1,0 +1,13 @@
+# Node dependencies & builds
+nodejs-app/node_modules/
+nodejs-app/dist/
+
+# Python cache
+python-app/__pycache__/
+python-app/*.pyc
+
+# Java compiled bytecode
+java-app/*.class
+
+# OS artifacts
+.DS_Store
