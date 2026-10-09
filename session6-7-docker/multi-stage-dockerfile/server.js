@@ -1,10 +1,10 @@
 const express = require("express");
 
 const app = express();
-const PORT = 3000;
+const PORT = 8080;
 
 app.get("/", (req, res) => {
-  res.send("<h1>Hello World from Docker Multi-Stage Build!</h1>");
+  res.send("<h1>Hello World from Docker multi-stage build</h1>");
 });
 
 app.listen(PORT, () => {
