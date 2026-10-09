@@ -1,0 +1,26 @@
+# TLS-terminating Ingress.
+# Create the certificate Secret first:
+#   kubectl create secret tls devops-tls --cert=tls.crt --key=tls.key
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: demo-ingress-tls
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - devops.local
+      secretName: devops-tls
+  rules:
+    - host: devops.local
+      http:
+        paths:
+          - path: /one
+            pathType: Prefix
+            backend:
+              service:
+                name: app-one
+                port:
+                  number: 80
