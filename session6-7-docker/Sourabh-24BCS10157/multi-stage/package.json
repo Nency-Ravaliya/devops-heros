@@ -1,0 +1,9 @@
+{
+  "name": "multistage-hello",
+  "version": "1.0.0",
+  "description": "Hello World multi-stage Docker build",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js"
+  }
+}
