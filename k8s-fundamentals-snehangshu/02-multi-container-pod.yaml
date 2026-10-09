@@ -1,0 +1,29 @@
+# Two containers in ONE pod: they share a network namespace (same localhost)
+# and a shared emptyDir volume. This is the sidecar pattern.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: sidecar-pod
+  labels:
+    app: sidecar
+spec:
+  volumes:
+    - name: shared-data
+      emptyDir: {}
+  containers:
+    - name: writer
+      image: busybox:1.36
+      command: ["/bin/sh", "-c"]
+      args:
+        - while true; do date >> /data/log.txt; sleep 5; done
+      volumeMounts:
+        - name: shared-data
+          mountPath: /data
+    - name: reader
+      image: busybox:1.36
+      command: ["/bin/sh", "-c"]
+      args:
+        - while true; do echo "reader sees $(wc -l < /data/log.txt) lines"; sleep 10; done
+      volumeMounts:
+        - name: shared-data
+          mountPath: /data
