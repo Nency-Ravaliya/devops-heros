@@ -1,20 +1,39 @@
+version: '3.8'
+
 services:
-
+  # 1. Frontend Container (Nginx)
   frontend:
-    image: nginx
+    image: nginx:alpine
+    container_name: frontend-container
     ports:
-      - "8080:80"
+      - "8081:80"
+    networks:
+      - frontend-net
 
+  # 2. Backend Container (Alpine/Node - connected to 2 networks)
   backend:
-    image: nginx
+    image: nginx:alpine
+    container_name: backend-container
+    ports:
+      - "8082:80"
+    networks:
+      - frontend-net
+      - backend-net
 
+  # 3. Database Container (MySQL)
   database:
     image: mysql:8.0
+    container_name: database-container
     environment:
-      MYSQL_ROOT_PASSWORD: root
-    volumes:
-      - db_data:/var/lib/mysql
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: devops_db
+    networks:
+      - db-net
 
-volumes:
-  db_data:
-
+networks:
+  frontend-net:
+    driver: bridge
+  backend-net:
+    driver: bridge
+  db-net:
+    driver: bridge
