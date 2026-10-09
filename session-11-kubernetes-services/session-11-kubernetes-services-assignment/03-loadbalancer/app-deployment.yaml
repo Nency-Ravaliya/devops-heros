@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-app-loadbalancer
+  labels:
+    app: web-loadbalancer
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: web-loadbalancer
+  template:
+    metadata:
+      labels:
+        app: web-loadbalancer
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:alpine
+          ports:
+            - containerPort: 80
