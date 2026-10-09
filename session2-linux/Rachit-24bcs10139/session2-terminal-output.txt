@@ -1,0 +1,21 @@
+$ printf "DevOps links demo\\n" > original.txt
+$ ln original.txt hard.txt
+$ ln -s original.txt soft.txt
+$ ls -li original.txt hard.txt soft.txt
+1046950 -rw-r--r-- 2 sandbox sandbox 18 Sep 20 22:45 hard.txt
+1046950 -rw-r--r-- 2 sandbox sandbox 18 Sep 20 22:45 original.txt
+1046951 lrwxrwxrwx 1 sandbox sandbox 12 Sep 20 22:45 soft.txt -> original.txt
+
+$ rm original.txt && cat hard.txt
+DevOps links demo
+
+$ getent passwd root | cut -d: -f1,6,7
+root:/root:/bin/bash
+
+$ journalctl --version | head -1
+systemd 249 (249.11-0ubuntu3.17)
+$ journalctl -n 3 --no-pager 2>&1
+Hint: You are currently not seeing messages from other users and the system.
+      Users in groups 'adm', 'systemd-journal' can see all messages.
+      Pass -q to turn off this notice.
+No journal files were opened due to insufficient permissions.
