@@ -1,0 +1,15 @@
+Name: Shubham
+Date: Mon Aug 24 11:17:49 IST 2026
+Hostname: Shubhams-MacBook-Air-4.local
+Username: wizard
+Process:
+  PID TTY           TIME CMD
+35296 ttys001    0:00.04 /bin/zsh -il
+35500 ttys001    0:00.13 npm run dev   
+35518 ttys001    0:00.18 node /Users/wizard/Desktop/Razorpay/revenue-recovery-agent/node_modules/.bin/next dev
+35519 ttys001    0:22.64 next-server (v16.3.1) 
+35531 ttys001    0:04.12 node /Users/wizard/Desktop/Razorpay/revenue-recovery-agent/.next/dev/build/chunks/pool_entry-[turbopack-node]_transforms_postcss_ts_0tp-k2v._.js 60231
+34714 ttys002    0:00.02 /bin/zsh -il
+34787 ttys002    3:30.75 claude
+39741 ttys003    0:00.16 /bin/zsh -il
+43103 ttys003    0:00.02 sh ./task.sh
