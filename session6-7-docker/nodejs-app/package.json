@@ -1,0 +1,12 @@
+{
+  "name": "docker-node-practice",
+  "version": "1.0.0",
+  "description": "Dummy Node.js app for Docker practice",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^5.1.0"
+  }
+}
