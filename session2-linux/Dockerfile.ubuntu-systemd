@@ -1,0 +1,22 @@
+FROM ubuntu:24.04
+
+ENV container=docker
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && \
+    apt-get install -y systemd systemd-sysv adduser passwd && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/* && \
+    # Disable services we don't need inside a container
+    (cd /lib/systemd/system/sysinit.target.wants/; for i in *; do [ "$i" = systemd-tmpfiles-setup.service ] || rm -f "$i"; done) && \
+    rm -f /lib/systemd/system/multi-user.target.wants/* && \
+    rm -f /etc/systemd/system/*.wants/* && \
+    rm -f /lib/systemd/system/local-fs.target.wants/* && \
+    rm -f /lib/systemd/system/sockets.target.wants/*udev* && \
+    rm -f /lib/systemd/system/sockets.target.wants/*initctl*
+
+VOLUME ["/sys/fs/cgroup"]
+
+STOPSIGNAL SIGRTMIN+3
+
+CMD ["/lib/systemd/systemd"]
