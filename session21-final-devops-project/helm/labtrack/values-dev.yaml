@@ -1,0 +1,9 @@
+replicaCount: 2
+ingress:
+  enabled: true
+  host: labtrack.local
+hpa:
+  enabled: true
+monitoring:
+  serviceMonitor:
+    enabled: false

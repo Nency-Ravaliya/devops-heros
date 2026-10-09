@@ -1,1 +1,1 @@
-{"name":"taskboard-frontend","private":true,"version":"1.0.0","type":"module","scripts":{"dev":"vite","build":"vite build","test":"node --test"},"dependencies":{"@vitejs/plugin-react":"latest","vite":"latest","react":"latest","react-dom":"latest"},"devDependencies":{}}
+{"name":"labtrack-frontend","private":true,"version":"1.0.0","type":"module","scripts":{"dev":"vite","build":"vite build","test":"node --test"},"dependencies":{"@vitejs/plugin-react":"latest","vite":"latest","react":"latest","react-dom":"latest"},"devDependencies":{}}

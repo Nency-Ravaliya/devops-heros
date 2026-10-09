@@ -1,31 +1,39 @@
 from datetime import datetime
 from typing import Literal
+
 from pydantic import BaseModel, ConfigDict, Field
 
-Status = Literal["TODO", "IN_PROGRESS", "DONE"]
-Priority = Literal["LOW", "MEDIUM", "HIGH"]
+LabStatus = Literal["PLANNED", "RUNNING", "COMPLETED"]
+Difficulty = Literal["BEGINNER", "INTERMEDIATE", "ADVANCED"]
+Tool = Literal["Docker", "Kubernetes", "Terraform", "CI/CD", "Monitoring"]
 
-class TaskCreate(BaseModel):
+
+class LabCreate(BaseModel):
     title: str = Field(min_length=1, max_length=200)
-    description: str = ""
-    priority: Priority = "MEDIUM"
-    status: Status = "TODO"
-    assignee: str = "Unassigned"
+    objective: str = ""
+    tool: Tool = "Kubernetes"
+    difficulty: Difficulty = "BEGINNER"
+    status: LabStatus = "PLANNED"
+    owner: str = "Anshal Kumar"
 
-class TaskUpdate(BaseModel):
+
+class LabUpdate(BaseModel):
     title: str | None = Field(default=None, min_length=1, max_length=200)
-    description: str | None = None
-    priority: Priority | None = None
-    status: Status | None = None
-    assignee: str | None = None
+    objective: str | None = None
+    tool: Tool | None = None
+    difficulty: Difficulty | None = None
+    status: LabStatus | None = None
+    owner: str | None = None
 
-class TaskOut(TaskCreate):
+
+class LabOut(LabCreate):
     id: int
     created_at: datetime
     model_config = ConfigDict(from_attributes=True)
 
+
 class StatsOut(BaseModel):
     total: int
-    todo: int
-    inProgress: int
-    done: int
+    planned: int
+    running: int
+    completed: int

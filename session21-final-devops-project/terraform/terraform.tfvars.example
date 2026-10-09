@@ -1,0 +1,4 @@
+aws_region         = "ap-south-1"
+cluster_name       = "labtrack-eks"
+kubernetes_version = "1.31"
+environment        = "dev"

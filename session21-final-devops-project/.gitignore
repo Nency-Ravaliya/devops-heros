@@ -5,6 +5,10 @@ dist/
 target/
 *.log
 .env
+.venv/
+__pycache__/
+.pytest_cache/
+*.py[cod]
 .terraform/
 *.tfstate
 *.tfstate.*

@@ -69,12 +69,12 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: azure/setup-helm@v5
-      - run: helm lint "$PROJECT_DIR/helm/taskboard"
-      - run: helm template taskboard "$PROJECT_DIR/helm/taskboard" > rendered-taskboard.yaml
+      - run: helm lint "$PROJECT_DIR/helm/labtrack"
+      - run: helm template labtrack "$PROJECT_DIR/helm/labtrack" > rendered-labtrack.yaml
       - uses: actions/upload-artifact@v7
         with:
-          name: taskboard-rendered-manifests
-          path: rendered-taskboard.yaml
+          name: labtrack-rendered-manifests
+          path: rendered-labtrack.yaml
 
   images:
     name: Build and scan images
@@ -83,17 +83,19 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - run: |
-          docker build -t taskboard-backend:${GITHUB_SHA} "$PROJECT_DIR/backend"
-          docker build -t taskboard-frontend:${GITHUB_SHA} "$PROJECT_DIR/frontend"
+          docker build -t labtrack-backend:${GITHUB_SHA} "$PROJECT_DIR/backend"
+          docker build -t labtrack-frontend:${GITHUB_SHA} "$PROJECT_DIR/frontend"
+          test "$(docker image inspect labtrack-backend:${GITHUB_SHA} --format '{{.Config.User}}')" = "10001"
+          test "$(docker image inspect labtrack-frontend:${GITHUB_SHA} --format '{{.Config.User}}')" = "101"
       - uses: aquasecurity/trivy-action@v0.36.0
         with:
-          image-ref: taskboard-backend:${{ github.sha }}
+          image-ref: labtrack-backend:${{ github.sha }}
           severity: HIGH,CRITICAL
           ignore-unfixed: true
           exit-code: "1"
       - uses: aquasecurity/trivy-action@v0.36.0
         with:
-          image-ref: taskboard-frontend:${{ github.sha }}
+          image-ref: labtrack-frontend:${{ github.sha }}
           severity: HIGH,CRITICAL
           ignore-unfixed: true
           exit-code: "1"
@@ -105,12 +107,12 @@ jobs:
       - name: Push tested images to GHCR
         if: github.event_name == 'push'
         run: |
-          backend="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/taskboard-backend"
-          frontend="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/taskboard-frontend"
-          docker tag "taskboard-backend:${GITHUB_SHA}" "$backend:${GITHUB_SHA}"
-          docker tag "taskboard-backend:${GITHUB_SHA}" "$backend:latest"
-          docker tag "taskboard-frontend:${GITHUB_SHA}" "$frontend:${GITHUB_SHA}"
-          docker tag "taskboard-frontend:${GITHUB_SHA}" "$frontend:latest"
+          backend="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/labtrack-backend"
+          frontend="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/labtrack-frontend"
+          docker tag "labtrack-backend:${GITHUB_SHA}" "$backend:${GITHUB_SHA}"
+          docker tag "labtrack-backend:${GITHUB_SHA}" "$backend:latest"
+          docker tag "labtrack-frontend:${GITHUB_SHA}" "$frontend:${GITHUB_SHA}"
+          docker tag "labtrack-frontend:${GITHUB_SHA}" "$frontend:latest"
           docker push "$backend:${GITHUB_SHA}"
           docker push "$backend:latest"
           docker push "$frontend:${GITHUB_SHA}"
@@ -125,32 +127,32 @@ jobs:
       - uses: azure/setup-helm@v5
       - uses: helm/kind-action@v1.15.0
         with:
-          cluster_name: taskboard
+          cluster_name: labtrack
       - name: Build and load images
         run: |
-          docker build -t taskboard-backend:ci "$PROJECT_DIR/backend"
-          docker build -t taskboard-frontend:ci "$PROJECT_DIR/frontend"
-          kind load docker-image taskboard-backend:ci taskboard-frontend:ci --name taskboard
+          docker build -t labtrack-backend:ci "$PROJECT_DIR/backend"
+          docker build -t labtrack-frontend:ci "$PROJECT_DIR/frontend"
+          kind load docker-image labtrack-backend:ci labtrack-frontend:ci --name labtrack
       - name: Install chart
         run: |
-          helm upgrade --install taskboard "$PROJECT_DIR/helm/taskboard" \
-            --namespace taskboard --create-namespace \
-            --set backend.image=taskboard-backend \
+          helm upgrade --install labtrack "$PROJECT_DIR/helm/labtrack" \
+            --namespace labtrack --create-namespace \
+            --set backend.image=labtrack-backend \
             --set backend.tag=ci \
-            --set frontend.image=taskboard-frontend \
+            --set frontend.image=labtrack-frontend \
             --set frontend.tag=ci \
             --set hpa.enabled=false \
             --set monitoring.serviceMonitor.enabled=false \
             --set postgres.persistence.enabled=false
-          kubectl rollout status deployment/taskboard-postgres -n taskboard --timeout=120s
-          kubectl rollout status deployment/taskboard-taskboard-backend -n taskboard --timeout=120s
-          kubectl rollout status deployment/taskboard-frontend -n taskboard --timeout=120s
+          kubectl rollout status deployment/labtrack-postgres -n labtrack --timeout=120s
+          kubectl rollout status deployment/labtrack-labtrack-backend -n labtrack --timeout=120s
+          kubectl rollout status deployment/labtrack-frontend -n labtrack --timeout=120s
       - name: Smoke test through frontend proxy
         run: |
-          kubectl port-forward service/frontend -n taskboard 3000:80 >/tmp/taskboard-port-forward.log 2>&1 &
+          kubectl port-forward service/frontend -n labtrack 3000:80 >/tmp/labtrack-port-forward.log 2>&1 &
           for attempt in {1..20}; do
             curl -fsS http://127.0.0.1:3000/health && exit 0
             sleep 3
           done
-          kubectl get all -n taskboard
+          kubectl get all -n labtrack
           exit 1

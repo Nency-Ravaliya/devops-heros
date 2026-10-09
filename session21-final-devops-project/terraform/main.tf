@@ -2,7 +2,7 @@ module "vpc" {
   source  = "terraform-aws-modules/vpc/aws"
   version = "5.8.1"
 
-  name = "taskboard-vpc"
+  name = "labtrack-vpc"
   cidr = "10.20.0.0/16"
 
   azs             = ["${var.aws_region}a", "${var.aws_region}b"]

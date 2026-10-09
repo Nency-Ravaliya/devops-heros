@@ -2,15 +2,15 @@ services:
   postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_DB: taskboard
-      POSTGRES_USER: taskboard
-      POSTGRES_PASSWORD: taskboard
+      POSTGRES_DB: labtrack
+      POSTGRES_USER: labtrack
+      POSTGRES_PASSWORD: labtrack
     ports:
       - "5432:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U taskboard -d taskboard"]
+      test: ["CMD-SHELL", "pg_isready -U labtrack -d labtrack"]
       interval: 5s
       timeout: 3s
       retries: 12
@@ -18,19 +18,30 @@ services:
   backend:
     build: ./backend
     environment:
-      DATABASE_URL: postgresql+psycopg://taskboard:taskboard@postgres:5432/taskboard
+      DATABASE_URL: postgresql+psycopg://labtrack:labtrack@postgres:5432/labtrack
     depends_on:
       postgres:
         condition: service_healthy
     ports:
       - "8000:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/ready')"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
 
   frontend:
     build: ./frontend
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     ports:
-      - "3000:80"
+      - "3000:8080"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:8080/"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
 
 volumes:
   postgres-data:

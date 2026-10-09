@@ -1,5 +1,5 @@
 variable "aws_region" {
-  description = "AWS region used for the TaskBoard infrastructure."
+  description = "AWS region used for the LabTrack infrastructure."
   type        = string
   default     = "ap-south-1"
 }
@@ -7,7 +7,7 @@ variable "aws_region" {
 variable "cluster_name" {
   description = "Name of the EKS cluster."
   type        = string
-  default     = "taskboard-eks"
+  default     = "labtrack-eks"
 }
 
 variable "kubernetes_version" {

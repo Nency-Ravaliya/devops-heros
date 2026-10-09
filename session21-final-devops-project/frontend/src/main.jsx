@@ -1,9 +1,190 @@
-import React,{useEffect,useState} from 'react'; import {createRoot} from 'react-dom/client'; import './styles.css';
-const API='/api';
-function App(){const [tasks,setTasks]=useState([]),[stats,setStats]=useState({total:0,todo:0,inProgress:0,done:0}),[filter,setFilter]=useState('ALL'),[showForm,setShowForm]=useState(false),[loading,setLoading]=useState(true),[error,setError]=useState('');
- const load=async()=>{try{setError('');const [a,b]=await Promise.all([fetch(`${API}/tasks`),fetch(`${API}/tasks/stats`)]);if(!a.ok||!b.ok)throw Error('Backend unavailable');setTasks(await a.json());setStats(await b.json())}catch(e){setError(e.message)}finally{setLoading(false)}};
- useEffect(()=>{load()},[]); const visible=filter==='ALL'?tasks:tasks.filter(t=>t.status===filter);
- const update=async(t)=>{const next=t.status==='TODO'?'IN_PROGRESS':t.status==='IN_PROGRESS'?'DONE':'TODO';await fetch(`${API}/tasks/${t.id}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({...t,status:next})});load()};
- const create=async(e)=>{e.preventDefault();const f=new FormData(e.currentTarget);await fetch(`${API}/tasks`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title:f.get('title'),description:f.get('description'),priority:f.get('priority'),assignee:f.get('assignee'),status:'TODO'})});e.currentTarget.reset();setShowForm(false);load()};
- return <div className="app"><aside className="sidebar"><div className="brand"><span className="brand-mark">T</span><div><b>TaskBoard</b><small>DevOps Capstone</small></div></div><nav><a className="active">▦ <span>Dashboard</span></a><a>✓ <span>My Tasks</span></a><a>◫ <span>Projects</span></a><a>◌ <span>Activity</span></a></nav><div className="side-bottom"><div className="upgrade"><strong>Ship with confidence.</strong><p>Build, deploy and observe your application.</p></div><div className="profile"><div className="avatar">AK</div><div><b>Anshal Kumar</b><small>Developer</small></div><span>⋮</span></div></div></aside><main className="main"><header><div><p className="eyebrow">WORKSPACE / OVERVIEW</p><h1>Good morning, Anshal 👋</h1><p className="muted">Here’s what’s happening with your team today.</p></div><button className="primary" onClick={()=>setShowForm(true)}>＋ New task</button></header>{error&&<div className="alert">⚠ {error}. Start the backend and PostgreSQL, then refresh.</div>}<section className="stats"><Stat label="Total tasks" value={stats.total} icon="▦"/><Stat label="To do" value={stats.todo} icon="○"/><Stat label="In progress" value={stats.inProgress} icon="◔"/><Stat label="Completed" value={stats.done} icon="✓"/></section><section className="content-grid"><div className="panel tasks-panel"><div className="panel-head"><div><h2>Tasks</h2><p className="muted">Track work across the product team.</p></div><div className="filters">{['ALL','TODO','IN_PROGRESS','DONE'].map(x=><button className={filter===x?'selected':''} onClick={()=>setFilter(x)} key={x}>{x==='ALL'?'All':x.replace('_',' ')}</button>)}</div></div>{loading?<div className="empty">Loading tasks…</div>:<div className="table-wrap"><table><thead><tr><th>Task</th><th>Assignee</th><th>Priority</th><th>Status</th><th></th></tr></thead><tbody>{visible.map(t=><tr key={t.id}><td><div className="task-title"><span className={`dot ${t.status.toLowerCase()}`}></span><div><b>{t.title}</b><small>{t.description}</small></div></div></td><td>{t.assignee}</td><td><span className={`priority ${t.priority.toLowerCase()}`}>{t.priority}</span></td><td><span className={`status ${t.status.toLowerCase()}`}>{t.status.replace('_',' ')}</span></td><td><button className="icon-btn" onClick={()=>update(t)} title="Advance status">↻</button></td></tr>)}</tbody></table>{!visible.length&&<div className="empty">No tasks in this filter.</div>}</div>}</div><aside className="panel activity"><div className="panel-head"><div><h2>Recent activity</h2><p className="muted">Latest workspace events.</p></div></div><Activity icon="✓" text="Monitoring dashboard completed" time="12 min ago"/><Activity icon="◔" text="Release task moved to in progress" time="38 min ago"/><Activity icon="＋" text="New onboarding task created" time="1 hr ago"/><Activity icon="↗" text="Deployment pipeline passed" time="2 hrs ago"/><div className="pipeline"><span>CI</span><i></i><span>Build</span><i></i><span>Scan</span><i></i><span>Deploy</span></div></aside></section>{showForm&&<div className="modal-backdrop"><form className="modal" onSubmit={create}><div className="modal-head"><div><p className="eyebrow">CREATE TASK</p><h2>Add a new task</h2></div><button type="button" className="close" onClick={()=>setShowForm(false)}>×</button></div><label>Task title<input name="title" required placeholder="e.g. Configure production ingress"/></label><label>Description<textarea name="description" placeholder="What needs to be done?"/></label><div className="form-row"><label>Priority<select name="priority"><option>LOW</option><option>MEDIUM</option><option>HIGH</option></select></label><label>Assignee<input name="assignee" defaultValue="Anshal Kumar"/></label></div><button className="primary full">Create task</button></form></div>}</main></div>}
-function Stat({label,value,icon}){return <div className="stat"><div className="stat-icon">{icon}</div><div><small>{label}</small><strong>{value}</strong><span>Updated just now</span></div></div>}; function Activity({icon,text,time}){return <div className="activity-row"><span className="activity-icon">{icon}</span><div><b>{text}</b><small>{time}</small></div></div>}; createRoot(document.getElementById('root')).render(<App/>);
+import React, { useEffect, useState } from "react";
+import { createRoot } from "react-dom/client";
+import "./styles.css";
+
+const API = "/api";
+const STATUSES = ["PLANNED", "RUNNING", "COMPLETED"];
+
+function App() {
+  const [labs, setLabs] = useState([]);
+  const [stats, setStats] = useState({ total: 0, planned: 0, running: 0, completed: 0 });
+  const [filter, setFilter] = useState("ALL");
+  const [showForm, setShowForm] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  const load = async () => {
+    try {
+      setError("");
+      const [labsResponse, statsResponse] = await Promise.all([
+        fetch(`${API}/labs`),
+        fetch(`${API}/labs/stats`),
+      ]);
+      if (!labsResponse.ok || !statsResponse.ok) throw new Error("The API is not available");
+      setLabs(await labsResponse.json());
+      setStats(await statsResponse.json());
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const visibleLabs = filter === "ALL" ? labs : labs.filter((lab) => lab.status === filter);
+
+  const advanceStatus = async (lab) => {
+    const currentIndex = STATUSES.indexOf(lab.status);
+    const nextStatus = STATUSES[(currentIndex + 1) % STATUSES.length];
+    await fetch(`${API}/labs/${lab.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: nextStatus }),
+    });
+    await load();
+  };
+
+  const removeLab = async (lab) => {
+    await fetch(`${API}/labs/${lab.id}`, { method: "DELETE" });
+    await load();
+  };
+
+  const createLab = async (event) => {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    await fetch(`${API}/labs`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title: form.get("title"),
+        objective: form.get("objective"),
+        tool: form.get("tool"),
+        difficulty: form.get("difficulty"),
+        owner: form.get("owner"),
+        status: "PLANNED",
+      }),
+    });
+    event.currentTarget.reset();
+    setShowForm(false);
+    await load();
+  };
+
+  return (
+    <div className="app">
+      <aside className="sidebar">
+        <div className="brand">
+          <span className="brand-mark">L</span>
+          <div><b>LabTrack</b><small>DevOps practice journal</small></div>
+        </div>
+        <nav>
+          <a className="active">▦ <span>Lab overview</span></a>
+          <a>◇ <span>Learning paths</span></a>
+          <a>↗ <span>Pipeline runs</span></a>
+          <a>◌ <span>Observability</span></a>
+        </nav>
+        <div className="side-bottom">
+          <div className="upgrade">
+            <strong>Learn by building.</strong>
+            <p>Plan a lab, run it, record the result, and keep the next experiment clear.</p>
+          </div>
+          <div className="profile">
+            <div className="avatar">AK</div>
+            <div><b>Anshal Kumar</b><small>DevOps learner</small></div>
+            <span>⋮</span>
+          </div>
+        </div>
+      </aside>
+
+      <main className="main">
+        <header>
+          <div>
+            <p className="eyebrow">MY DEVOPS LAB / THIS WEEK</p>
+            <h1>Build, test, and write down what worked.</h1>
+            <p className="muted">A small journal for practical Docker, Kubernetes, CI/CD, and monitoring labs.</p>
+          </div>
+          <button className="primary" onClick={() => setShowForm(true)}>＋ Plan a lab</button>
+        </header>
+
+        {error && <div className="alert">⚠ {error}. Start the local stack and refresh this page.</div>}
+
+        <section className="stats">
+          <Stat label="All labs" value={stats.total} icon="▦" />
+          <Stat label="Planned" value={stats.planned} icon="○" />
+          <Stat label="Running" value={stats.running} icon="◔" />
+          <Stat label="Completed" value={stats.completed} icon="✓" />
+        </section>
+
+        <section className="content-grid">
+          <div className="panel tasks-panel">
+            <div className="panel-head">
+              <div><h2>Practice labs</h2><p className="muted">Move each lab forward as you work through it.</p></div>
+              <div className="filters">
+                {["ALL", ...STATUSES].map((status) => (
+                  <button className={filter === status ? "selected" : ""} onClick={() => setFilter(status)} key={status}>
+                    {status === "ALL" ? "All" : status}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {loading ? <div className="empty">Loading labs…</div> : (
+              <div className="table-wrap">
+                <table>
+                  <thead><tr><th>Lab</th><th>Tool</th><th>Difficulty</th><th>Status</th><th>Actions</th></tr></thead>
+                  <tbody>
+                    {visibleLabs.map((lab) => (
+                      <tr key={lab.id}>
+                        <td><div className="task-title"><span className={`dot ${lab.status.toLowerCase()}`}></span><div><b>{lab.title}</b><small>{lab.objective}</small></div></div></td>
+                        <td>{lab.tool}</td>
+                        <td><span className={`priority ${lab.difficulty.toLowerCase()}`}>{lab.difficulty}</span></td>
+                        <td><span className={`status ${lab.status.toLowerCase()}`}>{lab.status}</span></td>
+                        <td className="actions"><button className="icon-btn" onClick={() => advanceStatus(lab)} title="Advance status">↻</button><button className="icon-btn danger" onClick={() => removeLab(lab)} title="Delete lab">×</button></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {!visibleLabs.length && <div className="empty">No labs in this view yet.</div>}
+              </div>
+            )}
+          </div>
+
+          <aside className="panel activity">
+            <div className="panel-head"><div><h2>Current learning path</h2><p className="muted">The route I am following.</p></div></div>
+            <Activity icon="1" text="Containerize the application" detail="Docker" />
+            <Activity icon="2" text="Automate tests and scans" detail="GitHub Actions" />
+            <Activity icon="3" text="Package the deployment" detail="Helm + Kubernetes" />
+            <Activity icon="4" text="Measure the live service" detail="Prometheus + Grafana" />
+            <div className="pipeline"><span>CODE</span><i></i><span>TEST</span><i></i><span>SHIP</span><i></i><span>WATCH</span></div>
+          </aside>
+        </section>
+
+        {showForm && (
+          <div className="modal-backdrop">
+            <form className="modal" onSubmit={createLab}>
+              <div className="modal-head"><div><p className="eyebrow">NEW PRACTICE LAB</p><h2>What will you learn?</h2></div><button type="button" className="close" onClick={() => setShowForm(false)}>×</button></div>
+              <label>Lab title<input name="title" required placeholder="e.g. Troubleshoot a broken Service" /></label>
+              <label>Objective<textarea name="objective" placeholder="What should be working when the lab is complete?" /></label>
+              <div className="form-row">
+                <label>Tool<select name="tool"><option>Docker</option><option>Kubernetes</option><option>Terraform</option><option>CI/CD</option><option>Monitoring</option></select></label>
+                <label>Difficulty<select name="difficulty"><option>BEGINNER</option><option>INTERMEDIATE</option><option>ADVANCED</option></select></label>
+              </div>
+              <label>Owner<input name="owner" defaultValue="Anshal Kumar" /></label>
+              <button className="primary full">Add lab</button>
+            </form>
+          </div>
+        )}
+      </main>
+    </div>
+  );
+}
+
+function Stat({ label, value, icon }) {
+  return <div className="stat"><div className="stat-icon">{icon}</div><div><small>{label}</small><strong>{value}</strong><span>Live from PostgreSQL</span></div></div>;
+}
+
+function Activity({ icon, text, detail }) {
+  return <div className="activity-row"><span className="activity-icon">{icon}</span><div><b>{text}</b><small>{detail}</small></div></div>;
+}
+
+createRoot(document.getElementById("root")).render(<App />);

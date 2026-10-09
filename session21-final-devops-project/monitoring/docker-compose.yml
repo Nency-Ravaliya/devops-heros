@@ -1,7 +1,7 @@
 services:
   prometheus:
     image: prom/prometheus:v3.5.0
-    container_name: taskboard-prometheus
+    container_name: labtrack-prometheus
     ports:
       - "9091:9090"
     volumes:
@@ -9,7 +9,7 @@ services:
 
   grafana:
     image: grafana/grafana:12.1.1
-    container_name: taskboard-grafana
+    container_name: labtrack-grafana
     ports:
       - "3001:3000"
     environment:

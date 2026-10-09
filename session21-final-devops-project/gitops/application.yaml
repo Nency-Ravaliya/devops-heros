@@ -1,14 +1,14 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: taskboard
+  name: labtrack
   namespace: argocd
 spec:
   project: default
   source:
     repoURL: https://github.com/anshalkumar/devops-heros.git
     targetRevision: main
-    path: session21-final-devops-project/helm/taskboard
+    path: session21-final-devops-project/helm/labtrack
     helm:
       valueFiles:
         - values-prod.yaml
@@ -21,7 +21,7 @@ spec:
           value: "false"
   destination:
     server: https://kubernetes.default.svc
-    namespace: taskboard
+    namespace: labtrack
   syncPolicy:
     automated:
       prune: true

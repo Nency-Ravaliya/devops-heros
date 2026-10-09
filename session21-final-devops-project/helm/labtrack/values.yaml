@@ -1,28 +1,28 @@
 frontend:
-  image: ghcr.io/anshalkumar/taskboard-frontend
+  image: ghcr.io/anshalkumar/labtrack-frontend
   tag: latest
   pullPolicy: IfNotPresent
 backend:
-  image: ghcr.io/anshalkumar/taskboard-backend
+  image: ghcr.io/anshalkumar/labtrack-backend
   tag: latest
   pullPolicy: IfNotPresent
 replicaCount: 2
-namespace: taskboard
+namespace: labtrack
 imagePullSecrets: []
 app:
   environment: development
   logLevel: INFO
 postgres:
-  host: taskboard-postgres
-  database: taskboard
-  username: taskboard
-  password: taskboard
+  host: labtrack-postgres
+  database: labtrack
+  username: labtrack
+  password: labtrack
   persistence:
     enabled: true
     size: 5Gi
 ingress:
   enabled: false
-  host: taskboard.local
+  host: labtrack.local
 hpa:
   enabled: true
   minReplicas: 2

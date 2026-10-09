@@ -1,26 +1,30 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "taskboard.fullname" . }}-backend
+  name: {{ include "labtrack.fullname" . }}-backend
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:
-    matchLabels: {app: taskboard-backend}
+    matchLabels: {app: labtrack-backend}
   template:
     metadata:
-      labels: {app: taskboard-backend}
+      labels: {app: labtrack-backend}
     spec:
       containers:
         - name: backend
           image: "{{ .Values.backend.image }}:{{ .Values.backend.tag }}"
           imagePullPolicy: {{ .Values.backend.pullPolicy }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            runAsUser: 10001
           ports: [{containerPort: 8000}]
           env:
             - name: DATABASE_URL
               value: "postgresql+psycopg://{{ .Values.postgres.username }}:{{ .Values.postgres.password }}@{{ .Values.postgres.host }}:5432/{{ .Values.postgres.database }}"
           envFrom:
             - configMapRef:
-                name: taskboard-config
+                name: labtrack-config
           readinessProbe:
             httpGet: {path: /ready, port: 8000}
             initialDelaySeconds: 10

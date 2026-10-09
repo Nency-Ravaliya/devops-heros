@@ -8,7 +8,7 @@
       "gridPos": {"h": 8, "w": 6, "x": 0, "y": 0},
       "id": 1,
       "options": {"colorMode": "background", "graphMode": "none", "justifyMode": "center", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "textMode": "auto"},
-      "targets": [{"expr": "up{job=\"taskboard-backend\"}", "refId": "A"}],
+      "targets": [{"expr": "up{job=\"labtrack-backend\"}", "refId": "A"}],
       "title": "Backend health",
       "type": "stat"
     },
@@ -17,7 +17,7 @@
       "fieldConfig": {"defaults": {"unit": "reqps"}, "overrides": []},
       "gridPos": {"h": 8, "w": 9, "x": 6, "y": 0},
       "id": 2,
-      "targets": [{"expr": "sum(rate(http_requests_total{job=\"taskboard-backend\"}[1m]))", "legendFormat": "requests/s", "refId": "A"}],
+      "targets": [{"expr": "sum(rate(http_requests_total{job=\"labtrack-backend\"}[1m]))", "legendFormat": "requests/s", "refId": "A"}],
       "title": "Request rate",
       "type": "timeseries"
     },
@@ -26,7 +26,7 @@
       "fieldConfig": {"defaults": {"unit": "bytes"}, "overrides": []},
       "gridPos": {"h": 8, "w": 9, "x": 15, "y": 0},
       "id": 3,
-      "targets": [{"expr": "process_resident_memory_bytes{job=\"taskboard-backend\"}", "legendFormat": "resident memory", "refId": "A"}],
+      "targets": [{"expr": "process_resident_memory_bytes{job=\"labtrack-backend\"}", "legendFormat": "resident memory", "refId": "A"}],
       "title": "Backend memory",
       "type": "timeseries"
     },
@@ -35,7 +35,7 @@
       "fieldConfig": {"defaults": {"unit": "s"}, "overrides": []},
       "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
       "id": 4,
-      "targets": [{"expr": "sum(rate(http_request_duration_seconds_sum{job=\"taskboard-backend\"}[1m])) / clamp_min(sum(rate(http_request_duration_seconds_count{job=\"taskboard-backend\"}[1m])), 0.001)", "legendFormat": "average latency", "refId": "A"}],
+      "targets": [{"expr": "sum(rate(http_request_duration_seconds_sum{job=\"labtrack-backend\"}[1m])) / clamp_min(sum(rate(http_request_duration_seconds_count{job=\"labtrack-backend\"}[1m])), 0.001)", "legendFormat": "average latency", "refId": "A"}],
       "title": "Average request latency",
       "type": "timeseries"
     },
@@ -44,17 +44,17 @@
       "fieldConfig": {"defaults": {}, "overrides": []},
       "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
       "id": 5,
-      "targets": [{"expr": "sum by (status) (increase(http_requests_total{job=\"taskboard-backend\"}[5m]))", "legendFormat": "HTTP {{status}}", "refId": "A"}],
+      "targets": [{"expr": "sum by (status) (increase(http_requests_total{job=\"labtrack-backend\"}[5m]))", "legendFormat": "HTTP {{status}}", "refId": "A"}],
       "title": "Responses by status (5m)",
       "type": "timeseries"
     }
   ],
   "refresh": "5s",
   "schemaVersion": 41,
-  "tags": ["taskboard", "session21"],
+  "tags": ["labtrack", "session21"],
   "time": {"from": "now-15m", "to": "now"},
   "timezone": "browser",
-  "title": "TaskBoard - Final Project",
-  "uid": "taskboard-final",
+  "title": "LabTrack - Final Project",
+  "uid": "labtrack-final",
   "version": 1
 }

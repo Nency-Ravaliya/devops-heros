@@ -1,149 +1,207 @@
-# Session 21 - Final DevOps Project
+# Session 21 - LabTrack DevOps capstone
 
-For my final project I used the instructor's TaskBoard application and connected the parts covered across the course. It has a React frontend, FastAPI backend, PostgreSQL database, automated tests, Docker, Kubernetes, Helm, Terraform, security checks, monitoring, GitOps, and deliberate troubleshooting exercises.
+LabTrack is my final course project. I built it as a small journal for planning and recording hands-on DevOps labs. It is a different application domain from the instructor's reference project while using the same DevOps ideas taught in the course.
+
+The React interface talks to a FastAPI REST API. PostgreSQL stores the labs, and the API exposes health checks and Prometheus metrics. I can run the full application with Docker Compose or package it for Kubernetes with Helm.
+
+## What the application does
+
+A lab has a title, objective, tool, difficulty, owner, and status. The available tools are Docker, Kubernetes, Terraform, CI/CD, and Monitoring. From the interface I can:
+
+- add a new lab;
+- view and filter labs;
+- move a lab through PLANNED, RUNNING, and COMPLETED;
+- delete a lab;
+- see live counts from PostgreSQL.
+
+The same operations are available through Swagger at http://localhost:8000/docs.
 
 ## Architecture
 
-```text
-Developer → GitHub → CI and security gates → GHCR images
-                                                   |
-                                                   v
-Terraform → AWS VPC/EKS                         Kubernetes
-                                                   |
-                                  Ingress → frontend → backend → PostgreSQL PVC
-                                                   |
-                                      Prometheus metrics and Grafana
-                                                   |
-                                      Argo CD reconciliation from Git
-```
+~~~text
+Developer -> GitHub Actions -> tests -> security scans -> container images -> GHCR
+                                                                    |
+                                                                    v
+Browser -> Nginx frontend -> FastAPI backend -> PostgreSQL       Kubernetes
+                              |                                     |
+                              +-> /metrics -> Prometheus -> Grafana  +-> Ingress + HPA
+~~~
 
-## Repository layout
+## Project layout
 
-| Path | What I used it for |
+| Path | Purpose |
 |---|---|
-| [`frontend/`](frontend/) | React/Vite interface served by Nginx |
-| [`backend/`](backend/) | FastAPI API, SQLAlchemy models, Alembic, and pytest |
-| [`docker-compose.yml`](docker-compose.yml) | Local three-container environment |
-| [`helm/taskboard/`](helm/taskboard/) | Kubernetes package with ConfigMap, Secret, Ingress, HPA, probes, and PVC |
-| [`terraform/`](terraform/) | VPC and EKS infrastructure definition |
-| [`monitoring/`](monitoring/) | Prometheus/Grafana values and a runnable local dashboard |
-| [`gitops/`](gitops/) | Argo CD Application watching the Helm chart |
-| [`security/`](security/) | Security gates and decisions |
-| [`troubleshooting/`](troubleshooting/) | Broken image and broken Service exercises |
+| [frontend/](frontend/) | React/Vite interface and non-root Nginx image |
+| [backend/](backend/) | FastAPI, SQLAlchemy, Alembic, PostgreSQL, and pytest |
+| [docker-compose.yml](docker-compose.yml) | Local frontend, backend, and database |
+| [helm/labtrack/](helm/labtrack/) | Deployments, Services, Ingress, HPA, probes, ConfigMap, Secret, and PVC |
+| [terraform/](terraform/) | AWS VPC, public/private subnets, EKS, and managed nodes |
+| [monitoring/](monitoring/) | Prometheus and provisioned Grafana dashboard |
+| [gitops/](gitops/) | Argo CD Application for the Helm release |
+| [troubleshooting/](troubleshooting/) | Broken image and broken Service exercises |
+| [DEMO-WALKTHROUGH.md](DEMO-WALKTHROUGH.md) | Commands and speaking notes for the final video |
 
-## Application checks
+## 1. Backend tests
 
-The backend exposes `/health`, `/ready`, `/metrics`, and CRUD endpoints under `/api/tasks`. I run the automated checks with:
+The test database is SQLite, so the tests are isolated from the development PostgreSQL database. Eight tests cover health, readiness, create, list, get, update, delete, validation, and statistics.
 
-```bash
-cd backend
+~~~bash
+cd session21-final-devops-project/backend
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-pytest -q
+pytest -v
+~~~
 
-cd ../frontend
-npm install
-npm run build
-```
+![Eight backend tests passing](evidence/labtrack-pytest.png)
 
-The tests use SQLite, so they do not need a shared PostgreSQL server. The deployed `/ready` endpoint checks database access before Kubernetes sends traffic to the Pod.
+## 2. Run the application locally
 
-## Local Docker run
-
-```bash
+~~~bash
+cd session21-final-devops-project
 docker compose up --build -d
 docker compose ps
 curl -fsS http://localhost:8000/health
-curl -fsS http://localhost:3000/health
-docker compose down
-```
+curl -fsS http://localhost:8000/ready
+~~~
 
-I added a PostgreSQL health check so the backend waits for the database instead of racing it during startup.
+Open:
 
-This is the application from the live Docker Compose run. I created a task through the API before taking the screenshot, so the dashboard is showing data from the running backend and PostgreSQL database.
+- application: http://localhost:3000
+- Swagger: http://localhost:8000/docs
+- metrics: http://localhost:8000/metrics
 
-![Live TaskBoard application](evidence/taskboard-live-application.png)
+This is the final LabTrack interface connected to the running API and database.
 
-## Kubernetes and Helm
+![LabTrack running locally](evidence/labtrack-live-application.png)
 
-```bash
-helm lint helm/taskboard
-helm template taskboard helm/taskboard -f helm/taskboard/values-dev.yaml
+Swagger shows the CRUD endpoints under /api/labs.
 
-helm upgrade --install taskboard helm/taskboard \
-  --namespace taskboard --create-namespace \
-  -f helm/taskboard/values-dev.yaml
+![LabTrack Swagger API](evidence/labtrack-swagger-crud.png)
 
-kubectl rollout status deployment/taskboard-taskboard-backend -n taskboard
-kubectl get deploy,svc,ingress,pvc,hpa -n taskboard
-```
+I checked the saved rows directly in PostgreSQL:
 
-The chart includes:
+~~~bash
+docker compose exec postgres psql -U labtrack -d labtrack \
+  -c "select id,title,tool,difficulty,status,owner from labs order by id;"
+~~~
 
-- frontend and backend Deployments and Services
-- ConfigMap for environment settings
-- Secret for demonstration database credentials
-- PostgreSQL with persistent storage
-- readiness and liveness probes
-- Ingress routing for `/` and `/api`
-- backend HPA
-- resource requests and limits
-- optional Prometheus ServiceMonitor
+![Lab data in PostgreSQL](evidence/labtrack-postgres-data.png)
 
-The password in the default values is only for local learning. A real environment should inject it through an external secret manager or a protected values file.
+## 3. Container checks
 
-## CI/CD and DevSecOps
+The backend image uses UID 10001. The frontend is a multi-stage build and serves the compiled React files with the unprivileged Nginx image as UID 101.
 
-The repository workflow runs backend tests, builds the frontend, scans Python with Bandit and pip-audit, checks the assignment files with Gitleaks, lints the Helm chart, builds both images, scans them with Trivy, pushes the tested images to GHCR, and deploys the chart to a temporary Kind cluster for an HTTP smoke test.
+~~~bash
+docker image inspect labtrack-backend --format '{{.Config.User}}'
+docker image inspect labtrack-frontend --format '{{.Config.User}}'
+docker compose ps
+~~~
 
-The pipeline stops before delivery when a quality or security gate fails. The details are in [`security/README.md`](security/README.md).
+![Running containers and non-root users](evidence/labtrack-containers.png)
 
-## Terraform
+## 4. CI/CD and security
 
-The Terraform project defines an AWS VPC across two Availability Zones and an EKS cluster with a managed node group.
+The Session 21 workflow:
 
-```bash
+1. runs the eight backend tests;
+2. builds the React frontend;
+3. runs Bandit, pip-audit, and Gitleaks;
+4. lints and renders the Helm chart;
+5. builds both container images and confirms their non-root users;
+6. scans both images with Trivy and fails on fixed HIGH or CRITICAL findings;
+7. pushes immutable commit-SHA tags and latest tags to GHCR;
+8. deploys to a temporary Kind cluster and runs an HTTP smoke test.
+
+The workflow file is [.github/workflows/session21-final-project.yml](../.github/workflows/session21-final-project.yml).
+
+![Session 21 GitHub Actions workflow](evidence/labtrack-github-actions.png)
+
+![LabTrack images in GHCR](evidence/labtrack-ghcr-images.png)
+
+Trivy is configured with severity HIGH,CRITICAL, ignore-unfixed enabled, and exit code 1 for both images. This blocks delivery when a fixable serious vulnerability is present instead of only printing a warning.
+
+![Trivy scans for both images](evidence/labtrack-trivy-scans.png)
+
+## 5. Kubernetes and Helm
+
+The chart creates two frontend replicas, two backend replicas, PostgreSQL, ClusterIP Services, probes, resource limits, an optional Ingress, and an HPA.
+
+~~~bash
+helm lint helm/labtrack
+
+helm upgrade --install labtrack helm/labtrack \
+  --namespace labtrack --create-namespace \
+  -f helm/labtrack/values-dev.yaml
+
+kubectl rollout status deployment/labtrack-labtrack-backend -n labtrack
+kubectl rollout status deployment/labtrack-frontend -n labtrack
+kubectl get pods,svc,ingress,pvc,hpa -n labtrack
+helm list -n labtrack
+~~~
+
+![LabTrack Helm release and Kubernetes resources](evidence/labtrack-kubernetes-resources.png)
+
+For local browser access without changing DNS:
+
+~~~bash
+kubectl port-forward service/frontend -n labtrack 8080:80
+~~~
+
+Then open http://localhost:8080.
+
+## 6. Monitoring
+
+FastAPI exports Prometheus metrics at /metrics. The chart includes a ServiceMonitor for kube-prometheus-stack. For a free local demonstration I also provisioned Prometheus and Grafana with Docker Compose:
+
+~~~bash
+cd monitoring
+docker compose up -d
+curl -fsS http://localhost:9091/-/ready
+curl -fsS http://localhost:3001/api/health
+~~~
+
+Prometheus scrapes the running LabTrack backend every five seconds. Grafana loads the data source and dashboard automatically from this repository.
+
+![Prometheus target is up](evidence/labtrack-prometheus-target.png)
+
+![Live LabTrack Grafana dashboard](evidence/labtrack-grafana-dashboard.png)
+
+## 7. Troubleshooting
+
+The two files under [troubleshooting/](troubleshooting/) reproduce common failures:
+
+- broken-image.yaml produces ImagePullBackOff because the image tag does not exist;
+- broken-service.yaml creates an empty EndpointSlice because its selector matches no Pod.
+
+I first inspect the status, events, labels, and EndpointSlices, then correct the image or selector and repeat the request.
+
+![Broken image diagnosis and recovery](evidence/labtrack-broken-image.png)
+
+![Broken Service diagnosis and recovery](evidence/labtrack-broken-service.png)
+
+## 8. Terraform
+
+The Terraform code defines an AWS VPC across two Availability Zones, two public subnets, two private subnets, a NAT gateway, EKS, and a managed node group.
+
+~~~bash
 cd terraform
 terraform init
 terraform fmt -check
 terraform validate
 terraform plan
-```
+~~~
 
-VPC, NAT Gateway, EKS, and worker nodes can generate charges, so I review the plan before applying and destroy a learning environment when it is no longer required.
+[terraform.tfvars.example](terraform/terraform.tfvars.example) documents the inputs without storing credentials.
 
-## Monitoring and GitOps
+I did not run terraform apply because this account has no AWS credits and EKS, worker nodes, and NAT Gateway incur charges. The code can be initialized and validated locally, but real AWS console, EKS, and terraform destroy screenshots require a funded AWS account.
 
-FastAPI exposes Prometheus metrics at `/metrics`. The Helm chart can create a ServiceMonitor for kube-prometheus-stack, and [`monitoring/prometheus-values.yaml`](monitoring/prometheus-values.yaml) contains the Kubernetes monitoring values.
+![Terraform initialization and validation](evidence/labtrack-terraform-validate.png)
 
-I also added a small Docker Compose monitoring stack under [`monitoring/`](monitoring/) so I could test the dashboard locally without a paid cloud account:
+## 9. GitOps
 
-```bash
-cd monitoring
-docker compose up -d
-curl -fsS http://localhost:9091/-/ready
-curl -fsS http://localhost:3001/api/health
-```
-
-Prometheus scraped the live TaskBoard backend on `/metrics`. Grafana loaded the data source and dashboard from the provisioning files in this repository. I generated test requests and confirmed health, request rate, memory, latency, and response status data on the dashboard.
-
-![Live TaskBoard Grafana dashboard](evidence/taskboard-grafana-dashboard.png)
-
-I checked the container state and tailed the application, database, Prometheus, and Grafana logs from the same run.
-
-![Live TaskBoard and monitoring container logs](evidence/taskboard-container-logs.png)
-
-[`gitops/application.yaml`](gitops/application.yaml) tells Argo CD to reconcile the production Helm values from this repository. Automated pruning and self-healing keep the cluster close to the Git declaration.
-
-For the local Minikube proof, the Application disables the Ingress, ServiceMonitor, and PostgreSQL PVC. Those resources need add-ons that are outside the GitOps exercise. Argo CD still renders the chart from this Git repository and reconciles the application Deployments and Services.
-
-## Troubleshooting
-
-I included one invalid image and one Service with a broken selector. My investigation uses Pod status, `describe`, logs, events, labels, and EndpointSlices before changing the manifest. The diagnosis and fixes are documented in [`troubleshooting/README.md`](troubleshooting/README.md).
+[gitops/application.yaml](gitops/application.yaml) is an Argo CD Application that watches the LabTrack Helm chart on main. Automated pruning and self-healing are enabled. This lets Git remain the desired state for the cluster.
 
 ## Result
 
-I ran the final project workflow on GitHub Actions. Backend and frontend checks, security scans, image scans, Helm validation, deployment to Kind, and the HTTP smoke test all passed.
-
-![Final project GitHub Actions result](evidence/github-actions-success.png)
+The free local parts of the capstone are reproducible from this repository: the application, CRUD API, tests, containers, CI/security workflow, GHCR delivery, Helm deployment, HPA definition, monitoring, GitOps manifest, and troubleshooting labs. The only unfinished graded evidence is the paid AWS apply/destroy portion.

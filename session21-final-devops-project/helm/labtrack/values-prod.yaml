@@ -1,11 +1,11 @@
 frontend:
-  image: ghcr.io/anshalkumar/taskboard-frontend
+  image: ghcr.io/anshalkumar/labtrack-frontend
 backend:
-  image: ghcr.io/anshalkumar/taskboard-backend
+  image: ghcr.io/anshalkumar/labtrack-backend
 replicaCount: 2
 ingress:
   enabled: true
-  host: taskboard.example.com
+  host: labtrack.example.com
 hpa:
   enabled: true
 app:

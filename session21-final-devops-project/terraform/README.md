@@ -1,6 +1,6 @@
 # Terraform lab
 
-This folder teaches Infrastructure as Code by provisioning the AWS VPC and EKS cluster used by the production-style TaskBoard deployment.
+This folder teaches Infrastructure as Code by provisioning the AWS VPC and EKS cluster used by the production-style LabTrack deployment.
 
 The module-based approach keeps the lesson focused on Terraform concepts: providers, variables, modules, state, plan/apply, outputs and dependency graphs.
 
@@ -12,6 +12,6 @@ terraform fmt -recursive
 terraform validate
 terraform plan
 terraform apply
-aws eks update-kubeconfig --region ap-south-1 --name taskboard-eks
+aws eks update-kubeconfig --region ap-south-1 --name labtrack-eks
 terraform destroy
 ```

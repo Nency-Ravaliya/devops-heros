@@ -8,8 +8,8 @@ from prometheus_fastapi_instrumentator import Instrumentator
 
 from .config import settings
 from .db import Base, engine, get_db
-from .models import Task
-from .schemas import StatsOut, TaskCreate, TaskOut, TaskUpdate
+from .models import Lab
+from .schemas import LabCreate, LabOut, LabUpdate, StatsOut
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
@@ -32,49 +32,54 @@ def health():
 
 @app.get("/ready")
 def ready(db: Session = Depends(get_db)):
-    db.execute(select(func.count(Task.id)))
+    db.execute(select(func.count(Lab.id)))
     return {"status": "READY"}
 
-@app.get("/api/tasks", response_model=list[TaskOut])
-def list_tasks(db: Session = Depends(get_db)):
-    return list(db.scalars(select(Task).order_by(Task.id.desc())))
+@app.get("/api/labs", response_model=list[LabOut])
+def list_labs(db: Session = Depends(get_db)):
+    return list(db.scalars(select(Lab).order_by(Lab.id.desc())))
 
-@app.get("/api/tasks/stats", response_model=StatsOut)
+@app.get("/api/labs/stats", response_model=StatsOut)
 def stats(db: Session = Depends(get_db)):
-    rows = db.execute(select(Task.status, func.count(Task.id)).group_by(Task.status)).all()
-    counts = {status: count for status, count in rows}
-    return StatsOut(total=sum(counts.values()), todo=counts.get("TODO", 0), inProgress=counts.get("IN_PROGRESS", 0), done=counts.get("DONE", 0))
+    rows = db.execute(select(Lab.status, func.count(Lab.id)).group_by(Lab.status)).all()
+    counts = dict(rows)
+    return StatsOut(
+        total=sum(counts.values()),
+        planned=counts.get("PLANNED", 0),
+        running=counts.get("RUNNING", 0),
+        completed=counts.get("COMPLETED", 0),
+    )
 
-@app.get("/api/tasks/{task_id}", response_model=TaskOut)
-def get_task(task_id: int, db: Session = Depends(get_db)):
-    task = db.get(Task, task_id)
-    if not task:
-        raise HTTPException(status_code=404, detail="Task not found")
-    return task
+@app.get("/api/labs/{lab_id}", response_model=LabOut)
+def get_lab(lab_id: int, db: Session = Depends(get_db)):
+    lab = db.get(Lab, lab_id)
+    if not lab:
+        raise HTTPException(status_code=404, detail="Lab not found")
+    return lab
 
-@app.post("/api/tasks", response_model=TaskOut, status_code=status.HTTP_201_CREATED)
-def create_task(payload: TaskCreate, db: Session = Depends(get_db)):
-    task = Task(**payload.model_dump())
-    db.add(task)
+@app.post("/api/labs", response_model=LabOut, status_code=status.HTTP_201_CREATED)
+def create_lab(payload: LabCreate, db: Session = Depends(get_db)):
+    lab = Lab(**payload.model_dump())
+    db.add(lab)
     db.commit()
-    db.refresh(task)
-    return task
+    db.refresh(lab)
+    return lab
 
-@app.put("/api/tasks/{task_id}", response_model=TaskOut)
-def update_task(task_id: int, payload: TaskUpdate, db: Session = Depends(get_db)):
-    task = db.get(Task, task_id)
-    if not task:
-        raise HTTPException(status_code=404, detail="Task not found")
+@app.put("/api/labs/{lab_id}", response_model=LabOut)
+def update_lab(lab_id: int, payload: LabUpdate, db: Session = Depends(get_db)):
+    lab = db.get(Lab, lab_id)
+    if not lab:
+        raise HTTPException(status_code=404, detail="Lab not found")
     for key, value in payload.model_dump(exclude_unset=True).items():
-        setattr(task, key, value)
+        setattr(lab, key, value)
     db.commit()
-    db.refresh(task)
-    return task
+    db.refresh(lab)
+    return lab
 
-@app.delete("/api/tasks/{task_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_task(task_id: int, db: Session = Depends(get_db)):
-    task = db.get(Task, task_id)
-    if not task:
-        raise HTTPException(status_code=404, detail="Task not found")
-    db.delete(task)
+@app.delete("/api/labs/{lab_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_lab(lab_id: int, db: Session = Depends(get_db)):
+    lab = db.get(Lab, lab_id)
+    if not lab:
+        raise HTTPException(status_code=404, detail="Lab not found")
+    db.delete(lab)
     db.commit()

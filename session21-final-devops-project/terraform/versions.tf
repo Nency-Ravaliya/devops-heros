@@ -16,7 +16,7 @@ provider "aws" {
     tags = {
       Environment = var.environment
       ManagedBy   = "Terraform"
-      Project     = "taskboard"
+      Project     = "labtrack"
     }
   }
 }
