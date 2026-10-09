@@ -1,0 +1,49 @@
+# The database. Its admin password Secret was created correctly:
+#   echo -n "mypassword" | base64  ->  bXlwYXNzd29yZA==
+apiVersion: v1
+kind: Secret
+metadata:
+  name: postgres-admin
+  namespace: s12-hw
+type: Opaque
+data:
+  POSTGRES_USER: eWF0cmlfYWRtaW4=        # yatri_admin
+  POSTGRES_PASSWORD: bXlwYXNzd29yZA==    # mypassword
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres
+  namespace: s12-hw
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          envFrom:
+            - secretRef:
+                name: postgres-admin
+          env:
+            - name: POSTGRES_DB
+              value: yatri
+          ports:
+            - containerPort: 5432
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: s12-hw
+spec:
+  selector:
+    app: postgres
+  ports:
+    - port: 5432
