@@ -1,0 +1,63 @@
+
+=====[OS-IDENTITY]=====
+NAME="Ubuntu"
+VERSION="22.04.5 LTS (Jammy Jellyfish)"
+--- uname -srm ---
+--- arch ---
+x86_64
+
+=====[JOURNAL-REAL-SERVICE]=====
+Unit cron.service could not be found.
+
+=====[JOURNAL-UNIT-CRON]=====
+-- No entries --
+
+=====[JOURNAL-GENERATE-AND-READ]=====
+--- journalctl -t deploy-script ---
+Sep 17 20:52:56 bd467e9edb8a deploy-script[178]: starting deployment of devops-heros build 42
+Sep 17 20:52:56 bd467e9edb8a deploy-script[179]: failed to reach database on port 3306
+Sep 17 20:52:56 bd467e9edb8a deploy-script[180]: deployment finished
+
+=====[JOURNAL-PRIORITY-ERR]=====
+Sep 17 20:52:56 bd467e9edb8a deploy-script[179]: failed to reach database on port 3306
+
+=====[JOURNAL-SINCE]=====
+Sep 17 20:52:56 bd467e9edb8a deploy-script[178]: starting deployment of devops-heros build 42
+Sep 17 20:52:56 bd467e9edb8a deploy-script[179]: failed to reach database on port 3306
+Sep 17 20:52:56 bd467e9edb8a deploy-script[180]: deployment finished
+
+=====[JOURNAL-USER-CREATION]=====
+Sep 17 20:26:42 bd467e9edb8a groupadd[78]: group added to /etc/group: name=testuser_hw, GID=1001
+Sep 17 20:26:42 bd467e9edb8a groupadd[78]: group added to /etc/gshadow: name=testuser_hw
+Sep 17 20:26:42 bd467e9edb8a groupadd[78]: new group: name=testuser_hw, GID=1001
+Sep 17 20:26:42 bd467e9edb8a useradd[84]: new user: name=testuser_hw, UID=1001, GID=1001, home=/home/testuser_hw, shell=/bin/bash, from=none
+Sep 17 20:26:42 bd467e9edb8a chfn[102]: changed user 'testuser_hw' information
+
+=====[JOURNAL-DISK-USAGE]=====
+Archived and active journals take up 8.0M in the file system.
+
+=====[JOURNAL-JSON]=====
+{
+	"_COMM" : "logger",
+	"_TRANSPORT" : "syslog",
+	"_SYSTEMD_UNIT" : "init.scope",
+	"__REALTIME_TIMESTAMP" : "1789678376874627",
+	"_SOURCE_REALTIME_TIMESTAMP" : "1789678376874576",
+	"_BOOT_ID" : "6c2c7f938e3648ccb9f532f462b71ead",
+	"_UID" : "0",
+	"_SYSTEMD_CGROUP" : "/init.scope",
+	"__CURSOR" : "s=4a20d7c74bd444228b1a73f45b10ce86;i=369;b=6c2c7f938e3648ccb9f532f462b71ead;m=6a98e0d2;t=65bb3f7ea7283;x=5413e96f5a9e2873",
+	"_HOSTNAME" : "bd467e9edb8a",
+	"SYSLOG_FACILITY" : "1",
+	"SYSLOG_TIMESTAMP" : "Sep 17 20:52:56 ",
+	"_GID" : "0",
+
+=====[SYSTEMCTL-LIST]=====
+  UNIT                               LOAD   ACTIVE SUB     DESCRIPTION
+  systemd-journald.service           loaded active running Journal Service
+  systemd-remount-fs.service         loaded active exited  Remount Root and Kernel File Systems
+  systemd-tmpfiles-setup-dev.service loaded active exited  Create Static Device Nodes in /dev
+  systemd-tmpfiles-setup.service     loaded active exited  Create Volatile Files and Directories
+
+LOAD   = Reflects whether the unit definition was properly loaded.
+ACTIVE = The high-level unit activation state, i.e. generalization of SUB.

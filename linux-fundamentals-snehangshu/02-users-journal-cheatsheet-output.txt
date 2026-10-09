@@ -1,0 +1,137 @@
+
+=====[T2-which]=====
+/usr/sbin/useradd
+/usr/sbin/adduser
+/root/linux_t2.sh: line 5: file: command not found
+
+=====[T2-useradd-lowlevel]=====
+testuser_low:x:1000:1000::/home/testuser_low:/bin/sh
+ls: cannot access '/home/testuser_low': No such file or directory
+
+=====[T2-adduser-recommended]=====
+Adding user `testuser_hw' ...
+Adding new group `testuser_hw' (1001) ...
+Adding new user `testuser_hw' (1001) with group `testuser_hw' ...
+Creating home directory `/home/testuser_hw' ...
+Copying files from `/etc/skel' ...
+
+=====[T2-verify-adduser]=====
+testuser_hw:x:1001:1001:,,,:/home/testuser_hw:/bin/bash
+drwxr-x--- 2 testuser_hw testuser_hw 4096 Sep 17 20:26 /home/testuser_hw
+.bash_logout
+.bashrc
+.profile
+uid=1001(testuser_hw) gid=1001(testuser_hw) groups=1001(testuser_hw)
+
+=====[T2-compare]=====
+useradd  : testuser_low:x:1000:1000::/home/testuser_low:/bin/sh
+adduser  : testuser_hw:x:1001:1001:,,,:/home/testuser_hw:/bin/bash
+
+=====[T3-journal-boot]=====
+Sep 17 20:26:42 bd467e9edb8a groupadd[78]: group added to /etc/gshadow: name=testuser_hw
+Sep 17 20:26:42 bd467e9edb8a groupadd[78]: new group: name=testuser_hw, GID=1001
+Sep 17 20:26:42 bd467e9edb8a useradd[84]: new user: name=testuser_hw, UID=1001, GID=1001, home=/home/testuser_hw, shell=/bin/bash, from=none
+Sep 17 20:26:42 bd467e9edb8a usermod[95]: change user 'testuser_hw' password
+Sep 17 20:26:42 bd467e9edb8a chfn[102]: changed user 'testuser_hw' information
+
+=====[T3-journal-unit]=====
+-- No entries --
+
+=====[T3-journal-priority]=====
+Sep 17 20:25:43 bd467e9edb8a kernel: misc dxg: dxgk: dxgkio_query_adapter_info: Ioctl failed: -22
+Sep 17 20:25:43 bd467e9edb8a kernel: misc dxg: dxgk: dxgkio_query_adapter_info: Ioctl failed: -22
+Sep 17 20:25:43 bd467e9edb8a kernel: misc dxg: dxgk: dxgkio_query_adapter_info: Ioctl failed: -2
+Sep 17 20:25:43 bd467e9edb8a kernel: virtiofs: Unknown parameter 'negative_dentry_timeout'
+(exit 0)
+
+=====[T3-journal-since]=====
+Sep 17 20:25:43 bd467e9edb8a kernel: KERNEL supported cpus:
+Sep 17 20:25:43 bd467e9edb8a kernel:   Intel GenuineIntel
+Sep 17 20:25:43 bd467e9edb8a kernel:   AMD AuthenticAMD
+
+=====[T3-journal-diskusage]=====
+Archived and active journals take up 8.0M in the file system.
+
+=====[T3-journal-kernel-json]=====
+{
+	"SYSLOG_PID" : "102",
+	"_GID" : "0",
+	"_BOOT_ID" : "6c2c7f938e3648ccb9f532f462b71ead",
+	"_CAP_EFFECTIVE" : "1ffffffffff",
+	"_CMDLINE" : "/bin/chfn -f \"\" testuser_hw",
+	"_COMM" : "chfn",
+	"_HOSTNAME" : "bd467e9edb8a",
+	"SYSLOG_FACILITY" : "10",
+	"_UID" : "0",
+	"__CURSOR" : "s=4a20d7c74bd444228b1a73f45b10ce86;i=22e;b=6c2c7f938e3648ccb9f532f462b71ead;m=cc7ee8c;t=65bb39a1aab36;x=5dc3f903adf518e3",
+	"_TRANSPORT" : "syslog",
+	"SYSLOG_TIMESTAMP" : "Sep 17 20:26:42 ",
+	"_SYSTEMD_SLICE" : "-.slice",
+	"__REALTIME_TIMESTAMP" : "1789676802976566",
+
+=====[T4-cheatsheet]=====
+-- whoami --
+root
+-- uname -a --
+-- pwd --
+/
+-- df -h --
+Filesystem      Size  Used Avail Use% Mounted on
+overlay        1007G  6.9G  949G   1% /
+tmpfs            64M     0   64M   0% /dev
+shm              64M     0   64M   0% /dev/shm
+/dev/sde       1007G  6.9G  949G   1% /etc/hosts
+-- free -h --
+               total        used        free      shared  buff/cache   available
+Mem:            11Gi       770Mi       9.2Gi        35Mi       1.3Gi        10Gi
+Swap:          3.0Gi          0B       3.0Gi
+-- ps aux (top 5) --
+USER       PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND
+root         1  0.0  0.0  17060  9472 ?        Ss   20:25   0:00 /lib/systemd/systemd
+root        22  0.0  0.0  23020  7424 ?        S<s  20:25   0:00 /lib/systemd/systemd-journald
+root        58  2.0  0.0   4364  3072 ?        Ss   20:26   0:00 bash /root/linux_t2.sh
+root       128  0.0  0.0   7072  3072 ?        R    20:26   0:00 ps aux
+-- top -bn1 (head) --
+top - 20:26:44 up 3 min,  0 users,  load average: 0.38, 0.29, 0.12
+Tasks:   5 total,   1 running,   4 sleeping,   0 stopped,   0 zombie
+%Cpu(s):  0.0 us,  0.0 sy,  0.0 ni,100.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st
+MiB Mem :  11476.1 total,   9409.8 free,    770.0 used,   1296.3 buff/cache
+MiB Swap:   3072.0 total,   3072.0 free,      0.0 used.  10493.7 avail Mem 
+-- uptime --
+ 20:26:44 up 3 min,  0 users,  load average: 0.38, 0.29, 0.12
+-- du -sh /etc --
+924K	/etc
+-- grep -rn 'root' /etc/passwd --
+1:root:x:0:0:root:/root:/bin/bash
+-- find /etc -name '*.conf' (5) --
+/etc/systemd/pstore.conf
+/etc/systemd/sleep.conf
+/etc/systemd/networkd.conf
+/etc/systemd/user.conf
+/etc/systemd/resolved.conf
+-- chmod/chown demo --
+-rwxr-xr-- 1 testuser_hw testuser_hw 0 Sep 17 20:26 /root/perm.txt
+-- tar --
+-rw-r--r-- 1 root root 244 Sep 17 20:26 /root/etcsample.tar.gz
+etc/hostname
+etc/hosts
+-- head/tail --
+root:x:0:0:root:/root:/bin/bash
+daemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin
+bin:x:2:2:bin:/bin:/usr/sbin/nologin
+...
+systemd-timesync:x:104:105:systemd Time Synchronization,,,:/run/systemd:/usr/sbin/nologin
+testuser_low:x:1000:1000::/home/testuser_low:/bin/sh
+testuser_hw:x:1001:1001:,,,:/home/testuser_hw:/bin/bash
+-- wc -l /etc/passwd --
+25 /etc/passwd
+-- sort/uniq --
+     21 /usr/sbin/nologin
+      2 /bin/bash
+      1 /bin/sync
+      1 /bin/sh
+-- awk --
+nobody 65534
+testuser_low 1000
+testuser_hw 1001
+-- sed --
