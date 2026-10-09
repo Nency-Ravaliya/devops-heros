@@ -1,0 +1,10 @@
+# FIX: create the ConfigMap the Pod's volume refers to.
+# The Pod itself is unchanged - kubelet retries the mount and the container starts.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: landing-page-html
+  namespace: task2
+data:
+  index.html: |
+    <h1>Landing page served from ConfigMap</h1>

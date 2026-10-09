@@ -1,0 +1,402 @@
+# TaskBoard CI — use this file when final-devops-project/ is its own repository
+# (the monorepo copy lives at <repo>/.github/workflows/session21-ci.yml).
+#
+#   lint ─┐
+#   test ─┤
+#   frontend build ─┤
+#   SAST (bandit+semgrep) ─┤
+#   SCA (pip-audit+npm audit) ─┼─► docker build + compose smoke test ─► Trivy image gate ─► push to GHCR (main only)
+#   secret scan (gitleaks) ─┤
+#   Dockerfile lint (hadolint+trivy config) ─┘
+#
+# Every gate exits non-zero on failure, so nothing after it runs. Images are pushed
+# as ghcr.io/<owner>/taskboard-{backend,frontend}:<commit-sha> (+ :latest), and the CD
+# workflow then promotes exactly that tag through GitOps.
+name: TaskBoard CI
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "**/*.md"
+      - "screenshots/**"
+      - "helm/taskboard/values-prod.yaml"
+      - "gitops/**"
+  pull_request:
+    branches: [main]
+    paths-ignore:
+      - "**/*.md"
+      - "screenshots/**"
+      - "helm/taskboard/values-prod.yaml"
+      - "gitops/**"
+  workflow_dispatch:
+
+env:
+  APP_DIR: .
+  PYTHON_VERSION: "3.12"
+  NODE_VERSION: "24"
+  REGISTRY: ghcr.io
+  # GHCR repository names must be lowercase (github.repository_owner usually is).
+  BACKEND_IMAGE: ghcr.io/${{ github.repository_owner }}/taskboard-backend
+  FRONTEND_IMAGE: ghcr.io/${{ github.repository_owner }}/taskboard-frontend
+  # Pinned scanner images (same versions as security/run-security-scans.sh)
+  TRIVY_IMAGE: aquasec/trivy:0.75.0
+  GITLEAKS_IMAGE: zricethezav/gitleaks:v8.30.1
+  SEMGREP_IMAGE: semgrep/semgrep:1.179.0
+  HADOLINT_IMAGE: hadolint/hadolint:v2.15.1
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# Every `run:` step executes inside the project folder.
+defaults:
+  run:
+    working-directory: .
+
+jobs:
+  # ───────────────────────────────────────────── 1. lint
+  lint:
+    name: Lint (flake8)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: ${{ env.APP_DIR }}/application/backend/requirements*.txt
+
+      - name: Install dev dependencies
+        run: pip install -r application/backend/requirements-dev.txt
+
+      - name: flake8
+        working-directory: ${{ env.APP_DIR }}/application/backend
+        run: flake8 --statistics
+
+  # ───────────────────────────────────────────── 2. unit tests + coverage
+  test:
+    name: Unit tests (pytest + coverage)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ env.APP_DIR }}/application/backend
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: ${{ env.APP_DIR }}/application/backend/requirements*.txt
+
+      - name: Install dev dependencies
+        run: pip install -r requirements-dev.txt
+
+      - name: pytest (fail under 90% coverage)
+        run: |
+          mkdir -p reports
+          pytest -v --cov=app --cov-report=term-missing \
+                 --cov-report=xml:reports/coverage.xml --cov-fail-under=90 \
+                 --junitxml=reports/junit.xml | tee reports/pytest.txt
+          {
+            echo "### 🧪 Backend tests"
+            echo '```'
+            grep -E "^(TOTAL|=+ .* (passed|failed))" reports/pytest.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-reports
+          path: ${{ env.APP_DIR }}/application/backend/reports/
+          retention-days: 7
+
+  # ───────────────────────────────────────────── 3. frontend build
+  frontend:
+    name: Frontend build (vite)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ env.APP_DIR }}/application/frontend
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: ${{ env.APP_DIR }}/application/frontend/package-lock.json
+
+      - name: npm ci
+        run: npm ci --no-audit --no-fund
+
+      - name: npm run build
+        run: npm run build && ls -lh dist dist/assets
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: frontend-dist
+          path: ${{ env.APP_DIR }}/application/frontend/dist/
+          retention-days: 3
+
+  # ───────────────────────────────────────────── 4. SAST
+  sast:
+    name: SAST (bandit + semgrep)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install security tooling
+        run: pip install -r security/requirements-security.txt
+
+      - name: Bandit report (all severities, for the record)
+        run: |
+          mkdir -p reports
+          bandit -c security/bandit.yaml -r application/backend/app -f json -o reports/bandit.json --exit-zero
+
+      # GATE: MEDIUM+ severity with MEDIUM+ confidence fails the job
+      - name: Bandit gate
+        run: bandit -c security/bandit.yaml -r application/backend/app -ll -ii
+
+      # GATE: any blocking finding from the python / javascript / dockerfile rulesets
+      - name: Semgrep gate
+        run: |
+          docker run --rm -v "$PWD:/src" -w /src "$SEMGREP_IMAGE" semgrep scan \
+            --config p/python --config p/javascript --config p/dockerfile \
+            --metrics=off --error \
+            --exclude node_modules --exclude .venv --exclude dist --exclude tests \
+            --json-output=reports/semgrep.json --text application
+
+      - name: Upload SAST reports
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: sast-reports
+          path: ${{ env.APP_DIR }}/reports/
+
+  # ───────────────────────────────────────────── 5. SCA
+  sca:
+    name: SCA (pip-audit + npm audit)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install pip-audit
+        run: pip install -r security/requirements-security.txt
+
+      # GATE: any known vulnerability in a runtime or dev/test dependency
+      - name: pip-audit (runtime)
+        run: pip-audit -r application/backend/requirements.txt --desc on
+
+      - name: pip-audit (dev/test)
+        run: pip-audit -r application/backend/requirements-dev.txt --desc on
+
+      # GATE: HIGH/CRITICAL advisories in the frontend lockfile
+      - name: npm audit
+        working-directory: ${{ env.APP_DIR }}/application/frontend
+        run: npm audit --audit-level=high
+
+  # ───────────────────────────────────────────── 6. secret scanning
+  secret-scan:
+    name: Secret scan (gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # full history: a secret removed in a later commit is still leaked
+
+      # GATE: any secret in the working tree
+      - name: gitleaks (working tree)
+        run: |
+          docker run --rm -v "$PWD:/repo" "$GITLEAKS_IMAGE" \
+            dir /repo --config /repo/security/.gitleaks.toml --redact --no-banner -v
+
+      # GATE: any secret anywhere in the project's git history
+      - name: gitleaks (git history)
+        working-directory: .
+        run: |
+          docker run --rm -v "$PWD:/repo" "$GITLEAKS_IMAGE" \
+            git /repo --config "/repo/$APP_DIR/security/.gitleaks.toml" \
+            --gitleaks-ignore-path "/repo/$APP_DIR/security/.gitleaksignore" \
+            --log-opts="-- $APP_DIR" --redact --no-banner -v
+
+  # ───────────────────────────────────────────── 7. Dockerfile lint / misconfig
+  dockerfile-lint:
+    name: Dockerfile lint (hadolint + trivy config)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: hadolint
+        run: |
+          for f in application/backend/Dockerfile application/frontend/Dockerfile; do
+            echo "── $f"
+            docker run --rm -i -v "$PWD/security/.hadolint.yaml:/.config/hadolint.yaml:ro" "$HADOLINT_IMAGE" \
+              hadolint --config /.config/hadolint.yaml - < "$f"
+          done
+
+      - name: trivy config (HIGH/CRITICAL misconfigurations)
+        run: |
+          docker run --rm -v "$PWD:/src" -w /src "$TRIVY_IMAGE" \
+            config --config "" --severity HIGH,CRITICAL --exit-code 1 application
+
+  # ───────────────────────────────────────────── 8. build images + integration smoke test
+  docker-build:
+    name: Docker build + compose smoke test
+    needs: [lint, test, frontend, sast, sca, secret-scan, dockerfile-lint]
+    runs-on: ubuntu-latest
+    env:
+      TAG: ${{ github.sha }}
+      GIT_SHA: ${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Build backend + frontend images
+        working-directory: ${{ env.APP_DIR }}/docker
+        run: |
+          docker compose build
+          docker image ls --filter reference='taskboard-*'
+
+      - name: Start the stack and wait for healthchecks
+        working-directory: ${{ env.APP_DIR }}/docker
+        run: docker compose up -d --wait && docker compose ps
+
+      - name: Smoke test (health, CRUD, stats, metrics, UI proxy)
+        run: |
+          set -e
+          curl -fsS localhost:8000/health; echo
+          curl -fsS localhost:8000/ready; echo
+          curl -fsS -X POST localhost:8000/api/tasks -H 'Content-Type: application/json' \
+               -d '{"title":"CI smoke test","priority":"HIGH"}'; echo
+          curl -fsS localhost:3000/api/tasks; echo
+          curl -fsS localhost:8000/api/tasks/stats | tee stats.json; echo
+          grep -q '"total":1' stats.json
+          curl -fsS localhost:8000/metrics | grep -m3 '^http_requests_total'
+          curl -fsS -o /dev/null -w 'frontend HTTP %{http_code}\n' localhost:3000/
+
+      - name: Dump logs on failure
+        if: failure()
+        working-directory: ${{ env.APP_DIR }}/docker
+        run: docker compose logs --no-color --tail=100
+
+      - name: Stop the stack
+        if: always()
+        working-directory: ${{ env.APP_DIR }}/docker
+        run: docker compose down -v
+
+      - name: Tag for GHCR and save as artifact
+        run: |
+          docker tag "taskboard-backend:$TAG"  "$BACKEND_IMAGE:$TAG"
+          docker tag "taskboard-frontend:$TAG" "$FRONTEND_IMAGE:$TAG"
+          docker save "$BACKEND_IMAGE:$TAG"  | gzip > backend.tar.gz
+          docker save "$FRONTEND_IMAGE:$TAG" | gzip > frontend.tar.gz
+          ls -lh ./*.tar.gz
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: docker-images
+          path: |
+            ${{ env.APP_DIR }}/backend.tar.gz
+            ${{ env.APP_DIR }}/frontend.tar.gz
+          retention-days: 1
+
+  # ───────────────────────────────────────────── 9. container image scan (gate)
+  image-scan:
+    name: Trivy image scan (${{ matrix.component }})
+    needs: docker-build
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        component: [backend, frontend]
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: docker-images
+          path: ${{ env.APP_DIR }}
+
+      - name: Load image
+        id: img
+        run: |
+          docker load < "${{ matrix.component }}.tar.gz"
+          if [ "${{ matrix.component }}" = backend ]; then ref="$BACKEND_IMAGE:${{ github.sha }}"; else ref="$FRONTEND_IMAGE:${{ github.sha }}"; fi
+          echo "ref=$ref" >> "$GITHUB_OUTPUT"
+
+      - name: Trivy report (all severities → SARIF + table)
+        run: |
+          mkdir -p reports
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v "$PWD:/src" -w /src "$TRIVY_IMAGE" \
+            image --format sarif --output "reports/trivy-${{ matrix.component }}.sarif" "${{ steps.img.outputs.ref }}"
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock "$TRIVY_IMAGE" \
+            image --severity HIGH,CRITICAL --table-mode summary "${{ steps.img.outputs.ref }}"
+
+      - name: Upload SARIF to code scanning
+        if: always()
+        continue-on-error: true # code scanning needs GitHub Advanced Security on private repos
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: ${{ env.APP_DIR }}/reports/trivy-${{ matrix.component }}.sarif
+          category: trivy-${{ matrix.component }}
+
+      # GATE: HIGH/CRITICAL CVEs with a fix, or a secret in a layer → exit 1 (security/trivy.yaml)
+      - name: Trivy gate
+        run: |
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v "$PWD:/src" -w /src "$TRIVY_IMAGE" \
+            --config security/trivy.yaml image "${{ steps.img.outputs.ref }}"
+
+  # ───────────────────────────────────────────── 10. push to GHCR
+  push:
+    name: Push images to GHCR
+    needs: image-scan
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: docker-images
+          path: ${{ env.APP_DIR }}
+
+      - uses: docker/login-action@v4
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push :<sha> and :latest
+        run: |
+          echo "### 📦 Images pushed" >> "$GITHUB_STEP_SUMMARY"
+          for c in backend frontend; do
+            docker load < "$c.tar.gz"
+            if [ "$c" = backend ]; then img="$BACKEND_IMAGE"; else img="$FRONTEND_IMAGE"; fi
+            docker tag "$img:${{ github.sha }}" "$img:latest"
+            docker push "$img:${{ github.sha }}"
+            docker push "$img:latest"
+            echo "- \`$img:${{ github.sha }}\`" >> "$GITHUB_STEP_SUMMARY"
+          done

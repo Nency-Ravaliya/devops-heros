@@ -25,9 +25,22 @@ With Helm, you write one chart. You pass different values for each environment.
 | `05-values-yaml/` | Default values, overriding with -f and --set |
 | `06-templates/` | Go template syntax, variables, conditionals |
 | `07-install-upgrade/` | helm install, helm upgrade, revision history |
-| `08-rollback/` | helm rollback, --atomic flag, auto rollback |
+| `08-rollback/` | helm rollback, --atomic flag, auto rollback. **Task 2:** full Install → Upgrade → Upgrade → Rollback workflow |
 | `09-deploying-application/` | Full application deployment: lint, install, upgrade, rollback |
-| `mini-project/` | Deploy the Notes App from scratch using Helm |
+| `10-helm-commands/` | **Task 1:** hands-on run of every Helm command (repo, search, create, install, list, status, get, upgrade, history, rollback, uninstall) |
+| `mini-project/` | **Task 3:** Deploy the Notes App from scratch using Helm (install, upgrade, rollback) |
+
+---
+
+## Assignment Deliverables
+
+All commands were run on a real cluster (Helm v4.3.0, minikube `session13`, namespace `helm-lab`). Each step has its output and a terminal screenshot.
+
+| Task | Where | Screenshots |
+|------|-------|-------------|
+| Task 1: Helm Commands | [10-helm-commands/README.md](10-helm-commands/README.md) | [10-helm-commands/screenshots/](10-helm-commands/screenshots/) |
+| Task 2: Helm Rollback | [08-rollback/README.md#task-2-complete-rollback-workflow-hands-on](08-rollback/README.md#task-2-complete-rollback-workflow-hands-on) | [08-rollback/screenshots/](08-rollback/screenshots/) |
+| Task 3: Mini Project | [mini-project/README.md](mini-project/README.md) ([chart](mini-project/notes-chart/)) | [mini-project/screenshots/](mini-project/screenshots/) |
 
 ---
 

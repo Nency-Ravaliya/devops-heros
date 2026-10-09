@@ -1,0 +1,14 @@
+# Trivy configuration — picked up with:  trivy --config trivy.yaml image <image>
+# Security gate policy for container images:
+#   fail (exit 1) on any HIGH or CRITICAL vulnerability that already has a fix.
+severity:
+  - HIGH
+  - CRITICAL
+exit-code: 1
+scan:
+  scanners:
+    - vuln
+    - secret
+vulnerability:
+  ignore-unfixed: true
+ignorefile: .trivyignore

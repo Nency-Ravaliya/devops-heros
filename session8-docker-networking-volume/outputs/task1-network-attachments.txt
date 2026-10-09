@@ -1,0 +1,10 @@
+### backend is attached to 2 networks
+database-net -> 172.21.0.2
+frontend-net -> 172.19.0.3
+
+### frontend networks
+frontend-net -> 172.19.0.2
+
+### database networks
+database-net -> 172.21.0.3
+

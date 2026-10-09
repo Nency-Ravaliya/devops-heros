@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: payment-api
+  namespace: task2
+  labels:
+    app: payment-api
+spec:
+  containers:
+    - name: app
+      image: busybox:1.36
+      command:
+        - sh
+        - -c
+        - |
+          echo "payment-api v1.4.2 starting..."
+          if [ -z "$DB_HOST" ]; then
+            echo "FATAL: required environment variable DB_HOST is not set" >&2
+            exit 1
+          fi
+          echo "connecting to database at $DB_HOST:5432"
+          echo "payment-api ready, listening on :8080"
+          while true; do sleep 30; done
+      # FIX: the app requires DB_HOST at startup; it was missing from the spec
+      env:
+        - name: DB_HOST
+          value: postgres.task2.svc.cluster.local

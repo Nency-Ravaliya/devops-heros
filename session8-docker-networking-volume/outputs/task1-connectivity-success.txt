@@ -1,0 +1,35 @@
+==========================================================
+TEST 1: frontend -> backend   (shared network: frontend-net)
+==========================================================
+PING backend (172.19.0.3): 56 data bytes
+64 bytes from 172.19.0.3: seq=0 ttl=64 time=0.774 ms
+64 bytes from 172.19.0.3: seq=1 ttl=64 time=1.155 ms
+64 bytes from 172.19.0.3: seq=2 ttl=64 time=0.375 ms
+
+--- backend ping statistics ---
+3 packets transmitted, 3 packets received, 0% packet loss
+round-trip min/avg/max = 0.375/0.768/1.155 ms
+
+==========================================================
+TEST 2: backend -> frontend   (shared network: frontend-net)
+==========================================================
+PING frontend (172.19.0.2): 56 data bytes
+64 bytes from 172.19.0.2: seq=0 ttl=64 time=0.097 ms
+64 bytes from 172.19.0.2: seq=1 ttl=64 time=0.364 ms
+64 bytes from 172.19.0.2: seq=2 ttl=64 time=0.164 ms
+
+--- frontend ping statistics ---
+3 packets transmitted, 3 packets received, 0% packet loss
+round-trip min/avg/max = 0.097/0.208/0.364 ms
+
+==========================================================
+TEST 3: backend -> database   (shared network: database-net)
+==========================================================
+PING database (172.21.0.3): 56 data bytes
+64 bytes from 172.21.0.3: seq=0 ttl=64 time=0.666 ms
+64 bytes from 172.21.0.3: seq=1 ttl=64 time=0.238 ms
+64 bytes from 172.21.0.3: seq=2 ttl=64 time=1.527 ms
+
+--- database ping statistics ---
+3 packets transmitted, 3 packets received, 0% packet loss
+round-trip min/avg/max = 0.238/0.810/1.527 ms

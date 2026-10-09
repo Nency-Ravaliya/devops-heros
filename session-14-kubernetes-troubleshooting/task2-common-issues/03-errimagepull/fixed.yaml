@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: inventory-service
+  namespace: task2
+  labels:
+    app: inventory-service
+spec:
+  containers:
+    - name: inventory
+      # FIX: point at an image that exists and is public
+      image: hashicorp/http-echo:1.0
+      args: ["-text=inventory-service OK", "-listen=:5678"]
+      ports:
+        - containerPort: 5678

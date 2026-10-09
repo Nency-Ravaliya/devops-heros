@@ -1,0 +1,27 @@
+==========================================================
+TEST 4: frontend -> database  (NO shared network)
+Expected: FAIL - DNS cannot resolve, networks are isolated
+==========================================================
+ping: bad address 'database'
+exit code: 1
+
+==========================================================
+TEST 5: database -> frontend  (NO shared network)
+Expected: FAIL
+==========================================================
+OCI runtime exec failed: exec failed: unable to start container process: exec: "ping": executable file not found in $PATH
+exit code: 127
+
+==========================================================
+TEST 6: HTTP - backend reaches frontend's nginx over TCP 80
+==========================================================
+<!DOCTYPE html>
+<html>
+<head>
+<title>Welcome to nginx!</title>
+<style>
+
+==========================================================
+TEST 7: backend reaches MySQL port 3306 on database
+==========================================================
+database (172.21.0.3:3306) open

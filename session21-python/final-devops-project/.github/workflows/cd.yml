@@ -1,0 +1,173 @@
+# TaskBoard CD — use this file when final-devops-project/ is its own repository
+# (the monorepo copy lives at <repo>/.github/workflows/session21-cd.yml).
+#
+# Runs only after the CI workflow finished *successfully* on main (or manually).
+#
+#   1. gitops-update  (the GitOps way — always)
+#      Pins the image tag that CI just built, scanned and pushed (= the commit SHA)
+#      in the Helm values + any manifests under gitops/, and commits that back to main.
+#      Argo CD watches the repo and syncs the cluster to the new desired state —
+#      the pipeline never needs cluster credentials.
+#
+#   2. helm-deploy    (optional push-style deploy)
+#      `helm upgrade --install` straight into a cluster. Skipped unless the
+#      repository secret KUBECONFIG (base64-encoded kubeconfig) is configured.
+name: TaskBoard CD
+
+on:
+  workflow_run:
+    workflows: ["TaskBoard CI"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "Image tag to deploy (a commit SHA that CI pushed to GHCR)"
+        required: true
+
+env:
+  APP_DIR: .
+  BACKEND_IMAGE: ghcr.io/${{ github.repository_owner }}/taskboard-backend
+  FRONTEND_IMAGE: ghcr.io/${{ github.repository_owner }}/taskboard-frontend
+  # Desired-state files that pin the image tag (paths relative to APP_DIR)
+  VALUES_FILE: helm/taskboard/values-prod.yaml
+  GITOPS_DIR: gitops
+  RELEASE: taskboard
+  NAMESPACE: taskboard
+
+permissions:
+  contents: read
+
+# Never run two promotions at once; queue them instead of cancelling.
+concurrency:
+  group: taskboard-cd
+  cancel-in-progress: false
+
+defaults:
+  run:
+    working-directory: .
+
+jobs:
+  gitops-update:
+    name: GitOps - pin image tag in Git
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # commit the new desired state back to main
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+
+      - name: Resolve image tag
+        id: tag
+        env:
+          INPUT_TAG: ${{ inputs.image_tag }}
+          RUN_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          tag="${INPUT_TAG:-$RUN_SHA}"
+          [ -n "$tag" ] || { echo "::error::no image tag"; exit 1; }
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "Promoting tag $tag"
+
+      - name: Update Helm values (yq is preinstalled on ubuntu runners)
+        env:
+          TAG: ${{ steps.tag.outputs.tag }}
+        run: |
+          expr='.backend.image.repository  = strenv(BACKEND_IMAGE)  | .backend.image.tag  = strenv(TAG) |
+                .frontend.image.repository = strenv(FRONTEND_IMAGE) | .frontend.image.tag = strenv(TAG)'
+          # Apply only the semantic change as a patch, so yq doesn't reflow comments/whitespace
+          diff -U0 <(yq '.' "$VALUES_FILE") <(yq "$expr" "$VALUES_FILE") | patch --no-backup-if-mismatch "$VALUES_FILE" || true
+          yq '.backend.image, .frontend.image' "$VALUES_FILE"
+
+      - name: Update plain manifests / kustomize overlays under gitops/
+        env:
+          TAG: ${{ steps.tag.outputs.tag }}
+        run: |
+          [ -d "$GITOPS_DIR" ] || { echo "no $GITOPS_DIR/ directory - skipping"; exit 0; }
+          grep -rlE 'taskboard-(backend|frontend)' "$GITOPS_DIR" --include='*.yaml' --include='*.yml' |
+            while read -r f; do
+              # image: ghcr.io/<owner>/taskboard-backend:<old>  ->  :<new>
+              sed -i -E "s#(ghcr\.io/[^/\"' ]+/taskboard-(backend|frontend)):[A-Za-z0-9._-]+#\1:${TAG}#g" "$f"
+              # kustomize images: newTag: <old>
+              if grep -q 'newTag:' "$f"; then sed -i -E "s#(newTag:[[:space:]]*)[\"']?[A-Za-z0-9._-]+[\"']?#\1\"${TAG}\"#" "$f"; fi
+            done
+
+      - name: Commit and push the new desired state
+        env:
+          TAG: ${{ steps.tag.outputs.tag }}
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A "$VALUES_FILE" "$GITOPS_DIR" 2>/dev/null || git add -A "$VALUES_FILE"
+          if git diff --cached --quiet; then
+            echo "Desired state already at $TAG - nothing to commit"; exit 0
+          fi
+          git diff --cached --stat
+          # [skip ci]: a bot commit must not start another CI run (pushes made with
+          # GITHUB_TOKEN don't trigger workflows anyway - this is belt and braces).
+          git commit -m "chore(gitops): deploy taskboard ${TAG::7} [skip ci]"
+          git pull --rebase origin main
+          git push origin HEAD:main
+          {
+            echo "### 🚀 GitOps promotion"
+            echo "Pinned \`$BACKEND_IMAGE:$TAG\` and \`$FRONTEND_IMAGE:$TAG\` in \`$APP_DIR/$VALUES_FILE\`."
+            echo "Argo CD will sync the cluster to this commit."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  helm-deploy:
+    name: Helm deploy (optional, needs KUBECONFIG secret)
+    needs: gitops-update
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+    env:
+      KUBECONFIG_B64: ${{ secrets.KUBECONFIG }}
+      TAG: ${{ needs.gitops-update.outputs.tag }}
+    steps:
+      - name: Check for cluster credentials
+        id: check
+        working-directory: .
+        run: |
+          if [ -z "$KUBECONFIG_B64" ]; then
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::KUBECONFIG secret not set - skipping direct deploy (Argo CD handles GitOps sync)."
+          else
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v7
+        if: steps.check.outputs.enabled == 'true'
+        with:
+          ref: main
+
+      - uses: azure/setup-helm@v4
+        if: steps.check.outputs.enabled == 'true'
+
+      - name: Write kubeconfig
+        if: steps.check.outputs.enabled == 'true'
+        run: |
+          mkdir -p ~/.kube
+          echo "$KUBECONFIG_B64" | base64 -d > ~/.kube/config
+          chmod 600 ~/.kube/config
+          kubectl version --client
+          kubectl cluster-info
+
+      - name: helm upgrade --install
+        if: steps.check.outputs.enabled == 'true'
+        run: |
+          helm upgrade --install "$RELEASE" helm/taskboard \
+            --namespace "$NAMESPACE" --create-namespace \
+            -f "$VALUES_FILE" \
+            --set backend.image.repository="$BACKEND_IMAGE" --set backend.image.tag="$TAG" \
+            --set frontend.image.repository="$FRONTEND_IMAGE" --set frontend.image.tag="$TAG" \
+            --atomic --wait --timeout 5m
+          helm history "$RELEASE" -n "$NAMESPACE" --max 5
+
+      - name: Verify rollout
+        if: steps.check.outputs.enabled == 'true'
+        run: |
+          kubectl -n "$NAMESPACE" get deploy,pods,svc -o wide
+          kubectl -n "$NAMESPACE" get deploy -o jsonpath='{range .items[*]}{.metadata.name}{"  "}{.spec.template.spec.containers[0].image}{"\n"}{end}'

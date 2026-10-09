@@ -1,0 +1,11 @@
+# Long-lived debug pod (curl, nslookup, dig, nc) used during the investigation
+apiVersion: v1
+kind: Pod
+metadata:
+  name: toolbox
+  namespace: shopeasy
+spec:
+  containers:
+    - name: toolbox
+      image: registry.k8s.io/e2e-test-images/agnhost:2.53
+      command: ["sleep", "infinity"]

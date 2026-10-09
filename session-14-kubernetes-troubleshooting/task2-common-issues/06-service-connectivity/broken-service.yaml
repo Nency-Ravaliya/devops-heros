@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: orders
+  namespace: task2
+spec:
+  selector:
+    app: order        # BUG 1: Pods are labelled app=orders
+  ports:
+    - port: 80
+      targetPort: 80  # BUG 2: container listens on 5678, not 80

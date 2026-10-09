@@ -1,0 +1,17 @@
+=== Attach a client container to the overlay network ===
+874974212f71458c521e705c6caf538e04ae7cf4655733ad1ecd24e8f88ef86f
+
+=== Service discovery: resolve 'web-svc' from the client (VIP) ===
+10.0.1.2          web-svc  web-svc
+
+=== The 3 individual task IPs behind that VIP (tasks.web-svc) ===
+10.0.1.3          tasks.web-svc  tasks.web-svc
+
+=== HTTP through the VIP works (load-balanced across replicas) ===
+<title>Welcome to nginx!</title>
+
+=== Overlay network details ===
+Driver:     overlay
+Scope:      swarm
+Attachable: true
+Subnet:     10.0.1.0/24

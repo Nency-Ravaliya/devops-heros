@@ -1,0 +1,57 @@
+# BROKEN: HPA targets CPU *utilization* but the container has no CPU request (and no limit) -> <unknown>
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api
+  namespace: tb-debug
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: api}
+  template:
+    metadata:
+      labels: {app: api}
+    spec:
+      securityContext: {runAsNonRoot: true, runAsUser: 10001}
+      containers:
+        - name: api
+          image: taskboard-backend:1.0.0
+          imagePullPolicy: IfNotPresent
+          ports: [{name: http, containerPort: 8000}]
+          env:
+            - name: DB_HOST
+              valueFrom: {configMapKeyRef: {name: api-config, key: DB_HOST}}
+            - name: DB_PORT
+              valueFrom: {configMapKeyRef: {name: api-config, key: DB_PORT}}
+            - name: DB_NAME
+              valueFrom: {configMapKeyRef: {name: api-config, key: DB_NAME}}
+            - name: DB_USER
+              valueFrom: {secretKeyRef: {name: api-db, key: DB_USER}}
+            - name: DB_PASSWORD
+              valueFrom: {secretKeyRef: {name: api-db, key: DB_PASSWORD}}
+            - name: DATABASE_URL
+              value: postgresql+psycopg://$(DB_USER):$(DB_PASSWORD)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)
+          readinessProbe:
+            httpGet: {path: /ready, port: http}
+            periodSeconds: 5
+            timeoutSeconds: 5
+          livenessProbe:
+            httpGet: {path: /health, port: http}
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            timeoutSeconds: 5
+          # no resources block at all. (Setting only limits is NOT enough to break it:
+          # the API server then defaults requests = limits and the HPA works.)
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: api
+  namespace: tb-debug
+spec:
+  scaleTargetRef: {apiVersion: apps/v1, kind: Deployment, name: api}
+  minReplicas: 1
+  maxReplicas: 3
+  metrics:
+    - type: Resource
+      resource: {name: cpu, target: {type: Utilization, averageUtilization: 50}}

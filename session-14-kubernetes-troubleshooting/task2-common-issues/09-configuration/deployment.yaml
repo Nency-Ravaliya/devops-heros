@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notification-svc
+  namespace: task2
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: notification-svc
+  template:
+    metadata:
+      labels:
+        app: notification-svc
+    spec:
+      containers:
+        - name: app
+          image: busybox:1.36
+          command: ["sh", "-c", "echo sending mail via $SMTP_HOST:$SMTP_PORT; while true; do sleep 30; done"]
+          env:
+            - name: SMTP_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: notification-config
+                  key: SMTP_HOST
+            - name: SMTP_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: notification-config
+                  key: SMTP_PORT

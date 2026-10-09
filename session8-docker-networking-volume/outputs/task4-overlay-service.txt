@@ -1,0 +1,13 @@
+=== Deploy a replicated service on the overlay network ===
+verify: Waiting 1 seconds to verify that tasks are stable...
+verify: Waiting 1 seconds to verify that tasks are stable...
+verify: Service cz74y9j311x9ekl019xope7h8 converged
+
+=== Service replicas ===
+ID             NAME      MODE         REPLICAS   IMAGE          PORTS
+cz74y9j311x9   web-svc   replicated   3/3        nginx:alpine   
+
+NAME        NODE             CURRENT STATE
+web-svc.1   docker-desktop   Running 17 seconds ago
+web-svc.2   docker-desktop   Running 17 seconds ago
+web-svc.3   docker-desktop   Running 17 seconds ago

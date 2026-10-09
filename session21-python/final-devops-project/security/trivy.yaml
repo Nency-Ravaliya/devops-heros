@@ -1,0 +1,16 @@
+# Trivy configuration — container image gate
+#   trivy --config security/trivy.yaml image taskboard-backend:1.0.0
+# Policy: fail (exit 1) on any HIGH or CRITICAL vulnerability that already has a fix,
+# and on any secret baked into an image layer.
+severity:
+  - HIGH
+  - CRITICAL
+exit-code: 1
+scan:
+  scanners:
+    - vuln
+    - secret
+vulnerability:
+  # Unfixed OS CVEs (status "affected"/"will_not_fix") can't be remediated by us — report, don't block.
+  ignore-unfixed: true
+ignorefile: security/.trivyignore

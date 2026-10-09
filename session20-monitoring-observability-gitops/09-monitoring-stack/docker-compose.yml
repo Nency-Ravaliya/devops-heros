@@ -1,0 +1,87 @@
+name: s20-monitoring
+
+services:
+  demo-app:
+    build: ./app
+    image: s20-demo-app:1.0.0
+    container_name: s20-demo-app
+    ports:
+      - "8000:8000"
+    environment:
+      APP_VERSION: "1.0.0"
+    mem_limit: 384m
+    # memswap = mem -> no swap for this container. The Docker VM is small and
+    # under pressure, so without this the kernel swaps the "leaked" pages out
+    # and RSS (what the HighMemoryUsage alert watches) drops again.
+    memswap_limit: 384m
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:v3.5.0
+    container_name: s20-prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.retention.time=1d
+      - --web.enable-lifecycle
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus/alert-rules.yml:/etc/prometheus/alert-rules.yml:ro
+    mem_limit: 384m
+    depends_on: [demo-app, node-exporter, alertmanager]
+
+  alertmanager:
+    image: prom/alertmanager:v0.28.1
+    container_name: s20-alertmanager
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+    mem_limit: 128m
+    depends_on: [alert-webhook]
+
+  # Fake "Slack/PagerDuty": just prints the notifications Alertmanager sends.
+  alert-webhook:
+    image: python:3.12-slim
+    container_name: s20-alert-webhook
+    command: ["python", "-u", "/receiver.py"]
+    volumes:
+      - ./webhook/receiver.py:/receiver.py:ro
+    mem_limit: 64m
+
+  node-exporter:
+    image: prom/node-exporter:v1.9.1
+    container_name: s20-node-exporter
+    command:
+      - --path.procfs=/host/proc
+      - --path.sysfs=/host/sys
+      - --collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+    pid: host
+    mem_limit: 64m
+
+  grafana:
+    image: grafana/grafana:12.1.1
+    container_name: s20-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+      GF_PLUGINS_PREINSTALL_DISABLED: "true"
+      # SQLite tweaks: avoid "database is locked" on a busy/slow laptop
+      GF_DATABASE_WAL: "true"
+      GF_DATABASE_QUERY_RETRIES: "10"
+      GF_DATABASE_TRANSACTION_RETRIES: "20"
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    mem_limit: 448m
+    restart: unless-stopped
+    depends_on: [prometheus]

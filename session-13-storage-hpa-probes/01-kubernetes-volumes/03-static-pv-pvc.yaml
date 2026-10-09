@@ -1,0 +1,42 @@
+# Static provisioning: the admin creates the PV, the user claims it with a PVC.
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: student-pv
+spec:
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: manual
+  hostPath:
+    path: /tmp/student-data
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: student-pvc
+spec:
+  storageClassName: manual
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 500Mi
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: storage-demo
+spec:
+  containers:
+    - name: app
+      image: nginx:1.27
+      volumeMounts:
+        - name: persistent-storage
+          mountPath: /data
+  volumes:
+    - name: persistent-storage
+      persistentVolumeClaim:
+        claimName: student-pvc

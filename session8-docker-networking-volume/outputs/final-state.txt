@@ -1,0 +1,23 @@
+=== All session-8 containers ===
+NAMES              IMAGE          STATUS              PORTS                                     NETWORKS
+overlay-client     nginx:alpine   Up 9 seconds        80/tcp                                    app-overlay
+nginx-bind         nginx:alpine   Up About a minute   0.0.0.0:8091->80/tcp, [::]:8091->80/tcp   bridge
+apache-published   httpd:2.4      Up About a minute   0.0.0.0:8095->80/tcp, [::]:8095->80/tcp   bridge
+apache-host        httpd:2.4      Up 2 minutes                                                  host
+database           mysql:8.0      Up 3 minutes        3306/tcp, 33060/tcp                       database-net
+backend            nginx:alpine   Up 4 minutes        80/tcp                                    frontend-net,database-net
+frontend           nginx:alpine   Up 4 minutes        0.0.0.0:8090->80/tcp, [::]:8090->80/tcp   frontend-net
+hello-apache       hello-apache   Up 24 minutes       0.0.0.0:8081->80/tcp, [::]:8081->80/tcp   bridge
+
+=== All networks ===
+NETWORK ID     NAME              DRIVER    SCOPE
+jpkcclmowiw7   app-overlay       overlay   swarm
+3f4b4042dd44   backend-net       bridge    local
+4abbd666f7b2   bridge            bridge    local
+6545d9477177   database-net      bridge    local
+e9a89b4e1a89   docker_default    bridge    local
+741fdae971e3   docker_gwbridge   bridge    local
+2ce3f29c0e33   frontend-net      bridge    local
+0d6ab4e6fcff   host              host      local
+hyoustejowfr   ingress           overlay   swarm
+349dad335bff   none              null      local

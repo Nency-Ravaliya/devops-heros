@@ -1,0 +1,31 @@
+=== Container start time + restart count BEFORE edit ===
+StartedAt:     2026-09-02T18:49:58.868854544Z
+RestartCount:  0
+
+=== Modifying index.html on the macOS host (container untouched) ===
+done.
+
+=== Re-fetch immediately: curl http://localhost:8091 ===
+<!DOCTYPE html>
+<html>
+<head><title>Bind Mount Demo - Updated</title></head>
+<body>
+  <h1>Hello students - this file was MODIFIED on the host</h1>
+  <p>Bind mounts propagate host changes live, with no container restart.</p>
+</body>
+</html>
+
+=== Container start time + restart count AFTER edit (unchanged) ===
+StartedAt:     2026-09-02T18:49:58.868854544Z
+RestartCount:  0
+Status: Up 15 seconds
+
+=== Same file seen from inside the container ===
+<!DOCTYPE html>
+<html>
+<head><title>Bind Mount Demo - Updated</title></head>
+<body>
+  <h1>Hello students - this file was MODIFIED on the host</h1>
+  <p>Bind mounts propagate host changes live, with no container restart.</p>
+</body>
+</html>

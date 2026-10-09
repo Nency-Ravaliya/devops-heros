@@ -1,0 +1,10 @@
+[flake8]
+# Lint config used locally and in CI:  flake8
+max-line-length = 160
+max-complexity = 10
+exclude = .venv,venv,__pycache__,.pytest_cache,alembic/versions,build,dist
+per-file-ignores =
+    # tests set DATABASE_URL before importing the app on purpose
+    tests/*.py:E402
+    # alembic env imports models only to register them on the metadata
+    alembic/env.py:F401

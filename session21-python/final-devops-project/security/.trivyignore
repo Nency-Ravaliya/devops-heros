@@ -1,0 +1,3 @@
+# Accepted risks — one CVE id per line, each with an owner, reason and review date.
+# Example:
+# CVE-2026-00000   # owner: platform-team, reason: not reachable (no shell in runtime), review: 2026-12-31

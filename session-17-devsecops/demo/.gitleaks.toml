@@ -1,0 +1,23 @@
+# Gitleaks (secret scanning) configuration
+title = "session-17-devsecops gitleaks config"
+
+# Start from Gitleaks' built-in ruleset (AWS keys, GitHub tokens, private keys, generic API keys, ...)
+[extend]
+useDefault = true
+
+# Project-specific rule: anything that looks like DEMO_API_KEY=<value> must never be committed
+[[rules]]
+id = "session17-demo-api-key"
+description = "Session 17 demo API key"
+regex = '''(?i)demo_api_key\s*[:=]\s*['"]?([a-z0-9_\-]{16,})['"]?'''
+secretGroup = 1
+keywords = ["demo_api_key"]
+
+# Paths that can never contain real secrets
+[allowlist]
+description = "Generated / third-party files"
+paths = [
+  '''(^|/)screenshots/''',
+  '''(^|/)reports/''',
+  '''\.coverage$''',
+]

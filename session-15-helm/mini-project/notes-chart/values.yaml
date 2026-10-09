@@ -3,11 +3,22 @@ replicaCount: 1
 image:
   repository: nginx
   tag: "1.24"
+  pullPolicy: IfNotPresent
 
 service:
+  type: NodePort
   port: 80
   nodePort: 30090
 
 app:
   name: notes-app
   environment: development
+  message: "Welcome to the Notes App"
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 32Mi
+  limits:
+    cpu: 200m
+    memory: 128Mi

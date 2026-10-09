@@ -1,0 +1,8 @@
+# Bandit (SAST) configuration — used by:  bandit -c bandit.yaml -r app
+# The pipeline gate fails on MEDIUM+ severity with MEDIUM+ confidence (-ll -ii).
+exclude_dirs:
+  - tests
+  - .venv
+  - venv
+# No checks are skipped: fix the finding, or justify it inline with `# nosec BXXX`.
+skips: []

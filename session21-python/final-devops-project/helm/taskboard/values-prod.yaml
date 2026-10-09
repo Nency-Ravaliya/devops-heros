@@ -1,0 +1,41 @@
+# Prod-like: registry images, HA replicas, HPA, TLS ingress, external secret, monitoring on.
+backend:
+  image:
+    repository: ghcr.io/jenyyy4/taskboard-backend
+    tag: "86cb243959fcc953e9cd538ec4e02b91288ba4d1"
+    pullPolicy: IfNotPresent
+  resources:
+    requests: {cpu: 250m, memory: 256Mi}
+    limits: {cpu: "1", memory: 512Mi}
+frontend:
+  image:
+    repository: ghcr.io/jenyyy4/taskboard-frontend
+    tag: "86cb243959fcc953e9cd538ec4e02b91288ba4d1"
+  replicaCount: 2
+postgres:
+  auth:
+    password: ""                       # never committed for prod
+    existingSecret: taskboard-db-prod  # created by External Secrets / Sealed Secrets
+  persistence:
+    size: 10Gi
+  resources:
+    requests: {cpu: 250m, memory: 512Mi}
+    limits: {cpu: "1", memory: 1Gi}
+ingress:
+  host: taskboard.example.com
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt
+  tls:
+    - secretName: taskboard-tls
+      hosts: [taskboard.example.com]
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 6
+  targetCPUUtilizationPercentage: 60
+config:
+  logLevel: warning
+serviceMonitor:
+  enabled: true
+prometheusRule:
+  enabled: true

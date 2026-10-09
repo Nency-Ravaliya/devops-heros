@@ -1,0 +1,40 @@
+# Same busybox "log generator" as 02-metrics-logs-traces/k8s-demo/deployment.yaml,
+# placed in the monitoring-demo namespace and given small resource requests/limits
+# so that `kubectl top` / the scheduler have something to compare against.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: session20-demo
+  namespace: monitoring-demo
+  labels:
+    app: session20-demo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: session20-demo
+  template:
+    metadata:
+      labels:
+        app: session20-demo
+    spec:
+      containers:
+        - name: app
+          image: busybox:1.36
+          command:
+            - /bin/sh
+            - -c
+            - |
+              echo "Session 20 observability demo started"
+              while true; do
+                echo "Request received"
+                echo "Health check OK"
+                sleep 10
+              done
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+            limits:
+              cpu: 50m
+              memory: 32Mi

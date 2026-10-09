@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: landing-page
+  namespace: task2
+  labels:
+    app: landing-page
+spec:
+  containers:
+    - name: nginx
+      image: nginx:1.27
+      ports:
+        - containerPort: 80
+      volumeMounts:
+        - name: site
+          mountPath: /usr/share/nginx/html
+  volumes:
+    - name: site
+      configMap:
+        # BUG: this ConfigMap was never created -> kubelet can't mount the volume
+        name: landing-page-html

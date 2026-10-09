@@ -1,0 +1,13 @@
+apiVersion: v2
+name: taskboard
+description: TaskBoard (FastAPI + React + PostgreSQL) - Session 21 DevOps capstone
+type: application
+version: 1.1.0          # chart version (bump on every chart change)
+appVersion: "1.0.0"     # default application image tag
+kubeVersion: ">=1.25.0-0"
+keywords: [taskboard, fastapi, react, postgresql, devops]
+home: https://github.com/jenyyy4/devops-heros
+sources:
+  - https://github.com/jenyyy4/devops-heros/tree/main/session21-python/final-devops-project
+maintainers:
+  - name: jenyyy4

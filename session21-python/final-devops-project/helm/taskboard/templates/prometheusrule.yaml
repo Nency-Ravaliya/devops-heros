@@ -1,0 +1,38 @@
+{{- if .Values.prometheusRule.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ include "taskboard.fullname" . }}-alerts
+  labels:
+    {{- include "taskboard.labels" . | nindent 4 }}
+    {{- with .Values.prometheusRule.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  groups:
+    - name: taskboard.rules
+      rules:
+        - alert: TaskBoardBackendDown
+          expr: absent(up{namespace="{{ .Release.Namespace }}", service="{{ .Values.backend.service.name }}"} == 1)
+          for: 1m
+          labels: {severity: critical}
+          annotations:
+            summary: "TaskBoard backend is down"
+            description: "No healthy backend target has been scraped in {{ .Release.Namespace }} for 1 minute."
+        - alert: TaskBoardHighErrorRate
+          expr: |
+            (sum(rate(http_requests_total{namespace="{{ .Release.Namespace }}", status="5xx"}[5m])) or vector(0))
+              / clamp_min(sum(rate(http_requests_total{namespace="{{ .Release.Namespace }}"}[5m])), 1e-9)
+              > {{ .Values.prometheusRule.errorRateThreshold }}
+          for: 5m
+          labels: {severity: warning}
+          annotations:
+            summary: "TaskBoard backend 5xx rate above {{ mulf .Values.prometheusRule.errorRateThreshold 100 }}%"
+        - alert: TaskBoardHighLatencyP95
+          expr: |
+            histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket{namespace="{{ .Release.Namespace }}"}[5m]))) > 0.5
+          for: 5m
+          labels: {severity: warning}
+          annotations:
+            summary: "TaskBoard p95 latency above 500ms"
+{{- end }}

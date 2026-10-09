@@ -1,0 +1,19 @@
+# hostPath mounts a directory from the node's filesystem into the Pod.
+# The data lives on the node, so it survives Pod deletion (as long as the Pod lands on the same node).
+apiVersion: v1
+kind: Pod
+metadata:
+  name: hostpath-demo
+spec:
+  containers:
+    - name: app
+      image: busybox:1.36
+      command: ["/bin/sh", "-c", "sleep 3600"]
+      volumeMounts:
+        - name: host-storage
+          mountPath: /data
+  volumes:
+    - name: host-storage
+      hostPath:
+        path: /tmp/hostpath-data
+        type: DirectoryOrCreate

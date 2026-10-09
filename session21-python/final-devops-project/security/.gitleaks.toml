@@ -1,0 +1,39 @@
+# Gitleaks (secret scanning) configuration
+#   gitleaks dir . --config security/.gitleaks.toml
+title = "taskboard (session 21 capstone) gitleaks config"
+
+# Start from Gitleaks' built-in rules (AWS keys, GitHub/GitLab tokens, private keys, Slack, Stripe, JWT, ...)
+[extend]
+useDefault = true
+
+# Project rule: a database URL that embeds a real password, e.g.
+#   postgresql+psycopg://user:S3cr3t!@db.prod:5432/taskboard
+[[rules]]
+id = "taskboard-database-url-password"
+description = "Database connection string with an embedded password"
+regex = '''(?i)\b(?:postgres(?:ql)?|mysql|mariadb|mongodb(?:\+srv)?)(?:\+[a-z0-9]+)?://[^:/\s'"@]+:([^@\s'"]{4,})@[^\s'"]+'''
+secretGroup = 1
+keywords = ["postgres", "mysql", "mariadb", "mongodb"]
+
+  # The well-known local-dev credential (docker compose / tests) and env-var placeholders are fine.
+  [[rules.allowlists]]
+  regexTarget = "secret"
+  regexes = [
+    '''^taskboard$''',
+    '''^\$\{[A-Z_]+(:-[^}]*)?\}$''',
+    '''^\$\([A-Z_]+\)$''',
+  ]
+
+# Paths that never contain real secrets (dependencies, build output, reports, images)
+[allowlist]
+description = "Third-party, generated and binary files"
+paths = [
+  '''(^|/)node_modules/''',
+  '''(^|/)\.venv/''',
+  '''(^|/)dist/''',
+  '''(^|/)reports/''',
+  '''(^|/)screenshots/''',
+  '''(^|/)\.terraform/''',
+  '''package-lock\.json$''',
+  '''\.coverage$''',
+]

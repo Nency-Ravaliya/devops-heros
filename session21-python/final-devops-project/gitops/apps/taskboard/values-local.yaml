@@ -1,0 +1,23 @@
+# Environment values for the LOCAL minikube GitOps environment.
+# Read by gitops/argocd-application.yaml on top of helm/taskboard/values.yaml.
+# GitOps rule: change the cluster by committing to THIS file, never with kubectl.
+backend:
+  image:
+    repository: taskboard-backend      # built into minikube (minikube image load)
+    tag: "1.1.0"                       # CD bumps .backend.image.tag
+frontend:
+  image:
+    repository: taskboard-frontend
+    tag: "1.0.0"                       # CD bumps .frontend.image.tag
+  replicaCount: 1
+autoscaling:
+  enabled: true
+  minReplicas: 1
+  maxReplicas: 3
+ingress:
+  enabled: true
+  host: taskboard.local
+config:
+  logLevel: info
+serviceMonitor:
+  enabled: false     # this cluster runs plain Prometheus (annotation scraping), no operator CRDs

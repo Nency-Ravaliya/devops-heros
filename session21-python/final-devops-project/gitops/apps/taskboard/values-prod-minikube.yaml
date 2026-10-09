@@ -1,0 +1,27 @@
+# Overrides that let the PROD values run on the laptop minikube cluster.
+# Read by gitops/argocd-application-github.yaml AFTER values-prod.yaml, so the image
+# repository + tag still come from values-prod.yaml (the file the CD workflow bumps).
+# Only infrastructure the laptop does not have is switched off / scaled down here.
+backend:
+  resources:
+    requests: {cpu: 100m, memory: 128Mi}
+    limits: {cpu: 500m, memory: 384Mi}
+frontend:
+  replicaCount: 1
+postgres:
+  persistence:
+    size: 1Gi                 # prod asks 10Gi
+  resources:
+    requests: {cpu: 100m, memory: 128Mi}
+    limits: {cpu: 500m, memory: 512Mi}
+ingress:
+  host: taskboard-prod.local
+  annotations: {}             # no cert-manager on minikube
+  tls: []
+autoscaling:
+  minReplicas: 1
+  maxReplicas: 3
+serviceMonitor:
+  enabled: false              # plain Prometheus here (annotation scraping), no operator CRDs
+prometheusRule:
+  enabled: false

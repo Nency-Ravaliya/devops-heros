@@ -1,0 +1,4 @@
+  PID TTY           TIME CMD
+56468 ttys001    0:00.11 /bin/zsh -i
+59834 ttys002    0:00.15 /bin/zsh -il
+60727 ttys002    0:00.01 sh ./task1.sh

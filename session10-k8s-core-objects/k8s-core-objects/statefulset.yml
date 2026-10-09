@@ -15,12 +15,21 @@ spec:
     spec:
       containers:
         - name: mysql
-          image: mysql:5.7
+          image: mysql:8.0
           ports:
             - containerPort: 3306
           env:
             - name: MYSQL_ROOT_PASSWORD
               value: "password"
+          readinessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - mysqladmin ping -uroot -ppassword
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            failureThreshold: 10
           volumeMounts:
             - name: mysql-persistent-storage
               mountPath: /var/lib/mysql

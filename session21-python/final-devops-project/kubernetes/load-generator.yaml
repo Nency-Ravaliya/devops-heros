@@ -1,0 +1,21 @@
+# Not part of kustomization.yaml - applied manually to demo the HPA.
+#   kubectl apply -f kubernetes/load-generator.yaml   # start load
+#   kubectl -n taskboard delete pod load-generator    # stop load
+apiVersion: v1
+kind: Pod
+metadata:
+  name: load-generator
+  namespace: taskboard
+  labels: {app: load-generator}
+spec:
+  restartPolicy: Never
+  containers:
+    - name: load
+      image: busybox:1.36
+      command: ["/bin/sh", "-c"]
+      # 6 parallel loops hitting an endpoint that does a DB query (burns backend CPU)
+      args:
+        - for i in 1 2 3 4 5 6; do (while true; do wget -q -O- http://backend:8000/api/tasks >/dev/null 2>&1; done) & done; wait
+      resources:
+        requests: {cpu: 50m, memory: 16Mi}
+        limits: {cpu: 300m, memory: 32Mi}

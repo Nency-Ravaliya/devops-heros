@@ -1,0 +1,38 @@
+# Session 20 - Observability pillar 3: distributed TRACES
+#   frontend (host :8081)  --HTTP + traceparent-->  orders  --> db.query (simulated)
+#   both services export spans via OTLP/HTTP to Jaeger (UI :16686)
+name: s20-tracing
+
+services:
+  jaeger:
+    image: jaegertracing/all-in-one:1.62.0   # multi-arch (amd64/arm64)
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+      MEMORY_MAX_TRACES: "5000"               # in-memory storage, keep it small
+    ports:
+      - "16686:16686"   # Jaeger UI + HTTP query API
+      - "4317:4317"     # OTLP gRPC
+      - "4318:4318"     # OTLP HTTP
+    mem_limit: 256m
+
+  orders:
+    build: ./orders
+    image: s20-tracing-orders:local
+    environment:
+      OTEL_SERVICE_NAME: orders
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318
+      ERROR_RATE: "0.1"          # ~10% of requests fail randomly
+    depends_on: [jaeger]
+    mem_limit: 128m
+
+  frontend:
+    build: ./frontend
+    image: s20-tracing-frontend:local
+    environment:
+      OTEL_SERVICE_NAME: frontend
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318
+      ORDERS_URL: http://orders:8080
+    ports:
+      - "8081:8080"
+    depends_on: [orders]
+    mem_limit: 128m

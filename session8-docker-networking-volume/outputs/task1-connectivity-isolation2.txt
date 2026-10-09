@@ -1,0 +1,15 @@
+==========================================================
+TEST 5 (redone): database -> frontend  (NO shared network)
+mysql:8.0 has no ping, so using getent hosts for DNS check
+==========================================================
+-- resolving 'frontend' from database (expect: no output = fail) --
+exit code: 2
+-- control: resolving 'backend' from database (expect: success) --
+172.21.0.2      backend
+exit code: 0
+
+==========================================================
+TEST 8: real MySQL query from backend over database-net
+==========================================================
+mysql_version
+8.0.46

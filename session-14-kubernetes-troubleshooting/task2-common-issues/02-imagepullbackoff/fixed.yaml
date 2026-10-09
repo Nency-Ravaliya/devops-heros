@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: frontend
+  namespace: task2
+  labels:
+    app: frontend
+spec:
+  containers:
+    - name: nginx
+      # FIX: correct, existing tag
+      image: nginx:1.27
+      ports:
+        - containerPort: 80

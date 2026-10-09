@@ -1,0 +1,3 @@
+# Security tooling used by security/run-security-scans.sh and the CI pipeline (SAST + SCA).
+bandit[sarif]==1.9.4
+pip-audit==2.10.1

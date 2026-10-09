@@ -1,0 +1,3 @@
+# Accepted risks for Trivy, one ID per line, each with an owner, reason and expiry, e.g.
+#   CVE-2099-0001  # owner: @jenyyy4, reason: not reachable (no TLS in app), expires: 2026-12-31
+# Currently empty — nothing is waived.

@@ -1,0 +1,35 @@
+# REAL-WORLD version: Argo CD tracks the GitHub repo (applied to minikube in namespace taskboard-prod).
+# The CD workflow builds/pushes images to GHCR and commits the new tag into
+# helm/taskboard/values-prod.yaml (.backend.image.tag / .frontend.image.tag);
+# Argo CD notices the commit and rolls the cluster forward - no kubectl in CI.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: taskboard-prod
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: taskboard
+  source:
+    repoURL: https://github.com/jenyyy4/devops-heros.git
+    targetRevision: main
+    path: session21-python/final-devops-project/helm/taskboard
+    helm:
+      releaseName: taskboard
+      valueFiles:
+        - values.yaml
+        - values-prod.yaml
+        - ../../gitops/apps/taskboard/values-prod-minikube.yaml   # laptop-only overrides (drop on EKS)
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: taskboard-prod
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: 5
+      backoff: {duration: 10s, factor: 2, maxDuration: 3m}

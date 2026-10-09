@@ -1,0 +1,18 @@
+route:
+  receiver: webhook
+  group_by: ["alertname"]
+  group_wait: 5s        # wait before sending the first notification of a group
+  group_interval: 10s   # wait before sending updates for a group
+  repeat_interval: 1h   # re-send a still-firing alert after this long
+
+receivers:
+  - name: webhook
+    webhook_configs:
+      # In real life: Slack, PagerDuty, email, Opsgenie...
+      - url: http://alert-webhook:5001/
+        send_resolved: true
+
+inhibit_rules:
+  # If the app is down, don't also page for its error rate / latency.
+  - source_matchers: [alertname="DemoAppDown"]
+    target_matchers: [alertname=~"HighErrorRate|HighLatencyP95"]

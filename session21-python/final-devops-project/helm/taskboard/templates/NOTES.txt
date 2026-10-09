@@ -1,0 +1,23 @@
+TaskBoard {{ .Chart.AppVersion }} deployed as release "{{ .Release.Name }}" in namespace "{{ .Release.Namespace }}".
+
+Backend image : {{ include "taskboard.backendImage" . }}
+Frontend image: {{ include "taskboard.frontendImage" . }}
+Backend replicas: {{ if .Values.autoscaling.enabled }}HPA {{ .Values.autoscaling.minReplicas }}-{{ .Values.autoscaling.maxReplicas }} @ {{ .Values.autoscaling.targetCPUUtilizationPercentage }}% CPU{{ else }}{{ .Values.backend.replicaCount }}{{ end }}
+
+1. Check the rollout:
+   kubectl -n {{ .Release.Namespace }} get pods,svc,ingress,pvc -l app.kubernetes.io/instance={{ .Release.Name }}
+
+{{- if .Values.ingress.enabled }}
+2. Open the app via the ingress (host {{ .Values.ingress.host }}):
+   # minikube + docker driver on macOS:
+   kubectl -n ingress-nginx port-forward svc/ingress-nginx-controller 8080:80 &
+   curl --resolve {{ .Values.ingress.host }}:8080:127.0.0.1 http://{{ .Values.ingress.host }}:8080/api/tasks
+{{- else }}
+2. Port-forward the frontend:
+   kubectl -n {{ .Release.Namespace }} port-forward svc/{{ include "taskboard.fullname" . }}-frontend 8080:{{ .Values.frontend.service.port }}
+{{- end }}
+
+3. Smoke test: helm test {{ .Release.Name }} -n {{ .Release.Namespace }}
+{{- if .Values.serviceMonitor.enabled }}
+4. Prometheus scrapes /metrics through ServiceMonitor {{ include "taskboard.fullname" . }}-backend.
+{{- end }}

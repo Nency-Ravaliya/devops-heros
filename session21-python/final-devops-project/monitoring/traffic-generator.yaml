@@ -1,0 +1,25 @@
+# Gentle, steady traffic so the dashboard / PromQL queries have data (~6 req/s).
+#   kubectl apply -f monitoring/traffic-generator.yaml ; kubectl -n taskboard delete pod traffic-generator
+apiVersion: v1
+kind: Pod
+metadata:
+  name: traffic-generator
+  namespace: taskboard
+  labels: {app: traffic-generator}
+spec:
+  restartPolicy: Never
+  containers:
+    - name: traffic
+      image: busybox:1.36
+      command: ["/bin/sh", "-c"]
+      args:
+        - |
+          while true; do
+            wget -q -O- http://backend:8000/api/tasks >/dev/null 2>&1
+            wget -q -O- http://backend:8000/api/tasks/stats >/dev/null 2>&1
+            wget -q -O- http://backend:8000/api/tasks/99999 >/dev/null 2>&1   # 404 on purpose
+            sleep 0.5
+          done
+      resources:
+        requests: {cpu: 5m, memory: 8Mi}
+        limits: {cpu: 50m, memory: 16Mi}

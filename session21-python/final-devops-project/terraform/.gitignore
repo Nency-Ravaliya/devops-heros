@@ -1,0 +1,12 @@
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+tfplan
+crash.log
+terraform.tfvars
+*.auto.tfvars
+override.tf
+*_override.tf
+# keep the provider lock files
+!.terraform.lock.hcl

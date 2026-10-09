@@ -342,3 +342,12 @@ Students should remember this:
 * Troubleshoot Services
 * Test Kubernetes DNS
 * Identify root causes instead of guessing
+---
+
+## Assignment Deliverables (executed on Minikube, with real terminal screenshots)
+
+| Task | Folder | Contents |
+| --- | --- | --- |
+| Task 1: Kubernetes commands | [`task1-kubectl-commands/`](task1-kubectl-commands/README.md) | `get`, `get -o wide`, `describe`, `logs`, `exec`, `events`, `explain`, `top`; 16 screenshots |
+| Task 2: Troubleshoot common issues | [`task2-common-issues/`](task2-common-issues/README.md) | CrashLoopBackOff, ImagePullBackOff, ErrImagePull, Pending, ContainerCreating, Service connectivity, DNS, Pod networking, Configuration: identify → investigate → root cause → fix → verify, broken/fixed manifests; 40 screenshots |
+| Task 3: Mini project | [`task3-mini-project/`](task3-mini-project/README.md) | "ShopEasy is down": 2-tier app with 4 layered faults, problem statement, investigation, root causes, fixes, before/after; 13 screenshots |

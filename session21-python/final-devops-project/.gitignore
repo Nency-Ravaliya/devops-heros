@@ -1,0 +1,10 @@
+.venv/
+__pycache__/
+.pytest_cache/
+.coverage
+node_modules/
+dist/
+.terraform/
+*.tfstate*
+security/reports/
+.DS_Store
