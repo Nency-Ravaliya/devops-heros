@@ -1,0 +1,4 @@
+    PID TTY          TIME CMD
+ 278902 pts/0    00:00:00 zsh
+ 287681 pts/0    00:00:00 task.sh
+ 287686 pts/0    00:00:00 ps
