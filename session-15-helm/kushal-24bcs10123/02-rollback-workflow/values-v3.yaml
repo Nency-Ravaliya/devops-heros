@@ -1,0 +1,5 @@
+# revision 3 - second upgrade: three pods on nginx 1.26
+replicaCount: 3
+image:
+  repository: nginx
+  tag: "1.26"

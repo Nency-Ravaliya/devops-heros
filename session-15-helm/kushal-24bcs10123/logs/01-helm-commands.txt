@@ -1,0 +1,342 @@
+
+############ helm version / helm env ############
+
+$ helm version
+version.BuildInfo{Version:"v4.3.0", GitCommit:"bec5b06ed841fe5269972d864d5177944fd5970f", GitTreeState:"clean", GoVersion:"go1.27.1", KubeClientVersion:"v1.37"}
+
+$ helm env | grep -E 'HELM_NAMESPACE|HELM_REPOSITORY_CONFIG|HELM_CACHE_HOME'
+HELM_CACHE_HOME="/Users/kushalscaler/Library/Caches/helm"
+HELM_NAMESPACE="s15-helm"
+HELM_REPOSITORY_CONFIG="/Users/kushalscaler/Library/Preferences/helm/repositories.yaml"
+
+############ helm repo - add, update, list ############
+
+$ helm repo add bitnami https://charts.bitnami.com/bitnami
+"bitnami" already exists with the same configuration, skipping
+
+$ helm repo update
+Hang tight while we grab the latest from your chart repositories...
+...Successfully got an update from the "argo" chart repository
+...Successfully got an update from the "prometheus-community" chart repository
+...Successfully got an update from the "bitnami" chart repository
+Update Complete. ⎈Happy Helming!⎈
+
+$ helm repo list
+NAME                	URL                                               
+prometheus-community	https://prometheus-community.github.io/helm-charts
+argo                	https://argoproj.github.io/argo-helm              
+bitnami             	https://charts.bitnami.com/bitnami                
+
+############ helm search - repo (local index) vs hub (Artifact Hub) ############
+
+$ helm search repo nginx --max-col-width 60 | head -8
+NAME                                          	CHART VERSION	APP VERSION	DESCRIPTION                                                 
+bitnami/nginx                                 	25.2.1       	1.31.6     	NGINX Open Source is a web server that can be also used a...
+bitnami/nginx-ingress-controller              	12.0.7       	1.13.1     	NGINX Ingress Controller is an Ingress controller that ma...
+bitnami/nginx-intel                           	2.1.15       	0.4.9      	DEPRECATED NGINX Open Source for Intel is a lightweight s...
+prometheus-community/prometheus-nginx-exporter	1.23.1       	1.5.3      	A Helm chart for NGINX Prometheus Exporter                  
+
+$ helm search repo prometheus-community/kube-prometheus-stack --versions | head -4
+NAME                                      	CHART VERSION	APP VERSION	DESCRIPTION                                       
+prometheus-community/kube-prometheus-stack	92.1.0       	v0.94.1    	kube-prometheus-stack collects Kubernetes manif...
+prometheus-community/kube-prometheus-stack	92.0.0       	v0.94.1    	kube-prometheus-stack collects Kubernetes manif...
+prometheus-community/kube-prometheus-stack	91.9.0       	v0.94.1    	kube-prometheus-stack collects Kubernetes manif...
+
+$ helm search hub nginx --max-col-width 55 | head -8
+URL                                                    	CHART VERSION  	APP VERSION                                     	DESCRIPTION                                            
+https://artifacthub.io/packages/helm/cloudpirates-ng...	0.16.12        	1.31.6                                          	Nginx is a high-performance HTTP server and reverse ...
+https://artifacthub.io/packages/helm/quench-nginx/nginx	0.0.15         	1.30.5                                          	High-performance web server, reverse proxy, and load...
+https://artifacthub.io/packages/helm/krakazyabra/nginx 	1.0.0          	1.19.0                                          	Nginx Helm chart for Kubernetes                        
+https://artifacthub.io/packages/helm/dhinesh/nginx     	25.2.1         	1.31.6                                          	NGINX Open Source is a web server that can be also u...
+https://artifacthub.io/packages/helm/bitnami/nginx     	25.2.1         	1.31.6                                          	NGINX Open Source is a web server that can be also u...
+https://artifacthub.io/packages/helm/niceos/nginx      	1.31.1+niceos.2	1.31.1                                          	Bitnami-compatible NGINX Helm chart for NiceOS         
+https://artifacthub.io/packages/helm/bitnami-aks/nginx 	13.2.12        	1.23.2                                          	NGINX Open Source is a web server that can be also u...
+
+############ helm create - scaffold a new chart ############
+
+$ helm create demo-chart
+Creating demo-chart
+
+$ find demo-chart -type f | sort
+demo-chart/.helmignore
+demo-chart/Chart.yaml
+demo-chart/templates/_helpers.tpl
+demo-chart/templates/deployment.yaml
+demo-chart/templates/hpa.yaml
+demo-chart/templates/httproute.yaml
+demo-chart/templates/ingress.yaml
+demo-chart/templates/NOTES.txt
+demo-chart/templates/service.yaml
+demo-chart/templates/serviceaccount.yaml
+demo-chart/templates/tests/test-connection.yaml
+demo-chart/values.yaml
+
+$ cat demo-chart/Chart.yaml
+apiVersion: v2
+name: demo-chart
+description: A Helm chart for Kubernetes
+
+# A chart can be either an 'application' or a 'library' chart.
+#
+# Application charts are a collection of templates that can be packaged into versioned archives
+# to be deployed.
+#
+# Library charts provide useful utilities or functions for the chart developer. They're included as
+# a dependency of application charts to inject those utilities and functions into the rendering
+# pipeline. Library charts do not define any templates and therefore cannot be deployed.
+type: application
+
+# This is the chart version. This version number should be incremented each time you make changes
+# to the chart and its templates, including the app version.
+# Versions are expected to follow Semantic Versioning (https://semver.org/)
+version: 0.1.0
+
+# This is the version number of the application being deployed. This version number should be
+# incremented each time you make changes to the application. Versions are not expected to
+# follow Semantic Versioning. They should reflect the version the application is using.
+# It is recommended to use it with quotes.
+appVersion: "1.16.0"
+
+$ grep -nE '^(replicaCount|image:|  repository|  tag|service:|  type|  port)' demo-chart/values.yaml
+6:replicaCount: 1
+9:image:
+10:  repository: nginx
+14:  tag: ""
+53:service:
+55:  type: ClusterIP
+57:  port: 80
+
+############ helm lint / helm template / helm show - all without touching the cluster ############
+
+$ helm lint demo-chart
+==> Linting demo-chart
+[INFO] Chart.yaml: icon is recommended
+
+1 chart(s) linted, 0 chart(s) failed
+
+$ helm template demo demo-chart --set image.tag=1.27-alpine | grep -E '^(kind:|  name:|        image:|  replicas:)'
+kind: ServiceAccount
+  name: demo-demo-chart
+kind: Service
+  name: demo-demo-chart
+kind: Deployment
+  name: demo-demo-chart
+  replicas: 1
+kind: Pod
+  name: "demo-demo-chart-test-connection"
+
+$ helm show chart demo-chart
+apiVersion: v2
+appVersion: 1.16.0
+description: A Helm chart for Kubernetes
+name: demo-chart
+type: application
+version: 0.1.0
+
+
+$ helm show values demo-chart | sed -n '1,12p'
+# Default values for demo-chart.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# This will set the replicaset count more information can be found here: https://kubernetes.io/docs/concepts/workloads/controllers/replicaset/
+replicaCount: 1
+
+# This sets the container image more information can be found here: https://kubernetes.io/docs/concepts/containers/images/
+image:
+  repository: nginx
+  # This sets the pull policy for images.
+  pullPolicy: IfNotPresent
+
+############ helm package - a chart is just a .tgz ############
+
+$ helm package demo-chart
+Successfully packaged chart and saved it to: /tmp/s15-helm-99qr/demo-chart-0.1.0.tgz
+
+$ ls -la demo-chart-0.1.0.tgz && tar tzf demo-chart-0.1.0.tgz | head -5
+-rw-r--r--@ 1 kushalscaler  wheel  5027 Oct  7 23:16 demo-chart-0.1.0.tgz
+demo-chart/Chart.yaml
+demo-chart/values.yaml
+demo-chart/templates/NOTES.txt
+demo-chart/templates/_helpers.tpl
+demo-chart/templates/deployment.yaml
+
+############ helm install (from the packaged .tgz) ############
+
+$ helm install demo ./demo-chart-0.1.0.tgz --set image.tag=1.27-alpine
+NAME: demo
+LAST DEPLOYED: Wed Oct  7 23:16:53 2026
+NAMESPACE: s15-helm
+STATUS: deployed
+REVISION: 1
+DESCRIPTION: Install complete
+NOTES:
+1. Get the application URL by running these commands:
+  export POD_NAME=$(kubectl get pods --namespace s15-helm -l "app.kubernetes.io/name=demo-chart,app.kubernetes.io/instance=demo" -o jsonpath="{.items[0].metadata.name}")
+  export CONTAINER_PORT=$(kubectl get pod --namespace s15-helm $POD_NAME -o jsonpath="{.spec.containers[0].ports[0].containerPort}")
+  echo "Visit http://127.0.0.1:8080 to use your application"
+  kubectl --namespace s15-helm port-forward $POD_NAME 8080:$CONTAINER_PORT
+
+$ kubectl -n s15-helm rollout status deployment/demo-demo-chart --timeout=120s
+Waiting for deployment "demo-demo-chart" rollout to finish: 0 of 1 updated replicas are available...
+deployment "demo-demo-chart" successfully rolled out
+
+############ helm list / helm status / helm get ############
+
+$ helm list
+NAME	NAMESPACE	REVISION	UPDATED                             	STATUS  	CHART           	APP VERSION
+demo	s15-helm 	1       	2026-10-07 23:16:53.055046 +0530 IST	deployed	demo-chart-0.1.0	1.16.0     
+
+$ helm list --all-namespaces | grep -E 'NAME|demo|kube-prometheus'
+NAME                 	NAMESPACE 	REVISION	UPDATED                             	STATUS  	CHART                       	APP VERSION
+demo                 	s15-helm  	1       	2026-10-07 23:16:53.055046 +0530 IST	deployed	demo-chart-0.1.0            	1.16.0     
+kube-prometheus-stack	monitoring	1       	2026-10-07 22:32:32.179451 +0530 IST	deployed	kube-prometheus-stack-92.1.0	v0.94.1    
+
+$ helm status demo | sed -n '1,8p'
+NAME: demo
+LAST DEPLOYED: Wed Oct  7 23:16:53 2026
+NAMESPACE: s15-helm
+STATUS: deployed
+REVISION: 1
+DESCRIPTION: Install complete
+RESOURCES:
+==> v1/ServiceAccount
+
+$ helm get values demo
+USER-SUPPLIED VALUES:
+image:
+  tag: 1.27-alpine
+
+$ helm get values demo --all | sed -n '1,15p'
+COMPUTED VALUES:
+affinity: {}
+autoscaling:
+  enabled: false
+  maxReplicas: 100
+  minReplicas: 1
+  targetCPUUtilizationPercentage: 80
+fullnameOverride: ""
+httpRoute:
+  annotations: {}
+  enabled: false
+  hostnames:
+  - chart-example.local
+  parentRefs:
+  - name: gateway
+
+$ helm get manifest demo | grep -E '^(kind:|  name:|        image:)'
+kind: ServiceAccount
+  name: demo-demo-chart
+kind: Service
+  name: demo-demo-chart
+kind: Deployment
+  name: demo-demo-chart
+
+$ helm get notes demo | head -5
+NOTES:
+1. Get the application URL by running these commands:
+  export POD_NAME=$(kubectl get pods --namespace s15-helm -l "app.kubernetes.io/name=demo-chart,app.kubernetes.io/instance=demo" -o jsonpath="{.items[0].metadata.name}")
+  export CONTAINER_PORT=$(kubectl get pod --namespace s15-helm $POD_NAME -o jsonpath="{.spec.containers[0].ports[0].containerPort}")
+  echo "Visit http://127.0.0.1:8080 to use your application"
+
+$ helm get all demo | wc -l
+     190
+
+$ kubectl -n s15-helm get secret -l owner=helm -o custom-columns='NAME:.metadata.name,TYPE:.type'      # this is where helm stores each revision
+NAME                         TYPE
+sh.helm.release.v1.demo.v1   helm.sh/release.v1
+
+############ helm upgrade / helm history ############
+
+$ helm upgrade demo ./demo-chart-0.1.0.tgz --set image.tag=1.27-alpine --set replicaCount=2
+Release "demo" has been upgraded. Happy Helming!
+NAME: demo
+LAST DEPLOYED: Wed Oct  7 23:16:54 2026
+NAMESPACE: s15-helm
+STATUS: deployed
+REVISION: 2
+DESCRIPTION: Upgrade complete
+NOTES:
+1. Get the application URL by running these commands:
+  export POD_NAME=$(kubectl get pods --namespace s15-helm -l "app.kubernetes.io/name=demo-chart,app.kubernetes.io/instance=demo" -o jsonpath="{.items[0].metadata.name}")
+  export CONTAINER_PORT=$(kubectl get pod --namespace s15-helm $POD_NAME -o jsonpath="{.spec.containers[0].ports[0].containerPort}")
+  echo "Visit http://127.0.0.1:8080 to use your application"
+  kubectl --namespace s15-helm port-forward $POD_NAME 8080:$CONTAINER_PORT
+
+$ kubectl -n s15-helm rollout status deployment/demo-demo-chart --timeout=120s
+Waiting for deployment "demo-demo-chart" rollout to finish: 1 of 2 updated replicas are available...
+deployment "demo-demo-chart" successfully rolled out
+
+$ kubectl -n s15-helm get pods -l app.kubernetes.io/instance=demo
+NAME                               READY   STATUS    RESTARTS   AGE
+demo-demo-chart-6594d6bf8b-g45t4   1/1     Running   0          1s
+demo-demo-chart-6594d6bf8b-tq9km   1/1     Running   0          3s
+
+$ helm history demo
+REVISION	UPDATED                 	STATUS    	CHART           	APP VERSION	DESCRIPTION     
+1       	Wed Oct  7 23:16:53 2026	superseded	demo-chart-0.1.0	1.16.0     	Install complete
+2       	Wed Oct  7 23:16:54 2026	deployed  	demo-chart-0.1.0	1.16.0     	Upgrade complete
+
+$ helm upgrade --install demo ./demo-chart-0.1.0.tgz --set image.tag=1.27-alpine --set replicaCount=2 --reuse-values | head -3   # idempotent form used in CI
+Release "demo" has been upgraded. Happy Helming!
+NAME: demo
+LAST DEPLOYED: Wed Oct  7 23:16:56 2026
+
+############ helm rollback ############
+
+$ helm rollback demo 1
+Rollback was a success! Happy Helming!
+
+$ kubectl -n s15-helm rollout status deployment/demo-demo-chart --timeout=120s
+deployment "demo-demo-chart" successfully rolled out
+
+$ kubectl -n s15-helm get pods -l app.kubernetes.io/instance=demo
+NAME                               READY   STATUS        RESTARTS   AGE
+demo-demo-chart-6594d6bf8b-g45t4   1/1     Terminating   0          1s
+demo-demo-chart-6594d6bf8b-tq9km   1/1     Running       0          3s
+
+$ helm history demo
+REVISION	UPDATED                 	STATUS    	CHART           	APP VERSION	DESCRIPTION     
+1       	Wed Oct  7 23:16:53 2026	superseded	demo-chart-0.1.0	1.16.0     	Install complete
+2       	Wed Oct  7 23:16:54 2026	superseded	demo-chart-0.1.0	1.16.0     	Upgrade complete
+3       	Wed Oct  7 23:16:56 2026	superseded	demo-chart-0.1.0	1.16.0     	Upgrade complete
+4       	Wed Oct  7 23:16:56 2026	deployed  	demo-chart-0.1.0	1.16.0     	Rollback to 1   
+
+############ helm uninstall ############
+
+$ helm uninstall demo
+release "demo" uninstalled
+
+$ helm list
+NAME	NAMESPACE	REVISION	UPDATED	STATUS	CHART	APP VERSION
+
+$ kubectl -n s15-helm get all
+NAME                                   READY   STATUS        RESTARTS   AGE
+pod/demo-demo-chart-6594d6bf8b-g45t4   1/1     Terminating   0          2s
+pod/demo-demo-chart-6594d6bf8b-tq9km   0/1     Completed     0          4s
+
+$ helm uninstall demo 2>&1 || true     # second time: nothing left
+Error: uninstall: Release not loaded: demo: release: not found
+
+############ helm install straight from a repo (no local chart at all) ############
+
+$ helm install metrics prometheus-community/prometheus-node-exporter --version 4.59.0 --set image.tag=v1.12.1-distroless --set hostRootFsMount.enabled=false --set hostNetwork=false | head -6    # the monitoring stack already runs a node-exporter on hostPort 9100 of every node, so no hostNetwork here
+NAME: metrics
+LAST DEPLOYED: Wed Oct  7 23:16:57 2026
+NAMESPACE: s15-helm
+STATUS: deployed
+REVISION: 1
+DESCRIPTION: Install complete
+
+$ kubectl -n s15-helm rollout status daemonset/metrics-prometheus-node-exporter --timeout=120s
+Waiting for daemon set "metrics-prometheus-node-exporter" rollout to finish: 0 of 3 updated pods are available...
+Waiting for daemon set "metrics-prometheus-node-exporter" rollout to finish: 1 of 3 updated pods are available...
+Waiting for daemon set "metrics-prometheus-node-exporter" rollout to finish: 2 of 3 updated pods are available...
+daemon set "metrics-prometheus-node-exporter" successfully rolled out
+
+$ helm list
+NAME   	NAMESPACE	REVISION	UPDATED                             	STATUS  	CHART                          	APP VERSION
+metrics	s15-helm 	1       	2026-10-07 23:16:57.678937 +0530 IST	deployed	prometheus-node-exporter-4.59.0	1.12.1     
+
+$ helm uninstall metrics
+release "metrics" uninstalled

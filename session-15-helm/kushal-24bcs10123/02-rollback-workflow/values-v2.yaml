@@ -1,0 +1,5 @@
+# revision 2 - first upgrade: scale to two pods and move to nginx 1.25
+replicaCount: 2
+image:
+  repository: nginx
+  tag: "1.25"
