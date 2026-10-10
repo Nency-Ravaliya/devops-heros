@@ -1,0 +1,52 @@
+
+$ curl -s http://localhost:19300/api/health
+{
+  "database": "ok",
+  "version": "13.2.3",
+  "commit": "90ffed056f0884267356c12a0eeb72a022af53f1"
+}
+$ curl -s -u admin:admin123 http://localhost:19300/api/datasources | python3 -c 'import sys,json; [print(d["uid"], d["type"], d["url"], "default" if d["isDefault"] else "") for d in json.load(sys.stdin)]'
+alertmanager alertmanager http://kube-prometheus-stack-alertmanager.monitoring:9093/ 
+prometheus prometheus http://kube-prometheus-stack-prometheus.monitoring:9090/ default
+
+$ curl -s -u admin:admin123 'http://localhost:19300/api/search?type=dash-db' | python3 -c 'import sys,json; d=json.load(sys.stdin); print(len(d), "dashboards shipped by kube-prometheus-stack, e.g.", [x["title"] for x in d[:6]])'
+30 dashboards shipped by kube-prometheus-stack, e.g. ['Alertmanager / Overview', 'CoreDNS', 'etcd', 'Grafana Overview', 'Kubernetes / API server', 'Kubernetes / Compute Resources /  Multi-Cluster']
+
+############ Import my dashboard (JSON in 01-monitoring/grafana-dashboard.json) ############
+
+$ python3 -c 'import json; d=json.load(open("/Users/kushalscaler/devops-heros/session20-monitoring-observability-gitops/kushal-24bcs10123/01-monitoring/grafana-dashboard.json"))["dashboard"]; [print(p["id"], p["type"], "|", p["title"], "|", p["targets"][0]["expr"]) for p in d["panels"]]'
+1 stat | Target up | sum(up{job="s20-metrics-app"})
+2 timeseries | Requests per second by path | sum by (path) (rate(http_requests_total{job="s20-metrics-app"}[1m]))
+3 timeseries | CPU utilization (cores) - app container | sum by (pod) (rate(container_cpu_usage_seconds_total{namespace="s20-monitoring", container="app"}[1m]))
+4 timeseries | Memory working set - app container | sum by (pod) (container_memory_working_set_bytes{namespace="s20-monitoring", container="app"})
+5 table | Active alerts for the app | ALERTS{owner="kushal-24bcs10123"}
+
+$ curl -s -u admin:admin123 -X POST http://localhost:19300/api/dashboards/db -H 'Content-Type: application/json' -d @/Users/kushalscaler/devops-heros/session20-monitoring-observability-gitops/kushal-24bcs10123/01-monitoring/grafana-dashboard.json; echo
+{"folderUid":"","id":208382006558720,"slug":"session-20-s20-metrics-app-kushal-24bcs10123","status":"success","uid":"s20-kushal","url":"/d/s20-kushal/session-20-s20-metrics-app-kushal-24bcs10123","version":1}
+
+############ Query the data source the way a panel does (/api/ds/query) ############
+
+$ echo 'sum(up{job="s20-metrics-app"})'; q 'sum(up{job=\"s20-metrics-app\"})'
+sum(up{job="s20-metrics-app"})
+   {} => 1
+
+$ echo 'CPU cores by pod'; q 'sum by (pod)(rate(container_cpu_usage_seconds_total{namespace=\"s20-monitoring\",container=\"app\"}[2m]))'
+CPU cores by pod
+   {'pod': 's20-metrics-app-7d8665dc97-wdg6v'} => 0.0004009905224225293
+
+$ echo 'memory working set by pod'; q 'sum by (pod)(container_memory_working_set_bytes{namespace=\"s20-monitoring\",container=\"app\"})'
+memory working set by pod
+   {'pod': 's20-metrics-app-7d8665dc97-rhtrn'} => 5451776
+
+$ echo 'requests/s by path'; q 'sum by (path)(rate(http_requests_total{job=\"s20-metrics-app\"}[5m]))'
+requests/s by path
+   {'path': '/health'} => 0.19300799999999999
+   {'path': '/metrics'} => 0.04289066666666667
+   {'path': '/burn'} => 0.15011733333333332
+
+############ Screenshots (logged in through the API, session cookie handed to headless Chrome) ############
+saved /Users/kushalscaler/devops-heros/session20-monitoring-observability-gitops/kushal-24bcs10123/screenshots/04-grafana-my-dashboard.png
+saved /Users/kushalscaler/devops-heros/session20-monitoring-observability-gitops/kushal-24bcs10123/screenshots/04-grafana-builtin-pod-dashboard.png
+
+$ curl -s -u admin:admin123 http://localhost:19300/api/dashboards/uid/s20-kushal | python3 -c 'import sys,json; d=json.load(sys.stdin); print(d["meta"]["url"], "version", d["dashboard"]["version"], "panels", len(d["dashboard"]["panels"]))'
+/d/s20-kushal/session-20-s20-metrics-app-kushal-24bcs10123 version 1 panels 5

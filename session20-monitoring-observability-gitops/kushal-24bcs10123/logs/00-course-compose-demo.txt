@@ -1,0 +1,173 @@
+
+############ 03-prometheus: Prometheus scraping itself ############
+
+$ cat 03-prometheus/docker-compose.yml
+services:
+  prometheus:
+    image: prom/prometheus:v3.5.0
+    container_name: session20-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+
+$ cat 03-prometheus/prometheus.yml
+global:
+  scrape_interval: 5s
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets:
+          - prometheus:9090
+
+$ docker compose -f 03-prometheus/docker-compose.yml up -d
+ Network 03-prometheus_default  Creating
+ Network 03-prometheus_default  Created
+ Container session20-prometheus  Creating
+ Container session20-prometheus  Created
+ Container session20-prometheus  Starting
+ Container session20-prometheus  Started
+
+$ docker compose -f 03-prometheus/docker-compose.yml ps
+NAME                   IMAGE                    COMMAND                  SERVICE      CREATED          STATUS          PORTS
+session20-prometheus   prom/prometheus:v3.5.0   "/bin/prometheus --c…"   prometheus   15 seconds ago   Up 14 seconds   0.0.0.0:9090->9090/tcp, [::]:9090->9090/tcp
+
+$ curl -s http://localhost:9090/-/ready
+Prometheus Server is Ready.
+
+$ curl -s http://localhost:9090/api/v1/targets | python3 -c 'import sys,json; [print(t["scrapeUrl"], t["health"], t["lastScrape"][:19]) for t in json.load(sys.stdin)["data"]["activeTargets"]]'
+http://prometheus:9090/metrics up 2026-10-07T18:01:21
+
+$ curl -s 'http://localhost:9090/api/v1/query?query=up' | python3 -m json.tool | sed -n '1,20p'
+{
+    "status": "success",
+    "data": {
+        "resultType": "vector",
+        "result": [
+            {
+                "metric": {
+                    "__name__": "up",
+                    "instance": "prometheus:9090",
+                    "job": "prometheus"
+                },
+                "value": [
+                    1791396084.611,
+                    "1"
+                ]
+            }
+        ]
+    }
+}
+
+$ curl -s 'http://localhost:9090/api/v1/query?query=prometheus_http_requests_total' | python3 -c 'import sys,json; r=json.load(sys.stdin)["data"]["result"]; print(len(r), "series; e.g.", r[0]["metric"]["handler"], r[0]["value"][1])'
+56 series; e.g. / 0
+
+$ curl -s http://localhost:9090/metrics | grep -E '^(prometheus_build_info|process_resident_memory_bytes|go_goroutines)'
+go_goroutines 35
+process_resident_memory_bytes 8.0224256e+07
+prometheus_build_info{branch="HEAD",goarch="arm64",goos="linux",goversion="go1.24.5",revision="8be3a9560fbdd18a94dedec4b747c35178177202",tags="netgo,builtinassets",version="3.5.0"} 1
+saved /Users/kushalscaler/devops-heros/session20-monitoring-observability-gitops/kushal-24bcs10123/screenshots/00-compose-prometheus-graph.png
+
+$ docker compose -f 03-prometheus/docker-compose.yml down
+ Container session20-prometheus  Stopping
+ Container session20-prometheus  Stopped
+ Container session20-prometheus  Removing
+ Container session20-prometheus  Removed
+ Network 03-prometheus_default  Removing
+ Network 03-prometheus_default  Removed
+
+############ 04-grafana: Prometheus + Grafana ############
+
+$ cat 04-grafana/docker-compose.yml
+services:
+  prometheus:
+    image: prom/prometheus:v3.5.0
+    container_name: session20-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+
+  grafana:
+    image: grafana/grafana:12.1.1
+    container_name: session20-grafana
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+
+$ cat /Users/kushalscaler/devops-heros/session20-monitoring-observability-gitops/kushal-24bcs10123/00-compose/grafana-port-override.yml
+# Port 3000 on my Mac was already taken by another project while I ran this, so this override file
+# publishes the course's Grafana container on 19301 instead. Nothing else in the professor's compose file changes.
+services:
+  grafana:
+    ports: !override
+      - "19301:3000"
+
+$ docker compose -f 04-grafana/docker-compose.yml -f /Users/kushalscaler/devops-heros/session20-monitoring-observability-gitops/kushal-24bcs10123/00-compose/grafana-port-override.yml up -d
+ Network 04-grafana_default  Creating
+ Network 04-grafana_default  Created
+ Container session20-prometheus  Creating
+ Container session20-prometheus  Created
+ Container session20-grafana  Creating
+ Container session20-grafana  Created
+ Container session20-prometheus  Starting
+ Container session20-prometheus  Started
+ Container session20-grafana  Starting
+ Container session20-grafana  Started
+
+$ docker compose -f 04-grafana/docker-compose.yml -f /Users/kushalscaler/devops-heros/session20-monitoring-observability-gitops/kushal-24bcs10123/00-compose/grafana-port-override.yml ps
+NAME                   IMAGE                    COMMAND                  SERVICE      CREATED         STATUS         PORTS
+session20-grafana      grafana/grafana:12.1.1   "/run.sh"                grafana      5 seconds ago   Up 4 seconds   0.0.0.0:19301->3000/tcp, [::]:19301->3000/tcp
+session20-prometheus   prom/prometheus:v3.5.0   "/bin/prometheus --c…"   prometheus   5 seconds ago   Up 4 seconds   0.0.0.0:9090->9090/tcp, [::]:9090->9090/tcp
+
+$ curl -s http://localhost:19301/api/health
+{
+  "database": "ok",
+  "version": "12.1.1",
+  "commit": "df5de8219b41d1e639e003bf5f3a85913761d167"
+}
+$ curl -s -u admin:admin -X POST http://localhost:19301/api/datasources -H 'Content-Type: application/json' -d '{"name":"Prometheus","type":"prometheus","url":"http://prometheus:9090","access":"proxy","isDefault":true}'; echo
+{"datasource":{"id":1,"uid":"fg0j63rkiic5cb","orgId":1,"name":"Prometheus","type":"prometheus","typeLogoUrl":"public/plugins/prometheus/img/prometheus_logo.svg","access":"proxy","url":"http://prometheus:9090","user":"","database":"","basicAuth":false,"basicAuthUser":"","withCredentials":false,"isDefault":true,"jsonData":{},"secureJsonFields":{},"version":1,"readOnly":false,"apiVersion":""},"id":1,"message":"Datasource added","name":"Prometheus"}
+
+$ curl -s -u admin:admin http://localhost:19301/api/datasources | python3 -c 'import sys,json; [print(d["uid"], d["type"], d["url"]) for d in json.load(sys.stdin)]'
+fg0j63rkiic5cb prometheus http://prometheus:9090
+
+$ curl -s -u admin:admin 'http://localhost:19301/api/datasources/proxy/uid/fg0j63rkiic5cb/api/v1/query?query=up' | python3 -m json.tool | sed -n '1,16p'    # Grafana -> Prometheus, through Grafana's datasource proxy
+{
+    "status": "success",
+    "data": {
+        "resultType": "vector",
+        "result": [
+            {
+                "metric": {
+                    "__name__": "up",
+                    "instance": "prometheus:9090",
+                    "job": "prometheus"
+                },
+                "value": [
+                    1791396099.395,
+                    "1"
+                ]
+            }
+
+$ curl -s -u admin:admin -X POST http://localhost:19301/api/ds/query -H 'Content-Type: application/json' -d '{"queries":[{"refId":"A","datasource":{"uid":"fg0j63rkiic5cb"},"expr":"up","instant":true,"intervalMs":15000,"maxDataPoints":100}],"from":"now-5m","to":"now"}' | python3 -c 'import sys,json; fr=json.load(sys.stdin)["results"]["A"]["frames"]; print(len(fr), "frame(s)"); [print("  ", f["schema"]["fields"][1].get("labels"), "=>", f["data"]["values"][1][-1]) if len(f["schema"]["fields"])>1 else print("   (empty frame)") for f in fr]'
+1 frame(s)
+   {'__name__': 'up', 'instance': 'prometheus:9090', 'job': 'prometheus'} => 1
+saved /Users/kushalscaler/devops-heros/session20-monitoring-observability-gitops/kushal-24bcs10123/screenshots/00-compose-grafana-explore.png
+
+$ docker compose -f 04-grafana/docker-compose.yml -f /Users/kushalscaler/devops-heros/session20-monitoring-observability-gitops/kushal-24bcs10123/00-compose/grafana-port-override.yml down -v
+ Container session20-grafana  Stopping
+ Container session20-grafana  Stopped
+ Container session20-grafana  Removing
+ Container session20-grafana  Removed
+ Container session20-prometheus  Stopping
+ Container session20-prometheus  Stopped
+ Container session20-prometheus  Removing
+ Container session20-prometheus  Removed
+ Network 04-grafana_default  Removing
+ Network 04-grafana_default  Removed
+
+$ docker ps --filter name=session20 --format '{{.Names}}' | wc -l
+       0

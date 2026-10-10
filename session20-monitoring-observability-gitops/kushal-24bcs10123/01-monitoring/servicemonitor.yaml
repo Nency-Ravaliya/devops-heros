@@ -1,0 +1,19 @@
+# Tells the Prometheus Operator: scrape /metrics on port "http" of every Service labelled app=s20-metrics-app,
+# every 15 seconds. The operator turns this into a scrape job in the in-cluster Prometheus.
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: s20-metrics-app
+  namespace: s20-monitoring
+  labels:
+    app: s20-metrics-app
+spec:
+  selector:
+    matchLabels:
+      app: s20-metrics-app
+  namespaceSelector:
+    matchNames: [s20-monitoring]
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 15s

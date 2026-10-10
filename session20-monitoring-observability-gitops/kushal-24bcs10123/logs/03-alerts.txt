@@ -1,0 +1,119 @@
+
+$ cat /Users/kushalscaler/devops-heros/session20-monitoring-observability-gitops/kushal-24bcs10123/01-monitoring/prometheusrule.yaml
+# Alerting rules for the demo app. The operator loads them into Prometheus; Prometheus sends firing alerts to Alertmanager.
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: s20-metrics-app
+  namespace: s20-monitoring
+  labels:
+    app: s20-metrics-app
+spec:
+  groups:
+    - name: s20-metrics-app.rules
+      rules:
+        - alert: S20AppDown
+          expr: absent(up{job="s20-metrics-app"} == 1)
+          for: 1m
+          labels: { severity: critical, owner: kushal-24bcs10123 }
+          annotations:
+            summary: "s20-metrics-app has no healthy scrape target"
+            description: "Prometheus has not been able to scrape a healthy s20-metrics-app pod for 1 minute."
+        - alert: S20HighCPU
+          expr: sum(rate(container_cpu_usage_seconds_total{namespace="s20-monitoring", container="app"}[1m])) > 0.2
+          for: 30s
+          labels: { severity: warning, owner: kushal-24bcs10123 }
+          annotations:
+            summary: "s20-metrics-app is using more than 200m CPU"
+            description: "CPU usage is {{ $value | printf \"%.2f\" }} cores, above the 0.2 core threshold for 30s."
+        - alert: S20HighMemory
+          expr: max(container_memory_working_set_bytes{namespace="s20-monitoring", container="app"}) > 100 * 1024 * 1024
+          for: 1m
+          labels: { severity: warning, owner: kushal-24bcs10123 }
+          annotations:
+            summary: "s20-metrics-app working set above 100Mi"
+
+$ kubectl apply -f /Users/kushalscaler/devops-heros/session20-monitoring-observability-gitops/kushal-24bcs10123/01-monitoring/prometheusrule.yaml
+prometheusrule.monitoring.coreos.com/s20-metrics-app unchanged
+
+$ curl -s http://localhost:19090/api/v1/rules | python3 -c 'import sys,json; [print(r["name"], r["state"], "for", r.get("duration")) for g in json.load(sys.stdin)["data"]["groups"] if g["name"]=="s20-metrics-app.rules" for r in g["rules"]]'
+S20AppDown inactive for 60
+S20HighCPU inactive for 30
+S20HighMemory inactive for 60
+
+$ kubectl -n monitoring get configmap prometheus-kube-prometheus-stack-prometheus-rulefiles-0 -o json | python3 -c 'import sys,json; [print(k) for k in json.load(sys.stdin)["data"] if "s20" in k]'     # the operator copied my rule into the ConfigMap Prometheus mounts
+s20-monitoring-s20-metrics-app-22a62f12-d02b-4b9c-b317-f268fd08b907.yaml
+
+$ kubectl top pods -n s20-monitoring --containers
+POD                                NAME   CPU(cores)   MEMORY(bytes)   
+s20-metrics-app-7d8665dc97-wdg6v   app    2m           11Mi            
+
+############ 1) CPU alert: hammer /burn so the app container uses more than 200m CPU ############
+
+$ kubectl top pods -n s20-monitoring --containers
+POD                                NAME   CPU(cores)   MEMORY(bytes)   
+s20-metrics-app-7d8665dc97-wdg6v   app    414m         11Mi            
+
+$ echo 'sum(rate(container_cpu_usage_seconds_total{namespace="s20-monitoring",container="app"}[1m]))'; promql 'sum(rate(container_cpu_usage_seconds_total{namespace="s20-monitoring",container="app"}[1m]))'
+sum(rate(container_cpu_usage_seconds_total{namespace="s20-monitoring",container="app"}[1m]))
+  {} => 0.32397488021152604
+
+
+$ echo 'waiting for S20HighCPU (for: 30s) ...'; wait_alert S20HighCPU 40
+waiting for S20HighCPU (for: 30s) ...
+  S20HighCPU is FIRING
+
+$ promql 'ALERTS{owner="kushal-24bcs10123"}'
+  {'__name__': 'ALERTS', 'alertname': 'S20HighCPU', 'alertstate': 'firing', 'severity': 'warning'} => 1
+
+saved /Users/kushalscaler/devops-heros/session20-monitoring-observability-gitops/kushal-24bcs10123/screenshots/03-prometheus-alerts-highcpu.png
+
+$ sleep 20; curl -s http://localhost:19093/api/v2/alerts | python3 -c 'import sys,json; [print(a["labels"]["alertname"], a["status"]["state"], a["labels"].get("severity"), a["annotations"].get("summary")) for a in json.load(sys.stdin) if a["labels"].get("owner")=="kushal-24bcs10123"]'
+S20HighCPU active warning s20-metrics-app is using more than 200m CPU
+saved /Users/kushalscaler/devops-heros/session20-monitoring-observability-gitops/kushal-24bcs10123/screenshots/03-alertmanager-highcpu.png
+
+$ sleep 60; echo 'after the load stopped:'; promql 'ALERTS{alertname="S20HighCPU"}'
+after the load stopped:
+  {'__name__': 'ALERTS', 'alertname': 'S20HighCPU', 'alertstate': 'firing', 'severity': 'warning'} => 1
+
+
+############ 2) Down alert: scale the app to zero -> no target -> absent(up == 1) ############
+
+$ kubectl -n s20-monitoring scale deployment/s20-metrics-app --replicas=0
+deployment.apps/s20-metrics-app scaled
+
+$ kubectl -n s20-monitoring get pods -l app=s20-metrics-app
+NAME                               READY   STATUS        RESTARTS   AGE
+s20-metrics-app-7d8665dc97-wdg6v   1/1     Terminating   0          5m23s
+
+$ sleep 20; curl -s http://localhost:19090/api/v1/targets | python3 -c 'import sys,json; t=[t for t in json.load(sys.stdin)["data"]["activeTargets"] if "s20" in t["labels"]["job"]]; print(len(t), "s20 targets left")'
+0 s20 targets left
+
+$ echo 'waiting for S20AppDown (for: 1m) ...'; wait_alert S20AppDown 40
+waiting for S20AppDown (for: 1m) ...
+  S20AppDown is FIRING
+
+$ promql 'ALERTS{owner="kushal-24bcs10123"}'
+  {'__name__': 'ALERTS', 'alertname': 'S20AppDown', 'alertstate': 'firing', 'severity': 'critical'} => 1
+
+
+$ curl -s http://localhost:19093/api/v2/alerts | python3 -c 'import sys,json; [print(a["labels"]["alertname"], a["status"]["state"], a["startsAt"][:19], a["annotations"].get("description")) for a in json.load(sys.stdin) if a["labels"].get("owner")=="kushal-24bcs10123"]'
+S20AppDown active 2026-10-07T18:05:56 Prometheus has not been able to scrape a healthy s20-metrics-app pod for 1 minute.
+saved /Users/kushalscaler/devops-heros/session20-monitoring-observability-gitops/kushal-24bcs10123/screenshots/03-prometheus-alerts-appdown.png
+saved /Users/kushalscaler/devops-heros/session20-monitoring-observability-gitops/kushal-24bcs10123/screenshots/03-alertmanager-appdown.png
+
+############ 3) Recover: scale back up, the alert resolves on its own ############
+
+$ kubectl -n s20-monitoring scale deployment/s20-metrics-app --replicas=1
+deployment.apps/s20-metrics-app scaled
+
+$ kubectl -n s20-monitoring rollout status deployment/s20-metrics-app --timeout=120s
+Waiting for deployment "s20-metrics-app" rollout to finish: 0 of 1 updated replicas are available...
+deployment "s20-metrics-app" successfully rolled out
+
+$ promql 'ALERTS{owner="kushal-24bcs10123"}'
+  (no series)
+
+$ promql 'up{job="s20-metrics-app"}'
+  {'__name__': 'up', 'container': 'app', 'instance': '10.244.1.64:8000', 'job': 's20-metrics-app', 'namespace': 's20-monitoring', 'pod': 's20-metrics-app-7d8665dc97-rhtrn'} => 1
+

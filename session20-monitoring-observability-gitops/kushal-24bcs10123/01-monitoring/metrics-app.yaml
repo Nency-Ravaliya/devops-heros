@@ -1,0 +1,98 @@
+# A tiny HTTP app that exposes Prometheus metrics on /metrics, a health endpoint for the probes,
+# and /burn?seconds=N which spins the CPU so the CPU alert has something to fire on.
+# Plain Python standard library, so the python:3.11-alpine image already on the nodes is enough.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: s20-metrics-app-code
+  namespace: s20-monitoring
+data:
+  server.py: |
+    import time, threading, json
+    from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
+    from urllib.parse import urlparse, parse_qs
+    START = time.time()
+    REQUESTS = {}            # path -> count
+    LOCK = threading.Lock()
+    def count(path):
+        with LOCK: REQUESTS[path] = REQUESTS.get(path, 0) + 1
+    class H(BaseHTTPRequestHandler):
+        def log_message(self, fmt, *a):   # one JSON log line per request -> the "logs" pillar
+            print(json.dumps({"ts": round(time.time(), 3), "level": "info", "method": self.command,
+                              "path": self.path, "status": a[1] if len(a) > 1 else "", "client": self.client_address[0]}), flush=True)
+        def _send(self, code, body, ctype="text/plain; version=0.0.4"):
+            self.send_response(code); self.send_header("Content-Type", ctype); self.end_headers(); self.wfile.write(body.encode())
+        def do_GET(self):
+            u = urlparse(self.path); count(u.path)
+            if u.path == "/health":
+                return self._send(200, "ok\n")
+            if u.path == "/burn":
+                secs = float(parse_qs(u.query).get("seconds", ["5"])[0]); t = time.time()
+                while time.time() - t < secs: pass
+                return self._send(200, f"burned cpu for {secs}s\n")
+            if u.path == "/metrics":
+                out = ["# HELP http_requests_total Requests served, by path.", "# TYPE http_requests_total counter"]
+                with LOCK:
+                    out += [f'http_requests_total{{path="{p}"}} {c}' for p, c in sorted(REQUESTS.items())]
+                out += ["# HELP app_uptime_seconds Seconds since the process started.", "# TYPE app_uptime_seconds gauge",
+                        f"app_uptime_seconds {time.time() - START:.1f}",
+                        "# HELP app_info Static build information.", "# TYPE app_info gauge",
+                        'app_info{version="1.0",owner="kushal-24bcs10123"} 1']
+                return self._send(200, "\n".join(out) + "\n")
+            return self._send(200, "hello from s20-metrics-app\n")
+    ThreadingHTTPServer(("", 8000), H).serve_forever()
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: s20-metrics-app
+  namespace: s20-monitoring
+  labels:
+    app: s20-metrics-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: s20-metrics-app
+  template:
+    metadata:
+      labels:
+        app: s20-metrics-app
+    spec:
+      containers:
+        - name: app
+          image: python:3.11-alpine
+          command: ["python", "-u", "/app/server.py"]
+          ports:
+            - name: http
+              containerPort: 8000
+          volumeMounts:
+            - { name: code, mountPath: /app }
+          resources:
+            requests: { cpu: 100m, memory: 32Mi }
+            limits:   { cpu: 500m, memory: 128Mi }
+          readinessProbe:                      # "application health": is this pod allowed to receive traffic?
+            httpGet: { path: /health, port: http }
+            periodSeconds: 5
+          livenessProbe:                       # is the process stuck? restart it if /health stops answering
+            httpGet: { path: /health, port: http }
+            periodSeconds: 10
+            failureThreshold: 3
+      volumes:
+        - name: code
+          configMap: { name: s20-metrics-app-code }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: s20-metrics-app
+  namespace: s20-monitoring
+  labels:
+    app: s20-metrics-app              # the ServiceMonitor selects this label
+spec:
+  selector:
+    app: s20-metrics-app
+  ports:
+    - name: http                      # the ServiceMonitor scrapes this named port
+      port: 8000
+      targetPort: http

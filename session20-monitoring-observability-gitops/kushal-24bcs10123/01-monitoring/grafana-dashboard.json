@@ -1,0 +1,27 @@
+{
+  "dashboard": {
+    "uid": "s20-kushal",
+    "title": "Session 20 - s20-metrics-app (kushal-24bcs10123)",
+    "tags": ["session20", "kushal-24bcs10123"],
+    "timezone": "browser",
+    "refresh": "10s",
+    "time": { "from": "now-15m", "to": "now" },
+    "panels": [
+      { "id": 1, "type": "stat", "title": "Target up", "gridPos": { "x": 0, "y": 0, "w": 6, "h": 6 },
+        "targets": [{ "expr": "sum(up{job=\"s20-metrics-app\"})", "refId": "A" }],
+        "fieldConfig": { "defaults": { "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "green", "value": 1 }] } } } },
+      { "id": 2, "type": "timeseries", "title": "Requests per second by path", "gridPos": { "x": 6, "y": 0, "w": 18, "h": 6 },
+        "targets": [{ "expr": "sum by (path) (rate(http_requests_total{job=\"s20-metrics-app\"}[1m]))", "legendFormat": "{{path}}", "refId": "A" }] },
+      { "id": 3, "type": "timeseries", "title": "CPU utilization (cores) - app container", "gridPos": { "x": 0, "y": 6, "w": 12, "h": 7 },
+        "targets": [{ "expr": "sum by (pod) (rate(container_cpu_usage_seconds_total{namespace=\"s20-monitoring\", container=\"app\"}[1m]))", "legendFormat": "{{pod}}", "refId": "A" },
+                    { "expr": "0.2", "legendFormat": "alert threshold", "refId": "B" }] },
+      { "id": 4, "type": "timeseries", "title": "Memory working set - app container", "gridPos": { "x": 12, "y": 6, "w": 12, "h": 7 },
+        "fieldConfig": { "defaults": { "unit": "bytes" } },
+        "targets": [{ "expr": "sum by (pod) (container_memory_working_set_bytes{namespace=\"s20-monitoring\", container=\"app\"})", "legendFormat": "{{pod}}", "refId": "A" }] },
+      { "id": 5, "type": "table", "title": "Active alerts for the app", "gridPos": { "x": 0, "y": 13, "w": 24, "h": 5 },
+        "targets": [{ "expr": "ALERTS{owner=\"kushal-24bcs10123\"}", "format": "table", "instant": true, "refId": "A" }] }
+    ]
+  },
+  "overwrite": true,
+  "message": "session 20 homework dashboard"
+}
