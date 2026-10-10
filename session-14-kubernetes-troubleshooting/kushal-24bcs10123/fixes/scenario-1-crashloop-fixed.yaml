@@ -1,0 +1,30 @@
+# fix for scenarios/scenario-1-crashloop/broken.yaml: the app needs DATABASE_URL.
+# I inject it from a Secret and keep the process alive after the check so the pod stays Running.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: fail-1-crashloop-pod
+  labels:
+    tier: triage-gauntlet
+    scenario: crashloop
+spec:
+  containers:
+    - name: python-app
+      image: python:3.11-alpine
+      env:
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: db-credentials
+              key: DATABASE_URL
+      command:
+        - "python3"
+        - "-c"
+        - |
+          import os, sys, time
+          db_url = os.environ.get("DATABASE_URL")
+          if not db_url:
+              print("[FATAL ERROR]: DATABASE_URL environment variable is MISSING!", file=sys.stderr)
+              sys.exit(1)
+          print("Application started successfully! DATABASE_URL host =", db_url.split("@")[-1])
+          time.sleep(3600)
