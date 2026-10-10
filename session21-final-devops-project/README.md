@@ -39,7 +39,6 @@ Browser -> Nginx frontend -> FastAPI backend -> PostgreSQL       Kubernetes
 | [monitoring/](monitoring/) | Prometheus and provisioned Grafana dashboard |
 | [gitops/](gitops/) | Argo CD Application for the Helm release |
 | [troubleshooting/](troubleshooting/) | Broken image and broken Service exercises |
-| [DEMO-WALKTHROUGH.md](DEMO-WALKTHROUGH.md) | Commands and speaking notes for the final video |
 
 ## 1. Backend tests
 
