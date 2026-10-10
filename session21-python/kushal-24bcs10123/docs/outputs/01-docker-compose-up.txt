@@ -1,0 +1,158 @@
+$ docker compose up --build -d
+#1 [internal] load local bake definitions
+#1 reading from stdin 1.16kB done
+#1 DONE 0.0s
+
+#2 [backend internal] load build definition from Dockerfile
+#2 transferring dockerfile: 840B done
+#2 DONE 0.0s
+
+#3 [frontend internal] load build definition from Dockerfile
+#3 transferring dockerfile: 680B done
+#3 DONE 0.0s
+
+#4 [frontend internal] load metadata for docker.io/library/node:24-alpine
+#4 ...
+
+#5 [backend internal] load metadata for docker.io/library/python:3.12-slim
+#5 DONE 1.1s
+
+#6 [backend internal] load .dockerignore
+#6 transferring context: 94B done
+#6 DONE 0.0s
+
+#7 [backend  1/10] FROM docker.io/library/python:3.12-slim@sha256:05cda9777409a9c3ffddd94a4c476b79f0769a0b4857f0c7ed9226b6800b0d6f
+#7 resolve docker.io/library/python:3.12-slim@sha256:05cda9777409a9c3ffddd94a4c476b79f0769a0b4857f0c7ed9226b6800b0d6f 0.0s done
+#7 DONE 0.0s
+
+#8 [backend internal] load build context
+#8 transferring context: 21.02kB done
+#8 DONE 0.0s
+
+#9 [backend  5/10] RUN pip install --no-cache-dir -r requirements.txt
+#9 CACHED
+
+#10 [backend  3/10] RUN apt-get update  && apt-get install -y --no-install-recommends curl  && rm -rf /var/lib/apt/lists/*  && groupadd --system studytrack  && useradd --system --gid studytrack --uid 10001 --home /app studytrack
+#10 CACHED
+
+#11 [backend  2/10] WORKDIR /app
+#11 CACHED
+
+#12 [backend  4/10] COPY requirements.txt .
+#12 CACHED
+
+#13 [backend  6/10] COPY alembic.ini .
+#13 CACHED
+
+#14 [backend  7/10] COPY alembic ./alembic
+#14 CACHED
+
+#15 [backend  8/10] COPY app ./app
+#15 DONE 0.0s
+
+#16 [backend  9/10] COPY entrypoint.sh .
+#16 DONE 0.0s
+
+#17 [backend 10/10] RUN chmod +x entrypoint.sh && chown -R studytrack:studytrack /app
+#17 DONE 0.1s
+
+#18 [frontend internal] load metadata for docker.io/nginxinc/nginx-unprivileged:1.27-alpine
+#18 ...
+
+#19 [backend] exporting to image
+#19 exporting layers 0.0s done
+#19 exporting manifest sha256:1880593d01f352ec0646f23a9a0e21f4ad940bbe6633f540a09553df62224445 done
+#19 exporting config sha256:d4797ecc9853b8a12f10f58764c6f2f172791eba7a3a207a663aadf2481c454b done
+#19 exporting attestation manifest sha256:074cffa9aa56af4ac83d32912d76422bac2c1aef5f4f47d921d8b286134b9a31 done
+#19 exporting manifest list sha256:31e434f547c0007a7e47c4e407369b6df6a6abf16f27bf002cfc99f0cae0caa5 done
+#19 naming to docker.io/library/studytrack-backend:latest done
+#19 unpacking to docker.io/library/studytrack-backend:latest 0.0s done
+#19 DONE 0.1s
+
+#20 [backend] resolving provenance for metadata file
+#20 DONE 0.0s
+
+#4 [frontend internal] load metadata for docker.io/library/node:24-alpine
+#4 DONE 1.6s
+
+#18 [frontend internal] load metadata for docker.io/nginxinc/nginx-unprivileged:1.27-alpine
+#18 DONE 1.9s
+
+#21 [frontend internal] load .dockerignore
+#21 transferring context: 63B done
+#21 DONE 0.0s
+
+#22 [frontend build 1/7] FROM docker.io/library/node:24-alpine@sha256:ebfe2f90462722a7a4de65e91990e97fe0d401c70e0e762c5b53302f905ec1c1
+#22 resolve docker.io/library/node:24-alpine@sha256:ebfe2f90462722a7a4de65e91990e97fe0d401c70e0e762c5b53302f905ec1c1 0.0s done
+#22 DONE 0.0s
+
+#23 [frontend stage-1 1/3] FROM docker.io/nginxinc/nginx-unprivileged:1.27-alpine@sha256:65e3e85dbaed8ba248841d9d58a899b6197106c23cb0ff1a132b7bfe0547e4c0
+#23 resolve docker.io/nginxinc/nginx-unprivileged:1.27-alpine@sha256:65e3e85dbaed8ba248841d9d58a899b6197106c23cb0ff1a132b7bfe0547e4c0 0.0s done
+#23 DONE 0.0s
+
+#24 [frontend internal] load build context
+#24 transferring context: 325B done
+#24 DONE 0.0s
+
+#25 [frontend build 2/7] WORKDIR /src
+#25 CACHED
+
+#26 [frontend build 6/7] COPY src ./src
+#26 CACHED
+
+#27 [frontend stage-1 2/3] COPY nginx.conf.template /etc/nginx/templates/default.conf.template
+#27 CACHED
+
+#28 [frontend build 4/7] RUN npm ci --no-audit --no-fund
+#28 CACHED
+
+#29 [frontend build 5/7] COPY index.html vite.config.js ./
+#29 CACHED
+
+#30 [frontend build 7/7] RUN npm run build
+#30 CACHED
+
+#31 [frontend build 3/7] COPY package.json package-lock.json ./
+#31 CACHED
+
+#32 [frontend stage-1 3/3] COPY --from=build /src/dist /usr/share/nginx/html
+#32 CACHED
+
+#33 [frontend] exporting to image
+#33 exporting layers done
+#33 exporting manifest sha256:6346aa6f10f9832cdda88803b4dd68347fa859c392be3aaac8c7d632ae210dc2 done
+#33 exporting config sha256:927e59df83b71dbe87d66ae1fd20e4f4ab445158508893886ba797308d2ee53a done
+#33 exporting attestation manifest sha256:c81be66eb05b93ae71871f48708bff360dc82a1b852c6fe116743d01b1864ea1 done
+#33 exporting manifest list sha256:58f372c30357789cea204161ce4eeced1b3b006306599e2c763fb1d7bb0b9ee1 done
+#33 naming to docker.io/library/studytrack-frontend:latest done
+#33 unpacking to docker.io/library/studytrack-frontend:latest done
+#33 DONE 0.1s
+
+#34 [frontend] resolving provenance for metadata file
+#34 DONE 0.0s
+ studytrack-backend  Built
+ studytrack-frontend  Built
+ Network studytrack_default  Creating
+ Network studytrack_default  Created
+ Volume studytrack_pgdata  Creating
+ Volume studytrack_pgdata  Created
+ Container studytrack-postgres-1  Creating
+ Container studytrack-postgres-1  Created
+ Container studytrack-backend-1  Creating
+ Container studytrack-backend-1  Created
+ Container studytrack-frontend-1  Creating
+ Container studytrack-frontend-1  Created
+ Container studytrack-postgres-1  Starting
+ Container studytrack-postgres-1  Started
+ Container studytrack-postgres-1  Waiting
+ Container studytrack-postgres-1  Healthy
+ Container studytrack-backend-1  Starting
+ Container studytrack-backend-1  Started
+ Container studytrack-frontend-1  Starting
+ Container studytrack-frontend-1  Started
+
+$ docker compose ps
+NAME                    IMAGE                 COMMAND                  SERVICE    CREATED         STATUS                                     PORTS
+studytrack-backend-1    studytrack-backend    "./entrypoint.sh"        backend    6 seconds ago   Up Less than a second (health: starting)   0.0.0.0:8000->8000/tcp, [::]:8000->8000/tcp
+studytrack-frontend-1   studytrack-frontend   "/docker-entrypoint.…"   frontend   6 seconds ago   Up Less than a second                      0.0.0.0:3000->8080/tcp, [::]:3000->8080/tcp
+studytrack-postgres-1   postgres:16-alpine    "docker-entrypoint.s…"   postgres   6 seconds ago   Up 5 seconds (healthy)                     5432/tcp

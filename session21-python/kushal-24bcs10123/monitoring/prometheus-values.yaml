@@ -1,0 +1,20 @@
+# Values used for the kube-prometheus-stack release on the kind cluster (namespace monitoring).
+#   helm upgrade --install kube-prometheus-stack prometheus-community/kube-prometheus-stack -n monitoring -f monitoring/prometheus-values.yaml
+grafana:
+  adminPassword: admin123          # lab only
+  service:
+    type: NodePort
+    nodePort: 30300
+prometheus:
+  service:
+    type: NodePort
+    nodePort: 30900
+  prometheusSpec:
+    # pick up ServiceMonitors/PodMonitors/Rules from every namespace, not only the release's own
+    serviceMonitorSelectorNilUsesHelmValues: false
+    podMonitorSelectorNilUsesHelmValues: false
+    ruleSelectorNilUsesHelmValues: false
+alertmanager:
+  service:
+    type: NodePort
+    nodePort: 30903

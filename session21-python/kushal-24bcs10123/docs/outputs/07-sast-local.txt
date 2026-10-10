@@ -1,0 +1,7 @@
+$ bandit -r app -ll
+
+$ semgrep scan --config p/python --config p/security-audit backend/app
+
+$ gitleaks dir --config .gitleaks.toml .
+[90m11:24PM[0m [32mINF[0m [1mscanned ~416793 bytes (416.79 KB) in 281ms[0m
+[90m11:24PM[0m [32mINF[0m [1mno leaks found[0m

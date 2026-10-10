@@ -1,0 +1,74 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: studytrack-pgdata
+  namespace: {{ .Values.namespace }}
+  labels: {{- include "studytrack.labels" . | nindent 4 }}
+spec:
+  accessModes: ["ReadWriteOnce"]
+  storageClassName: {{ .Values.postgres.storageClassName }}
+  resources:
+    requests:
+      storage: {{ .Values.postgres.storage }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: studytrack-postgres
+  namespace: {{ .Values.namespace }}
+  labels: {{- include "studytrack.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate   # one PVC, one writer: never run two postgres pods against the same volume
+  selector:
+    matchLabels:
+      app: studytrack-postgres
+  template:
+    metadata:
+      labels:
+        app: studytrack-postgres
+    spec:
+      containers:
+        - name: postgres
+          image: {{ .Values.postgres.image }}
+          ports:
+            - containerPort: 5432
+          envFrom:
+            - secretRef:
+                name: studytrack-db-secret
+          env:
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+          volumeMounts:
+            - name: pgdata
+              mountPath: /var/lib/postgresql/data
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", {{ .Values.postgres.user | quote }}, "-d", {{ .Values.postgres.database | quote }}]
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          livenessProbe:
+            exec:
+              command: ["pg_isready", "-U", {{ .Values.postgres.user | quote }}]
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          resources: {{- toYaml .Values.postgres.resources | nindent 12 }}
+      volumes:
+        - name: pgdata
+          persistentVolumeClaim:
+            claimName: studytrack-pgdata
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: studytrack-postgres
+  namespace: {{ .Values.namespace }}
+  labels: {{- include "studytrack.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+    app: studytrack-postgres
+  ports:
+    - port: 5432
+      targetPort: 5432

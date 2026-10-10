@@ -1,0 +1,41 @@
+# Full local stack: postgres + backend + frontend. `docker compose up --build`.
+name: studytrack
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: studytrack
+      POSTGRES_PASSWORD: studytrack-dev-only
+      POSTGRES_DB: studytrack
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U studytrack -d studytrack"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  backend:
+    build: ./backend
+    environment:
+      DATABASE_URL: postgresql+psycopg://studytrack:studytrack-dev-only@postgres:5432/studytrack
+      APP_ENV: compose
+      DAILY_GOAL_MINUTES: "120"
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  frontend:
+    build: ./frontend
+    environment:
+      BACKEND_URL: http://backend:8000
+    ports:
+      - "3000:8080"
+    depends_on:
+      - backend
+
+volumes:
+  pgdata:

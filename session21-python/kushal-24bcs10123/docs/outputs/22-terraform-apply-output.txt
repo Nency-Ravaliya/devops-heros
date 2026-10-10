@@ -1,0 +1,128 @@
+$ terraform apply tfplan
+aws_vpc.main: Creating...
+aws_s3_bucket.backups: Creating...
+aws_s3_bucket.backups: Creation complete after 0s [id=studytrack-24bcs10123-backups-dev]
+aws_s3_bucket_public_access_block.backups: Creating...
+aws_s3_bucket_versioning.backups: Creating...
+aws_s3_object.readme: Creating...
+aws_s3_bucket_public_access_block.backups: Creation complete after 0s [id=studytrack-24bcs10123-backups-dev]
+aws_s3_object.readme: Creation complete after 0s [id=README.txt]
+aws_s3_bucket_versioning.backups: Creation complete after 2s [id=studytrack-24bcs10123-backups-dev]
+aws_vpc.main: Still creating... [00m10s elapsed]
+aws_vpc.main: Creation complete after 10s [id=vpc-98e2ca57]
+aws_internet_gateway.main: Creating...
+aws_subnet.public[1]: Creating...
+aws_subnet.public[0]: Creating...
+aws_security_group.web: Creating...
+aws_internet_gateway.main: Creation complete after 0s [id=igw-d293e201]
+aws_route_table.public: Creating...
+aws_security_group.web: Creation complete after 1s [id=sg-244bdadd7db034858]
+aws_route_table.public: Creation complete after 1s [id=rtb-f436db58]
+aws_subnet.public[1]: Still creating... [00m10s elapsed]
+aws_subnet.public[0]: Still creating... [00m10s elapsed]
+aws_subnet.public[0]: Creation complete after 10s [id=subnet-0fe094cb]
+aws_subnet.public[1]: Creation complete after 10s [id=subnet-291d6d0a]
+aws_route_table_association.public[1]: Creating...
+aws_route_table_association.public[0]: Creating...
+aws_route_table_association.public[1]: Creation complete after 0s [id=rtbassoc-0d6a2208]
+aws_route_table_association.public[0]: Creation complete after 0s [id=rtbassoc-bad7171d]
+
+Apply complete! Resources: 12 added, 0 changed, 0 destroyed.
+
+Outputs:
+
+backup_bucket = "studytrack-24bcs10123-backups-dev"
+eks_cluster_name = "not created (create_eks=false)"
+public_subnet_ids = [
+  "subnet-0fe094cb",
+  "subnet-291d6d0a",
+]
+vpc_id = "vpc-98e2ca57"
+web_security_group_id = "sg-244bdadd7db034858"
+
+$ terraform output
+backup_bucket = "studytrack-24bcs10123-backups-dev"
+eks_cluster_name = "not created (create_eks=false)"
+public_subnet_ids = [
+  "subnet-0fe094cb",
+  "subnet-291d6d0a",
+]
+vpc_id = "vpc-98e2ca57"
+web_security_group_id = "sg-244bdadd7db034858"
+
+$ terraform state list
+data.aws_availability_zones.available
+aws_internet_gateway.main
+aws_route_table.public
+aws_route_table_association.public[0]
+aws_route_table_association.public[1]
+aws_s3_bucket.backups
+aws_s3_bucket_public_access_block.backups
+aws_s3_bucket_versioning.backups
+aws_s3_object.readme
+aws_security_group.web
+aws_subnet.public[0]
+aws_subnet.public[1]
+aws_vpc.main
+
+$ terraform show | head -60
+# data.aws_availability_zones.available:
+data "aws_availability_zones" "available" {
+    group_names = [
+        null,
+    ]
+    id          = "us-east-1"
+    names       = [
+        "us-east-1a",
+        "us-east-1b",
+        "us-east-1c",
+        "us-east-1d",
+        "us-east-1e",
+        "us-east-1f",
+    ]
+    state       = "available"
+    zone_ids    = [
+        "use1-az6",
+        "use1-az1",
+        "use1-az2",
+        "use1-az4",
+        "use1-az3",
+        "use1-az5",
+    ]
+}
+
+# aws_internet_gateway.main:
+resource "aws_internet_gateway" "main" {
+    arn      = "arn:aws:ec2:us-east-1:000000000000:internet-gateway/igw-d293e201"
+    id       = "igw-d293e201"
+    owner_id = "000000000000"
+    tags     = {
+        "Name" = "studytrack-dev-igw"
+    }
+    tags_all = {
+        "ManagedBy" = "terraform"
+        "Name"      = "studytrack-dev-igw"
+        "Owner"     = "kushal-24bcs10123"
+        "Project"   = "studytrack"
+    }
+    vpc_id   = "vpc-98e2ca57"
+}
+
+# aws_route_table.public:
+resource "aws_route_table" "public" {
+    arn              = "arn:aws:ec2:us-east-1:000000000000:route-table/rtb-f436db58"
+    id               = "rtb-f436db58"
+    owner_id         = "000000000000"
+    propagating_vgws = []
+    route            = [
+        {
+            carrier_gateway_id         = null
+            cidr_block                 = "0.0.0.0/0"
+            core_network_arn           = null
+            destination_prefix_list_id = null
+            egress_only_gateway_id     = null
+            gateway_id                 = "igw-d293e201"
+            ipv6_cidr_block            = null
+            local_gateway_id           = null
+            nat_gateway_id             = null
+            network_interface_id       = null

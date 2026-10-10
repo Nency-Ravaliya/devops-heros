@@ -1,0 +1,22 @@
+# scenario 3 (my own): backend pointed at a database host that does not exist.
+# The pod is Running (liveness /health passes) but never Ready (/ready returns 503),
+# so the Service keeps it out of rotation. Different symptom from a crash.
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: studytrack-broken-config, namespace: studytrack}
+spec:
+  replicas: 1
+  selector: {matchLabels: {app: broken-config}}
+  template:
+    metadata: {labels: {app: broken-config}}
+    spec:
+      imagePullSecrets: [{name: ghcr-pull}]
+      containers:
+        - name: backend
+          image: ghcr.io/kushaltalati/studytrack-backend:latest
+          env:
+            - {name: DATABASE_URL, value: "postgresql+psycopg://studytrack:wrong@no-such-db:5432/studytrack"}
+          # entrypoint runs alembic first, which would crash; bypass it to show the readiness-only failure
+          command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+          readinessProbe: {httpGet: {path: /ready, port: 8000}, periodSeconds: 5}
+          livenessProbe: {httpGet: {path: /health, port: 8000}, periodSeconds: 10}

@@ -1,0 +1,96 @@
+
+$ kubectl get ns studytrack
+NAME         STATUS   AGE
+studytrack   Active   27m
+
+$ helm list -n studytrack
+NAME      	NAMESPACE 	REVISION	UPDATED                             	STATUS  	CHART           	APP VERSION
+studytrack	studytrack	1       	2026-10-07 23:34:30.881139 +0530 IST	deployed	studytrack-0.1.0	0.1.0      
+
+$ kubectl -n studytrack get pods -o wide
+NAME                                   READY   STATUS    RESTARTS        AGE     IP            NODE                 NOMINATED NODE   READINESS GATES
+curl-client                            1/1     Running   0               15m     10.244.1.45   kushal-lab-worker2   <none>           <none>
+studytrack-backend-d5d85cb7c-82hzt     1/1     Running   3 (7m20s ago)   7m58s   10.244.1.61   kushal-lab-worker2   <none>           <none>
+studytrack-backend-d5d85cb7c-zg2zb     1/1     Running   3 (7m23s ago)   7m58s   10.244.3.87   kushal-lab-worker    <none>           <none>
+studytrack-frontend-765c98686f-8tk6p   1/1     Running   0               7m58s   10.244.3.88   kushal-lab-worker    <none>           <none>
+studytrack-frontend-765c98686f-db85b   1/1     Running   0               7m58s   10.244.1.60   kushal-lab-worker2   <none>           <none>
+studytrack-postgres-596bb76c48-92rbw   1/1     Running   0               7m58s   10.244.1.63   kushal-lab-worker2   <none>           <none>
+
+$ kubectl -n studytrack get svc
+NAME                  TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)    AGE
+studytrack-backend    ClusterIP   10.96.197.64   <none>        8000/TCP   7m58s
+studytrack-frontend   ClusterIP   10.96.55.87    <none>        80/TCP     7m58s
+studytrack-postgres   ClusterIP   10.96.37.24    <none>        5432/TCP   7m58s
+
+$ kubectl -n studytrack get ingress
+NAME         CLASS   HOSTS              ADDRESS     PORTS   AGE
+studytrack   nginx   studytrack.local   localhost   80      7m58s
+
+$ kubectl -n studytrack get hpa
+NAME                 REFERENCE                       TARGETS       MINPODS   MAXPODS   REPLICAS   AGE
+studytrack-backend   Deployment/studytrack-backend   cpu: 6%/50%   2         6         2          7m58s
+
+$ kubectl -n studytrack get pvc
+NAME                STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE
+studytrack-pgdata   Bound    pvc-16736d3d-70bc-4705-9820-5b1780afcbeb   1Gi        RWO            standard       <unset>                 7m59s
+
+$ kubectl -n studytrack get configmap,secret
+NAME                          DATA   AGE
+configmap/kube-root-ca.crt    1      27m
+configmap/studytrack-config   4      7m59s
+
+NAME                                      TYPE                             DATA   AGE
+secret/ghcr-pull                          kubernetes.io/dockerconfigjson   1      15m
+secret/sh.helm.release.v1.studytrack.v1   helm.sh/release.v1               1      7m59s
+secret/studytrack-db-secret               Opaque                           4      7m59s
+
+$ kubectl -n studytrack get servicemonitor
+NAME                 AGE
+studytrack-backend   7m59s
+
+$ curl -s -H 'Host: studytrack.local' http://localhost/api/entries/summary
+{"total_entries":5,"total_minutes":270,"done_minutes":195,"daily_goal_minutes":120,"goal_reached":true,"by_status":{"done":3,"planned":1,"in_progress":1},"by_subject":[{"subject":"DevOps","minutes":125,"entries":2},{"subject":"DBMS","minutes":60,"entries":1},{"subject":"Operating Systems","minutes":45,"entries":1},{"subject":"Computer Networks","minutes":40,"entries":1}]}
+$ curl -s -o /dev/null -w 'HTTP %{http_code}\n' -H 'Host: studytrack.local' http://localhost/
+HTTP 200
+
+$ kubectl -n studytrack get pods -o custom-columns=NAME:.metadata.name,IMAGE:.spec.containers[0].image,RESTARTS:.status.containerStatuses[0].restartCount
+(eval):1: no matches found: custom-columns=NAME:.metadata.name,IMAGE:.spec.containers[0].image,RESTARTS:.status.containerStatuses[0].restartCount
+
+$ kubectl -n studytrack get deploy studytrack-backend -o jsonpath='{.spec.template.spec.containers[0].startupProbe}{"\n"}{.spec.template.spec.containers[0].readinessProbe}{"\n"}{.spec.template.spec.containers[0].livenessProbe}{"\n"}'
+{"failureThreshold":20,"httpGet":{"path":"/health","port":"http","scheme":"HTTP"},"periodSeconds":3,"successThreshold":1,"timeoutSeconds":1}
+{"failureThreshold":3,"httpGet":{"path":"/ready","port":"http","scheme":"HTTP"},"periodSeconds":5,"successThreshold":1,"timeoutSeconds":1}
+{"failureThreshold":3,"httpGet":{"path":"/health","port":"http","scheme":"HTTP"},"periodSeconds":10,"successThreshold":1,"timeoutSeconds":1}
+
+$ kubectl -n studytrack logs deploy/studytrack-backend --previous | tail -3   # why the backend restarted 3x at install: postgres was not up yet, alembic failed fast, kubelet restarted it
+sqlalchemy.exc.OperationalError: (psycopg.OperationalError) connection failed: connection to server at "10.96.37.24", port 5432 failed: Connection refused
+	Is the server running on that host and accepting TCP/IP connections?
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+
+$ curl -s -H 'Host: studytrack.local' http://localhost/api/entries | python3 -m json.tool | head -12
+[
+    {
+        "subject": "DevOps",
+        "topic": "Argo CD sync and self-heal",
+        "minutes": 35,
+        "status": "planned",
+        "notes": "",
+        "id": 5,
+        "created_at": "2026-10-07T18:12:28.855881Z",
+        "updated_at": "2026-10-07T18:12:28.855886Z"
+    },
+    {
+
+$ curl -s -H 'Host: studytrack.local' http://localhost/ | head -5   # frontend through the Ingress
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+$ kubectl -n studytrack exec deploy/studytrack-backend -- id
+uid=10001(studytrack) gid=999(studytrack) groups=999(studytrack)
+
+$ kubectl -n studytrack exec deploy/studytrack-backend -- env | grep -E 'APP_ENV|DAILY_GOAL|DATABASE_URL' | sed -E 's|(://[^:]+:)[^@]+@|\1***@|'
+APP_ENV=kubernetes
+DAILY_GOAL_MINUTES=120
+DATABASE_URL=postgresql+psycopg://studytrack:***@studytrack-postgres:5432/studytrack

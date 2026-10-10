@@ -1,0 +1,12 @@
+# scenario 1 (from the course): image tag that does not exist -> ImagePullBackOff
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: studytrack-broken-image, namespace: studytrack}
+spec:
+  replicas: 1
+  selector: {matchLabels: {app: broken-image}}
+  template:
+    metadata: {labels: {app: broken-image}}
+    spec:
+      imagePullSecrets: [{name: ghcr-pull}]
+      containers: [{name: backend, image: ghcr.io/kushaltalati/studytrack-backend:does-not-exist}]

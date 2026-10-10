@@ -1,0 +1,13 @@
+# copy to terraform.tfvars and edit. terraform.tfvars is git-ignored.
+aws_region         = "ap-south-1"
+environment        = "dev"
+backup_bucket_name = "studytrack-24bcs10123-backups-dev"
+
+# real AWS: leave empty and let `aws configure` / env vars provide credentials
+# LocalStack: aws_endpoint_url = "http://localhost:4566"
+aws_endpoint_url = ""
+
+# EKS costs about USD 0.10/hour for the control plane plus the worker nodes
+create_eks            = false
+eks_node_instance_type = "t3.medium"
+eks_node_desired_size  = 2

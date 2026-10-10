@@ -1,0 +1,6 @@
+StudyTrack {{ .Chart.AppVersion }} deployed as release "{{ .Release.Name }}" in namespace {{ .Values.namespace }}.
+
+  kubectl -n {{ .Values.namespace }} get pods,svc,ingress,hpa
+  curl -H 'Host: {{ .Values.ingress.host }}' http://localhost/api/entries/summary
+
+Images: {{ include "studytrack.backendImage" . }} and {{ include "studytrack.frontendImage" . }}

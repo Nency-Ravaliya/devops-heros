@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: studytrack
+  labels:
+    app.kubernetes.io/part-of: studytrack
+    owner: kushal-24bcs10123

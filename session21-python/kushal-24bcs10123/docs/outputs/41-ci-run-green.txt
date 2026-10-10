@@ -1,0 +1,54 @@
+# green run: https://github.com/kushaltalati/devops-heros/actions/runs/37665794354
+$ gh run view 37665794354
+
+✓ capstone-kushal-s21 .github/workflows/24bcs10123-final-project.yml · 37665794354
+Triggered via push about 7 minutes ago
+
+JOBS
+✓ Unit tests (pytest) in 23s (ID 112944549622)
+✓ SCA (pip-audit + npm audit) in 22s (ID 112944735361)
+✓ Helm lint + template in 7s (ID 112944735369)
+✓ Secret scan (gitleaks) in 7s (ID 112944735371)
+✓ SAST (bandit + semgrep) in 27s (ID 112944735490)
+✓ Build and push images (GHCR) in 46s (ID 112944949689)
+✓ Container image scan (trivy) (frontend) in 31s (ID 112945288699)
+✓ Container image scan (trivy) (backend) in 32s (ID 112945288872)
+✓ Deploy - bump image tag for Argo CD in 5s (ID 112945546462)
+
+ANNOTATIONS
+
+$ gh run view --job <trivy> --log | grep -E "Total|security gate|studytrack"   (both matrix jobs)
+Container image scan (trivy) (frontend)	trivy - full report (never fails)	2026-10-07T18:20:06.8162888Z ^[[36;1m  ghcr.io/kushaltalati/studytrack-frontend:sha-ada2a45^[[0m
+Container image scan (trivy) (frontend)	trivy - full report (never fails)	2026-10-07T18:20:21.6816509Z │ ghcr.io/kushaltalati/studytrack-frontend:sha-ada2a45 (alpine 3.24.2) │ alpine │        1        │
+Container image scan (trivy) (frontend)	trivy - full report (never fails)	2026-10-07T18:20:21.6818232Z ghcr.io/kushaltalati/studytrack-frontend:sha-ada2a45 (alpine 3.24.2)
+Container image scan (trivy) (frontend)	trivy - full report (never fails)	2026-10-07T18:20:21.6818874Z Total: 1 (UNKNOWN: 0, LOW: 0, MEDIUM: 1, HIGH: 0, CRITICAL: 0)
+Container image scan (trivy) (frontend)	trivy - security gate (HIGH/CRITICAL with a fix available => fail)	2026-10-07T18:20:27.2926237Z ^[[36;1m  ghcr.io/kushaltalati/studytrack-frontend:sha-ada2a45^[[0m
+Container image scan (trivy) (frontend)	trivy - security gate (HIGH/CRITICAL with a fix available => fail)	2026-10-07T18:20:34.0233630Z │ ghcr.io/kushaltalati/studytrack-frontend:sha-ada2a45 (alpine 3.24.2) │ alpine │        0        │
+
+Container image scan (trivy) (backend)	trivy - full report (never fails)	2026-10-07T18:20:07.2403128Z ^[[36;1m  ghcr.io/kushaltalati/studytrack-backend:sha-ada2a45^[[0m
+Container image scan (trivy) (backend)	trivy - full report (never fails)	2026-10-07T18:20:22.2386283Z │ ghcr.io/kushaltalati/studytrack-backend:sha-ada2a45 (debian 13.7)                │   debian   │        0        │
+Container image scan (trivy) (backend)	trivy - full report (never fails)	2026-10-07T18:20:22.2446190Z Total: 6 (UNKNOWN: 0, LOW: 1, MEDIUM: 5, HIGH: 0, CRITICAL: 0)
+Container image scan (trivy) (backend)	trivy - security gate (HIGH/CRITICAL with a fix available => fail)	2026-10-07T18:20:27.9848523Z ^[[36;1m  ghcr.io/kushaltalati/studytrack-backend:sha-ada2a45^[[0m
+Container image scan (trivy) (backend)	trivy - security gate (HIGH/CRITICAL with a fix available => fail)	2026-10-07T18:20:34.3681170Z │ ghcr.io/kushaltalati/studytrack-backend:sha-ada2a45 (debian 13.7)                │   debian   │        0        │
+
+$ gh run view --job <deploy> --log
+Deploy - bump image tag for Argo CD	Set up job	﻿2026-10-07T18:20:39.0889605Z Current runner version: '2.337.0'
+Deploy - bump image tag for Argo CD	Set up job	2026-10-07T18:20:39.0929379Z ##[group]Runner Image Provisioner
+Deploy - bump image tag for Argo CD	Set up job	2026-10-07T18:20:39.0930704Z Hosted Compute Agent
+Deploy - bump image tag for Argo CD	Set up job	2026-10-07T18:20:39.0931717Z Version: 20260901.588
+Deploy - bump image tag for Argo CD	Set up job	2026-10-07T18:20:39.0932985Z Commit: f88ec8081b781fac6c440065ac7ff9e710ce3d0b
+Deploy - bump image tag for Argo CD	Set up job	2026-10-07T18:20:39.0934216Z Build Date: 2026-09-01T19:56:44Z
+Deploy - bump image tag for Argo CD	Set up job	2026-10-07T18:20:39.0935813Z Worker ID: {d298384c-11a5-47f2-8204-bbe3f734131b}
+Deploy - bump image tag for Argo CD	Set up job	2026-10-07T18:20:39.0937043Z Azure Region: eastus
+
+$ gh run view --job <sca> --log | grep -E "No known|vulnerabilities"
+SCA (pip-audit + npm audit)	pip-audit (known CVEs in python dependencies)	2026-10-07T18:19:04.7703382Z No known vulnerabilities found
+SCA (pip-audit + npm audit)	npm audit (production dependencies)	2026-10-07T18:19:07.7691292Z found 0 vulnerabilities
+
+$ gh run list --branch capstone-kushal-s21   (whole history, newest first)
+completed	success	studytrack: retry migrations while postgres starts, run trivy from it…	.github/workflows/24bcs10123-final-project.yml	capstone-kushal-s21	push	37665794354	2m25s	2026-10-07T18:18:19Z
+completed	failure	studytrack pipeline: use the v-prefixed trivy-action tag	.github/workflows/24bcs10123-final-project.yml	capstone-kushal-s21	push	37664015771	1m54s	2026-10-07T18:04:34Z
+completed	failure	studytrack: patched nginx base image, multi-arch image build, pinned …	.github/workflows/24bcs10123-final-project.yml	capstone-kushal-s21	push	37663128449	5m31s	2026-10-07T17:57:45Z
+completed	failure	studytrack backend: upgrade fastapi/starlette past the pip-audit find…	.github/workflows/24bcs10123-final-project.yml	capstone-kushal-s21	push	37662459201	1m58s	2026-10-07T17:52:38Z
+completed	failure	studytrack pipeline: quote the step name that contained a colon	.github/workflows/24bcs10123-final-project.yml	capstone-kushal-s21	push	37661287105	49s	2026-10-07T17:43:33Z
+completed	failure	studytrack: github actions pipeline with tests, sast, sca, secret sca…	.github/workflows/24bcs10123-final-project.yml	capstone-kushal-s21	push	37660923678	0s	2026-10-07T17:40:42Z

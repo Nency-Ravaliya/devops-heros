@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: studytrack-config
+  namespace: {{ .Values.namespace }}
+  labels: {{- include "studytrack.labels" . | nindent 4 }}
+data:
+{{- range $k, $v := .Values.backend.config }}
+  {{ $k }}: {{ $v | quote }}
+{{- end }}
+  BACKEND_URL: "http://studytrack-backend:{{ .Values.backend.port }}"

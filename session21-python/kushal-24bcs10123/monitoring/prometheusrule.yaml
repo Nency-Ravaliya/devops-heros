@@ -1,0 +1,32 @@
+# Alert rules for StudyTrack, picked up by the kube-prometheus-stack operator (release label).
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: studytrack-alerts
+  namespace: studytrack
+  labels:
+    release: kube-prometheus-stack
+spec:
+  groups:
+    - name: studytrack
+      rules:
+        - alert: StudyTrackBackendDown
+          expr: sum(up{job="studytrack-backend"}) == 0
+          for: 1m
+          labels: { severity: critical }
+          annotations:
+            summary: "No StudyTrack backend target is up"
+        - alert: StudyTrackHighErrorRate
+          expr: |
+            sum(rate(http_requests_total{job="studytrack-backend",status=~"5.."}[5m]))
+              / sum(rate(http_requests_total{job="studytrack-backend"}[5m])) > 0.05
+          for: 2m
+          labels: { severity: warning }
+          annotations:
+            summary: "More than 5% of StudyTrack requests return 5xx"
+        - alert: StudyTrackSlowRequests
+          expr: histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{job="studytrack-backend"}[5m])) by (le)) > 0.5
+          for: 5m
+          labels: { severity: warning }
+          annotations:
+            summary: "p95 latency above 500ms"

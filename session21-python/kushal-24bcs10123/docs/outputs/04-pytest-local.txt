@@ -1,0 +1,35 @@
+$ pytest -v --cov=app --cov-report=term-missing
+============================= test session starts ==============================
+platform darwin -- Python 3.12.12, pytest-8.4.2, pluggy-1.6.0 -- /Users/kushalscaler/devops-heros-s21/session21-python/kushal-24bcs10123/backend/.venv/bin/python3.12
+rootdir: /Users/kushalscaler/devops-heros-s21/session21-python/kushal-24bcs10123/backend
+configfile: pytest.ini
+plugins: platformdirs-4.12.3, anyio-4.15.1, cov-7.0.0
+collecting ... collected 11 items
+backend/tests/test_api.py::test_health PASSED                            [  9%]
+backend/tests/test_api.py::test_ready_reports_database_up PASSED         [ 18%]
+backend/tests/test_api.py::test_metrics_endpoint_is_prometheus_text PASSED [ 27%]
+backend/tests/test_api.py::test_list_entries_empty PASSED                [ 36%]
+backend/tests/test_api.py::test_create_entry PASSED                      [ 45%]
+backend/tests/test_api.py::test_create_entry_validation PASSED           [ 54%]
+backend/tests/test_api.py::test_get_entry_and_404 PASSED                 [ 63%]
+backend/tests/test_api.py::test_update_entry PASSED                      [ 72%]
+backend/tests/test_api.py::test_delete_entry PASSED                      [ 81%]
+backend/tests/test_api.py::test_filter_by_subject_and_status PASSED      [ 90%]
+backend/tests/test_api.py::test_summary PASSED                           [100%]
+=============================== warnings summary ===============================
+backend/.venv/lib/python3.12/site-packages/fastapi/testclient.py:1
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+================================ tests coverage ================================
+______________ coverage: platform darwin, python 3.12.12-final-0 _______________
+Name                      Stmts   Miss  Cover   Missing
+-------------------------------------------------------
+backend/app/__init__.py       0      0   100%
+backend/app/config.py        10      0   100%
+backend/app/db.py            15      4    73%   20-24
+backend/app/main.py          85      6    93%   24, 46, 67-70
+backend/app/metrics.py       20      0   100%
+backend/app/models.py        16      0   100%
+backend/app/schemas.py       35      0   100%
+-------------------------------------------------------
+TOTAL                       181     10    94%
+======================== 11 passed, 1 warning in 0.22s =========================

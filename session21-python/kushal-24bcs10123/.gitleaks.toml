@@ -1,0 +1,19 @@
+# gitleaks config for the StudyTrack project: default rules plus an allowlist for the
+# obviously-fake lab values, so the scan fails only on things that look like real secrets.
+title = "studytrack"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "lab placeholders and captured command output"
+regexes = [
+  '''studytrack-dev-only''',
+  '''admin123''',
+  '''postgresql\+psycopg://studytrack:[^@]+@''',
+]
+paths = [
+  '''docs/outputs/''',
+  '''screenshots/''',
+  '''package-lock\.json''',
+]

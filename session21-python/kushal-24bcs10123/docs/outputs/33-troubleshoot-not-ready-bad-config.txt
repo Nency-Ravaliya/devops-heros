@@ -1,0 +1,69 @@
+############ scenario 3 (my own): wrong database host -> pod Running but never Ready (troubleshooting/broken-config.yaml)
+
+$ kubectl apply -f troubleshooting/broken-config.yaml
+deployment.apps/studytrack-broken-config created
+
+$ kubectl -n studytrack get pods -l app=broken-config -o wide
+NAME                                        READY   STATUS    RESTARTS   AGE   IP            NODE                 NOMINATED NODE   READINESS GATES
+studytrack-broken-config-58465cd99b-tpjtk   0/1     Running   0          45s   10.244.1.70   kushal-lab-worker2   <none>           <none>
+
+$ kubectl -n studytrack describe pod studytrack-broken-config-58465cd99b-tpjtk | sed -n '/^Conditions/,/^Volumes/p'
+Conditions:
+  Type                        Status
+  PodReadyToStartContainers   True 
+  Initialized                 True 
+  Ready                       False 
+  ContainersReady             False 
+  PodScheduled                True 
+Volumes:
+
+$ kubectl -n studytrack describe pod studytrack-broken-config-58465cd99b-tpjtk | sed -n '/^Events/,$p' | tail -4
+  Normal   Created    42s                kubelet            Container created
+  Normal   Started    42s                kubelet            Container started
+  Warning  Unhealthy  41s (x2 over 42s)  kubelet            Readiness probe failed: Get "http://10.244.1.70:8000/ready": dial tcp 10.244.1.70:8000: connect: connection refused
+  Warning  Unhealthy  1s (x8 over 36s)   kubelet            Readiness probe failed: HTTP probe failed with statuscode: 503
+
+$ kubectl -n studytrack logs studytrack-broken-config-58465cd99b-tpjtk | grep -i 'readiness' | tail -2
+2026-10-07 18:14:22,055 WARNING studytrack readiness check failed: (psycopg.OperationalError) [Errno -2] Name or service not known
+2026-10-07 18:14:27,091 WARNING studytrack readiness check failed: (psycopg.OperationalError) [Errno -2] Name or service not known
+
+$ kubectl -n studytrack exec studytrack-broken-config-58465cd99b-tpjtk -- python -c "import urllib.request as u; print(u.urlopen('http://localhost:8000/health').read())"
+b'{"status":"ok"}'
+
+$ kubectl -n studytrack exec studytrack-broken-config-58465cd99b-tpjtk -- python -c "import urllib.request as u, urllib.error as e
+try: u.urlopen('http://localhost:8000/ready')
+except e.HTTPError as err: print(err.code, err.read())"
+503 b'{"status":"not_ready","database":"down"}'
+
+$ kubectl -n studytrack exec studytrack-broken-config-58465cd99b-tpjtk -- env | grep DATABASE_URL | sed -E 's|(://[^:]+:)[^@]+@|\1***@|'
+DATABASE_URL=postgresql+psycopg://studytrack:***@no-such-db:5432/studytrack
+
+$ kubectl -n studytrack exec studytrack-broken-config-58465cd99b-tpjtk -- getent hosts no-such-db ; echo exit=$?
+command terminated with exit code 2
+exit=2
+
+ROOT CAUSE: liveness (/health) is green so kubelet never restarts the pod, but readiness (/ready) does SELECT 1 and gets 'could not translate host name no-such-db', so the pod stays 0/1 and would never receive Service traffic. The bug is configuration (DATABASE_URL points at a host that does not exist), not code.
+FIX: give it the real connection string from the Secret the chart creates.
+
+$ kubectl -n studytrack set env deployment/studytrack-broken-config DATABASE_URL- 
+deployment.apps/studytrack-broken-config env updated
+
+$ kubectl -n studytrack set env deployment/studytrack-broken-config --from=secret/studytrack-db-secret --keys=DATABASE_URL
+deployment.apps/studytrack-broken-config env updated
+
+$ kubectl -n studytrack rollout status deployment/studytrack-broken-config --timeout=180s
+Waiting for deployment "studytrack-broken-config" rollout to finish: 0 out of 1 new replicas have been updated...
+Waiting for deployment "studytrack-broken-config" rollout to finish: 0 out of 1 new replicas have been updated...
+Waiting for deployment "studytrack-broken-config" rollout to finish: 1 old replicas are pending termination...
+Waiting for deployment "studytrack-broken-config" rollout to finish: 1 old replicas are pending termination...
+Waiting for deployment "studytrack-broken-config" rollout to finish: 1 old replicas are pending termination...
+Waiting for deployment "studytrack-broken-config" rollout to finish: 1 old replicas are pending termination...
+deployment "studytrack-broken-config" successfully rolled out
+
+$ kubectl -n studytrack get pods -l app=broken-config
+NAME                                        READY   STATUS        RESTARTS   AGE
+studytrack-broken-config-587c8b66f5-6gwmj   1/1     Running       0          11s
+studytrack-broken-config-fb6cb58b5-thmng    0/1     Terminating   0          11s
+
+$ kubectl -n studytrack delete -f troubleshooting/broken-config.yaml
+deployment.apps "studytrack-broken-config" deleted from studytrack namespace

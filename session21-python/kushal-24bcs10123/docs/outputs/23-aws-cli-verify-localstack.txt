@@ -1,0 +1,45 @@
+# verify in LocalStack with the aws cli
+$ aws --endpoint-url=http://localhost:4566 --region us-east-1 ec2 describe-vpcs --query 'Vpcs[].{id:VpcId,cidr:CidrBlock}' --output table
+-----------------------------------
+|          DescribeVpcs           |
++----------------+----------------+
+|      cidr      |      id        |
++----------------+----------------+
+|  172.31.0.0/16 |  vpc-4311c09f  |
+|  10.42.0.0/16  |  vpc-98e2ca57  |
++----------------+----------------+
+
+$ aws --endpoint-url=http://localhost:4566 --region us-east-1 ec2 describe-subnets --query 'Subnets[].{id:SubnetId,cidr:CidrBlock,az:AvailabilityZone}' --output table
+-----------------------------------------------------
+|                  DescribeSubnets                  |
++------------+------------------+-------------------+
+|     az     |      cidr        |        id         |
++------------+------------------+-------------------+
+|  us-east-1a|  172.31.0.0/20   |  subnet-d68fe3f6  |
+|  us-east-1a|  10.42.1.0/24    |  subnet-0fe094cb  |
+|  us-east-1b|  172.31.16.0/20  |  subnet-4ab54341  |
+|  us-east-1b|  10.42.2.0/24    |  subnet-291d6d0a  |
+|  us-east-1c|  172.31.32.0/20  |  subnet-1567f277  |
+|  us-east-1d|  172.31.48.0/20  |  subnet-69911987  |
+|  us-east-1e|  172.31.64.0/20  |  subnet-91eee245  |
+|  us-east-1f|  172.31.80.0/20  |  subnet-833ac783  |
++------------+------------------+-------------------+
+
+$ aws --endpoint-url=http://localhost:4566 --region us-east-1 ec2 describe-security-groups --query 'SecurityGroups[].{name:GroupName,id:GroupId}' --output table
+---------------------------------------------------
+|             DescribeSecurityGroups              |
++-----------------------+-------------------------+
+|          id           |          name           |
++-----------------------+-------------------------+
+|  sg-c2d5ec83a11457a02 |  default                |
+|  sg-8cbc949e793c92172 |  default                |
+|  sg-244bdadd7db034858 |  studytrack-dev-web-sg  |
++-----------------------+-------------------------+
+
+$ aws --endpoint-url=http://localhost:4566 --region us-east-1 s3 ls
+2026-10-07 23:12:21 studytrack-24bcs10123-backups-dev
+2026-10-07 23:12:42 s18-notes-kushal
+
+$ aws --endpoint-url=http://localhost:4566 --region us-east-1 s3 ls s3://studytrack-24bcs10123-backups-dev/
+2026-10-07 23:12:21         76 README.txt
+

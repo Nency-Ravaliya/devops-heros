@@ -1,0 +1,48 @@
+############ scenario 1: ImagePullBackOff (troubleshooting/broken-image.yaml)
+
+$ kubectl apply -f troubleshooting/broken-image.yaml
+deployment.apps/studytrack-broken-image created
+
+$ kubectl -n studytrack get pods -l app=broken-image -o wide
+NAME                                      READY   STATUS         RESTARTS   AGE   IP            NODE                 NOMINATED NODE   READINESS GATES
+studytrack-broken-image-f9bc74596-q5rw6   0/1     ErrImagePull   0          30s   10.244.1.68   kushal-lab-worker2   <none>           <none>
+
+$ kubectl -n studytrack describe pod studytrack-broken-image-f9bc74596-q5rw6 | sed -n '/^Events/,$p'
+Events:
+  Type     Reason     Age                From               Message
+  ----     ------     ----               ----               -------
+  Normal   Scheduled  30s                default-scheduler  Successfully assigned studytrack/studytrack-broken-image-f9bc74596-q5rw6 to kushal-lab-worker2
+  Normal   Pulling    17s (x2 over 30s)  kubelet            Pulling image "ghcr.io/kushaltalati/studytrack-backend:does-not-exist"
+  Warning  Failed     16s (x2 over 28s)  kubelet            Failed to pull image "ghcr.io/kushaltalati/studytrack-backend:does-not-exist": rpc error: code = NotFound desc = failed to pull and unpack image "ghcr.io/kushaltalati/studytrack-backend:does-not-exist": failed to resolve reference "ghcr.io/kushaltalati/studytrack-backend:does-not-exist": ghcr.io/kushaltalati/studytrack-backend:does-not-exist: not found
+  Warning  Failed     16s (x2 over 28s)  kubelet            Error: ErrImagePull
+  Normal   BackOff    1s (x2 over 28s)   kubelet            Back-off pulling image "ghcr.io/kushaltalati/studytrack-backend:does-not-exist"
+  Warning  Failed     1s (x2 over 28s)   kubelet            Error: ImagePullBackOff
+
+$ kubectl -n studytrack get events --field-selector involvedObject.name=studytrack-broken-image-f9bc74596-q5rw6 --sort-by=.lastTimestamp | tail -4
+16s         Warning   Failed      pod/studytrack-broken-image-f9bc74596-q5rw6   Failed to pull image "ghcr.io/kushaltalati/studytrack-backend:does-not-exist": rpc error: code = NotFound desc = failed to pull and unpack image "ghcr.io/kushaltalati/studytrack-backend:does-not-exist": failed to resolve reference "ghcr.io/kushaltalati/studytrack-backend:does-not-exist": ghcr.io/kushaltalati/studytrack-backend:does-not-exist: not found
+16s         Warning   Failed      pod/studytrack-broken-image-f9bc74596-q5rw6   Error: ErrImagePull
+1s          Normal    BackOff     pod/studytrack-broken-image-f9bc74596-q5rw6   Back-off pulling image "ghcr.io/kushaltalati/studytrack-backend:does-not-exist"
+1s          Warning   Failed      pod/studytrack-broken-image-f9bc74596-q5rw6   Error: ImagePullBackOff
+
+$ kubectl -n studytrack logs studytrack-broken-image-f9bc74596-q5rw6
+Error from server (BadRequest): container "backend" in pod "studytrack-broken-image-f9bc74596-q5rw6" is waiting to start: image can't be pulled
+
+ROOT CAUSE: the tag 'does-not-exist' is not in ghcr.io/kushaltalati/studytrack-backend (registry answers 'manifest unknown'), so kubelet cannot pull and keeps backing off (ErrImagePull -> ImagePullBackOff). Nothing to see in logs: the container never started.
+FIX: point the Deployment at a tag that exists (the sha tag the pipeline pushed, or latest).
+
+$ kubectl -n studytrack set image deployment/studytrack-broken-image backend=ghcr.io/kushaltalati/studytrack-backend:sha-da417a0
+deployment.apps/studytrack-broken-image image updated
+
+$ kubectl -n studytrack rollout status deployment/studytrack-broken-image --timeout=240s
+Waiting for deployment "studytrack-broken-image" rollout to finish: 1 old replicas are pending termination...
+Waiting for deployment "studytrack-broken-image" rollout to finish: 1 old replicas are pending termination...
+Waiting for deployment "studytrack-broken-image" rollout to finish: 1 old replicas are pending termination...
+deployment "studytrack-broken-image" successfully rolled out
+
+$ kubectl -n studytrack get pods -l app=broken-image
+NAME                                       READY   STATUS        RESTARTS   AGE
+studytrack-broken-image-55659b86b6-jg5tx   1/1     Running       0          1s
+studytrack-broken-image-f9bc74596-q5rw6    0/1     Terminating   0          32s
+
+$ kubectl -n studytrack delete -f troubleshooting/broken-image.yaml
+deployment.apps "studytrack-broken-image" deleted from studytrack namespace

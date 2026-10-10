@@ -1,0 +1,61 @@
+# Default values for the studytrack chart. values-dev.yaml / values-prod.yaml override these.
+namespace: studytrack
+
+image:
+  registry: ghcr.io/kushaltalati
+  backend: studytrack-backend
+  frontend: studytrack-frontend
+  # the CI pipeline rewrites this to the git SHA of the build it just pushed
+  tag: sha-ada2a45
+  pullPolicy: IfNotPresent
+  # GHCR packages are private by default; this Secret (type kubernetes.io/dockerconfigjson) is created
+  # out of band with `kubectl create secret docker-registry`, never committed. Empty = no pull secret.
+  pullSecret: ghcr-pull
+
+backend:
+  replicas: 2
+  port: 8000
+  resources:
+    requests: { cpu: 100m, memory: 128Mi }
+    limits: { cpu: 500m, memory: 256Mi }
+  config:
+    APP_ENV: kubernetes
+    DAILY_GOAL_MINUTES: "120"
+    UVICORN_WORKERS: "1"
+
+frontend:
+  replicas: 2
+  port: 8080
+  resources:
+    requests: { cpu: 25m, memory: 32Mi }
+    limits: { cpu: 100m, memory: 64Mi }
+
+postgres:
+  image: postgres:16-alpine
+  user: studytrack
+  database: studytrack
+  # dev-only password; a real deployment would create the Secret out of band (sealed-secrets / external-secrets)
+  password: studytrack-dev-only
+  storage: 1Gi
+  storageClassName: standard
+  resources:
+    requests: { cpu: 50m, memory: 128Mi }
+    limits: { cpu: 500m, memory: 512Mi }
+
+ingress:
+  enabled: true
+  className: nginx
+  host: studytrack.local
+
+hpa:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 6
+  targetCPUUtilizationPercentage: 50
+
+serviceMonitor:
+  enabled: true
+  interval: 15s
+  # kube-prometheus-stack release label so the operator picks it up
+  labels:
+    release: kube-prometheus-stack

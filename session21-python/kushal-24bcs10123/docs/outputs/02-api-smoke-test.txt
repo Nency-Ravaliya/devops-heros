@@ -1,0 +1,94 @@
+$ curl -s localhost:8000/health
+{"status":"ok"}
+$ curl -s localhost:8000/ready
+{"status":"ready","database":"up"}
+$ curl -s localhost:8000/
+{"app":"StudyTrack API","version":"0.1.0","environment":"compose","docs":"/docs","uptime_seconds":0.4}
+$ curl -s localhost:8000/api/entries | python3 -m json.tool | head -24   # data survived the backend rebuild: it lives in the postgres volume
+[
+    {
+        "subject": "DevOps",
+        "topic": "Helm chart for StudyTrack",
+        "minutes": 90,
+        "status": "done",
+        "notes": "",
+        "id": 5,
+        "created_at": "2026-10-07T17:43:47.813065Z",
+        "updated_at": "2026-10-07T17:43:47.813071Z"
+    },
+    {
+        "subject": "Operating Systems",
+        "topic": "Deadlock detection",
+        "minutes": 30,
+        "status": "in_progress",
+        "notes": "",
+        "id": 4,
+        "created_at": "2026-10-07T17:43:47.795054Z",
+        "updated_at": "2026-10-07T17:43:47.850233Z"
+    },
+    {
+        "subject": "DBMS",
+        "topic": "B+ tree indexes",
+$ curl -s -X POST localhost:8000/api/entries -H "Content-Type: application/json" -d {"subject":"Computer Networks","topic":"TCP congestion control","minutes":40,"status":"in_progress"}
+{"subject":"Computer Networks","topic":"TCP congestion control","minutes":40,"status":"in_progress","notes":"","id":6,"created_at":"2026-10-07T17:53:58.438678Z","updated_at":"2026-10-07T17:53:58.438683Z"}
+$ curl -s -X PUT localhost:8000/api/entries/4 -H "Content-Type: application/json" -d {"status":"done"}
+{"subject":"Operating Systems","topic":"Deadlock detection","minutes":30,"status":"done","notes":"","id":4,"created_at":"2026-10-07T17:43:47.795054Z","updated_at":"2026-10-07T17:53:58.460534Z"}
+$ curl -s -o /dev/null -w "HTTP %{http_code}
+" -X DELETE localhost:8000/api/entries/6
+HTTP 204
+$ curl -s -o /dev/null -w "HTTP %{http_code}
+" localhost:8000/api/entries/6   # gone
+HTTP 404
+$ curl -s -o /dev/null -w "HTTP %{http_code}
+" -X POST localhost:8000/api/entries -d {"subject":""}   # validation
+HTTP 422
+$ curl -s localhost:8000/api/entries/summary | python3 -m json.tool
+{
+    "total_entries": 4,
+    "total_minutes": 225,
+    "done_minutes": 225,
+    "daily_goal_minutes": 120,
+    "goal_reached": true,
+    "by_status": {
+        "done": 4
+    },
+    "by_subject": [
+        {
+            "subject": "DevOps",
+            "minutes": 90,
+            "entries": 1
+        },
+        {
+            "subject": "Operating Systems",
+            "minutes": 75,
+            "entries": 2
+        },
+        {
+            "subject": "DBMS",
+            "minutes": 60,
+            "entries": 1
+        }
+    ]
+}
+$ curl -s localhost:3000/api/entries/summary   # same call through nginx in the frontend container
+{"total_entries":4,"total_minutes":225,"done_minutes":225,"daily_goal_minutes":120,"goal_reached":true,"by_status":{"done":4},"by_subject":[{"subject":"DevOps","minutes":90,"entries":1},{"subject":"Operating Systems","minutes":75,"entries":2},{"subject":"DBMS","minutes":60,"entries":1}]}
+$ curl -s localhost:8000/metrics | grep -E "^(http_requests_total|http_request_duration_seconds_count|studytrack_)"
+http_requests_total{handler="/",method="GET",status="200"} 1.0
+http_requests_total{handler="/api/entries",method="GET",status="200"} 1.0
+http_requests_total{handler="/api/entries",method="POST",status="201"} 1.0
+http_requests_total{handler="/api/entries/{entry_id}",method="PUT",status="200"} 1.0
+http_requests_total{handler="/api/entries/{entry_id}",method="DELETE",status="204"} 1.0
+http_requests_total{handler="/api/entries/{entry_id}",method="GET",status="404"} 1.0
+http_requests_total{handler="/api/entries",method="POST",status="422"} 1.0
+http_requests_total{handler="/api/entries/summary",method="GET",status="200"} 2.0
+http_request_duration_seconds_count{handler="/",method="GET"} 1.0
+http_request_duration_seconds_count{handler="/api/entries",method="GET"} 1.0
+http_request_duration_seconds_count{handler="/api/entries",method="POST"} 2.0
+http_request_duration_seconds_count{handler="/api/entries/{entry_id}",method="PUT"} 1.0
+http_request_duration_seconds_count{handler="/api/entries/{entry_id}",method="DELETE"} 1.0
+http_request_duration_seconds_count{handler="/api/entries/{entry_id}",method="GET"} 1.0
+http_request_duration_seconds_count{handler="/api/entries/summary",method="GET"} 2.0
+studytrack_entries_created_total{subject="Computer Networks"} 1.0
+studytrack_entries_created_created{subject="Computer Networks"} 1.7913956384436197e+09
+studytrack_minutes_logged_total 40.0
+studytrack_minutes_logged_created 1.7913956378929486e+09

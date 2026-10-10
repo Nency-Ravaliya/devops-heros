@@ -1,0 +1,14 @@
+$ docker manifest inspect ghcr.io/kushaltalati/studytrack-backend:sha-ada2a45   # platforms in the image index
+  linux/amd64  sha256:3532beef284203e2
+  linux/arm64  sha256:9d4685bd3be56585
+$ docker image inspect --format '{{.Os}}/{{.Architecture}} user={{.Config.User}}' ghcr.io/kushaltalati/studytrack-backend:sha-ada2a45
+  linux/arm64 user=10001:10001
+
+$ docker manifest inspect ghcr.io/kushaltalati/studytrack-frontend:sha-ada2a45   # platforms in the image index
+  linux/amd64  sha256:26d333051beb3835
+  linux/arm64  sha256:8f8bd223eaedb7ca
+$ docker image inspect --format '{{.Os}}/{{.Architecture}} user={{.Config.User}}' ghcr.io/kushaltalati/studytrack-frontend:sha-ada2a45
+  linux/arm64 user=101
+
+package pages: https://github.com/kushaltalati/devops-heros/pkgs/container/studytrack-backend  https://github.com/kushaltalati/devops-heros/pkgs/container/studytrack-frontend
+tags pushed per run: sha-<7 chars of the commit> and latest; the sha tag is what the deploy job writes into helm/studytrack/values.yaml

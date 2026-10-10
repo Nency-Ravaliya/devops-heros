@@ -1,0 +1,59 @@
+############ scenario 2: Service with a selector that matches nothing (troubleshooting/broken-service.yaml)
+
+$ kubectl -n studytrack run probe-nginx --image=nginx:1.27-alpine --labels=app=probe-nginx --port=80
+pod/probe-nginx created
+
+$ kubectl -n studytrack run curl-client --image=curlimages/curl:8.10.1 --command -- sleep 3600
+pod/curl-client created
+
+$ kubectl -n studytrack wait --for=condition=Ready pod/probe-nginx pod/curl-client --timeout=180s
+pod/probe-nginx condition met
+pod/curl-client condition met
+
+$ kubectl apply -f troubleshooting/broken-service.yaml
+service/broken-service created
+
+$ kubectl -n studytrack get svc broken-service
+NAME             TYPE        CLUSTER-IP    EXTERNAL-IP   PORT(S)    AGE
+broken-service   ClusterIP   10.96.78.24   <none>        8080/TCP   0s
+
+$ kubectl -n studytrack get endpointslices -l kubernetes.io/service-name=broken-service
+NAME                   ADDRESSTYPE   PORTS     ENDPOINTS   AGE
+broken-service-mv5m6   IPv4          <unset>   <unset>     0s
+
+$ kubectl -n studytrack exec curl-client -- curl -s -m 5 -o /dev/null -w 'HTTP %{http_code}\n' http://broken-service:8080/ ; true
+HTTP 000
+command terminated with exit code 7
+
+$ kubectl -n studytrack describe svc broken-service | grep -E 'Selector|Endpoints|TargetPort'
+Selector:                 app=label-that-does-not-exist
+TargetPort:               8080/TCP
+Endpoints:                
+
+$ kubectl -n studytrack get pods --show-labels
+NAME          READY   STATUS    RESTARTS   AGE   LABELS
+curl-client   1/1     Running   0          9s    run=curl-client
+probe-nginx   1/1     Running   0          9s    app=probe-nginx
+
+ROOT CAUSE: selector app=label-that-does-not-exist matches no pod, so the EndpointSlice is empty and kube-proxy has nowhere to send the traffic (curl exits 000: connection refused/timeout). Second bug: targetPort 8080, but nginx listens on 80.
+FIX: patch the selector to the real pod label and the targetPort to the container port.
+
+$ kubectl -n studytrack patch svc broken-service -p '{"spec":{"selector":{"app":"probe-nginx"},"ports":[{"port":8080,"targetPort":80}]}}'
+service/broken-service patched
+
+$ kubectl -n studytrack get endpointslices -l kubernetes.io/service-name=broken-service
+NAME                   ADDRESSTYPE   PORTS   ENDPOINTS     AGE
+broken-service-mv5m6   IPv4          80      10.244.3.62   5s
+
+$ kubectl -n studytrack exec curl-client -- curl -s -m 10 -o /dev/null -w 'HTTP %{http_code}\n' http://broken-service:8080/
+HTTP 200
+
+$ kubectl -n studytrack exec curl-client -- curl -s -m 10 http://broken-service:8080/ | head -4
+<!DOCTYPE html>
+<html>
+<head>
+<title>Welcome to nginx!</title>
+
+$ kubectl -n studytrack delete svc/broken-service pod/probe-nginx --wait=false
+service "broken-service" deleted from studytrack namespace
+pod "probe-nginx" deleted from studytrack namespace

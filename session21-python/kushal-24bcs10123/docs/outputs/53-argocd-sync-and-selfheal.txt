@@ -1,0 +1,106 @@
+# Hand-over from the manual Helm release to Argo CD (GitOps). Argo CD renders the same chart from git,
+# so I remove the hand-made release first; from here on git is the only way the namespace changes.
+
+$ helm uninstall studytrack -n studytrack
+release "studytrack" uninstalled
+
+$ kubectl -n studytrack get all 2>&1 | head -5
+NAME                                       READY   STATUS        RESTARTS      AGE
+pod/curl-client                            1/1     Running       0             19m
+pod/studytrack-backend-d5d85cb7c-82hzt     1/1     Terminating   3 (10m ago)   11m
+pod/studytrack-backend-d5d85cb7c-zg2zb     1/1     Terminating   3 (10m ago)   11m
+pod/studytrack-frontend-765c98686f-8tk6p   1/1     Terminating   0             11m
+
+$ kubectl -n argocd get pods -o wide | grep -E 'server|application-controller|repo-server'
+argocd-application-controller-0                     1/1     Running   1 (35m ago)   11h   10.244.1.2    kushal-lab-worker2   <none>           <none>
+argocd-dex-server-66c78cf887-wgwk7                  1/1     Running   1 (35m ago)   11h   10.244.3.10   kushal-lab-worker    <none>           <none>
+argocd-repo-server-d89c7967d-pbgxz                  1/1     Running   1 (35m ago)   11h   10.244.1.7    kushal-lab-worker2   <none>           <none>
+argocd-server-776b7cdd4d-wklr9                      1/1     Running   1 (35m ago)   11h   10.244.3.8    kushal-lab-worker    <none>           <none>
+
+$ cat gitops/argocd-application.yaml
+# Applied ONCE by hand (kubectl apply -f gitops/argocd-application.yaml).
+# From then on Argo CD keeps namespace studytrack equal to helm/studytrack on this branch.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: studytrack
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/kushaltalati/devops-heros.git
+    targetRevision: capstone-kushal-s21
+    path: session21-python/kushal-24bcs10123/helm/studytrack
+    helm:
+      valueFiles:
+        - values.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: studytrack
+  syncPolicy:
+    automated:
+      prune: true      # delete what is no longer in git
+      selfHeal: true   # undo manual kubectl edits
+    syncOptions:
+      - CreateNamespace=true
+
+$ kubectl apply -f gitops/argocd-application.yaml
+Warning: metadata.finalizers: "resources-finalizer.argocd.argoproj.io": prefer a domain-qualified finalizer name including a path (/) to avoid accidental conflicts with other finalizer writers
+application.argoproj.io/studytrack created
+
+$ kubectl -n argocd get application studytrack
+NAME         SYNC STATUS   HEALTH STATUS
+studytrack   Synced        Healthy
+
+$ kubectl -n argocd get application studytrack -o jsonpath='{range .status.resources[*]}{.kind}{"/"}{.name}{"  "}{.status}{"  "}{.health.status}{"\n"}{end}'
+ConfigMap/studytrack-config  Synced  
+PersistentVolumeClaim/studytrack-pgdata  Synced  
+Secret/studytrack-db-secret  Synced  
+Service/studytrack-backend  Synced  
+Service/studytrack-frontend  Synced  
+Service/studytrack-postgres  Synced  
+Deployment/studytrack-backend  Synced  
+Deployment/studytrack-frontend  Synced  
+Deployment/studytrack-postgres  Synced  
+HorizontalPodAutoscaler/studytrack-backend  Synced  
+ServiceMonitor/studytrack-backend  Synced  
+Ingress/studytrack  Synced  
+
+$ kubectl -n argocd get application studytrack -o jsonpath='{.status.sync.revision}{"\n"}'
+676c5cd3623302bac802a8f5a9689698510cdf25
+
+$ kubectl -n studytrack get pods
+NAME                                   READY   STATUS    RESTARTS      AGE
+curl-client                            1/1     Running   0             20m
+studytrack-backend-5f8784687-22kc5     1/1     Running   2 (74s ago)   86s
+studytrack-backend-5f8784687-sl7l8     1/1     Running   2 (74s ago)   86s
+studytrack-frontend-5499fbc4f9-ctb6z   1/1     Running   0             86s
+studytrack-frontend-5499fbc4f9-qc265   1/1     Running   0             86s
+studytrack-postgres-596bb76c48-86cnk   1/1     Running   0             86s
+
+$ kubectl -n studytrack get deploy studytrack-backend -o jsonpath='{.spec.template.spec.containers[0].image}{"\n"}'
+ghcr.io/kushaltalati/studytrack-backend:latest
+
+############ self-heal: a manual change to the cluster is reverted to what git says
+
+$ kubectl -n studytrack get deploy studytrack-frontend -o jsonpath='replicas in git/cluster: {.spec.replicas}{"\n"}'
+replicas in git/cluster: 2
+
+$ kubectl -n studytrack scale deploy studytrack-frontend --replicas=5     # drift introduced by hand
+deployment.apps/studytrack-frontend scaled
+
+$ kubectl -n studytrack get deploy studytrack-frontend -o jsonpath='{.spec.replicas}{"\n"}'
+5
+(waited 140s)
+
+$ kubectl -n studytrack get deploy studytrack-frontend -o jsonpath='{.spec.replicas}{"\n"}'   # back to 2 without me touching it
+2
+
+$ kubectl -n argocd get application studytrack -o jsonpath='{.status.operationState.phase} {.status.operationState.message}{"\n"}'
+Succeeded successfully synced (all tasks run)
+
+$ kubectl -n argocd get application studytrack -o jsonpath='{range .status.history[*]}{.id} {.deployedAt} {.revision}{"\n"}{end}'
+0 2026-10-07T18:15:49Z 676c5cd3623302bac802a8f5a9689698510cdf25
+1 2026-10-07T18:23:41Z 58f742e17b9489cab25f45c8dcd7ebf8b7ab206d
