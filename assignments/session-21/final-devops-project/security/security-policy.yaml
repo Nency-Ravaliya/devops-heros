@@ -1,0 +1,17 @@
+sast:
+  tool: bandit
+  target: backend/app
+  fail_on_severity: HIGH
+
+sca:
+  tool: safety
+  target: backend/requirements.txt
+
+secret_scan:
+  tool: trufflehog
+  scan_commits: true
+
+container_scan:
+  tool: trivy
+  severity: CRITICAL,HIGH
+  exit_code: 1

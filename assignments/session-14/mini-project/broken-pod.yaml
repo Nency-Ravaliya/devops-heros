@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: broken-app
+  labels:
+    app: broken-app
+spec:
+  containers:
+  - name: broken-app
+    image: nginx:nonexistent-tag-999
+    ports:
+    - containerPort: 80

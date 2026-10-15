@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-recreate
+  labels:
+    app: app-recreate
+spec:
+  replicas: 3
+  # Recreate strategy: Kubernetes terminates ALL old pods before creating any new pods.
+  # This guarantees no two versions run concurrently, but causes a brief downtime.
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: app-recreate
+  template:
+    metadata:
+      labels:
+        app: app-recreate
+        version: v1
+    spec:
+      containers:
+        - name: web
+          image: nginx:1.24-alpine
+          ports:
+            - containerPort: 80
+          lifecycle:
+            postStart:
+              exec:
+                command:
+                  - sh
+                  - -c
+                  - |
+                    echo '<html><body style="background:#1b262c;color:#0f4c81;font-family:monospace;font-size:2.5em;text-align:center;padding-top:20vh">
+                    <p style="color:#bbe1fa">STRATEGY: RECREATE</p>
+                    <p style="color:#3282b8">VERSION: v1</p>
+                    <p style="font-size:0.4em;color:#bbe1fa">All v1 pods will be killed before v2 starts</p>
+                    </body></html>' > /usr/share/nginx/html/index.html
+          resources:
+            requests:
+              cpu: "30m"
+              memory: "32Mi"
+            limits:
+              cpu: "100m"
+              memory: "64Mi"

@@ -1,2 +1,9 @@
+DevOps Assignment Season 2.md
 ./node_modules/
 .zip
+capstone-project/
+**/.terraform/
+*.tfstate
+*.tfstate.*
+.DS_Store
+

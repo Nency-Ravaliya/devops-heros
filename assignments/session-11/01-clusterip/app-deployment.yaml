@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-app-clusterip
+  labels:
+    app: web-clusterip
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: web-clusterip
+  template:
+    metadata:
+      labels:
+        app: web-clusterip
+    spec:
+      containers:
+        - name: nginx-web
+          image: nginx:1.25-alpine
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+            limits:
+              cpu: "100m"
+              memory: "128Mi"
