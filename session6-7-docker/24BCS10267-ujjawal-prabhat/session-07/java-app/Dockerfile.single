@@ -1,0 +1,10 @@
+# Single-stage build (for size comparison only)
+# Maven, the full JDK and the ~/.m2 cache all end up in the runtime image.
+FROM maven:3.9-eclipse-temurin-21
+WORKDIR /src
+COPY pom.xml .
+RUN mvn -q dependency:go-offline
+COPY src ./src
+RUN mvn -q package -DskipTests
+EXPOSE 8080
+CMD ["java", "-jar", "target/app.jar"]
