@@ -1,0 +1,15 @@
+# Terraform working dir, state, plans, crash logs - never commit these
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+crash.log
+crash.*.log
+
+# Real variable values stay local; the example is committed
+*.tfvars
+!terraform.tfvars.example
+
+# The course .gitignore ignores the lock file; this project commits it
+# so everyone uses the same provider version.
+!.terraform.lock.hcl

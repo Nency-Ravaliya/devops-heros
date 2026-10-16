@@ -1,0 +1,21 @@
+# Copy to terraform.tfvars (git-ignored) and adjust:
+#   cp terraform.tfvars.example terraform.tfvars
+
+aws_region     = "ap-south-1"
+use_localstack = true # set false for real AWS
+
+project_name = "session19-mini"
+
+vpc_cidr            = "10.20.0.0/16"
+public_subnet_cidr  = "10.20.1.0/24"
+private_subnet_cidr = "10.20.2.0/24"
+
+# Your public IP /32 (curl -s https://checkip.amazonaws.com). Never 0.0.0.0/0.
+ssh_allowed_cidr = "203.0.113.10/32"
+
+# LocalStack: an AMI from its mock catalog (amzn-ami-hvm-2017.09.1 x86_64).
+# Real AWS:   a current Amazon Linux 2023 AMI for your region, e.g.
+#   aws ssm get-parameter --name /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64 --query Parameter.Value --output text
+ami_id = "ami-760aaa0f"
+
+instance_type = "t3.micro"
