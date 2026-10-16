@@ -1,0 +1,63 @@
+# Two small apps. traefik/whoami echoes its --name, pod hostname and the request it received
+# (path + Host header), so we can see exactly where the Ingress sent each request.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-a
+  namespace: s12
+spec:
+  replicas: 2
+  selector:
+    matchLabels: { app: app-a }
+  template:
+    metadata:
+      labels: { app: app-a }
+    spec:
+      containers:
+        - name: whoami
+          image: traefik/whoami:v1.10
+          args: ["--name", "app-a"]
+          ports: [{ containerPort: 80 }]
+          resources:
+            requests: { cpu: 10m, memory: 16Mi }
+            limits:   { cpu: 100m, memory: 64Mi }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: app-a
+  namespace: s12
+spec:
+  selector: { app: app-a }
+  ports: [{ port: 80, targetPort: 80 }]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-b
+  namespace: s12
+spec:
+  replicas: 2
+  selector:
+    matchLabels: { app: app-b }
+  template:
+    metadata:
+      labels: { app: app-b }
+    spec:
+      containers:
+        - name: whoami
+          image: traefik/whoami:v1.10
+          args: ["--name", "app-b"]
+          ports: [{ containerPort: 80 }]
+          resources:
+            requests: { cpu: 10m, memory: 16Mi }
+            limits:   { cpu: 100m, memory: 64Mi }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: app-b
+  namespace: s12
+spec:
+  selector: { app: app-b }
+  ports: [{ port: 80, targetPort: 80 }]

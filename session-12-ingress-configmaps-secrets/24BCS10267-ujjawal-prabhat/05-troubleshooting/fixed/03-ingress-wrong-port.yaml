@@ -1,0 +1,16 @@
+# FIXED: backend port matches the Service's port (80)
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: wrong-port
+  namespace: s12
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: port.24bcs10267.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service: { name: app-b, port: { number: 80 } }

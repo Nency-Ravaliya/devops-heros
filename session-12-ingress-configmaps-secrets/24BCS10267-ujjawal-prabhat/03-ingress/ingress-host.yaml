@@ -1,0 +1,23 @@
+# Host-based routing: different hostnames -> different services
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: host-routing
+  namespace: s12
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: a.24bcs10267.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service: { name: app-a, port: { number: 80 } }
+    - host: b.24bcs10267.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service: { name: app-b, port: { number: 80 } }

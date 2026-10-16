@@ -1,0 +1,16 @@
+# BROKEN: ingressClassName refers to a class that does not exist in the cluster
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: wrong-class
+  namespace: s12
+spec:
+  ingressClassName: nginx-internal
+  rules:
+    - host: class.24bcs10267.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service: { name: app-a, port: { number: 80 } }

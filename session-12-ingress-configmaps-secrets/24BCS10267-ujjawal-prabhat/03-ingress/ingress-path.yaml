@@ -1,0 +1,24 @@
+# Path-based routing: one hostname, different URL prefixes -> different services.
+# rewrite-target strips the /a or /b prefix so the apps receive "/" + the rest of the path.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: path-routing
+  namespace: s12
+  annotations:
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: apps.24bcs10267.local
+      http:
+        paths:
+          - path: /a(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service: { name: app-a, port: { number: 80 } }
+          - path: /b(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service: { name: app-b, port: { number: 80 } }
