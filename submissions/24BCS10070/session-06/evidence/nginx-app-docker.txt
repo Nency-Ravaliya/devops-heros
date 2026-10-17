@@ -1,0 +1,4 @@
+GET / HTTP 200
+<h1>Hello World from nginx-app</h1>
+
+student6-nginx-app	student-nginx:assignment	127.0.0.1:32771->80/tcp

@@ -1,0 +1,3 @@
+Terraform initialization could not finish because registry.terraform.io could not be resolved.
+An attempt through the official Terraform container also failed while pulling its image due to Docker CDN DNS resolution failure.
+No AWS resources were created.

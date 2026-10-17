@@ -1,0 +1,3 @@
+Apache with --network host, no -p option:
+HTTP 200
+<h1>Hello World from Apache-app</h1>

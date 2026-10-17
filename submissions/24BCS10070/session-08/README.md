@@ -59,6 +59,6 @@ after Swarm setup. This exercise does not change the host's Swarm configuration.
 +
 ## Verification
 
-Compose configuration parsed locally.
+Compose configuration parsed. Bind-mount changes appeared without restart, and Apache responded through host networking on port 80.
 
-Container network, MySQL, host-network and bind-mount demonstrations need image downloads.
+The three-network/MySQL demonstration remains pending because the MySQL image download failed during DNS resolution.

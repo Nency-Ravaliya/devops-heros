@@ -31,8 +31,8 @@ while `-p` actually publishes it. See `evidence/` for executed checks.
 
 ## Verification
 
-The Python Dockerfile built and returned Hello World over HTTP.
+All six Docker images built. Node, Python, Java, Apache and Nginx returned Hello World; React served its HTML and compiled Hello World application.
 
-Node, Java, Apache, React and Nginx image builds/runs need available image registries.
+React uses a lockfile and Vite 7.3.7. The audit service was intermittent, so a complete fresh audit result is not claimed.
 
 Command output: [evidence/](evidence/).

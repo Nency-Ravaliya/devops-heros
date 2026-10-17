@@ -21,8 +21,8 @@ not proof of complete security. Pipeline scan output is pending. Local checks ar
 
 ## Verification
 
-Two unit tests passed; Docker build and HTTP check passed.
+Five HTTP endpoint tests passed; Docker build and HTTP check passed. The local Trivy secret scan found no issues.
 
-Security scanner runs, GitHub Actions, registry publication and cluster deployment are pending.
+SAST/SCA/image vulnerability scans, GitHub Actions, registry publication and cluster deployment are pending.
 
 Command output: [evidence/](evidence/).

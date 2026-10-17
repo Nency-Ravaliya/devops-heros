@@ -21,7 +21,7 @@ Pipeline run evidence is pending. Local checks are in `evidence/`.
 
 ## Verification
 
-Two unit tests passed; Docker build and HTTP check passed.
+Five HTTP endpoint tests passed; Docker build and HTTP check passed.
 
 GitHub Actions run, GHCR publication and cluster deployment are pending.
 

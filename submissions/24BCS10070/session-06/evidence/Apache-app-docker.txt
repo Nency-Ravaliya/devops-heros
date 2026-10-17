@@ -1,0 +1,4 @@
+GET / HTTP 200
+<h1>Hello World from Apache-app</h1>
+
+student6-apache-app	student-apache:assignment	127.0.0.1:32770->80/tcp

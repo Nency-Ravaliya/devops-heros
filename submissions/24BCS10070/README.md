@@ -31,8 +31,9 @@ The PR title format is `24BCS10070_PENTA_GUNA_SAI_KUMAR_SESSION_<number>`.
 
 ## Current verification
 
-Python container examples built and served requests, the Session 15 Helm chart
-linted and rendered, and Terraform formatting passed. Individual session READMEs
+All six Docker application images built; their HTTP checks and the multi-stage
+demo passed. Linux exercises, bind mounts, host networking and five HTTP tests
+for each CI demo passed. The Session 15 chart linted/rendered, and Terraform formatting passed. Individual session READMEs
 list the exact checks and remaining demonstrations.
 
 Session 21 is excluded from this submission.

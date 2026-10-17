@@ -16,6 +16,9 @@ docker ps --filter name=student-multistage
 docker stop student-multistage
 ```
 
+If the Node image is already available from Session 6, the same build can use
+`--build-arg NODE_IMAGE=student-node:assignment`. The default remains node:24-alpine.
+
 The host port is 8080 and the application listens on container port 3000.
 The page must contain `Hello World from Docker multi-stage build`.
 The Node, Python, and Java folders are independent deployments; build and run
@@ -23,8 +26,8 @@ each as in Session 6. Verification output is in `evidence/`.
 
 ## Verification
 
-The Python deployment built and returned Hello World.
+The multi-stage image built using the locally available Node image and returned the required page on localhost:8080. Node, Python and Java deployments were also checked.
 
-Multi-stage Node, Node deployment and Java deployment need registry access.
+The default Node base comes from Docker Hub. For the recorded build, NODE_IMAGE was set to the previously built student-node:assignment image to avoid another registry lookup.
 
 Command output: [evidence/](evidence/).

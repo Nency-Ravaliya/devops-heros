@@ -9,6 +9,9 @@ on:
     inputs:
       deploy: {description: Deploy to the configured practice cluster, type: boolean, default: false}
 permissions: {contents: read}
+defaults:
+  run:
+    shell: bash
 env:
   APP_DIR: submissions/24BCS10070/session-16
 jobs:

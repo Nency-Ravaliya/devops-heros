@@ -68,8 +68,8 @@ the host has no errors. Service names and journal permissions also differ.
 
 ## Verification
 
-Link creation/deletion and test-user creation ran in disposable environments.
+Link creation/deletion, user creation/deletion and the command exercises ran in disposable containers. Service journal output was captured from the host.
 
-Service journal practice needs a systemd host. Minimal-container deluser cleanup lacked Perl; the disposable container was removed.
+Local Linux exercises are verified; see the recorded command output.
 
 Command output: [evidence/](evidence/).
