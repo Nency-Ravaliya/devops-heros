@@ -11,12 +11,12 @@ spec:
   replicas: 1
   selector:
     matchLabels:
-      app: correct-app-name
+      app: backend
   template:
     metadata:
       labels:
         # BUG: Label does not match selector.matchLabels above!
-        app: wrong-app-name
+        app: backend
     spec:
       containers:
         - name: nginx
