@@ -2,13 +2,12 @@
 
 PENTA GUNA SAI KUMAR · 24BCS10070
 
-Each session is on a separate branch based on the course main branch.
-This combined branch is a convenient place to read all the work.
-The PR title format is `24BCS10070_PENTA_GUNA_SAI_KUMAR_SESSION_<number>`.
+This combined branch contains Sessions 2–20 for a single pull request.
+Individual session branches are also available.
+Suggested PR title: `24BCS10070_PENTA_GUNA_SAI_KUMAR_SESSIONS_2_TO_20`.
 
 | Session | Assignment | Branch |
 |---|---|---|
-| 1 | [DevOps roadmap](session-01/README.md) | `assignment/24BCS10070/session-01` |
 | 2 | [Linux](session-02/README.md) | `assignment/24BCS10070/session-02` |
 | 3 | [Shell scripting](session-03/README.md) | `assignment/24BCS10070/session-03` |
 | 4 | [Networking](session-04/README.md) | `assignment/24BCS10070/session-04` |
@@ -36,7 +35,7 @@ demo passed. Linux exercises, bind mounts, host networking and five HTTP tests
 for each CI demo passed. The Session 15 chart linted/rendered, and Terraform formatting passed. Individual session READMEs
 list the exact checks and remaining demonstrations.
 
-Session 21 is excluded from this submission.
+Sessions 1 and 21 are excluded from this submission.
 
 DNS failures blocked GitHub, image registries, cluster-tool downloads and the
 Terraform provider. Cloud, cluster and Actions demonstrations are still pending.
