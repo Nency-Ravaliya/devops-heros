@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: session17-python
-          image: nensiravaliya28/hey-cicd:__IMAGE_TAG__
+          image: krushna2006/python-web:latest
           imagePullPolicy: Always           # pull from Docker Hub
           ports:
             - containerPort: 5001

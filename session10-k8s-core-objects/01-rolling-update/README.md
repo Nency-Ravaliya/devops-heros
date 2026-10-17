@@ -200,3 +200,8 @@ kubectl get pods -l app=app-rolling --show-labels
 kubectl delete -f 01-rolling-update/service.yaml
 kubectl delete -f 01-rolling-update/deployment-v1.yaml
 ```
+
+## If we have to move from Current version to version N we will use 
+```bash
+kubectl rollout undo deployment/app-rolling --to-revision=N 
+```
