@@ -1,2 +1,14 @@
 ./node_modules/
 .zip
+
+# Local tools and generated files
+.codex/
+.agents/
+.aws/
+.DS_Store
+__pycache__/
+.pytest_cache/
+.venv/
+.env
+node_modules/
+dist/
