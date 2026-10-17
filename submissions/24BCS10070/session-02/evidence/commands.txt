@@ -1,0 +1,37 @@
+/tmp/linux-practice
+total 16
+drwxr-xr-x 2 root root 4096 Oct 17 15:21 .
+drwxrwxrwt 1 root root 4096 Oct 17 15:21 ..
+-rw-r--r-- 1 root root   15 Oct 17 15:21 note.txt
+-rw-r--r-- 1 root root   15 Oct 17 15:21 renamed.txt
+Linux practice
+Linux practice
+Linux practice
+./renamed.txt
+./note.txt
+Filesystem      Size  Used Avail Use% Mounted on
+overlay         295G  228G   52G  82% /
+12K	.
+UID          PID    PPID  C STIME TTY          TIME CMD
+root           1       0 27 15:21 ?        00:00:00 bash -c set -ex mkdir -p /tmp/linux-practice cd /tmp/linux-practice pwd touch note.txt echo 'Linux practice' > note.txt cp note.txt copy.txt mv copy.txt renamed.txt ls -la cat note.txt tail -n 1 note.txt grep Linux note.txt find . -name '*.txt' chmod u+x note.txt df -h / du -sh . ps -ef whoami id
+root          19       1  0 15:21 ?        00:00:00 ps -ef
+root
+uid=0(root) gid=0(root) groups=0(root)
++ mkdir -p /tmp/linux-practice
++ cd /tmp/linux-practice
++ pwd
++ touch note.txt
++ echo 'Linux practice'
++ cp note.txt copy.txt
++ mv copy.txt renamed.txt
++ ls -la
++ cat note.txt
++ tail -n 1 note.txt
++ grep Linux note.txt
++ find . -name '*.txt'
++ chmod u+x note.txt
++ df -h /
++ du -sh .
++ ps -ef
++ whoami
++ id

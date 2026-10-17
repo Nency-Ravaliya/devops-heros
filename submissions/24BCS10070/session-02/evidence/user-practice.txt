@@ -1,5 +1,4 @@
-Disposable Debian container user exercise. adduser used when available; otherwise useradd -m.
-/usr/sbin/adduser
+Disposable Debian container; create and delete a test user.
 Adding user `learner' ...
 Adding new group `learner' (1000) ...
 Adding new user `learner' (1000) with group `learner (1000)' ...
@@ -8,9 +7,7 @@ Copying files from `/etc/skel' ...
 Adding new user `learner' to supplemental / extra groups `users' ...
 Adding user `learner' to group `users' ...
 uid=1000(learner) gid=1000(learner) groups=1000(learner),100(users)
-drwx------ 2 learner learner 4096 Oct 17 14:54 /home/learner
-deluser: In order to use the --remove-home, --remove-all-files, and --backup features,
-you need to install the `perl' package. To accomplish that, run
-apt-get install perl.
+drwx------ 2 learner learner 4096 Oct 17 15:19 /home/learner
+userdel: learner mail spool (/var/mail/learner) not found
 
-Exit: 8
+Exit: 0
