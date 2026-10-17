@@ -16,18 +16,18 @@ With Helm, you write one chart. You pass different values for each environment.
 
 ## Topics Covered
 
-| Folder | Topic |
-|--------|-------|
-| `01-what-is-helm/` | What is Helm, installing Helm, first commands |
-| `02-helm-charts/` | What is a Chart, creating and installing charts |
-| `03-chart-structure/` | Chart directory layout, Chart.yaml, values.yaml, templates |
-| `04-chart-yaml/` | Chart.yaml fields, version vs appVersion |
-| `05-values-yaml/` | Default values, overriding with -f and --set |
-| `06-templates/` | Go template syntax, variables, conditionals |
-| `07-install-upgrade/` | helm install, helm upgrade, revision history |
-| `08-rollback/` | helm rollback, --atomic flag, auto rollback |
+| Folder                      | Topic                                                         |
+|-----------------------------|---------------------------------------------------------------|
+| `01-what-is-helm/`          | What is Helm, installing Helm, first commands                 |
+| `02-helm-charts/`           | What is a Chart, creating and installing charts               |
+| `03-chart-structure/`       | Chart directory layout, Chart.yaml, values.yaml, templates    |
+| `04-chart-yaml/`            | Chart.yaml fields, version vs appVersion                      |
+| `05-values-yaml/`           | Default values, overriding with -f and --set                  |
+| `06-templates/`             | Go template syntax, variables, conditionals                   |
+| `07-install-upgrade/`       | helm install, helm upgrade, revision history                  |
+| `08-rollback/`              | helm rollback, --atomic flag, auto rollback                   |
 | `09-deploying-application/` | Full application deployment: lint, install, upgrade, rollback |
-| `mini-project/` | Deploy the Notes App from scratch using Helm |
+| `mini-project/`             | Deploy the Notes App from scratch using Helm                  |
 
 ---
 

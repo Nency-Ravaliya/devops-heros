@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "liftlog.fullname" . }}-backend
+  labels: {app: liftlog-backend}
+spec:
+  selector: {app: liftlog-backend}
+  ports:
+    - port: 8000
+      targetPort: 8000
+      name: http
+---
+# The frontend's nginx.conf proxies /api to http://backend:8000 (the Compose service name),
+# so expose the same pods under that name inside the cluster too.
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+spec:
+  selector: {app: liftlog-backend}
+  ports:
+    - port: 8000
+      targetPort: 8000

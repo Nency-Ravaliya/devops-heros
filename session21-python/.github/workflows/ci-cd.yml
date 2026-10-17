@@ -1,4 +1,4 @@
-name: TaskBoard Python CI/CD
+name: LiftLog Python CI/CD
 on:
   push:
     branches: [main]
@@ -30,6 +30,9 @@ jobs:
     permissions: {contents: read, packages: write}
     steps:
       - uses: actions/checkout@v4
+      - name: Set lowercase image prefix
+        # GHCR image names must be lowercase; the owner (e.g. NeuralSynth) may not be
+        run: echo "IMAGE_PREFIX=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_ENV"
       - uses: docker/login-action@v3
         with:
           registry: ghcr.io
@@ -37,43 +40,41 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Build images
         run: |
-          docker build -t ghcr.io/${{ github.repository_owner }}/taskboard-backend:${{ github.sha }} ./backend
-          docker build -t ghcr.io/${{ github.repository_owner }}/taskboard-frontend:${{ github.sha }} ./frontend
+          docker build -t $IMAGE_PREFIX/liftlog-backend:${{ github.sha }} -t $IMAGE_PREFIX/liftlog-backend:latest ./backend
+          docker build -t $IMAGE_PREFIX/liftlog-frontend:${{ github.sha }} -t $IMAGE_PREFIX/liftlog-frontend:latest ./frontend
       - name: Scan backend
-        uses: aquasecurity/trivy-action@0.30.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
-          image-ref: ghcr.io/${{ github.repository_owner }}/taskboard-backend:${{ github.sha }}
+          image-ref: ${{ env.IMAGE_PREFIX }}/liftlog-backend:${{ github.sha }}
           severity: HIGH,CRITICAL
           ignore-unfixed: true
           exit-code: '1'
       - name: Scan frontend
-        uses: aquasecurity/trivy-action@0.30.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
-          image-ref: ghcr.io/${{ github.repository_owner }}/taskboard-frontend:${{ github.sha }}
+          image-ref: ${{ env.IMAGE_PREFIX }}/liftlog-frontend:${{ github.sha }}
           severity: HIGH,CRITICAL
           ignore-unfixed: true
           exit-code: '1'
       - name: Push images
         run: |
-          docker push ghcr.io/${{ github.repository_owner }}/taskboard-backend:${{ github.sha }}
-          docker push ghcr.io/${{ github.repository_owner }}/taskboard-frontend:${{ github.sha }}
-  deploy:
-    if: github.ref == 'refs/heads/main'
+          docker push --all-tags $IMAGE_PREFIX/liftlog-backend
+          docker push --all-tags $IMAGE_PREFIX/liftlog-frontend
+  update-gitops:
+    # GitOps deploy: record the new image SHA in Git; Argo CD on EKS pulls the change and rolls it out.
+    # No cloud credentials are needed in CI. Pushes made with GITHUB_TOKEN don't trigger new workflow runs.
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     needs: build-scan-push
     runs-on: ubuntu-latest
-    permissions: {contents: read, packages: read}
+    permissions: {contents: write}
     steps:
       - uses: actions/checkout@v4
-      - uses: azure/setup-helm@v4
-      - name: Configure kubectl
-        env: {KUBE_CONFIG_DATA: '${{ secrets.KUBE_CONFIG_DATA }}'}
+      - name: Point values-eks.yaml at the images built from this commit
         run: |
-          mkdir -p ~/.kube
-          echo "$KUBE_CONFIG_DATA" | base64 -d > ~/.kube/config
-      - name: Deploy with Helm
-        run: |
-          helm upgrade --install taskboard ./helm/taskboard -n taskboard --create-namespace \
-            --set backend.tag=${{ github.sha }} \
-            --set frontend.tag=${{ github.sha }} \
-            --set backend.image=ghcr.io/${{ github.repository_owner }}/taskboard-backend \
-            --set frontend.image=ghcr.io/${{ github.repository_owner }}/taskboard-frontend
+          sed -i -E "s/^(  tag: ).*/\1${GITHUB_SHA}/" helm/liftlog/values-eks.yaml
+          git diff --stat
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -am "deploy: liftlog images ${GITHUB_SHA::7}" || { echo "Already up to date"; exit 0; }
+          git pull --rebase origin main
+          git push origin HEAD:main

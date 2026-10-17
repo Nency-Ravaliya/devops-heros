@@ -1,0 +1,5 @@
+# Copy to terraform.tfvars and adjust. terraform.tfvars is git-ignored.
+# Never put AWS credentials here — authenticate with `aws login` / AWS_PROFILE instead.
+aws_region   = "ap-southeast-2"
+cluster_name = "liftlog-eks"
+environment  = "dev"

@@ -1,808 +1,135 @@
-# Session 21 — DevOps Final Capstone: TaskBoard (Python)
+# LiftLog — Workout Tracker
 
-## 1. What we are building
+LiftLog is a strength-training log: build an exercise library, log every workout set by set (weight, reps, RPE), and watch your progress with analytics usually found in premium tracking apps: **personal records, estimated one-rep max, muscle-group volume and per-exercise progress charts**.
 
-TaskBoard is a small but realistic SaaS-style project management application:
+It's also a complete DevOps capstone: the app is tested, containerised, scanned, published by CI, provisioned on AWS with Terraform, deployed to EKS with Helm through **GitOps (Argo CD)**, and monitored with Prometheus and Grafana.
 
-- React + Vite frontend
-- Responsive HTML/JSX + CSS UI
-- FastAPI Python backend
-- PostgreSQL database
-- SQLAlchemy ORM
-- Alembic database migrations
-- REST APIs
-- Pytest automated tests
-- Docker containers
-- GitHub Actions CI/CD
-- Trivy container security scanning
-- GitHub Container Registry
-- Terraform for AWS infrastructure
-- AWS VPC + EKS
-- Kubernetes
-- Helm
-- Ingress
-- HPA
-- Prometheus + Grafana
-- Health/readiness endpoints
-- Troubleshooting exercises
-
-The point is not to teach isolated tools. The point is to show how a real application travels from a developer laptop to a monitored Kubernetes environment.
-
-```text
-Developer
-   |
-   v
-Git / GitHub
-   |
-   v
-GitHub Actions
-   |-- pytest
-   |-- frontend build
-   |-- Docker build
-   |-- Trivy scan
-   `-- push images to GHCR
-              |
-              v
-        Terraform
-              |
-       AWS VPC + EKS
-              |
-              v
-            Helm
-              |
-      +-------+--------+
-      |                |
-   Frontend          Backend
-    React            FastAPI
-      |                |
-      +-------> PostgreSQL
-              |
-       Prometheus
-              |
-           Grafana
-```
-
+Video Link: [Presentation Video](https://youtu.be/2FtC1-wvGKg)
 ---
 
-## 2. Repository structure
+## Features
+
+| Area                    | What you can do                                                                                                                                                                |
+|:------------------------|:-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Exercise library**    | 21 starter exercises (seeded by the database migration), grouped by muscle group and equipment; add, rename and delete your own. Exercises used in a workout can't be deleted. |
+| **Workout logging**     | Log a session with any number of exercises and sets: weight (kg), reps and optional RPE, plus duration and notes. Edit or delete workouts later.                               |
+| **History**             | Every workout with its sets per exercise, total sets and total volume (kg lifted).                                                                                             |
+| **Personal records** ⭐ | Best set per exercise, ranked by **estimated 1RM** (Epley: `weight × (1 + reps / 30)`).                                                                                        |
+| **Volume analytics** ⭐ | Workouts and volume over the last 7 days; volume per muscle group over the last 30 days.                                                                                       |
+| **Progress charts** ⭐  | Estimated 1RM and top-set weight over time for any exercise.                                                                                                                   |
+
+⭐ = "premium" analytics.
+
+## Architecture
 
 ```text
-session21-devops-capstone-final/
-├── frontend/                 # React application and CSS
-├── backend/                  # FastAPI application
-│   ├── app/                  # API, models, schemas, DB config
-│   ├── tests/                # Pytest tests
-│   └── alembic/              # DB migrations
-├── docker-compose.yml        # Full local stack
-├── terraform/                # AWS VPC + EKS infrastructure
-├── helm/taskboard/            # Kubernetes package
-├── k8s/                      # namespace/bootstrap manifests
-├── monitoring/               # Prometheus/Grafana values
-├── troubleshooting/          # deliberately broken manifests
-├── scripts/                  # load-test helpers
-└── .github/workflows/        # CI/CD
+Browser ──► frontend (React + Vite, served by nginx, non-root) ──/api──► backend (FastAPI, non-root) ──► PostgreSQL
+                                                                              │
+                                                                              └── /metrics ──► Prometheus ──► Grafana
+
+git push ──► GitHub Actions: pytest + frontend build ──► docker build ──► Trivy gate ──► GHCR (:<sha>)
+                                     └──► commit the new SHA to helm/liftlog/values-eks.yaml ──► Argo CD ──► EKS
 ```
 
----
+| Layer          | Technology                                                                                                                                |
+|:---------------|:------------------------------------------------------------------------------------------------------------------------------------------|
+| Frontend       | React 19, Vite 8, nginx (`nginxinc/nginx-unprivileged`)                                                                                   |
+| Backend        | Python 3.12, FastAPI, SQLAlchemy 2, Alembic, Pydantic 2, `prometheus-fastapi-instrumentator`                                              |
+| Database       | PostgreSQL 16                                                                                                                             |
+| CI/CD          | GitHub Actions → GHCR, Trivy, GitOps with Argo CD                                                                                         |
+| Infrastructure | Terraform: AWS VPC (2 public + 2 private subnets) and EKS 1.36, with EBS CSI driver and AWS Load Balancer Controller via EKS Pod Identity |
+| Kubernetes     | Helm chart (`helm/liftlog`), HPA, ALB Ingress (`/` → frontend, `/api` → backend)                                                          |
+| Observability  | kube-prometheus-stack, ServiceMonitor, Grafana dashboard as code                                                                          |
 
-# PART A — UNDERSTAND THE APPLICATION
-
-## 3. Frontend
-
-The frontend is intentionally closer to a real SaaS dashboard than a tutorial CRUD page.
-
-It contains:
-
-- dark sidebar
-- workspace navigation
-- dashboard header
-- KPI cards
-- task table
-- status filters
-- priority badges
-- activity feed
-- pipeline indicator
-- create-task modal
-- responsive CSS
-- loading and backend-error states
-
-The browser calls `/api/tasks` and `/api/tasks/stats`.
-
-The browser does **not** need to know the internal backend hostname. Nginx and Kubernetes Ingress handle routing.
-
-## 4. Backend
-
-FastAPI exposes:
+## Repository layout
 
 ```text
-GET    /
-GET    /health
-GET    /ready
-GET    /metrics
-
-GET    /api/tasks
-GET    /api/tasks/{id}
-POST   /api/tasks
-PUT    /api/tasks/{id}
-DELETE /api/tasks/{id}
-GET    /api/tasks/stats
+backend/        FastAPI app (app/), Alembic migrations, pytest suite
+frontend/       React UI and nginx config
+docker-compose.yml
+.github/workflows/ci-cd.yml
+terraform/      VPC + EKS (+ terraform.tfvars.example)
+k8s/            namespace and default StorageClass
+helm/liftlog/   Helm chart; values-eks.yaml is managed by CI (GitOps)
+argocd/         Argo CD Application for EKS
+monitoring/     kube-prometheus-stack values and the Grafana dashboard
+troubleshooting/  deliberately broken manifests for practice
 ```
 
-Swagger documentation is available at `/docs` when the backend is running.
-
-### Why `/health`?
-
-A container can be alive while its application is unhealthy. `/health` gives Kubernetes a cheap liveness check.
-
-### Why `/ready`?
-
-Readiness answers a different question: **can this application serve traffic now?** The endpoint verifies database access before returning READY.
-
-### Why `/metrics`?
-
-Prometheus needs machine-readable metrics. The FastAPI Prometheus instrumentator exposes request metrics for monitoring.
-
----
-
-# PART B — RUN IT LOCALLY
-
-## 5. Fastest method: Docker Compose
-
-Requirements:
-
-- Docker Desktop / Docker Engine
-- Docker Compose
-
-Run:
+## Run locally
 
 ```bash
 docker compose up --build
 ```
 
-Open:
+| URL                                                    |                                                               |
+|:-------------------------------------------------------|:--------------------------------------------------------------|
+| <http://localhost:3000>                                | LiftLog UI (on Windows with WSL, use `http://127.0.0.1:3000`) |
+| <http://localhost:8000/docs>                           | API docs (Swagger UI)                                         |
+| <http://localhost:8000/health> · `/ready` · `/metrics` | Liveness, readiness (checks the DB), Prometheus metrics       |
 
-```text
-http://localhost:3000
-```
-
-Backend:
-
-```text
-http://localhost:8000/docs
-http://localhost:8000/health
-http://localhost:8000/metrics
-```
-
-Stop:
-
-```bash
-docker compose down
-```
-
-Delete database volume too:
-
-```bash
-docker compose down -v
-```
-
----
-
-## 6. Run backend directly
-
-Requirements:
-
-- Python 3.12+
-- PostgreSQL
+### Tests
 
 ```bash
 cd backend
-python -m venv .venv
-source .venv/bin/activate
 pip install -r requirements.txt
+python -m pytest -v      # uses a throwaway SQLite database, never Postgres
 ```
 
-Set the database connection:
+## API
+
+| Method | Path                           | Description                                                  |
+|:-------|:-------------------------------|:-------------------------------------------------------------|
+| GET    | `/api/exercises`               | List the exercise library                                    |
+| POST   | `/api/exercises`               | Add an exercise (`409` on duplicate name)                    |
+| PUT    | `/api/exercises/{id}`          | Update an exercise                                           |
+| DELETE | `/api/exercises/{id}`          | Delete an unused exercise (`409` if it's in a workout)       |
+| GET    | `/api/exercises/{id}/progress` | Top set, estimated 1RM and volume per workout (oldest first) |
+| GET    | `/api/workouts`                | List workouts with their sets, newest first                  |
+| POST   | `/api/workouts`                | Log a workout with nested `sets`                             |
+| GET    | `/api/workouts/{id}`           | One workout                                                  |
+| PUT    | `/api/workouts/{id}`           | Update a workout (`sets`, when given, replaces all sets)     |
+| DELETE | `/api/workouts/{id}`           | Delete a workout                                             |
+| GET    | `/api/stats`                   | 7-day totals, 30-day muscle-group volume, personal records   |
+
+Example:
 
 ```bash
-export DATABASE_URL='postgresql+psycopg://taskboard:taskboard@localhost:5432/taskboard'
+curl -X POST http://localhost:8000/api/workouts -H 'Content-Type: application/json' -d '{
+  "title": "Push Day", "duration_min": 60,
+  "sets": [{"exercise_id": 1, "reps": 5, "weight_kg": 100}, {"exercise_id": 1, "reps": 5, "weight_kg": 102.5, "rpe": 8.5}]
+}'
 ```
 
-Run migrations:
+## CI/CD and GitOps
 
-```bash
-alembic upgrade head
-```
+On every push to `main`, [`.github/workflows/ci-cd.yml`](.github/workflows/ci-cd.yml):
 
-Start FastAPI:
+1. **test**: `pytest` and the frontend production build.
+2. **build-scan-push**: builds both images, fails on any fixable HIGH/CRITICAL CVE (Trivy), then pushes `ghcr.io/<owner>/liftlog-backend` and `liftlog-frontend` tagged with the **commit SHA** (and `latest`).
+3. **update-gitops**: writes that SHA into [`helm/liftlog/values-eks.yaml`](helm/liftlog/values-eks.yaml) and commits it. Argo CD on EKS sees the commit and rolls the new images out. No cloud credentials are stored in CI.
 
-```bash
-uvicorn app.main:app --reload --port 8000
-```
+**Live demo:** change something visible (e.g. the dashboard greeting in `frontend/src/main.jsx`), push, watch the Actions run go green and the `deploy: liftlog images <sha>` commit appear, then refresh the app as Argo CD rolls out the new pods.
 
-Test:
-
-```bash
-curl http://localhost:8000/health
-curl http://localhost:8000/api/tasks
-```
-
-Open:
-
-```text
-http://localhost:8000/docs
-```
-
----
-
-# PART C — TESTING
-
-## 7. Pytest
-
-```bash
-cd backend
-pytest -q
-```
-
-Students should understand why tests happen **before Docker images are pushed**.
-
-```text
-Bad code
-  ↓
-pytest fails
-  ↓
-Pipeline stops
-  ↓
-No broken image is promoted
-```
-
-This is the first quality gate.
-
----
-
-# PART D — GIT AND GITHUB
-
-## 8. Initialize Git
-
-```bash
-git init
-git add .
-git commit -m "initial TaskBoard application"
-git branch -M main
-git remote add origin <YOUR_GITHUB_REPO>
-git push -u origin main
-```
-
-Explain:
-
-- Git = version control
-- GitHub = remote collaboration/source platform
-- commit = immutable project checkpoint
-- branch = isolated line of development
-- pull request = controlled change review
-
----
-
-# PART E — DOCKER
-
-## 9. Backend Dockerfile
-
-The backend image:
-
-1. starts from Python
-2. installs dependencies
-3. copies Alembic
-4. copies application code
-5. creates a non-root user
-6. exposes port 8000
-7. runs migrations
-8. starts Uvicorn
-
-Build:
-
-```bash
-docker build -t taskboard-backend:local ./backend
-```
-
-Run with a reachable PostgreSQL instance:
-
-```bash
-docker run --rm -p 8000:8000 \
-  -e DATABASE_URL='postgresql+psycopg://taskboard:taskboard@host.docker.internal:5432/taskboard' \
-  taskboard-backend:local
-```
-
-## 10. Frontend Dockerfile
-
-The frontend uses a multi-stage build:
-
-```text
-Node
-  ↓
-npm build
-  ↓
-static dist/
-  ↓
-Nginx runtime image
-```
-
-This keeps build tooling out of the final runtime image.
-
-Build:
-
-```bash
-docker build -t taskboard-frontend:local ./frontend
-```
-
----
-
-# PART F — CI/CD
-
-## 11. GitHub Actions pipeline
-
-The workflow has three conceptual stages:
-
-```text
-TEST
- ↓
-BUILD + SECURITY SCAN + PUSH
- ↓
-DEPLOY
-```
-
-### Test job
-
-- checkout
-- setup Python
-- install requirements
-- run pytest
-- setup Node
-- build React frontend
-
-### Build/scan/push job
-
-- build backend image
-- build frontend image
-- scan both with Trivy
-- push to GHCR
-
-### Deploy job
-
-- install Helm
-- configure kubectl
-- run `helm upgrade --install`
-
-The image tag is the Git commit SHA.
-
-That means:
-
-```text
-commit A → image A
-commit B → image B
-commit C → image C
-```
-
-This gives traceability from production back to source code.
-
----
-
-# PART G — SECURITY SCANNING
-
-## 12. Trivy
-
-The pipeline scans container images for HIGH and CRITICAL vulnerabilities.
-
-A security scanner is not a magic guarantee of security. It is one automated control in the pipeline.
-
-Students should understand:
-
-```text
-SAST
-Dependency scanning
-Secret scanning
-Container scanning
-Runtime security
-```
-
-These are different security layers.
-
----
-
-# PART H — TERRAFORM
-
-## 13. Why Terraform?
-
-Kubernetes only manages workloads. It does not create the AWS network and EKS infrastructure in this project.
-
-Terraform creates:
-
-```text
-AWS
- ├── VPC
- ├── public subnets
- ├── private subnets
- ├── NAT gateway
- └── EKS cluster
-       └── managed worker nodes
-```
-
-Go to Terraform:
+## Deploy to AWS (EKS)
 
 ```bash
 cd terraform
-terraform init
-terraform plan
-terraform apply
+terraform init && terraform plan -out main.tfplan && terraform apply main.tfplan
+aws eks update-kubeconfig --region ap-southeast-2 --name liftlog-eks
+
+kubectl apply -f k8s/namespace.yaml -f k8s/storageclass.yaml
+helm install aws-load-balancer-controller eks/aws-load-balancer-controller -n kube-system \
+  --set clusterName=liftlog-eks --set serviceAccount.name=aws-load-balancer-controller --set vpcId=<vpc-id> --set region=ap-southeast-2
+helm install monitoring prometheus-community/kube-prometheus-stack -n monitoring --create-namespace -f monitoring/prometheus-values.yaml
+kubectl apply -f monitoring/liftlog-dashboard.yaml
+
+kubectl create namespace argocd
+kubectl apply -n argocd --server-side -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+kubectl apply -f argocd/liftlog-application.yaml      # Argo CD deploys helm/liftlog with values-eks.yaml
+kubectl get ingress -n liftlog                         # ALB address
 ```
 
-The default region is `ap-south-1`.
+Tear down when finished: uninstall the Helm releases first (so the ALB and EBS volumes are deleted), then run `terraform destroy`.
 
-After EKS is created, configure kubectl using the command shown by AWS/Terraform output.
-
-Destroy when finished:
-
-```bash
-terraform destroy
-```
-
-### Important teaching point
-
-Terraform is **Infrastructure as Code**.
-
-Instead of manually clicking:
-
-```text
-AWS Console → VPC → Subnet → EKS → Nodes...
-```
-
-we describe infrastructure in code and let Terraform reconcile the desired state.
-
----
-
-# PART I — KUBERNETES
-
-## 14. Namespace
-
-```bash
-kubectl apply -f k8s/namespace.yaml
-```
-
-A namespace provides logical isolation for the application.
-
-## 15. Helm
-
-Instead of maintaining many manually edited YAML files, Helm turns the Kubernetes deployment into a reusable package.
-
-```bash
-helm upgrade --install taskboard ./helm/taskboard \
-  --namespace taskboard \
-  --create-namespace
-```
-
-Important Helm concepts:
-
-- Chart
-- values
-- templates
-- release
-- upgrade
-- rollback
-
----
-
-# PART J — KUBERNETES COMPONENTS
-
-## 16. Deployment
-
-The Deployment manages backend/frontend Pods.
-
-If a Pod dies:
-
-```text
-Deployment
-   ↓
-creates replacement Pod
-```
-
-## 17. Service
-
-Pods are ephemeral. A Service provides stable networking.
-
-```text
-Frontend → backend Service → backend Pods
-```
-
-## 18. PostgreSQL
-
-For the classroom/local Kubernetes demo, PostgreSQL is deployed inside the cluster with a PVC.
-
-For production AWS architecture, students should understand the tradeoff between running PostgreSQL in Kubernetes and using a managed database such as Amazon RDS.
-
----
-
-# PART K — INGRESS
-
-## 19. Ingress
-
-The application has two logical routes:
-
-```text
-/taskboard.local/
-      ↓
-React frontend
-
-/taskboard.local/api
-      ↓
-FastAPI backend
-```
-
-Enable ingress with the dev values:
-
-```bash
-helm upgrade --install taskboard ./helm/taskboard \
-  -n taskboard \
-  -f helm/taskboard/values-dev.yaml
-```
-
-Students should understand that an Ingress resource is only configuration. An Ingress Controller must actually implement it.
-
----
-
-# PART L — HPA
-
-## 20. Horizontal Pod Autoscaler
-
-The HPA can scale the backend based on CPU utilization.
-
-```text
-low traffic
-   ↓
-2 Pods
-
-high CPU
-   ↓
-3 Pods
-   ↓
-4 Pods
-   ↓
-...
-```
-
-Inspect:
-
-```bash
-kubectl get hpa -n taskboard
-```
-
-HPA requires resource requests and a metrics provider such as Metrics Server.
-
-A normal health request may not create enough CPU pressure to demonstrate scaling. For a classroom demo, use a controlled load generator and watch the metrics.
-
----
-
-# PART M — MONITORING
-
-## 21. Prometheus
-
-Prometheus collects metrics from the FastAPI `/metrics` endpoint.
-
-The ServiceMonitor tells the Prometheus Operator what to scrape.
-
-## 22. Grafana
-
-Grafana visualizes the collected metrics.
-
-Useful questions:
-
-- How many HTTP requests are arriving?
-- Which endpoint is slow?
-- Are errors increasing?
-- Is the application receiving traffic?
-- Is CPU increasing?
-- Is HPA scaling?
-
----
-
-# PART N — TROUBLESHOOTING LAB
-
-## 23. Broken image
-
-Apply:
-
-```bash
-kubectl apply -f troubleshooting/broken-image.yaml
-```
-
-Then:
-
-```bash
-kubectl get pods
-kubectl describe pod <pod-name>
-kubectl get events --sort-by=.lastTimestamp
-```
-
-Expected investigation:
-
-```text
-ImagePullBackOff
-      ↓
-describe Pod
-      ↓
-wrong image/tag
-      ↓
-fix deployment
-```
-
-## 24. Broken Service
-
-Apply:
-
-```bash
-kubectl apply -f troubleshooting/broken-service.yaml
-```
-
-Investigate:
-
-```bash
-kubectl get svc
-kubectl get endpoints
-kubectl get pods --show-labels
-```
-
-The key lesson is that a Service selects Pods using labels.
-
-No matching labels = no endpoints = no traffic.
-
----
-
-# PART O — FINAL DEMO
-
-### 1. Application
-
-Open TaskBoard and create a task.
-
-### 2. API
-
-Open FastAPI Swagger:
-
-```text
-/docs
-```
-
-Create/read/update/delete a task.
-
-### 3. Database
-
-Show the PostgreSQL `tasks` table.
-
-### 4. Git
-
-Make a small application change and commit it.
-
-### 5. CI
-
-Push to GitHub and show tests running.
-
-### 6. Docker
-
-Show the two images.
-
-### 7. Security
-
-Show Trivy scanning the images.
-
-### 8. Registry
-
-Show the images in GHCR.
-
-### 9. Terraform
-
-Show the AWS infrastructure code.
-
-### 10. Kubernetes
-
-```bash
-kubectl get pods -n taskboard
-kubectl get svc -n taskboard
-```
-
-### 11. Helm
-
-```bash
-helm list -n taskboard
-```
-
-### 12. Ingress
-
-Open the application through the Ingress hostname.
-
-### 13. HPA
-
-```bash
-kubectl get hpa -n taskboard
-```
-
-### 14. Monitoring
-
-Show Prometheus and Grafana.
-
-### 15. Failure simulation
-
-Break a Service/image and troubleshoot it live.
-
----
-
-# FINAL STUDENT PROJECT
-
-Possible domains:
-
-- CRM
-- Inventory management
-- Appointment booking
-- Helpdesk
-- Ecommerce administration
-- Clinic management
-- Restaurant management
-- Employee management
-- Learning management system
-
-Minimum requirements:
-
-### Application
-
-- frontend
-- backend
-- PostgreSQL
-- minimum 4 REST APIs
-- responsive UI
-
-### Engineering
-
-- Git/GitHub
-- automated tests
-- Docker
-
-### DevOps
-
-- GitHub Actions
-- security scan
-- container registry
-- Terraform
-- Kubernetes
-- Helm
-- Ingress
-- HPA
-- Prometheus/Grafana
-
-### Final presentation
-
-Each student must demonstrate:
-
-```text
-Application
-  ↓
-Git commit
-  ↓
-CI pipeline
-  ↓
-Docker image
-  ↓
-Security scan
-  ↓
-Registry
-  ↓
-Terraform infrastructure
-  ↓
-Kubernetes deployment
-  ↓
-Helm
-  ↓
-Ingress
-  ↓
-Autoscaling
-  ↓
-Monitoring
-  ↓
-Troubleshooting
-```
-
-That is the actual objective of Session 21.
+> Cost: EKS control plane, a NAT gateway, 2 × `m7i-flex.large` and an ALB come to roughly US$0.45/hour.

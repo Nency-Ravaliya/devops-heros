@@ -1,0 +1,12 @@
+# Values for the EKS deployment, synced by Argo CD (argocd/liftlog-application.yaml).
+# GitOps: the CI "update-gitops" job rewrites both tags to the commit SHA after a green build;
+# Argo CD notices the commit and rolls the new images out. Don't edit the tags by hand.
+backend:
+  image: ghcr.io/neuralsynth/liftlog-backend
+  tag: 1ac452ae6aee6677c76015c1392274f09f0dbdbc
+frontend:
+  image: ghcr.io/neuralsynth/liftlog-frontend
+  tag: 1ac452ae6aee6677c76015c1392274f09f0dbdbc
+ingress:
+  enabled: true
+  className: alb

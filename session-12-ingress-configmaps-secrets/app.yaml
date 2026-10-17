@@ -1,0 +1,92 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: homework-frontend, namespace: rudray-devops-hw}
+spec:
+  replicas: 2
+  selector:
+    matchLabels: {app: homework-frontend}
+  template:
+    metadata:
+      labels: {app: homework-frontend}
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:1.28-alpine
+          ports: [{containerPort: 80}]
+          resources:
+            requests: {cpu: 25m, memory: 32Mi}
+            limits: {cpu: 100m, memory: 64Mi}
+          volumeMounts:
+            - {name: pages, mountPath: /usr/share/nginx/html, readOnly: true}
+          readinessProbe:
+            httpGet: {path: /, port: 80}
+            periodSeconds: 3
+      volumes:
+        - name: pages
+          configMap: {name: homework-pages}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: homework-backend, namespace: rudray-devops-hw}
+spec:
+  replicas: 2
+  selector:
+    matchLabels: {app: homework-backend}
+  template:
+    metadata:
+      labels: {app: homework-backend}
+    spec:
+      containers:
+        - name: python
+          image: python:3.12-alpine
+          command: [python3, -u, -c]
+          args:
+            - |
+              import json, os
+              from http.server import BaseHTTPRequestHandler, HTTPServer
+              class Handler(BaseHTTPRequestHandler):
+                  def do_GET(self):
+                      body = json.dumps({
+                          "message": "Hello World from Kubernetes backend",
+                          "path": self.path,
+                          "environment": os.environ["ENVIRONMENT"],
+                          "currency": os.environ["DEFAULT_CURRENCY"],
+                          "db_user": os.environ["DB_USER"],
+                          "db_password_present": bool(os.environ.get("DB_PASSWORD")),
+                      }).encode()
+                      self.send_response(200)
+                      self.send_header("Content-Type", "application/json")
+                      self.send_header("Content-Length", str(len(body)))
+                      self.end_headers()
+                      self.wfile.write(body)
+              HTTPServer(("0.0.0.0", 5000), Handler).serve_forever()
+          ports: [{containerPort: 5000}]
+          envFrom:
+            - configMapRef: {name: homework-config}
+          env:
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef: {name: homework-db, key: DB_USER}
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef: {name: homework-db, key: DB_PASSWORD}
+          resources:
+            requests: {cpu: 25m, memory: 32Mi}
+            limits: {cpu: 100m, memory: 64Mi}
+          readinessProbe:
+            httpGet: {path: /health, port: 5000}
+            periodSeconds: 3
+---
+apiVersion: v1
+kind: Service
+metadata: {name: homework-frontend, namespace: rudray-devops-hw}
+spec:
+  selector: {app: homework-frontend}
+  ports: [{port: 80, targetPort: 80}]
+---
+apiVersion: v1
+kind: Service
+metadata: {name: homework-backend, namespace: rudray-devops-hw}
+spec:
+  selector: {app: homework-backend}
+  ports: [{port: 80, targetPort: 5000}]

@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: session17-python
-          image: nensiravaliya28/hey-cicd:__IMAGE_TAG__
-          imagePullPolicy: Always           # pull from Docker Hub
+          image: ghcr.io/neuralsynth/session17-python:__IMAGE_TAG__
+          imagePullPolicy: Always           # pull from GHCR
           ports:
             - containerPort: 5001

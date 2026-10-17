@@ -1,0 +1,14 @@
+# Default StorageClass for EKS: newer EKS clusters don't mark any class as default,
+# so the Postgres PVC would stay Pending without this. Requires the aws-ebs-csi-driver add-on.
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: gp3
+  annotations:
+    storageclass.kubernetes.io/is-default-class: "true"
+provisioner: ebs.csi.aws.com
+volumeBindingMode: WaitForFirstConsumer
+reclaimPolicy: Delete
+parameters:
+  type: gp3
+  encrypted: "true"

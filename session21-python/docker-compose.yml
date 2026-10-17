@@ -2,20 +2,27 @@ services:
   postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_DB: taskboard
-      POSTGRES_USER: taskboard
-      POSTGRES_PASSWORD: taskboard
+      POSTGRES_DB: liftlog
+      POSTGRES_USER: liftlog
+      POSTGRES_PASSWORD: liftlog
     ports:
       - "5432:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U liftlog -d liftlog"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
 
   backend:
     build: ./backend
     environment:
-      DATABASE_URL: postgresql+psycopg://taskboard:taskboard@postgres:5432/taskboard
+      DATABASE_URL: postgresql+psycopg://liftlog:liftlog@postgres:5432/liftlog
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy   # wait until Postgres accepts connections
+    restart: on-failure
     ports:
       - "8000:8000"
 
@@ -24,7 +31,7 @@ services:
     depends_on:
       - backend
     ports:
-      - "3000:80"
+      - "3000:8080"
 
 volumes:
   postgres-data:

@@ -8,9 +8,9 @@ spec:
   project: default
 
   source:
-    repoURL: https://github.com/YOUR_USERNAME/YOUR_GITOPS_REPO.git
+    repoURL: https://github.com/NeuralSynth/devops-heros-s20-gitops.git
     targetRevision: main
-    path: app
+    path: mini
 
   destination:
     server: https://kubernetes.default.svc

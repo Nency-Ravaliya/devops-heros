@@ -1,0 +1,33 @@
+frontend:
+  image: ghcr.io/YOUR_ORG/liftlog-frontend
+  tag: latest
+backend:
+  image: ghcr.io/YOUR_ORG/liftlog-backend
+  tag: latest
+replicaCount: 2
+namespace: liftlog
+imagePullSecrets: []
+postgres:
+  host: liftlog-postgres
+  database: liftlog
+  username: liftlog
+  password: liftlog
+ingress:
+  enabled: false
+  className: alb            # AWS Load Balancer Controller on EKS; use "nginx" for ingress-nginx
+  host: ""                  # empty = match any host (use the ALB's DNS name)
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/healthcheck-path: /
+hpa:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 6
+  targetCPUUtilizationPercentage: 60
+resources:
+  requests: {cpu: 100m, memory: 256Mi}
+  limits: {cpu: 500m, memory: 512Mi}
+monitoring:
+  serviceMonitor:
+    enabled: true

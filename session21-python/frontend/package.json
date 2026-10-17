@@ -1,1 +1,9 @@
-{"name":"taskboard-frontend","private":true,"version":"1.0.0","type":"module","scripts":{"dev":"vite","build":"vite build","test":"node --test"},"dependencies":{"@vitejs/plugin-react":"latest","vite":"latest","react":"latest","react-dom":"latest"},"devDependencies":{}}
+{
+  "name": "liftlog-frontend",
+  "private": true,
+  "version": "2.0.0",
+  "type": "module",
+  "scripts": { "dev": "vite", "build": "vite build" },
+  "dependencies": { "react": "19.3.1", "react-dom": "19.3.1" },
+  "devDependencies": { "vite": "8.3.4", "@vitejs/plugin-react": "6.1.2" }
+}

@@ -1,0 +1,26 @@
+# Argo CD Application: deploys the Helm chart from this repo to EKS and keeps it in sync with Git.
+# Apply once from an admin workstation:  kubectl apply -f argocd/liftlog-application.yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: liftlog
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/NeuralSynth/devops-heros-s21-liftlog.git
+    targetRevision: main
+    path: helm/liftlog
+    helm:
+      releaseName: liftlog   # same name as the initial `helm upgrade --install`, so resources are adopted, not duplicated
+      valueFiles:
+        - values-eks.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: liftlog
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

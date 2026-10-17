@@ -150,37 +150,42 @@ jobs:
 
 
   # ========================================
-  # STEP 6 — Push image to Docker Hub
+  # STEP 6 — Push image to GitHub Container Registry (GHCR)
+  #          uses the built-in GITHUB_TOKEN, so no extra secret is needed
   # ========================================
 
   push:
-    name: Push Image to Docker Hub
+    name: Push Image to GHCR
     needs:
       - image-scan
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
 
     steps:
 
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Login to Docker Hub
+      - name: Login to GHCR
         uses: docker/login-action@v3
         with:
-          username: nensiravaliya28
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and tag image
         run: |
           docker build \
-            -t nensiravaliya28/hey-cicd:${{ github.sha }} \
-            -t nensiravaliya28/hey-cicd:latest \
+            -t ghcr.io/neuralsynth/session17-python:${{ github.sha }} \
+            -t ghcr.io/neuralsynth/session17-python:latest \
             .
 
       - name: Push image
         run: |
-          docker push nensiravaliya28/hey-cicd:${{ github.sha }}
-          docker push nensiravaliya28/hey-cicd:latest
+          docker push ghcr.io/neuralsynth/session17-python:${{ github.sha }}
+          docker push ghcr.io/neuralsynth/session17-python:latest
 
 
   # ========================================
@@ -196,6 +201,9 @@ jobs:
 
     # Skip this step on pull requests — only deploy real merges to main
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    permissions:
+      contents: read
+      packages: read
 
     steps:
 
@@ -209,6 +217,14 @@ jobs:
         run: |
           # Replace '__IMAGE_TAG__' placeholder with the specific git sha we just pushed
           sed -i "s|__IMAGE_TAG__|${{ github.sha }}|g" k8s/deployment.yaml
+
+      - name: Allow the cluster to pull from GHCR
+        run: |
+          kubectl create secret docker-registry ghcr-pull \
+            --docker-server=ghcr.io \
+            --docker-username=${{ github.actor }} \
+            --docker-password=${{ secrets.GITHUB_TOKEN }}
+          kubectl patch serviceaccount default -p '{"imagePullSecrets":[{"name":"ghcr-pull"}]}'
 
       - name: Deploy to Kubernetes
         run: |

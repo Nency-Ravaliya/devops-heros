@@ -1,6 +1,0 @@
-replicaCount: 1
-ingress:
-  enabled: true
-  host: taskboard.local
-hpa:
-  enabled: false

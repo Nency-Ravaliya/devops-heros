@@ -8,7 +8,7 @@ spec:
   project: default
 
   source:
-    repoURL: https://github.com/Nency-Ravaliya/gitops-demo.git
+    repoURL: https://github.com/NeuralSynth/devops-heros-s20-gitops.git
     targetRevision: main
     path: app
 

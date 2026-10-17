@@ -1,0 +1,44 @@
+apiVersion: v1
+kind: Secret
+metadata: {name: liftlog-postgres}
+type: Opaque
+stringData:
+  username: {{ .Values.postgres.username | quote }}
+  password: {{ .Values.postgres.password | quote }}
+---
+apiVersion: v1
+kind: Service
+metadata: {name: liftlog-postgres}
+spec:
+  selector: {app: liftlog-postgres}
+  ports: [{port: 5432, targetPort: 5432}]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: liftlog-postgres}
+spec:
+  replicas: 1
+  selector: {matchLabels: {app: liftlog-postgres}}
+  template:
+    metadata: {labels: {app: liftlog-postgres}}
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:16-alpine
+        ports: [{containerPort: 5432}]
+        env:
+        - {name: POSTGRES_DB, value: "{{ .Values.postgres.database }}"}
+        - {name: POSTGRES_USER, valueFrom: {secretKeyRef: {name: liftlog-postgres, key: username}}}
+        - {name: POSTGRES_PASSWORD, valueFrom: {secretKeyRef: {name: liftlog-postgres, key: password}}}
+        # Block volumes (e.g. EBS) contain lost+found at the mount root, which initdb rejects
+        - {name: PGDATA, value: /var/lib/postgresql/data/pgdata}
+        readinessProbe: {exec: {command: ["sh","-c","pg_isready -U $POSTGRES_USER -d $POSTGRES_DB"]}, initialDelaySeconds: 5, periodSeconds: 10}
+        volumeMounts: [{name: data, mountPath: /var/lib/postgresql/data}]
+      volumes: [{name: data, persistentVolumeClaim: {claimName: liftlog-postgres-data}}]
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata: {name: liftlog-postgres-data}
+spec:
+  accessModes: [ReadWriteOnce]
+  resources: {requests: {storage: 5Gi}}

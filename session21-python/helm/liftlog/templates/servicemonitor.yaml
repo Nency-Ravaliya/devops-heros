@@ -1,0 +1,15 @@
+{{- if .Values.monitoring.serviceMonitor.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "liftlog.fullname" . }}-backend
+  labels:
+    release: kube-prometheus-stack
+spec:
+  selector:
+    matchLabels: {app: liftlog-backend}
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 15s
+{{- end }}
