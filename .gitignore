@@ -1,2 +1,11 @@
 ./node_modules/
 .zip
+
+# Python generated files
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+test.db
+*.sqlite
+*.sqlite3
