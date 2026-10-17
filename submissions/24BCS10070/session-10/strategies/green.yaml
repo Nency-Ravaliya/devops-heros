@@ -1,0 +1,52 @@
+{
+  "apiVersion": "apps/v1",
+  "kind": "Deployment",
+  "metadata": {
+    "name": "green"
+  },
+  "spec": {
+    "replicas": 2,
+    "selector": {
+      "matchLabels": {
+        "app": "colour",
+        "version": "green"
+      }
+    },
+    "template": {
+      "metadata": {
+        "labels": {
+          "app": "colour",
+          "version": "green"
+        }
+      },
+      "spec": {
+        "containers": [
+          {
+            "name": "web",
+            "image": "nginx:stable-alpine",
+            "ports": [
+              {
+                "containerPort": 80
+              }
+            ],
+            "resources": {
+              "requests": {
+                "cpu": "50m",
+                "memory": "32Mi"
+              },
+              "limits": {
+                "cpu": "500m",
+                "memory": "128Mi"
+              }
+            },
+            "command": [
+              "sh",
+              "-c",
+              "echo '<h1>green</h1>' > /usr/share/nginx/html/index.html; exec nginx -g 'daemon off;' "
+            ]
+          }
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "apiVersion": "v1",
+  "kind": "Service",
+  "metadata": {
+    "name": "colour"
+  },
+  "spec": {
+    "type": "ClusterIP",
+    "selector": {
+      "app": "colour",
+      "version": "blue"
+    },
+    "ports": [
+      {
+        "port": 80,
+        "targetPort": 80
+      }
+    ]
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "apiVersion": "v1",
+  "kind": "Service",
+  "metadata": {
+    "name": "pipeline16"
+  },
+  "spec": {
+    "type": "ClusterIP",
+    "selector": {
+      "app": "pipeline16"
+    },
+    "ports": [
+      {
+        "port": 80,
+        "targetPort": 8000
+      }
+    ]
+  }
+}

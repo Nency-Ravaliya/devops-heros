@@ -1,0 +1,10 @@
+$ terraform validate -no-color
+
+Error: Missing required provider
+
+This configuration requires provider registry.terraform.io/hashicorp/aws, but
+that provider isn't available. You may be able to install it automatically by
+running:
+  terraform init
+
+Exit: 1

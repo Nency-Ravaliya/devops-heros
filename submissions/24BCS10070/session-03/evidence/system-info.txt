@@ -1,0 +1,18 @@
+$ docker run --rm -i --mount type=bind,src=/home/lner/Documents/devops-heros/submissions/24BCS10070/session-03,dst=/lesson,readonly ubuntu:24.04 bash /lesson/system-info.sh
+Date: 2026-10-17T14:51:20+00:00
+Hostname: 251cb5bfa63c
+Username: root
+Disk usage:
+Filesystem      Size  Used Avail Use% Mounted on
+overlay         295G  226G   54G  81% /
+tmpfs            64M     0   64M   0% /dev
+shm              64M     0   64M   0% /dev/shm
+/dev/nvme0n1p6  295G  226G   54G  81% /lesson
+tmpfs           4.0K     0  4.0K   0% /proc/acpi
+Running processes:
+UID          PID    PPID  C STIME TTY          TIME CMD
+root           1       0 30 14:51 ?        00:00:00 bash /lesson/system-info.sh
+root          11       1  0 14:51 ?        00:00:00 ps -ef
+Process report saved to /tmp/my report/processes.txt
+
+Exit: 0

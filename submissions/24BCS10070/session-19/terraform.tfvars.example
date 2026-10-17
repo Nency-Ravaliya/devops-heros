@@ -1,0 +1,2 @@
+region = "ap-south-1"
+allowed_http_cidr = "203.0.113.10/32" # Replace with your actual client public IP

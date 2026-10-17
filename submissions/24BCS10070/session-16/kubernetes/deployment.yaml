@@ -1,0 +1,51 @@
+{
+  "apiVersion": "apps/v1",
+  "kind": "Deployment",
+  "metadata": {
+    "name": "pipeline16"
+  },
+  "spec": {
+    "replicas": 2,
+    "selector": {
+      "matchLabels": {
+        "app": "pipeline16"
+      }
+    },
+    "template": {
+      "metadata": {
+        "labels": {
+          "app": "pipeline16"
+        }
+      },
+      "spec": {
+        "containers": [
+          {
+            "name": "app",
+            "image": "ghcr.io/chinna-328/devops-heros-session16:replace-with-commit-sha",
+            "ports": [
+              {
+                "containerPort": 8000
+              }
+            ],
+            "resources": {
+              "requests": {
+                "cpu": "50m",
+                "memory": "32Mi"
+              },
+              "limits": {
+                "cpu": "500m",
+                "memory": "128Mi"
+              }
+            },
+            "readinessProbe": {
+              "httpGet": {
+                "path": "/health",
+                "port": 8000
+              }
+            }
+          }
+        ]
+      }
+    }
+  }
+}

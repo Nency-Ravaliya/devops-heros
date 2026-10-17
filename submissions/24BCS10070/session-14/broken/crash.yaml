@@ -1,0 +1,20 @@
+{
+  "apiVersion": "v1",
+  "kind": "Pod",
+  "metadata": {
+    "name": "broken-crash"
+  },
+  "spec": {
+    "containers": [
+      {
+        "name": "app",
+        "image": "busybox:1.36",
+        "command": [
+          "sh",
+          "-c",
+          "echo configuration missing >&2; exit 1"
+        ]
+      }
+    ]
+  }
+}

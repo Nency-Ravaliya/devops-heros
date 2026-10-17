@@ -1,0 +1,57 @@
+{
+  "apiVersion": "apps/v1",
+  "kind": "Deployment",
+  "metadata": {
+    "name": "config-web"
+  },
+  "spec": {
+    "replicas": 2,
+    "selector": {
+      "matchLabels": {
+        "app": "config-web"
+      }
+    },
+    "template": {
+      "metadata": {
+        "labels": {
+          "app": "config-web"
+        }
+      },
+      "spec": {
+        "containers": [
+          {
+            "name": "web",
+            "image": "nginx:stable-alpine",
+            "ports": [
+              {
+                "containerPort": 80
+              }
+            ],
+            "resources": {
+              "requests": {
+                "cpu": "50m",
+                "memory": "32Mi"
+              },
+              "limits": {
+                "cpu": "500m",
+                "memory": "128Mi"
+              }
+            },
+            "envFrom": [
+              {
+                "configMapRef": {
+                  "name": "student-config"
+                }
+              },
+              {
+                "secretRef": {
+                  "name": "student-secret"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    }
+  }
+}

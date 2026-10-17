@@ -1,0 +1,5 @@
+Container HTTP check: start the app, request http://127.0.0.1:8000, stop the app.
+127.0.0.1 - - [17/Oct/2026 14:51:35] "GET / HTTP/1.1" 200 -
+GET / 200 {"message": "Hello from my DevOps pipeline", "healthy": true}
+
+Exit: 0

@@ -1,0 +1,11 @@
+Recorded output from the README exercise commands.
+24233 -rw-r--r-- 2 lner lner 15 Oct 17 20:17 hard.txt
+24233 -rw-r--r-- 2 lner lner 15 Oct 17 20:17 original.txt
+24234 lrwxrwxrwx 1 lner lner 12 Oct 17 20:17 soft.txt -> original.txt
+Hard link after removing original:
+Linux practice
+Soft link after removing original:
+cat: soft.txt: No such file or directory
+The soft link is now dangling.
+
+Exit: 0
