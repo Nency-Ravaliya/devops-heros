@@ -1,0 +1,15 @@
+multi-stage: GET http://127.0.0.1:8080 HTTP 200
+<h1>Hello World from Docker multi-stage build</h1>
+student7-multi-stage	student-multistage:assignment	127.0.0.1:8080->3000/tcp
+
+nodejs-app: GET http://127.0.0.1:32774 HTTP 200
+<h1>Hello World from Node.js</h1>
+student7-nodejs-app	student-node:assignment	127.0.0.1:32774->3000/tcp
+
+python-app: GET http://127.0.0.1:32775 HTTP 200
+<h1>Hello World from Python</h1>
+student7-python-app	student7-python:assignment	127.0.0.1:32775->8000/tcp
+
+java-app: GET http://127.0.0.1:32776 HTTP 200
+<h1>Hello World from Java</h1>
+student7-java-app	student-java:assignment	127.0.0.1:32776->8080/tcp

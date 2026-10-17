@@ -1,0 +1,6 @@
+apiVersion: v2
+name: student-notes
+description: My first Notes web app Helm chart
+type: application
+version: 0.1.0
+appVersion: "1.0"

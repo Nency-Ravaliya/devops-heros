@@ -1,0 +1,7 @@
+GET / HTTP 200
+<html><script type="module" crossorigin src="/assets/index-DI58Xgya.js"></script>
+
+<body><div id="root"></div></body></html>
+
+GET /assets/index-DI58Xgya.js HTTP 200
+Compiled React application contains: Hello World from React

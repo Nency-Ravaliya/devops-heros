@@ -1,0 +1,4 @@
+Local cluster setup attempted with kind v0.30.0.
+Node image: kindest/node:v1.34.0
+Result: cluster creation failed while downloading the node image because production.cloudfront.docker.com could not be resolved.
+No cluster runtime results are available.

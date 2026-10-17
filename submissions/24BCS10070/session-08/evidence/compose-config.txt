@@ -1,0 +1,2 @@
+docker compose config -q
+Passed: Compose configuration parsed successfully.

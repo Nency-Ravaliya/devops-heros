@@ -1,0 +1,39 @@
+$ docker build -t student-session17:assignment /home/lner/Documents/devops-heros/submissions/24BCS10070/session-17
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 143B done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for docker.io/library/python:3.12-slim-bookworm
+#2 DONE 0.0s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 2B done
+#3 DONE 0.0s
+
+#4 [internal] load build context
+#4 transferring context: 707B done
+#4 DONE 0.0s
+
+#5 [1/3] FROM docker.io/library/python:3.12-slim-bookworm@sha256:392307d22300de8b5986851a12d9176dfc0fc073e65bf6523ebd7dcbeb23564e
+#5 resolve docker.io/library/python:3.12-slim-bookworm@sha256:392307d22300de8b5986851a12d9176dfc0fc073e65bf6523ebd7dcbeb23564e 0.0s done
+#5 DONE 0.0s
+
+#6 [2/3] WORKDIR /app
+#6 CACHED
+
+#7 [3/3] COPY app.py .
+#7 CACHED
+
+#8 exporting to image
+#8 exporting layers done
+#8 exporting manifest sha256:6c5cd41b8e4ebfe16ab44927020e31b9ee3d5771cb7f2be03ab43bf4c63c7477 done
+#8 exporting config sha256:ad26ada428cb13f1ec694b28da28e08827d16c36d527d93eafd5413c60a82f91 done
+#8 exporting attestation manifest sha256:49e4642dceb584e027ccd4e8d566d53a73e36f1a5013b1358616ae5a589be17b done
+#8 exporting manifest list sha256:36a769ea59c9dbae68a491973071e5f5e8b23ebad58be2430a3efcebad14d784 done
+#8 naming to docker.io/library/student-session17:assignment done
+#8 unpacking to docker.io/library/student-session17:assignment done
+#8 DONE 0.0s
+
+Exit: 0

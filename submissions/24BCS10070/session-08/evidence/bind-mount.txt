@@ -1,0 +1,7 @@
+Before edit:
+HTTP 200
+<h1>Hello students</h1>
+
+After edit, same container:
+HTTP 200
+<h1>Hello students - edited without restart</h1>

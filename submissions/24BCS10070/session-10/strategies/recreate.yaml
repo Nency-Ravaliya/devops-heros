@@ -1,0 +1,53 @@
+{
+  "apiVersion": "apps/v1",
+  "kind": "Deployment",
+  "metadata": {
+    "name": "recreate"
+  },
+  "spec": {
+    "replicas": 2,
+    "selector": {
+      "matchLabels": {
+        "app": "recreate"
+      }
+    },
+    "template": {
+      "metadata": {
+        "labels": {
+          "app": "recreate"
+        }
+      },
+      "spec": {
+        "containers": [
+          {
+            "name": "web",
+            "image": "nginx:stable-alpine",
+            "ports": [
+              {
+                "containerPort": 80
+              }
+            ],
+            "resources": {
+              "requests": {
+                "cpu": "50m",
+                "memory": "32Mi"
+              },
+              "limits": {
+                "cpu": "500m",
+                "memory": "128Mi"
+              }
+            },
+            "command": [
+              "sh",
+              "-c",
+              "echo '<h1>recreate</h1>' > /usr/share/nginx/html/index.html; exec nginx -g 'daemon off;' "
+            ]
+          }
+        ]
+      }
+    },
+    "strategy": {
+      "type": "Recreate"
+    }
+  }
+}

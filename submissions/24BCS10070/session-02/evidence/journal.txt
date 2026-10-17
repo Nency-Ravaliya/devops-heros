@@ -1,0 +1,6 @@
+$ journalctl -u systemd-journald -b --no-pager -n 5
+Oct 17 10:42:25 archlinux systemd-journald[425]: Journal started
+Oct 17 10:42:25 archlinux systemd-journald[425]: Runtime Journal (/run/log/journal/61878977dc43401b9048e0b2ba2b6eb0) is 8M, max 760.9M, 752.9M free.
+Oct 17 10:42:25 archlinux systemd-journald[425]: Time spent on flushing to /var/log/journal/61878977dc43401b9048e0b2ba2b6eb0 is 139.814ms for 1142 entries.
+Oct 17 10:42:25 archlinux systemd-journald[425]: System Journal (/var/log/journal/61878977dc43401b9048e0b2ba2b6eb0) is 1.3G, max 4G, 2.6G free.
+Oct 17 10:42:26 archlinux systemd-journald[425]: Received client request to flush runtime journal.

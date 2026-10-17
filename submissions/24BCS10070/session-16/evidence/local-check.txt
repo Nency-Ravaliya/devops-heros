@@ -1,0 +1,19 @@
+$ python -m unittest -v (disposable Python 3.12 container)
+test_content_length (test_app.AppTests.test_content_length) ... 127.0.0.1 - - [17/Oct/2026 15:17:48] "GET / HTTP/1.1" 200 -
+ok
+test_health_endpoint (test_app.AppTests.test_health_endpoint) ... 127.0.0.1 - - [17/Oct/2026 15:17:48] "GET /health HTTP/1.1" 200 -
+ok
+test_home_message (test_app.AppTests.test_home_message) ... 127.0.0.1 - - [17/Oct/2026 15:17:48] "GET / HTTP/1.1" 200 -
+ok
+test_json_content_type (test_app.AppTests.test_json_content_type) ... 127.0.0.1 - - [17/Oct/2026 15:17:48] "GET /health HTTP/1.1" 200 -
+ok
+test_missing_route (test_app.AppTests.test_missing_route) ... 127.0.0.1 - - [17/Oct/2026 15:17:48] code 404, message Not Found
+127.0.0.1 - - [17/Oct/2026 15:17:48] "GET /missing HTTP/1.1" 404 -
+ok
+
+----------------------------------------------------------------------
+Ran 5 tests in 0.029s
+
+OK
+
+Exit: 0
