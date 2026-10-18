@@ -1,0 +1,43 @@
+# kube-prometheus-stack: Prometheus side.
+#
+#   helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+#   helm upgrade --install monitoring prometheus-community/kube-prometheus-stack \
+#     -n monitoring --create-namespace \
+#     -f monitoring/prometheus-values.yaml -f monitoring/grafana-values.yaml
+#
+# The Prometheus Operator watches ServiceMonitor objects. The StockPilot chart creates one
+# (serviceMonitor.enabled=true) that points at the backend's /metrics endpoint.
+
+prometheus:
+  prometheusSpec:
+    # By default the operator only selects ServiceMonitors labelled with the Helm release name.
+    # These switches make it pick up every ServiceMonitor / PodMonitor / rule in any namespace.
+    serviceMonitorSelectorNilUsesHelmValues: false
+    podMonitorSelectorNilUsesHelmValues: false
+    ruleSelectorNilUsesHelmValues: false
+    probeSelectorNilUsesHelmValues: false
+
+    scrapeInterval: 15s
+    retention: 3d
+
+    resources:
+      requests:
+        cpu: 200m
+        memory: 512Mi
+      limits:
+        memory: 1Gi
+
+    # Metrics are kept in an emptyDir (lost on restart) to keep the lab simple.
+    # For a persistent volume on EKS uncomment:
+    # storageSpec:
+    #   volumeClaimTemplate:
+    #     spec:
+    #       storageClassName: gp3
+    #       accessModes: [ReadWriteOnce]
+    #       resources:
+    #         requests:
+    #           storage: 10Gi
+
+# not needed for the demo, and it saves memory
+alertmanager:
+  enabled: false

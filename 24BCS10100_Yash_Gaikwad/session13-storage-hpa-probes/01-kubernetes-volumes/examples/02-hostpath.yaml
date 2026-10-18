@@ -1,0 +1,33 @@
+# Example 2: hostPath volume with type DirectoryOrCreate.
+#
+# The Pod writes a file into /host-data inside the container, which is
+# /data/hostpath-demo on the NODE. On minikube with the docker driver the "node"
+# is the minikube container, not the Windows/Linux host, so look at the file with:
+#   minikube ssh -- cat /data/hostpath-demo/hello.txt
+#
+# The file survives deleting and re-creating the Pod because it lives on the node.
+# hostPath is fine for a single-node demo; avoid it for real multi-node workloads.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: vol-hostpath-demo
+  labels:
+    app: vol-hostpath-demo
+spec:
+  containers:
+  - name: writer
+    image: busybox:1.36
+    command: ["sh", "-c"]
+    args:
+    - |
+      echo "written by $HOSTNAME at `date`" >> /host-data/hello.txt
+      cat /host-data/hello.txt
+      sleep 3600
+    volumeMounts:
+    - name: node-dir
+      mountPath: /host-data
+  volumes:
+  - name: node-dir
+    hostPath:
+      path: /data/hostpath-demo
+      type: DirectoryOrCreate

@@ -1,0 +1,16 @@
+{{- $selector := dict "root" . "component" "frontend" -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "stockpilot.fullname" . }}-frontend
+  labels:
+    {{- include "stockpilot.labels" . | nindent 4 }}
+    app.kubernetes.io/component: frontend
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: {{ .Values.frontend.service.port }}
+      targetPort: http
+  selector:
+    {{- include "stockpilot.selectorLabels" $selector | nindent 4 }}

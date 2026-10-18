@@ -1,0 +1,53 @@
+# Monitoring demo: app + Prometheus + Alertmanager + node-exporter + Grafana
+# Run:  docker compose up -d --build
+#   app           http://localhost:8000       (/, /work, /error, /healthz, /metrics)
+#   Prometheus    http://localhost:9090
+#   Alertmanager  http://localhost:9093
+#   Grafana       http://localhost:3000       (anonymous read-only access, local demo only)
+name: s20mon
+
+services:
+  app:
+    build: ./app
+    container_name: s20mon-app
+    ports:
+      - "8000:8000"
+
+  node-exporter:
+    image: prom/node-exporter:v1.8.2
+    container_name: s20mon-node-exporter
+
+  prometheus:
+    image: prom/prometheus:v3.5.0
+    container_name: s20mon-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
+    depends_on:
+      - app
+      - alertmanager
+
+  alertmanager:
+    image: prom/alertmanager:v0.27.0
+    container_name: s20mon-alertmanager
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+
+  grafana:
+    image: grafana/grafana:12.1.1
+    container_name: s20mon-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: "Viewer"
+      GF_USERS_DEFAULT_THEME: "light"
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      - prometheus

@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: stockpilot
+  labels:
+    app.kubernetes.io/part-of: stockpilot
+    # Pod Security Admission: reject pods that run as root or escalate privileges
+    pod-security.kubernetes.io/enforce: baseline
+    pod-security.kubernetes.io/warn: restricted

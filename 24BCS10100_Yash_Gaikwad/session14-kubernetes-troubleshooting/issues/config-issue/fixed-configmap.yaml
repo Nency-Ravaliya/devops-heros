@@ -1,0 +1,8 @@
+# FIX: add the missing key to the ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: db-config
+data:
+  DB_HOST: "db.internal"
+  DB_PORT: "5432"

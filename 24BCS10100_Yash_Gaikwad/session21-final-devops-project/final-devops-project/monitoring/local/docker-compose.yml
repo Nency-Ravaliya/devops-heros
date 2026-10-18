@@ -1,0 +1,35 @@
+# Local monitoring for the docker compose stack (docker/docker-compose.yml).
+# Start the application first:   cd docker && docker compose -p stockpilot-final up -d --build
+# then the monitoring:           cd monitoring/local && docker compose -p stockpilot-mon up -d
+#   Prometheus  http://localhost:9091
+#   Grafana     http://localhost:3001   (anonymous read-only access, local demo only)
+services:
+  prometheus:
+    image: prom/prometheus:v3.5.0
+    container_name: stockpilot-mon-prometheus
+    ports:
+      - "9091:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./alerts.yml:/etc/prometheus/alerts.yml:ro
+    networks: [default, app]
+
+  grafana:
+    image: grafana/grafana:12.1.1
+    container_name: stockpilot-mon-grafana
+    ports:
+      - "3001:3000"
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: "Viewer"
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      - prometheus
+
+networks:
+  app:
+    # the network created by the application stack, so Prometheus can reach "backend:8000"
+    external: true
+    name: stockpilot-final_default

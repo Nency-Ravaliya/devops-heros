@@ -1,0 +1,95 @@
+# React frontend served by unprivileged Nginx (listens on 8080, runs as uid 101).
+# Image built, scanned and pushed by the pipeline for commit 8999ad3 (run #4).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: stockpilot
+  labels:
+    app.kubernetes.io/name: frontend
+    app.kubernetes.io/component: web
+    app.kubernetes.io/part-of: stockpilot
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: frontend
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: frontend
+        app.kubernetes.io/component: web
+        app.kubernetes.io/part-of: stockpilot
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 101
+        runAsGroup: 101
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: frontend
+          image: ghcr.io/yash-1706/stockpilot-frontend:8999ad3d61ab1a182cadaa0c78c906ba61ab7697
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            # nginx proxies /api to the backend Service (a fully qualified name, because nginx
+            # does not use the pod's DNS search domains)
+            - name: BACKEND_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: stockpilot-config
+                  key: BACKEND_URL
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 5
+          resources:
+            requests:
+              cpu: 25m
+              memory: 32Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          # with a read-only root file system nginx still needs two writable places:
+          # /tmp (pid file, temp files) and /etc/nginx/conf.d (the config generated from the template at start-up)
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+            - name: nginx-conf
+              mountPath: /etc/nginx/conf.d
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        - name: nginx-conf
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+  namespace: stockpilot
+  labels:
+    app.kubernetes.io/name: frontend
+    app.kubernetes.io/part-of: stockpilot
+spec:
+  type: ClusterIP            # expose it with an Ingress, or: kubectl port-forward svc/frontend 8080:80
+  selector:
+    app.kubernetes.io/name: frontend
+  ports:
+    - name: http
+      port: 80
+      targetPort: http

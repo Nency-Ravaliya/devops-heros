@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: app-bg
+spec:
+  # the version label decides which colour receives traffic: change it to switch
+  selector:
+    app: bg
+    version: blue
+  ports:
+    - port: 80
+      targetPort: 5678

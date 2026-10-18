@@ -1,0 +1,36 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: demo-ingress
+spec:
+  ingressClassName: nginx # handled by the ingress-nginx controller
+  rules:
+    # path-based routing: one host, two paths
+    - host: demo.local
+      http:
+        paths:
+          - path: /app-a
+            pathType: Prefix
+            backend:
+              service:
+                name: app-a
+                port:
+                  number: 80
+          - path: /app-b
+            pathType: Prefix
+            backend:
+              service:
+                name: app-b
+                port:
+                  number: 80
+    # host-based routing: a second host name goes to app-b
+    - host: blog.demo.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: app-b
+                port:
+                  number: 80

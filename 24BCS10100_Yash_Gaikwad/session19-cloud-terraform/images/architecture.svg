@@ -1,0 +1,117 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 690" width="1000" height="690" font-family="Segoe UI, Arial, sans-serif">
+  <title>Session 19 architecture: Terraform builds a VPC, public subnet, security group, EC2 instance and S3 bucket</title>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#37474f"/>
+    </marker>
+  </defs>
+
+  <rect width="1000" height="690" fill="#ffffff"/>
+  <text x="500" y="26" text-anchor="middle" font-size="18" font-weight="600" fill="#1f2328">Terraform to VPC to Subnet to Security Group to EC2 to S3</text>
+
+  <!-- Internet -->
+  <ellipse cx="600" cy="72" rx="100" ry="26" fill="#eceff1" stroke="#607d8b" stroke-width="1.5"/>
+  <text x="600" y="77" text-anchor="middle" font-size="14" fill="#263238">Internet (HTTP users)</text>
+
+  <!-- Terraform box -->
+  <rect x="20" y="190" width="180" height="170" rx="8" fill="#ede7f6" stroke="#5c4ee5" stroke-width="2"/>
+  <text x="110" y="216" text-anchor="middle" font-size="16" font-weight="600" fill="#3a2fa0">Terraform</text>
+  <text x="110" y="240" text-anchor="middle" font-size="12" fill="#1f2328">main.tf  variables.tf</text>
+  <text x="110" y="258" text-anchor="middle" font-size="12" fill="#1f2328">outputs.tf  provider.tf</text>
+  <text x="110" y="276" text-anchor="middle" font-size="12" fill="#1f2328">versions.tf  *.tfvars</text>
+  <line x1="40" y1="290" x2="180" y2="290" stroke="#b39ddb"/>
+  <text x="110" y="310" text-anchor="middle" font-size="12" fill="#1f2328">AWS provider (hashicorp/aws)</text>
+  <text x="110" y="330" text-anchor="middle" font-size="12" fill="#1f2328">state: terraform.tfstate</text>
+  <text x="110" y="348" text-anchor="middle" font-size="11" fill="#5f6b76">plan / apply / destroy</text>
+
+  <line x1="200" y1="275" x2="262" y2="275" stroke="#37474f" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="231" y="266" text-anchor="middle" font-size="10" fill="#37474f">AWS API</text>
+
+  <!-- AWS cloud / region -->
+  <rect x="265" y="110" width="720" height="560" rx="10" fill="#fffaf0" stroke="#ff9900" stroke-width="2.5"/>
+  <text x="280" y="134" font-size="14" font-weight="600" fill="#b25f00">AWS Cloud, region ap-south-1</text>
+
+  <!-- VPC -->
+  <rect x="285" y="150" width="440" height="500" rx="8" fill="#f1f8ee" stroke="#2e7d32" stroke-width="2"/>
+  <text x="300" y="176" font-size="13" font-weight="600" fill="#1b5e20">VPC cloud-demo-dev-vpc  10.0.0.0/16</text>
+
+  <!-- Internet gateway (on the VPC edge) -->
+  <rect x="525" y="138" width="150" height="34" rx="6" fill="#e1f5fe" stroke="#0277bd" stroke-width="2"/>
+  <text x="600" y="160" text-anchor="middle" font-size="13" font-weight="600" fill="#01579b">Internet Gateway</text>
+
+  <!-- Internet to gateway (drawn after the boxes so it stays visible) -->
+  <line x1="600" y1="98" x2="600" y2="136" stroke="#37474f" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="610" y="124" font-size="11" fill="#37474f">port 80</text>
+
+  <!-- Route table -->
+  <line x1="600" y1="172" x2="600" y2="200" stroke="#37474f" stroke-width="2" marker-end="url(#arrow)"/>
+  <rect x="495" y="202" width="210" height="58" rx="6" fill="#e1f5fe" stroke="#0277bd" stroke-width="2"/>
+  <text x="600" y="224" text-anchor="middle" font-size="13" font-weight="600" fill="#01579b">Route table (public)</text>
+  <text x="600" y="244" text-anchor="middle" font-size="12" fill="#1f2328">0.0.0.0/0 to Internet Gateway</text>
+  <line x1="600" y1="260" x2="600" y2="290" stroke="#37474f" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="610" y="280" font-size="11" fill="#37474f">association</text>
+
+  <!-- Public subnet -->
+  <rect x="305" y="292" width="400" height="338" rx="8" fill="#e8f5e1" stroke="#558b2f" stroke-width="2" stroke-dasharray="7 4"/>
+  <text x="320" y="316" font-size="13" font-weight="600" fill="#33691e">Public subnet  10.0.1.0/24  (ap-south-1a)</text>
+
+  <!-- Security group -->
+  <rect x="325" y="334" width="360" height="274" rx="8" fill="#fff5f5" stroke="#d13212" stroke-width="2" stroke-dasharray="3 3"/>
+  <text x="340" y="356" font-size="13" font-weight="600" fill="#a32a0f">Security group web-sg</text>
+  <text x="340" y="374" font-size="12" fill="#1f2328">in: tcp/22 from admin CIDR, tcp/80 from anywhere</text>
+  <text x="340" y="391" font-size="12" fill="#1f2328">out: all traffic</text>
+
+  <!-- EC2 -->
+  <rect x="365" y="414" width="280" height="150" rx="8" fill="#fff3e0" stroke="#ec7211" stroke-width="2.5"/>
+  <text x="505" y="440" text-anchor="middle" font-size="15" font-weight="600" fill="#a8500b">EC2 instance</text>
+  <text x="505" y="464" text-anchor="middle" font-size="12" fill="#1f2328">t3.micro, Amazon Linux 2023</text>
+  <text x="505" y="482" text-anchor="middle" font-size="12" fill="#1f2328">user_data installs and starts nginx</text>
+  <text x="505" y="500" text-anchor="middle" font-size="12" fill="#1f2328">public IP from the subnet setting</text>
+  <text x="505" y="518" text-anchor="middle" font-size="12" fill="#1f2328">IMDSv2 required</text>
+  <text x="505" y="546" text-anchor="middle" font-size="12" font-weight="600" fill="#a8500b">IAM instance profile attached</text>
+
+  <!-- S3 -->
+  <rect x="765" y="170" width="205" height="130" rx="8" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2.5"/>
+  <text x="867" y="195" text-anchor="middle" font-size="15" font-weight="600" fill="#1b5e20">S3 bucket</text>
+  <text x="867" y="216" text-anchor="middle" font-size="11" fill="#1f2328">yash-24bcs10100-s19-</text>
+  <text x="867" y="231" text-anchor="middle" font-size="11" fill="#1f2328">assets-dev01</text>
+  <text x="867" y="251" text-anchor="middle" font-size="12" fill="#1f2328">versioned, AES256 encrypted</text>
+  <text x="867" y="268" text-anchor="middle" font-size="12" fill="#1f2328">public access blocked</text>
+  <text x="867" y="285" text-anchor="middle" font-size="12" fill="#1f2328">object: welcome.txt</text>
+
+  <!-- IAM -->
+  <rect x="765" y="350" width="205" height="100" rx="8" fill="#fce4ec" stroke="#c2185b" stroke-width="2.5"/>
+  <text x="867" y="375" text-anchor="middle" font-size="15" font-weight="600" fill="#880e4f">IAM role</text>
+  <text x="867" y="396" text-anchor="middle" font-size="12" fill="#1f2328">trusted by ec2.amazonaws.com</text>
+  <text x="867" y="414" text-anchor="middle" font-size="12" fill="#1f2328">read-only: this bucket and</text>
+  <text x="867" y="431" text-anchor="middle" font-size="12" fill="#1f2328">this one secret (least privilege)</text>
+
+  <!-- SSM -->
+  <rect x="765" y="500" width="205" height="100" rx="8" fill="#ede7f6" stroke="#5c4ee5" stroke-width="2.5"/>
+  <text x="867" y="525" text-anchor="middle" font-size="15" font-weight="600" fill="#3a2fa0">SSM parameter</text>
+  <text x="867" y="546" text-anchor="middle" font-size="12" fill="#1f2328">SecureString app_secret</text>
+  <text x="867" y="564" text-anchor="middle" font-size="12" fill="#1f2328">value comes from</text>
+  <text x="867" y="581" text-anchor="middle" font-size="12" fill="#1f2328">TF_VAR_app_secret (sensitive)</text>
+
+  <!-- arrows: EC2 -> IAM -> S3 / SSM -->
+  <path d="M645,489 L700,489 L700,400 L765,400" fill="none" stroke="#37474f" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="649" y="481" font-size="11" fill="#37474f">assumes</text>
+  <line x1="867" y1="350" x2="867" y2="302" stroke="#37474f" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="877" y="332" font-size="11" fill="#37474f">GetObject, ListBucket</text>
+  <line x1="867" y1="450" x2="867" y2="498" stroke="#37474f" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="877" y="478" font-size="11" fill="#37474f">GetParameter</text>
+
+  <!-- order note -->
+  <text x="20" y="410" font-size="12" font-weight="600" fill="#1f2328">Build order</text>
+  <text x="20" y="430" font-size="11" fill="#1f2328">1  VPC (S3, SSM and the IAM</text>
+  <text x="20" y="445" font-size="11" fill="#1f2328">    role start in parallel)</text>
+  <text x="20" y="463" font-size="11" fill="#1f2328">2  Internet Gateway, Subnet,</text>
+  <text x="20" y="478" font-size="11" fill="#1f2328">    Security group</text>
+  <text x="20" y="496" font-size="11" fill="#1f2328">3  Route table, SG rules</text>
+  <text x="20" y="514" font-size="11" fill="#1f2328">4  Route table association</text>
+  <text x="20" y="532" font-size="11" fill="#1f2328">5  EC2 instance (last)</text>
+  <text x="20" y="558" font-size="11" fill="#5f6b76">Terraform works this out from</text>
+  <text x="20" y="573" font-size="11" fill="#5f6b76">references between resources.</text>
+
+  <text x="500" y="684" text-anchor="middle" font-size="11" fill="#5f6b76">Diagram of terraform-project/. Dashed boxes are logical boundaries inside the VPC.</text>
+</svg>

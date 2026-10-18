@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: web-headless
+spec:
+  clusterIP: None # headless: no virtual IP, DNS returns the Pod IPs directly
+  selector:
+    app: web-headless
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80

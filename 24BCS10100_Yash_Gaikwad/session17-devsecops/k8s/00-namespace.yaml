@@ -1,0 +1,11 @@
+# Namespace for StockPilot. The Pod Security Admission label "restricted" makes the cluster
+# REJECT any pod in this namespace that runs as root, can escalate privileges, keeps Linux
+# capabilities or has no seccomp profile (the pods in this folder are written to satisfy the profile).
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: stockpilot
+  labels:
+    app.kubernetes.io/part-of: stockpilot
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce-version: latest

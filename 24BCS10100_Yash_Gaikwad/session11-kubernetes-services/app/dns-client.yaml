@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: dns-client
+  labels:
+    app: dns-client
+spec:
+  containers:
+    - name: tools
+      # small image with dig, nslookup and curl for testing Services and DNS
+      image: infoblox/dnstools:latest
+      command: ["sleep", "7200"]

@@ -1,0 +1,393 @@
+name: DevSecOps pipeline
+
+# Code -> Build -> Unit test -> SAST -> SCA -> Secret scan -> Docker build -> Container image scan
+#      -> SECURITY GATE -> Push image -> Deploy to Kubernetes
+#
+# NOT YET RUN ON GITHUB: this workflow was linted with actionlint and every tool in it was run
+# locally, but nothing was pushed, so it has never executed on a GitHub runner.
+#
+# Paths assume the final-project layout (application/, docker/, helm/ and security/ at the root
+# of the repository). Change the env block below if the folders are named differently.
+#
+#   build -> unit-test -+-> sast ------------+
+#                       +-> sca -------------+
+#                       +-> secret-scan -----+--> security-gate --> push-image --> deploy
+#                       +-> docker-build -> image-scan ----------+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: devsecops-${{ github.ref }}
+  cancel-in-progress: true
+
+# least privilege: read-only by default, a job that needs more asks for it itself
+permissions:
+  contents: read
+
+env:
+  PYTHON_VERSION: "3.12"
+  NODE_VERSION: "22"
+  BACKEND_DIR: application/backend
+  FRONTEND_DIR: application/frontend
+  SECURITY_DIR: security
+  HELM_CHART: helm/stockpilot
+  SEMGREP_VERSION: "1.181.0"
+  PIP_AUDIT_VERSION: "2.10.1"
+  GITLEAKS_IMAGE: zricethezav/gitleaks:v8.30.1
+  TRIVY_IMAGE: aquasec/trivy:0.75.0
+
+jobs:
+  # ------------------------------------------------------------------
+  # 1. BUILD: install the backend dependencies, compile the frontend
+  # ------------------------------------------------------------------
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: ${{ env.BACKEND_DIR }}/requirements-dev.txt
+
+      - name: Install backend dependencies and byte-compile the code
+        working-directory: ${{ env.BACKEND_DIR }}
+        run: |
+          pip install -r requirements.txt
+          python -m compileall -q app
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: ${{ env.FRONTEND_DIR }}/package-lock.json
+
+      - name: Build the React frontend
+        working-directory: ${{ env.FRONTEND_DIR }}
+        run: |
+          npm ci
+          npm run build
+
+      - name: Keep the built frontend as an artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: frontend-dist
+          path: ${{ env.FRONTEND_DIR }}/dist
+          if-no-files-found: error
+          retention-days: 7
+
+  # ------------------------------------------------------------------
+  # 2. UNIT TEST: nothing is scanned or built further if a test fails
+  # ------------------------------------------------------------------
+  unit-test:
+    name: Unit tests
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: ${{ env.BACKEND_DIR }}/requirements-dev.txt
+
+      - name: Install backend dependencies
+        working-directory: ${{ env.BACKEND_DIR }}
+        run: pip install -r requirements-dev.txt
+
+      - name: Run pytest
+        working-directory: ${{ env.BACKEND_DIR }}
+        run: pytest -v --junitxml=pytest-report.xml
+
+      - name: Keep the test report as an artifact
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: pytest-junit-report
+          path: ${{ env.BACKEND_DIR }}/pytest-report.xml
+          retention-days: 14
+
+  # ------------------------------------------------------------------
+  # 3. SAST: static analysis of OUR code (Semgrep). GitHub's own alternative is CodeQL
+  #    (github/codeql-action/init + analyze); Semgrep was chosen because one tool covers
+  #    both the Python backend and the React frontend and its rules are easy to read.
+  # ------------------------------------------------------------------
+  sast:
+    name: SAST (Semgrep)
+    needs: unit-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install Semgrep
+        run: pip install "semgrep==${SEMGREP_VERSION}"
+
+      # --error: exit code 1 when anything is found, which fails this job and closes the gate
+      - name: Scan the backend and the frontend source
+        run: |
+          semgrep scan \
+            --config "$SECURITY_DIR/semgrep-rules.yml" \
+            --config p/python --config p/javascript --config p/dockerfile \
+            --metrics=off --error \
+            --sarif-output=semgrep.sarif \
+            "$BACKEND_DIR" "$FRONTEND_DIR/src" "$FRONTEND_DIR/Dockerfile"
+
+      - name: Keep the SARIF report as an artifact
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: semgrep-sarif
+          path: semgrep.sarif
+          if-no-files-found: ignore
+          retention-days: 14
+
+  # ------------------------------------------------------------------
+  # 4. SCA: known vulnerabilities in the DEPENDENCIES we use
+  # ------------------------------------------------------------------
+  sca:
+    name: SCA (pip-audit and npm audit)
+    needs: unit-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: pip-audit on the pinned Python requirements
+        run: |
+          pip install "pip-audit==${PIP_AUDIT_VERSION}"
+          pip-audit -r "$BACKEND_DIR/requirements.txt" --progress-spinner off
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      # runs even if pip-audit failed, so one run reports both ecosystems
+      - name: npm audit on the production dependencies (fails on HIGH or CRITICAL)
+        if: ${{ !cancelled() }}
+        working-directory: ${{ env.FRONTEND_DIR }}
+        run: npm audit --omit=dev --audit-level=high
+
+  # ------------------------------------------------------------------
+  # 5. SECRET SCAN: gitleaks over the whole git history
+  # ------------------------------------------------------------------
+  secret-scan:
+    name: Secret scan (gitleaks)
+    needs: unit-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Run gitleaks over every commit
+        run: |
+          docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:/repo" "$GITLEAKS_IMAGE" \
+            git /repo --config "/repo/$SECURITY_DIR/.gitleaks.toml" --no-banner --redact --verbose
+
+  # ------------------------------------------------------------------
+  # 6. DOCKER BUILD: build each image once and keep it as a tar file, so that exactly
+  #    the bytes that are scanned are the bytes that are pushed later
+  # ------------------------------------------------------------------
+  docker-build:
+    name: Docker build (${{ matrix.service }})
+    needs: unit-test
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - service: backend
+            dir: application/backend
+          - service: frontend
+            dir: application/frontend
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Work out the image name (GHCR needs lower case)
+        run: echo "IMAGE=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/stockpilot-${{ matrix.service }}" >> "$GITHUB_ENV"
+
+      - uses: docker/setup-buildx-action@v4
+
+      - name: Build the image and save it as a tar file
+        uses: docker/build-push-action@v7
+        with:
+          context: ./${{ matrix.dir }}
+          file: ./docker/${{ matrix.service }}.Dockerfile
+          push: false
+          # the tag is the commit SHA: commit A -> image A, never "latest"
+          tags: ${{ env.IMAGE }}:${{ github.sha }}
+          build-args: |
+            COMMIT_SHA=${{ github.sha }}
+          outputs: type=docker,dest=${{ runner.temp }}/image-${{ matrix.service }}.tar
+          cache-from: type=gha,scope=${{ matrix.service }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.service }}
+
+      - name: Hand the image to the next jobs
+        uses: actions/upload-artifact@v7
+        with:
+          name: image-${{ matrix.service }}
+          path: ${{ runner.temp }}/image-${{ matrix.service }}.tar
+          if-no-files-found: error
+          retention-days: 1
+          compression-level: 0
+
+  # ------------------------------------------------------------------
+  # 7. CONTAINER IMAGE SCAN: Trivy reads trivy.yaml (HIGH/CRITICAL, ignore-unfixed, exit-code 1)
+  # ------------------------------------------------------------------
+  image-scan:
+    name: Image scan (${{ matrix.service }})
+    needs: docker-build
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [backend, frontend]
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Fetch the image that was just built
+        uses: actions/download-artifact@v8
+        with:
+          name: image-${{ matrix.service }}
+          path: ${{ runner.temp }}/image
+
+      - name: Scan the image with Trivy (exit code 1 on HIGH or CRITICAL)
+        run: |
+          docker run --rm \
+            -v "$RUNNER_TEMP/image:/image:ro" \
+            -v "$PWD/$SECURITY_DIR:/work/security:ro" \
+            -w /work \
+            "$TRIVY_IMAGE" image --config security/trivy.yaml \
+            --input "/image/image-${{ matrix.service }}.tar"
+
+  # ------------------------------------------------------------------
+  # 8. SECURITY GATE: one job that every scan must satisfy.
+  #    if: always() makes it run (and fail) even when an upstream job failed or was skipped.
+  #    Make it a REQUIRED status check in the branch protection rule of main, and nothing
+  #    can be merged while it is red. (GitHub counts a skipped required job as passed,
+  #    which is exactly why this job has to run and decide for itself.)
+  # ------------------------------------------------------------------
+  security-gate:
+    name: Security gate
+    needs: [sast, sca, secret-scan, image-scan]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Open only if every scan succeeded
+        env:
+          SAST_RESULT: ${{ needs.sast.result }}
+          SCA_RESULT: ${{ needs.sca.result }}
+          SECRET_RESULT: ${{ needs.secret-scan.result }}
+          IMAGE_RESULT: ${{ needs.image-scan.result }}
+        run: |
+          {
+            echo "### Security gate"
+            echo "| Scan | Result |"
+            echo "|---|---|"
+            echo "| SAST (Semgrep) | $SAST_RESULT |"
+            echo "| SCA (pip-audit, npm audit) | $SCA_RESULT |"
+            echo "| Secret scan (gitleaks) | $SECRET_RESULT |"
+            echo "| Image scan (Trivy) | $IMAGE_RESULT |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          closed=0
+          for result in "$SAST_RESULT" "$SCA_RESULT" "$SECRET_RESULT" "$IMAGE_RESULT"; do
+            if [ "$result" != "success" ]; then closed=1; fi
+          done
+          if [ "$closed" -eq 1 ]; then
+            echo "::error title=Security gate closed::at least one scan did not succeed, see the table above"
+            exit 1
+          fi
+          echo "Security gate open: all scans succeeded"
+
+  # ------------------------------------------------------------------
+  # 9. PUSH IMAGE: only after the gate, only on main. No stored password: GITHUB_TOKEN.
+  # ------------------------------------------------------------------
+  push-image:
+    name: Push image (${{ matrix.service }})
+    needs: security-gate
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [backend, frontend]
+    steps:
+      - name: Work out the image name (GHCR needs lower case)
+        run: echo "IMAGE=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/stockpilot-${{ matrix.service }}" >> "$GITHUB_ENV"
+
+      - name: Fetch the image that passed the gate
+        uses: actions/download-artifact@v8
+        with:
+          name: image-${{ matrix.service }}
+          path: ${{ runner.temp }}/image
+
+      - name: Load the image into Docker
+        run: docker load --input "$RUNNER_TEMP/image/image-${{ matrix.service }}.tar"
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push the image to GHCR
+        run: docker push "$IMAGE:${{ github.sha }}"
+
+  # ------------------------------------------------------------------
+  # 10. DEPLOY TO KUBERNETES: skipped until the repository variable DEPLOY_ENABLED is "true".
+  #     Needs the secret KUBE_CONFIG (a kubeconfig file, base64 encoded). The Helm chart creates
+  #     the database Secret itself (random password, nothing secret is stored in Git).
+  # ------------------------------------------------------------------
+  deploy:
+    name: Deploy to Kubernetes
+    needs: push-image
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: azure/setup-helm@v5
+
+      - name: Write the kubeconfig from the secret
+        env:
+          KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
+        run: |
+          mkdir -p "$HOME/.kube"
+          printf '%s' "$KUBE_CONFIG" | base64 -d > "$HOME/.kube/config"
+          chmod 600 "$HOME/.kube/config"
+
+      - name: Deploy the images of this commit with Helm
+        run: |
+          OWNER="${GITHUB_REPOSITORY_OWNER,,}"
+          helm upgrade --install stockpilot "$HELM_CHART" \
+            --namespace stockpilot --create-namespace \
+            --set backend.image.repository="ghcr.io/${OWNER}/stockpilot-backend" \
+            --set backend.image.tag="${{ github.sha }}" \
+            --set frontend.image.repository="ghcr.io/${OWNER}/stockpilot-frontend" \
+            --set frontend.image.tag="${{ github.sha }}" \
+            --wait --timeout 8m
+
+      - name: Show what is running
+        run: |
+          kubectl -n stockpilot get pods,svc
+          helm -n stockpilot status stockpilot | head -n 12

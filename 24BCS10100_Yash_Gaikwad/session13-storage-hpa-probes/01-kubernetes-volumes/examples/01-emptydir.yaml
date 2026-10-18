@@ -1,0 +1,44 @@
+# Example 1: emptyDir shared between two containers in one Pod.
+#
+# The "writer" container appends a timestamp to /shared/log.txt every 5 seconds.
+# The "reader" container waits for that file and follows it with tail -f.
+# The emptyDir lives exactly as long as the Pod; deleting the Pod deletes the data.
+#
+# Try:
+#   kubectl apply -f 01-emptydir.yaml
+#   kubectl logs vol-emptydir-demo -c reader
+#   kubectl exec vol-emptydir-demo -c writer -- cat /shared/log.txt
+apiVersion: v1
+kind: Pod
+metadata:
+  name: vol-emptydir-demo
+  labels:
+    app: vol-emptydir-demo
+spec:
+  containers:
+  - name: writer
+    image: busybox:1.36
+    command: ["sh", "-c"]
+    args:
+    - |
+      while true; do
+        date >> /shared/log.txt
+        sleep 5
+      done
+    volumeMounts:
+    - name: shared-data
+      mountPath: /shared
+  - name: reader
+    image: busybox:1.36
+    command: ["sh", "-c"]
+    args:
+    - |
+      while [ ! -f /shared/log.txt ]; do sleep 1; done
+      tail -f /shared/log.txt
+    volumeMounts:
+    - name: shared-data
+      mountPath: /shared
+      readOnly: true
+  volumes:
+  - name: shared-data
+    emptyDir: {}

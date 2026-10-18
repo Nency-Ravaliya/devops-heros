@@ -1,0 +1,43 @@
+# Argo CD Application for the whole StockPilot release.
+# Git is the source of truth: Argo CD renders the Helm chart at this path and keeps the
+# "stockpilot" namespace identical to it (self-heal) and removes what leaves Git (prune).
+# Apply this file ONCE with kubectl; every later change is a commit to Git.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: stockpilot
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/Yash-1706/devops-git-assgn.git
+    targetRevision: main
+    path: session21-final-devops-project/final-devops-project/helm/stockpilot
+    helm:
+      valueFiles:
+        - values-dev.yaml # local images (tag "local"); an EKS setup would use values-eks.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: stockpilot
+  # Two things that must NOT be reconciled from Git:
+  #  - the database Secret: the chart generates a random password at install time (nothing secret
+  #    in Git), but a plain `helm template` (what Argo CD runs) cannot look up the existing value,
+  #    so without this rule every sync would replace the password and break the database login;
+  #  - the number of replicas: the HPA owns it, Argo CD must not fight the autoscaler.
+  ignoreDifferences:
+    - group: ""
+      kind: Secret
+      jsonPointers:
+        - /data
+        - /stringData
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /spec/replicas
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - RespectIgnoreDifferences=true

@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+data:
+  # simple key/value settings (used as environment variables)
+  APP_ENV: "staging"
+  LOG_LEVEL: "info"
+  APP_PORT: "8080"
+  # a whole file stored under one key (used as a mounted file)
+  app.properties: |
+    greeting=Hello from a ConfigMap
+    max_items=25

@@ -1,0 +1,40 @@
+# Trivy configuration: the container image scan and the "security gate" policy.
+# Used by the image-scan job of devsecops.yml and by run-security-scans.sh:
+#   trivy image --config security/trivy.yaml <image>
+# (command line flags and TRIVY_* environment variables override this file)
+
+# --- the gate -------------------------------------------------------------
+# Exit with status 1 when at least one finding of the severities below is reported.
+# A non-zero exit code fails the CI job, which is what closes the gate.
+exit-code: 1
+severity:
+  - HIGH
+  - CRITICAL
+
+vulnerability:
+  # Only fail on vulnerabilities that already have a fixed version: the team can act
+  # on those. Unfixed ones still show up in a normal `trivy image` run without this flag.
+  ignore-unfixed: true
+
+# --- what is scanned ------------------------------------------------------
+scan:
+  scanners:
+    - vuln      # OS packages and language packages (pip, npm) inside the image
+    - secret    # passwords / keys baked into image layers
+
+# --- reporting ------------------------------------------------------------
+format: table
+timeout: 10m
+
+# --- exceptions (see .trivyignore, which is empty on purpose) ---------------
+# relative to the folder Trivy is started in (the repository root)
+ignorefile: security/.trivyignore
+
+# --- vulnerability database ------------------------------------------------
+# Two mirrors: the AWS one is tried first and the GHCR one is the fallback, because
+# a single mirror can answer "TOOMANYREQUESTS" (this happened in a real run of the
+# StockPilot pipeline on GitHub).
+db:
+  repository:
+    - public.ecr.aws/aquasecurity/trivy-db:2
+    - ghcr.io/aquasecurity/trivy-db:2

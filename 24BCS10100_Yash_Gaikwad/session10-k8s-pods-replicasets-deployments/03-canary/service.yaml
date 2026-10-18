@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: app-canary
+spec:
+  # selects BOTH tracks (no "track" label), so traffic is shared roughly
+  # in proportion to the number of Pods behind each track
+  selector:
+    app: canary-demo
+  ports:
+    - port: 80
+      targetPort: 5678

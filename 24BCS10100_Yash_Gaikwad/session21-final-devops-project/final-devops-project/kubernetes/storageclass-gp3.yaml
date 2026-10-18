@@ -1,0 +1,13 @@
+# EKS only: a gp3 StorageClass backed by the EBS CSI driver (installed by Terraform).
+# The PostgreSQL volume uses it through helm/stockpilot/values-eks.yaml.
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: gp3
+provisioner: ebs.csi.aws.com
+parameters:
+  type: gp3
+  encrypted: "true"
+volumeBindingMode: WaitForFirstConsumer
+reclaimPolicy: Delete
+allowVolumeExpansion: true

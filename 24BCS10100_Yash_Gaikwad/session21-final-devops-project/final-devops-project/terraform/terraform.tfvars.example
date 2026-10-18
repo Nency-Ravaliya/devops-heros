@@ -1,0 +1,19 @@
+# Copy to terraform.tfvars (git-ignored) and adjust. No credentials belong in this file:
+# Terraform reads AWS credentials from `aws configure`, environment variables or SSO.
+
+region       = "ap-south-1"
+cluster_name = "stockpilot-eks"
+
+# must be a version in EKS standard support
+kubernetes_version = "1.35"
+
+vpc_cidr = "10.0.0.0/16"
+az_count = 2
+
+node_instance_types = ["t3.medium"]
+node_min_size       = 2
+node_desired_size   = 3
+node_max_size       = 4
+
+# true = one shared NAT gateway (cheaper); false = one per AZ (highly available)
+single_nat_gateway = true

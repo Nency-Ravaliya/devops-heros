@@ -1,0 +1,45 @@
+# Example 4: dynamic provisioning.
+#
+# The PVC deliberately has NO storageClassName field. The cluster's default
+# StorageClass is applied automatically; on minikube that is "standard"
+# (provisioner k8s.io/minikube-hostpath). The provisioner creates a PV for this
+# claim, so I never write a PersistentVolume by hand.
+#
+# Do NOT write `storageClassName: ""` here - an empty string means "no class" and
+# switches dynamic provisioning off.
+#
+# Check the default class with:  kubectl get storageclass
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: vol-dynamic-pvc
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: vol-dynamic-pvc-pod
+  labels:
+    app: vol-dynamic-pvc-pod
+spec:
+  containers:
+  - name: app
+    image: busybox:1.36
+    command: ["sh", "-c"]
+    args:
+    - |
+      echo "dynamic PVC test, written by $HOSTNAME at `date`" >> /data/hello.txt
+      cat /data/hello.txt
+      sleep 3600
+    volumeMounts:
+    - name: storage
+      mountPath: /data
+  volumes:
+  - name: storage
+    persistentVolumeClaim:
+      claimName: vol-dynamic-pvc

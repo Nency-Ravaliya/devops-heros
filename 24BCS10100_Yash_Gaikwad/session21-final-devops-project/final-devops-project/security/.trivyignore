@@ -1,0 +1,15 @@
+# Trivy ignore file: vulnerabilities that the team has decided to accept.
+#
+# THIS FILE IS EMPTY ON PURPOSE. The StockPilot images have no accepted findings, so
+# nothing is ignored and every HIGH/CRITICAL vulnerability with a fix stops the pipeline.
+#
+# Rule for adding a line (the security gate must never be silenced without a reason):
+#   1. one vulnerability ID per line, e.g. CVE-2099-12345
+#   2. a comment on the line above that says WHY it is safe to ignore
+#      (for example "the vulnerable function is never called by this app") and who agreed
+#   3. an expiry date so the exception is reviewed again, using Trivy's syntax:
+#        CVE-2099-12345 exp:2027-01-31
+#
+# Example of a correct entry (this is a made-up ID, so it is commented out):
+#   # StaticFiles is not used by this app; accepted by the team on 2026-10-18
+#   # CVE-2099-12345 exp:2027-01-31

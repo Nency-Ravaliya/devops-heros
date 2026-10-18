@@ -1,0 +1,18 @@
+# BROKEN: the Pod mounts a ConfigMap that does not exist, so the kubelet cannot create the
+# container and the Pod stays in ContainerCreating.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: creating-demo
+spec:
+  containers:
+    - name: app
+      image: busybox:1.36
+      command: ["sh", "-c", "cat /etc/settings/mode; sleep 3600"]
+      volumeMounts:
+        - name: settings
+          mountPath: /etc/settings
+  volumes:
+    - name: settings
+      configMap:
+        name: app-settings # does not exist yet

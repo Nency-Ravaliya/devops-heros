@@ -1,0 +1,19 @@
+{{- range $component := list "backend" "frontend" }}
+{{- $settings := index $.Values $component }}
+{{- if $settings.podDisruptionBudget.enabled }}
+---
+# keeps at least one {{ $component }} pod running during node drains and upgrades
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "stockpilot.fullname" $ }}-{{ $component }}
+  labels:
+    {{- include "stockpilot.labels" $ | nindent 4 }}
+    app.kubernetes.io/component: {{ $component }}
+spec:
+  minAvailable: {{ $settings.podDisruptionBudget.minAvailable }}
+  selector:
+    matchLabels:
+      {{- include "stockpilot.selectorLabels" (dict "root" $ "component" $component) | nindent 6 }}
+{{- end }}
+{{- end }}

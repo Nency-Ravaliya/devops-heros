@@ -1,0 +1,23 @@
+StockPilot {{ .Chart.AppVersion }} was deployed as release "{{ .Release.Name }}" in namespace "{{ .Release.Namespace }}".
+
+See what is running:
+  kubectl get pods,svc,hpa -n {{ .Release.Namespace }}
+
+Smoke test (backend + database + frontend proxy):
+  helm test {{ .Release.Name }} -n {{ .Release.Namespace }}
+
+{{- if .Values.ingress.enabled }}
+
+The Ingress routes "/" to the frontend and "/api" to the backend:
+  kubectl get ingress -n {{ .Release.Namespace }}
+{{- if .Values.ingress.host }}
+  Open http://{{ .Values.ingress.host }}  (add the Ingress address to your hosts file if needed)
+{{- else }}
+  Open the ADDRESS shown above (the load balancer hostname) in your browser.
+{{- end }}
+{{- else }}
+
+The Ingress is disabled. Reach the app with a port-forward instead:
+  kubectl port-forward -n {{ .Release.Namespace }} svc/{{ include "stockpilot.fullname" . }}-frontend 8080:{{ .Values.frontend.service.port }}
+  open http://localhost:8080
+{{- end }}

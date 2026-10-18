@@ -1,0 +1,15 @@
+# Non-secret settings shared by the pods. The database PASSWORD is not here: it is read from
+# the Secret "stockpilot-db", which is created outside Git (see README, "Create the secret").
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: stockpilot-config
+  namespace: stockpilot
+  labels:
+    app.kubernetes.io/part-of: stockpilot
+data:
+  POSTGRES_USER: stockpilot
+  POSTGRES_DB: stockpilot
+  POSTGRES_HOST: postgres
+  # nginx in the frontend pod forwards /api to this URL
+  BACKEND_URL: http://backend.stockpilot.svc.cluster.local:8000

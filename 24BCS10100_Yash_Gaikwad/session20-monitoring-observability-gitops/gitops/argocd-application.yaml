@@ -1,0 +1,22 @@
+# Argo CD Application: "keep the cluster equal to what is in Git at this path".
+# Apply this file ONCE with kubectl; after that, every change goes through Git.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: gitops-demo
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/Yash-1706/devops-git-assgn.git
+    targetRevision: main
+    path: session20-monitoring-observability-gitops/gitops/app
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: gitops-demo
+  syncPolicy:
+    automated:
+      prune: true # delete cluster objects that were removed from Git
+      selfHeal: true # undo manual changes made directly in the cluster
+    syncOptions:
+      - CreateNamespace=true
