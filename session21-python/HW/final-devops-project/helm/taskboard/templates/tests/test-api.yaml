@@ -1,0 +1,26 @@
+# `helm test <release>`: checks the backend is ready and the API answers through the Service.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: {{ include "taskboard.name" . }}-test-api
+  labels: {{- include "taskboard.labels" . | nindent 4 }}
+  annotations:
+    helm.sh/hook: test
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+spec:
+  restartPolicy: Never
+  automountServiceAccountToken: false
+  containers:
+    - name: wget
+      image: busybox:1.37
+      command: ["sh", "-c"]
+      args:
+        - |
+          set -e
+          wget -qO- http://{{ include "taskboard.name" . }}-backend:{{ .Values.backend.port }}/ready
+          echo
+          wget -qO- http://{{ include "taskboard.name" . }}-backend:{{ .Values.backend.port }}/api/tasks/stats
+          echo
+      resources:
+        requests: {cpu: 10m, memory: 16Mi}
+        limits: {cpu: 100m, memory: 32Mi}

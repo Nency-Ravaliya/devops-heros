@@ -1,0 +1,25 @@
+# Non-secret settings (ConfigMap) and DB credentials (Secret).
+# Plain manifests = the "raw" version of what the Helm chart renders.
+# In CI the Secret is created with `kubectl create secret generic taskboard-db
+# --from-literal=DB_PASSWORD=$(openssl rand -hex 16)` instead of this placeholder.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: taskboard-config
+  labels: {app.kubernetes.io/part-of: taskboard}
+data:
+  APP_ENV: "k8s-raw"
+  LOG_LEVEL: "INFO"
+  DB_HOST: "taskboard-postgres"
+  DB_PORT: "5432"
+  DB_NAME: "taskboard"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: taskboard-db
+  labels: {app.kubernetes.io/part-of: taskboard}
+type: Opaque
+stringData:
+  DB_USER: "taskboard"
+  DB_PASSWORD: "replace-me"

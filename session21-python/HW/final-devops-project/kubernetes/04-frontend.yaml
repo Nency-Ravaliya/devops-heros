@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: taskboard-frontend
+  labels: {app.kubernetes.io/part-of: taskboard}
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app.kubernetes.io/name: frontend}
+  template:
+    metadata:
+      labels: {app.kubernetes.io/name: frontend}
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 101
+      containers:
+        - name: frontend
+          image: ghcr.io/piyushhbansal/session21-taskboard-frontend:latest
+          ports:
+            - {name: http, containerPort: 8080}
+          env:
+            - {name: BACKEND_URL, value: "http://taskboard-backend:8000"}
+          readinessProbe:
+            httpGet: {path: /healthz, port: http}
+          livenessProbe:
+            httpGet: {path: /healthz, port: http}
+            periodSeconds: 15
+          resources:
+            requests: {cpu: 20m, memory: 32Mi}
+            limits: {cpu: 200m, memory: 128Mi}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities: {drop: [ALL]}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: taskboard-frontend
+  labels: {app.kubernetes.io/part-of: taskboard}
+spec:
+  selector: {app.kubernetes.io/name: frontend}
+  ports:
+    - {name: http, port: 80, targetPort: http}

@@ -1,0 +1,64 @@
+# Default values for the TaskBoard chart.
+# Resource requests are kept small on purpose (shared laptop cluster / CI kind cluster).
+
+imagePullSecrets: []        # e.g. [{name: ghcr-pull}] when the GHCR package is private
+
+app:
+  env: dev
+  logLevel: INFO
+
+backend:
+  image:
+    repository: ghcr.io/piyushhbansal/session21-taskboard-backend
+    tag: latest
+    pullPolicy: IfNotPresent
+  replicas: 2
+  port: 8000
+  resources:
+    requests: {cpu: 50m, memory: 128Mi}
+    limits: {cpu: 500m, memory: 256Mi}
+  readinessPath: /ready
+  livenessPath: /health
+
+frontend:
+  enabled: true
+  image:
+    repository: ghcr.io/piyushhbansal/session21-taskboard-frontend
+    tag: latest
+    pullPolicy: IfNotPresent
+  replicas: 1
+  resources:
+    requests: {cpu: 20m, memory: 32Mi}
+    limits: {cpu: 200m, memory: 128Mi}
+
+postgres:
+  image: postgres:16-alpine
+  database: taskboard
+  # Credentials live in a Secret. Either point to an existing one (keys DB_USER / DB_PASSWORD)
+  # or let the chart create one; the generated password is kept across upgrades (lookup).
+  existingSecret: ""
+  username: taskboard
+  storage:
+    size: 1Gi
+    storageClassName: ""    # "" = cluster default StorageClass
+  resources:
+    requests: {cpu: 50m, memory: 128Mi}
+    limits: {cpu: 500m, memory: 256Mi}
+
+ingress:
+  enabled: true
+  className: nginx
+  host: taskboard.local
+
+hpa:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 60
+
+monitoring:
+  # Pod annotations for annotation-based Prometheus scraping (used by monitoring/prometheus.yaml)
+  podAnnotations: true
+  # ServiceMonitor needs the Prometheus Operator CRDs (kube-prometheus-stack)
+  serviceMonitor:
+    enabled: false

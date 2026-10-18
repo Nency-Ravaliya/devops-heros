@@ -1,0 +1,47 @@
+# Full local stack: postgres + backend + frontend.
+#   cd docker && docker compose up --build -d
+#   open http://localhost:3000     (API docs: http://localhost:8000/docs)
+# The DB password comes from the shell / a local .env file (not committed).
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: taskboard
+      POSTGRES_USER: taskboard
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-localdev}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U taskboard -d taskboard"]
+      interval: 5s
+      retries: 10
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: ../application/backend
+      dockerfile: ../../docker/backend.Dockerfile
+    environment:
+      DB_HOST: postgres
+      DB_NAME: taskboard
+      DB_USER: taskboard
+      DB_PASSWORD: ${DB_PASSWORD:-localdev}
+      APP_ENV: compose
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+
+  frontend:
+    build:
+      context: ../application/frontend
+      dockerfile: ../../docker/frontend.Dockerfile
+    environment:
+      BACKEND_URL: http://backend:8000
+    depends_on:
+      - backend
+    ports:
+      - "3000:8080"
+
+volumes:
+  postgres-data:

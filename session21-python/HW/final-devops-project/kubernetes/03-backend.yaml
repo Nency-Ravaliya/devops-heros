@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: taskboard-backend
+  labels: {app.kubernetes.io/part-of: taskboard}
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app.kubernetes.io/name: backend}
+  template:
+    metadata:
+      labels: {app.kubernetes.io/name: backend}
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8000"
+        prometheus.io/path: /metrics
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        seccompProfile: {type: RuntimeDefault}
+      containers:
+        - name: backend
+          image: ghcr.io/piyushhbansal/session21-taskboard-backend:latest
+          ports:
+            - {name: http, containerPort: 8000}
+          envFrom:
+            - configMapRef: {name: taskboard-config}
+            - secretRef: {name: taskboard-db}
+          readinessProbe:
+            httpGet: {path: /ready, port: http}
+            periodSeconds: 5
+          livenessProbe:
+            httpGet: {path: /health, port: http}
+            initialDelaySeconds: 20
+            periodSeconds: 15
+          resources:
+            requests: {cpu: 50m, memory: 128Mi}
+            limits: {cpu: 500m, memory: 256Mi}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: [ALL]}
+          volumeMounts:
+            - {name: tmp, mountPath: /tmp}
+      volumes:
+        - {name: tmp, emptyDir: {}}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: taskboard-backend
+  labels: {app.kubernetes.io/part-of: taskboard}
+spec:
+  selector: {app.kubernetes.io/name: backend}
+  ports:
+    - {name: http, port: 8000, targetPort: http}
