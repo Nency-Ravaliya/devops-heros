@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Pod
+
+metadata:
+  name: project-broken-pod
+
+spec:
+  containers:
+    - name: app
+      image: nginx:this-tag-does-not-exist

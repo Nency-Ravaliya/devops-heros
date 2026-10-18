@@ -1,0 +1,111 @@
+{{- $name := printf "%s-backend" (include "stockpilot.fullname" .) -}}
+{{- $selector := dict "root" . "component" "backend" -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "stockpilot.labels" . | nindent 4 }}
+    app.kubernetes.io/component: backend
+spec:
+  {{- /* With an HPA the replica count belongs to the autoscaler: keep whatever it chose
+         on upgrades, and only use replicaCount for the very first install. */}}
+  {{- $existing := lookup "apps/v1" "Deployment" .Release.Namespace $name }}
+  {{- if and .Values.hpa.enabled $existing }}
+  replicas: {{ $existing.spec.replicas }}
+  {{- else }}
+  replicas: {{ .Values.backend.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "stockpilot.selectorLabels" $selector | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "stockpilot.selectorLabels" $selector | nindent 8 }}
+    spec:
+      {{- include "stockpilot.imagePullSecrets" . | nindent 6 }}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      # spread the replicas over different nodes when possible
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                topologyKey: kubernetes.io/hostname
+                labelSelector:
+                  matchLabels:
+                    {{- include "stockpilot.selectorLabels" $selector | nindent 20 }}
+      {{- if .Values.postgres.enabled }}
+      initContainers:
+        # wait until PostgreSQL accepts connections, so the migration does not crash-loop
+        - name: wait-for-db
+          image: "{{ .Values.postgres.image.repository }}:{{ .Values.postgres.image.tag }}"
+          imagePullPolicy: {{ .Values.postgres.image.pullPolicy }}
+          command:
+            - sh
+            - -c
+            # -U is required: uid 10001 has no passwd entry here, and without a user pg_isready gives up
+            - until pg_isready -h {{ include "stockpilot.fullname" . }}-postgres -p 5432 -U {{ .Values.postgres.user }}; do echo "waiting for postgres"; sleep 2; done
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+      {{- end }}
+      containers:
+        - name: backend
+          image: "{{ .Values.backend.image.repository }}:{{ .Values.backend.image.tag }}"
+          imagePullPolicy: {{ .Values.backend.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 8000
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "stockpilot.secretName" . }}
+                  key: database-url
+          # the container runs "alembic upgrade head" before starting, so allow time for that
+          startupProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 2
+            failureThreshold: 60
+          # liveness: is the process alive? (does not touch the database)
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 3
+          # readiness: can it serve traffic? (checks database access)
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: http
+            periodSeconds: 5
+            timeoutSeconds: 3
+          resources:
+            {{- toYaml .Values.backend.resources | nindent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}

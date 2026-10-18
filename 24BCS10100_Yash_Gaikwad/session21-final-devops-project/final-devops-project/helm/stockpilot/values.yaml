@@ -1,0 +1,106 @@
+# Default values for the StockPilot chart.
+# Override per environment with -f values-dev.yaml / values-eks.yaml or --set.
+
+nameOverride: ""
+fullnameOverride: ""
+
+# DNS suffix of the cluster; nginx needs fully qualified service names (it ignores search domains)
+clusterDomain: cluster.local
+
+# Needed when the GHCR packages are private:
+#   kubectl create secret docker-registry ghcr -n stockpilot --docker-server=ghcr.io ...
+imagePullSecrets: []
+
+backend:
+  replicaCount: 2
+  # Only used when postgres.enabled=false, e.g. postgresql+psycopg://USER:PASSWORD@HOST:5432/DBNAME
+  externalDatabaseUrl: ""
+  image:
+    repository: ghcr.io/yash-1706/stockpilot-backend
+    # CI sets this to the git commit SHA
+    tag: local
+    pullPolicy: IfNotPresent
+  service:
+    port: 8000
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 384Mi
+  podDisruptionBudget:
+    enabled: true
+    minAvailable: 1
+
+frontend:
+  replicaCount: 2
+  image:
+    repository: ghcr.io/yash-1706/stockpilot-frontend
+    tag: local
+    pullPolicy: IfNotPresent
+  service:
+    port: 80
+  resources:
+    requests:
+      cpu: 25m
+      memory: 32Mi
+    limits:
+      cpu: 200m
+      memory: 128Mi
+  podDisruptionBudget:
+    enabled: true
+    minAvailable: 1
+
+# PostgreSQL runs inside the cluster for the classroom demo.
+# For production prefer a managed database such as Amazon RDS (set postgres.enabled=false
+# and point backend.databaseUrl at it).
+postgres:
+  enabled: true
+  image:
+    repository: postgres
+    tag: 16-alpine
+    pullPolicy: IfNotPresent
+  user: stockpilot
+  database: stockpilot
+  # Empty = a random password is generated on first install and kept on every upgrade, so no
+  # password lives in Git. To choose one yourself: --set-string postgres.password=...
+  password: ""
+  persistence:
+    enabled: true
+    size: 5Gi
+    # "" = the cluster's default StorageClass
+    storageClass: ""
+  resources:
+    requests:
+      cpu: 100m
+      memory: 192Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+ingress:
+  enabled: false
+  className: nginx
+  host: stockpilot.local
+  annotations: {}
+  # TLS example:
+  # tls:
+  #   - secretName: stockpilot-tls
+  #     hosts: [stockpilot.example.com]
+  tls: []
+
+# Scale the backend on CPU. Needs requests.cpu above and a metrics provider (Metrics Server).
+hpa:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 6
+  targetCPUUtilizationPercentage: 50
+
+# Creates a Prometheus Operator ServiceMonitor for the backend's /metrics endpoint.
+# Requires the monitoring.coreos.com CRDs (installed by kube-prometheus-stack).
+serviceMonitor:
+  enabled: false
+  interval: 15s
+  # extra labels so a Prometheus that selects ServiceMonitors by label picks this one up
+  labels: {}

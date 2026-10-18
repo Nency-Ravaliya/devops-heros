@@ -1,0 +1,28 @@
+# Amazon EKS (cluster created by terraform/). Used together with the images CI pushes to GHCR:
+#   kubectl apply -f k8s/storageclass-gp3.yaml
+#   helm upgrade --install stockpilot ./helm/stockpilot -n stockpilot --create-namespace \
+#     -f helm/stockpilot/values-eks.yaml \
+#     --set backend.image.tag=<git-sha> --set frontend.image.tag=<git-sha>
+
+backend:
+  image:
+    pullPolicy: IfNotPresent
+
+frontend:
+  image:
+    pullPolicy: IfNotPresent
+
+ingress:
+  enabled: true
+  className: nginx
+  # empty host = answer on any hostname, so the ELB DNS name works without a domain
+  host: ""
+
+postgres:
+  persistence:
+    size: 10Gi
+    storageClass: gp3
+
+# kube-prometheus-stack is installed (see monitoring/), so its CRDs exist
+serviceMonitor:
+  enabled: true

@@ -1,0 +1,42 @@
+# Run with:  helm test stockpilot -n stockpilot
+# Checks the backend Service directly and the frontend Service's /api proxy.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: {{ include "stockpilot.fullname" . }}-test
+  labels:
+    {{- include "stockpilot.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": test
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  restartPolicy: Never
+  {{- include "stockpilot.imagePullSecrets" . | nindent 2 }}
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 10001
+    seccompProfile:
+      type: RuntimeDefault
+  containers:
+    - name: check
+      image: "{{ .Values.backend.image.repository }}:{{ .Values.backend.image.tag }}"
+      imagePullPolicy: {{ .Values.backend.image.pullPolicy }}
+      command:
+        - python
+        - -c
+        - |
+          import json, urllib.request
+          def get(url):
+              with urllib.request.urlopen(url, timeout=5) as response:
+                  return json.load(response)
+          backend = "http://{{ include "stockpilot.fullname" . }}-backend:{{ .Values.backend.service.port }}"
+          frontend = "http://{{ include "stockpilot.fullname" . }}-frontend:{{ .Values.frontend.service.port }}"
+          assert get(backend + "/ready") == {"status": "READY"}
+          assert "total_items" in get(backend + "/api/items/stats")
+          assert "total_items" in get(frontend + "/api/items/stats")  # through the nginx proxy
+          print("backend, database and frontend proxy are all reachable")
+      securityContext:
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+        capabilities:
+          drop: [ALL]

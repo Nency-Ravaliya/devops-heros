@@ -1,0 +1,46 @@
+groups:
+  - name: application
+    rules:
+      - alert: AppDown
+        expr: up{job="demo-app"} == 0
+        for: 15s
+        labels:
+          severity: critical
+        annotations:
+          summary: "demo-app is down (Prometheus cannot scrape it)"
+
+      - alert: AppUnhealthy
+        expr: app_healthy == 0
+        for: 10s
+        labels:
+          severity: critical
+        annotations:
+          summary: "demo-app reports itself unhealthy (/healthz returns 503)"
+
+      - alert: HighErrorRate
+        expr: |
+          sum(rate(app_http_requests_total{status=~"5.."}[30s]))
+            / sum(rate(app_http_requests_total[30s])) > 0.2
+        for: 10s
+        labels:
+          severity: warning
+        annotations:
+          summary: "More than 20% of the requests fail with a 5xx error"
+
+  - name: host
+    rules:
+      - alert: HighCPUUsage
+        expr: 100 - (avg(rate(node_cpu_seconds_total{mode="idle"}[30s])) * 100) > 40
+        for: 10s
+        labels:
+          severity: warning
+        annotations:
+          summary: "CPU utilisation is above 40%"
+
+      - alert: HighMemoryUsage
+        expr: (1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) * 100 > 85
+        for: 30s
+        labels:
+          severity: warning
+        annotations:
+          summary: "Memory utilisation is above 85%"

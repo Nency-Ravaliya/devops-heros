@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-recreate
+  labels:
+    app: app-recreate
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: app-recreate
+  strategy:
+    type: Recreate # stop ALL old Pods first, then start the new ones
+  template:
+    metadata:
+      labels:
+        app: app-recreate
+        version: v1
+    spec:
+      containers:
+        - name: web
+          image: hashicorp/http-echo:1.0
+          args: ["-text=version-1", "-listen=:5678"]
+          ports:
+            - containerPort: 5678
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 5678
+            initialDelaySeconds: 1
+            periodSeconds: 2

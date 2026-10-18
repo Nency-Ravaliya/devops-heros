@@ -1,0 +1,28 @@
+groups:
+  - name: stockpilot
+    rules:
+      - alert: BackendDown
+        expr: up{job="stockpilot-backend"} == 0
+        for: 15s
+        labels:
+          severity: critical
+        annotations:
+          summary: "The StockPilot backend cannot be scraped"
+
+      - alert: HighServerErrorRate
+        expr: |
+          sum(rate(http_requests_total{status="5xx"}[30s]))
+            / sum(rate(http_requests_total[30s])) > 0.2
+        for: 10s
+        labels:
+          severity: warning
+        annotations:
+          summary: "More than 20% of the API responses are 5xx"
+
+      - alert: SlowRequests
+        expr: histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket[1m]))) > 0.5
+        for: 30s
+        labels:
+          severity: warning
+        annotations:
+          summary: "95th percentile request latency is above 0.5 seconds"

@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: app-recreate
+spec:
+  selector:
+    app: app-recreate
+  ports:
+    - port: 80
+      targetPort: 5678

@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-rolling
+  labels:
+    app: app-rolling
+spec:
+  replicas: 4
+  minReadySeconds: 4 # slows the rollout a little so the steps are easy to observe
+  selector:
+    matchLabels:
+      app: app-rolling
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1 # at most 1 extra Pod above the 4 wanted
+      maxUnavailable: 0 # never fewer than 4 ready Pods
+  template:
+    metadata:
+      labels:
+        app: app-rolling
+        version: v1
+    spec:
+      containers:
+        - name: web
+          image: hashicorp/http-echo:1.0
+          args: ["-text=version-1", "-listen=:5678"]
+          ports:
+            - containerPort: 5678
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 5678
+            initialDelaySeconds: 1
+            periodSeconds: 2

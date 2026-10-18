@@ -1,0 +1,28 @@
+# BROKEN: the ConfigMap exists but has no key DB_HOST, so the container cannot be configured.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: db-config
+data:
+  DB_PORT: "5432" # DB_HOST is missing
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: config-demo
+spec:
+  containers:
+    - name: app
+      image: busybox:1.36
+      command: ["sh", "-c", "echo connecting to $DB_HOST:$DB_PORT; sleep 3600"]
+      env:
+        - name: DB_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: db-config
+              key: DB_HOST
+        - name: DB_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: db-config
+              key: DB_PORT

@@ -1,0 +1,48 @@
+# Troubleshooting lab 1: ImagePullBackOff
+#
+#   kubectl apply -f troubleshooting/broken-image.yaml
+#   kubectl get pods -n stockpilot
+#   kubectl describe pod -n stockpilot -l app=broken-image
+#   kubectl get events -n stockpilot --sort-by=.lastTimestamp
+#
+# Symptom : the pod never starts, STATUS shows ErrImagePull / ImagePullBackOff.
+# Cause   : the image tag below does not exist in the registry.
+# Fix     : point the Deployment at a tag that exists (e.g. 1.30-alpine):
+#   kubectl set image deployment/broken-image web=nginxinc/nginx-unprivileged:1.30-alpine -n stockpilot
+#
+# Clean up: kubectl delete -f troubleshooting/broken-image.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: broken-image
+  namespace: stockpilot
+  labels:
+    app: broken-image
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: broken-image
+  template:
+    metadata:
+      labels:
+        app: broken-image
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: web
+          # BUG: this tag does not exist
+          image: nginxinc/nginx-unprivileged:9.9.9-does-not-exist
+          ports:
+            - containerPort: 8080
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ALL]

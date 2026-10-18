@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-stable
+  labels:
+    app: canary-demo
+    track: stable
+spec:
+  replicas: 4
+  selector:
+    matchLabels:
+      app: canary-demo
+      track: stable
+  template:
+    metadata:
+      labels:
+        app: canary-demo
+        track: stable
+    spec:
+      containers:
+        - name: web
+          image: hashicorp/http-echo:1.0
+          args: ["-text=STABLE", "-listen=:5678"]
+          ports:
+            - containerPort: 5678
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 5678
+            periodSeconds: 2

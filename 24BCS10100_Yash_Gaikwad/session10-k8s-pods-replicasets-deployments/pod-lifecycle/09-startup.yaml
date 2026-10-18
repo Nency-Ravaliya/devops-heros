@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: lifecycle-startup
+spec:
+  containers:
+    - name: slow-app
+      image: busybox:1.36
+      command: ["sh", "-c", "echo 'Application starting...'; sleep 30; touch /tmp/started; echo 'Application started'; sleep 300"]
+      startupProbe:
+        exec:
+          command: ["sh", "-c", "test -f /tmp/started"]
+        periodSeconds: 5
+        failureThreshold: 10

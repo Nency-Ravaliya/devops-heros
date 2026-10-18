@@ -1,0 +1,87 @@
+{
+  "uid": "app-overview",
+  "title": "Demo app overview",
+  "tags": ["session20"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "5s",
+  "time": { "from": "now-10m", "to": "now" },
+  "panels": [
+    {
+      "id": 1, "type": "stat", "title": "App health (1 = ok)",
+      "gridPos": { "h": 5, "w": 5, "x": 0, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [ { "refId": "A", "expr": "app_healthy" } ],
+      "fieldConfig": { "defaults": {
+        "mappings": [ { "type": "value", "options": { "0": { "text": "UNHEALTHY", "color": "red" }, "1": { "text": "OK", "color": "green" } } } ],
+        "thresholds": { "mode": "absolute", "steps": [ { "color": "red", "value": null }, { "color": "green", "value": 1 } ] },
+        "color": { "mode": "thresholds" } }, "overrides": [] },
+      "options": { "colorMode": "background", "reduceOptions": { "calcs": ["lastNotNull"] } }
+    },
+    {
+      "id": 2, "type": "stat", "title": "Scrape target up (demo-app)",
+      "gridPos": { "h": 5, "w": 5, "x": 5, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [ { "refId": "A", "expr": "up{job=\"demo-app\"}" } ],
+      "fieldConfig": { "defaults": {
+        "mappings": [ { "type": "value", "options": { "0": { "text": "DOWN", "color": "red" }, "1": { "text": "UP", "color": "green" } } } ],
+        "thresholds": { "mode": "absolute", "steps": [ { "color": "red", "value": null }, { "color": "green", "value": 1 } ] },
+        "color": { "mode": "thresholds" } }, "overrides": [] },
+      "options": { "colorMode": "background", "reduceOptions": { "calcs": ["lastNotNull"] } }
+    },
+    {
+      "id": 3, "type": "stat", "title": "Firing alerts",
+      "gridPos": { "h": 5, "w": 5, "x": 10, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [ { "refId": "A", "expr": "count(ALERTS{alertstate=\"firing\"}) or vector(0)" } ],
+      "fieldConfig": { "defaults": {
+        "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "red", "value": 1 } ] },
+        "color": { "mode": "thresholds" } }, "overrides": [] },
+      "options": { "colorMode": "background", "reduceOptions": { "calcs": ["lastNotNull"] } }
+    },
+    {
+      "id": 4, "type": "timeseries", "title": "Requests per second by status",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 5 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [ { "refId": "A", "expr": "sum by (status) (rate(app_http_requests_total[30s]))", "legendFormat": "HTTP {{status}}" } ],
+      "fieldConfig": { "defaults": { "unit": "reqps" }, "overrides": [] }
+    },
+    {
+      "id": 5, "type": "timeseries", "title": "Error rate (% of requests with 5xx)",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 5 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [ { "refId": "A", "expr": "100 * sum(rate(app_http_requests_total{status=~\"5..\"}[30s])) / sum(rate(app_http_requests_total[30s]))", "legendFormat": "error %" } ],
+      "fieldConfig": { "defaults": { "unit": "percent", "min": 0, "max": 100 }, "overrides": [] }
+    },
+    {
+      "id": 6, "type": "timeseries", "title": "Request latency p95 (seconds)",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 13 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [ { "refId": "A", "expr": "histogram_quantile(0.95, sum by (le) (rate(app_request_duration_seconds_bucket[1m])))", "legendFormat": "p95" } ],
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] }
+    },
+    {
+      "id": 7, "type": "timeseries", "title": "CPU utilisation (host, %)",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 13 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [ { "refId": "A", "expr": "100 - (avg(rate(node_cpu_seconds_total{mode=\"idle\"}[30s])) * 100)", "legendFormat": "host CPU %" },
+                   { "refId": "B", "expr": "100 * rate(process_cpu_seconds_total{job=\"demo-app\"}[30s])", "legendFormat": "app process CPU % of one core" } ],
+      "fieldConfig": { "defaults": { "unit": "percent", "min": 0 }, "overrides": [] }
+    },
+    {
+      "id": 8, "type": "timeseries", "title": "Memory utilisation",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 21 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [ { "refId": "A", "expr": "(1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) * 100", "legendFormat": "host memory %" } ],
+      "fieldConfig": { "defaults": { "unit": "percent", "min": 0, "max": 100 }, "overrides": [] }
+    },
+    {
+      "id": 9, "type": "timeseries", "title": "App process memory (RSS)",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 21 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [ { "refId": "A", "expr": "process_resident_memory_bytes{job=\"demo-app\"}", "legendFormat": "app RSS" } ],
+      "fieldConfig": { "defaults": { "unit": "bytes", "min": 0 }, "overrides": [] }
+    }
+  ]
+}

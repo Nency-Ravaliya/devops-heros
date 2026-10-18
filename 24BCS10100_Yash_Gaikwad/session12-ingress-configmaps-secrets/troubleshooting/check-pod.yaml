@@ -1,0 +1,22 @@
+# Stands in for the application: it compares the injected password with the one the database expects
+apiVersion: v1
+kind: Pod
+metadata:
+  name: check-pod
+spec:
+  containers:
+    - name: app
+      image: busybox:1.36
+      command:
+        - sh
+        - -c
+        - |
+          echo "password length seen by the app: ${#DB_PASSWORD}"
+          if [ "$DB_PASSWORD" = "mypassword" ]; then echo "AUTH CHECK: OK"; else echo "AUTH CHECK: FAILED (password does not match)"; fi
+          sleep 3600
+      env:
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: db-pass
+              key: password

@@ -1,0 +1,11 @@
+# Minimal Alertmanager: groups alerts and sends them to a receiver. The receiver here is a
+# placeholder with no destination (a real setup would add Slack, e-mail or PagerDuty).
+route:
+  receiver: demo-null
+  group_by: [alertname]
+  group_wait: 5s
+  group_interval: 30s
+  repeat_interval: 1h
+
+receivers:
+  - name: demo-null

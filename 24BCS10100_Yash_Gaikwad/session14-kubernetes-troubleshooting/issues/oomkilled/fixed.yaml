@@ -1,0 +1,24 @@
+# FIX: the process only needs about 50 MB, so a 128Mi limit is enough
+apiVersion: v1
+kind: Pod
+metadata:
+  name: fail-5-oomkilled-pod
+  labels:
+    scenario: oomkilled
+spec:
+  containers:
+    - name: memory-leaker
+      image: python:3.11-alpine
+      command:
+        - "python3"
+        - "-c"
+        - |
+          print("Allocating a bounded amount of memory...")
+          chunks = []
+          for i in range(5):
+              chunks.append(b"x" * (10 * 1024 * 1024))
+          print("Done, using about 50 MB")
+          import time; time.sleep(3600)
+      resources:
+        limits:
+          memory: "128Mi"

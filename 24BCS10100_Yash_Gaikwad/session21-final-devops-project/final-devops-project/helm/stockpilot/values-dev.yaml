@@ -1,0 +1,27 @@
+# Local cluster (Docker Desktop, kind, minikube) with an Ingress controller installed.
+#   helm upgrade --install stockpilot ./helm/stockpilot -n stockpilot --create-namespace \
+#     -f helm/stockpilot/values-dev.yaml
+# Then add "127.0.0.1 stockpilot.local" to your hosts file and open http://stockpilot.local
+
+backend:
+  replicaCount: 2
+  image:
+    # a locally built image (docker build -t stockpilot-backend:local ./backend)
+    repository: stockpilot-backend
+    tag: local
+    pullPolicy: IfNotPresent
+
+frontend:
+  image:
+    repository: stockpilot-frontend
+    tag: local
+    pullPolicy: IfNotPresent
+
+ingress:
+  enabled: true
+  className: nginx
+  host: stockpilot.local
+
+postgres:
+  persistence:
+    size: 1Gi

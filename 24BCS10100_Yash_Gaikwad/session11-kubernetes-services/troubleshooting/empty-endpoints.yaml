@@ -1,0 +1,14 @@
+# A Service whose selector matches no Pod: it exists, but has no endpoints.
+# Used to practise "Service has no endpoints" troubleshooting.
+apiVersion: v1
+kind: Service
+metadata:
+  name: broken-whoami
+spec:
+  type: ClusterIP
+  selector:
+    app: whoami-typo # the Pods are labelled app=whoami
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80

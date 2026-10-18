@@ -1,0 +1,95 @@
+# Semgrep rules written for StockPilot (FastAPI backend + React frontend).
+# Used together with the public rule packs (p/python, p/javascript, p/dockerfile) by the
+# sast job of devsecops.yml and by run-security-scans.sh:
+#   semgrep scan --config security/semgrep-rules.yml --config p/python --error <folders>
+#
+# These rules are intentionally small and readable: each one describes a mistake that the
+# project already learned to avoid (see docs/SECURITY.md of the StockPilot repository).
+rules:
+  - id: stockpilot-database-url-with-inline-password
+    languages: [generic]
+    severity: ERROR
+    message: >-
+      A database URL contains a password (scheme://user:password@host). Read the whole URL
+      from an environment variable (DATABASE_URL) or a Kubernetes Secret instead.
+    patterns:
+      - pattern-regex: 'postgres(ql)?(\+[a-z0-9]+)?://[^:/\s@"'']+:[^@\s"'']+@'
+      # placeholders and variable references are fine: PASSWORD, <password>, ${PASSWORD}, $(POSTGRES_PASSWORD), %s, {password}
+      - pattern-not-regex: '://[^:/\s@"'']+:(PASSWORD|password|<[^>]*>|\$\{?[A-Za-z_]+\}?|\$\([A-Za-z_]+\)|%s|\{[a-z_]*\})@'
+    paths:
+      exclude:
+        - "tests/"
+        - "security/"
+    metadata:
+      cwe: "CWE-798: Use of Hard-coded Credentials"
+      owasp: "A07:2021 - Identification and Authentication Failures"
+
+  - id: stockpilot-subprocess-shell-true
+    languages: [python]
+    severity: ERROR
+    message: >-
+      subprocess called with shell=True. If any part of the command comes from a request,
+      this is command injection. Pass the command as a list and leave shell=False.
+    pattern: subprocess.$FUNC(..., shell=True, ...)
+    metadata:
+      cwe: "CWE-78: OS Command Injection"
+      owasp: "A03:2021 - Injection"
+
+  - id: stockpilot-eval-or-exec-on-dynamic-value
+    languages: [python]
+    severity: ERROR
+    message: eval()/exec() on a non-literal value executes arbitrary code. Parse the data instead (json, ast.literal_eval).
+    patterns:
+      - pattern-either:
+          - pattern: eval($X)
+          - pattern: exec($X)
+      - pattern-not: eval("...")
+      - pattern-not: exec("...")
+    metadata:
+      cwe: "CWE-95: Eval Injection"
+      owasp: "A03:2021 - Injection"
+
+  - id: stockpilot-sql-built-from-string
+    languages: [python]
+    severity: ERROR
+    message: >-
+      A SQL statement is built with an f-string, % formatting, .format() or +. Use bound
+      parameters, e.g. text("SELECT ... WHERE id = :id"), {"id": value}.
+    pattern-either:
+      - pattern: $DB.execute(text(f"..."), ...)
+      - pattern: $DB.execute(text("..." % ...), ...)
+      - pattern: $DB.execute(text("...".format(...)), ...)
+      - pattern: $DB.execute(text("..." + $X), ...)
+    metadata:
+      cwe: "CWE-89: SQL Injection"
+      owasp: "A03:2021 - Injection"
+
+  - id: stockpilot-fastapi-cors-allow-all-origins
+    languages: [python]
+    severity: WARNING
+    message: CORS is open to every origin. List the exact front-end origins instead of "*".
+    pattern: $APP.add_middleware(CORSMiddleware, ..., allow_origins=["*"], ...)
+    metadata:
+      cwe: "CWE-942: Permissive Cross-domain Policy"
+      owasp: "A05:2021 - Security Misconfiguration"
+
+  - id: stockpilot-unsafe-deserialization
+    languages: [python]
+    severity: ERROR
+    message: pickle / yaml.load on data that is not fully trusted can execute code. Use json or yaml.safe_load.
+    pattern-either:
+      - pattern: pickle.loads(...)
+      - pattern: yaml.load($X)
+      - pattern: yaml.load($X, Loader=yaml.Loader)
+    metadata:
+      cwe: "CWE-502: Deserialization of Untrusted Data"
+      owasp: "A08:2021 - Software and Data Integrity Failures"
+
+  - id: stockpilot-react-dangerously-set-inner-html
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: dangerouslySetInnerHTML renders raw HTML. With user-controlled data this is cross-site scripting (XSS). Let React escape the text.
+    pattern: <$EL dangerouslySetInnerHTML={...} />
+    metadata:
+      cwe: "CWE-79: Cross-site Scripting"
+      owasp: "A03:2021 - Injection"

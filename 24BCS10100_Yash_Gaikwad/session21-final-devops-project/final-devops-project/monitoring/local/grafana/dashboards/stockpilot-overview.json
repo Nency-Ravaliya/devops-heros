@@ -1,0 +1,76 @@
+{
+  "uid": "stockpilot-overview",
+  "title": "StockPilot backend",
+  "tags": ["stockpilot"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "5s",
+  "time": { "from": "now-10m", "to": "now" },
+  "panels": [
+    {
+      "id": 1, "type": "stat", "title": "Backend scrape target",
+      "gridPos": { "h": 5, "w": 6, "x": 0, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [ { "refId": "A", "expr": "up{job=\"stockpilot-backend\"}" } ],
+      "fieldConfig": { "defaults": {
+        "mappings": [ { "type": "value", "options": { "0": { "text": "DOWN", "color": "red" }, "1": { "text": "UP", "color": "green" } } } ],
+        "thresholds": { "mode": "absolute", "steps": [ { "color": "red", "value": null }, { "color": "green", "value": 1 } ] },
+        "color": { "mode": "thresholds" } }, "overrides": [] },
+      "options": { "colorMode": "background", "reduceOptions": { "calcs": ["lastNotNull"] } }
+    },
+    {
+      "id": 2, "type": "stat", "title": "Requests served (total)",
+      "gridPos": { "h": 5, "w": 6, "x": 6, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [ { "refId": "A", "expr": "sum(http_requests_total)" } ],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } }
+    },
+    {
+      "id": 3, "type": "stat", "title": "Backend memory (RSS)",
+      "gridPos": { "h": 5, "w": 6, "x": 12, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [ { "refId": "A", "expr": "process_resident_memory_bytes{job=\"stockpilot-backend\"}" } ],
+      "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } }
+    },
+    {
+      "id": 4, "type": "stat", "title": "Firing alerts",
+      "gridPos": { "h": 5, "w": 6, "x": 18, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [ { "refId": "A", "expr": "count(ALERTS{alertstate=\"firing\"}) or vector(0)" } ],
+      "fieldConfig": { "defaults": {
+        "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "red", "value": 1 } ] },
+        "color": { "mode": "thresholds" } }, "overrides": [] },
+      "options": { "colorMode": "background", "reduceOptions": { "calcs": ["lastNotNull"] } }
+    },
+    {
+      "id": 5, "type": "timeseries", "title": "Requests per second by endpoint",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 5 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [ { "refId": "A", "expr": "sum by (handler) (rate(http_requests_total[30s]))", "legendFormat": "{{handler}}" } ],
+      "fieldConfig": { "defaults": { "unit": "reqps" }, "overrides": [] }
+    },
+    {
+      "id": 6, "type": "timeseries", "title": "Responses by status class",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 5 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [ { "refId": "A", "expr": "sum by (status) (rate(http_requests_total[30s]))", "legendFormat": "{{status}}" } ],
+      "fieldConfig": { "defaults": { "unit": "reqps" }, "overrides": [] }
+    },
+    {
+      "id": 7, "type": "timeseries", "title": "Latency p95 (seconds)",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 13 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [ { "refId": "A", "expr": "histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket[1m])))", "legendFormat": "p95" } ],
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] }
+    },
+    {
+      "id": 8, "type": "timeseries", "title": "Backend CPU (cores)",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 13 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [ { "refId": "A", "expr": "rate(process_cpu_seconds_total{job=\"stockpilot-backend\"}[30s])", "legendFormat": "backend CPU" } ],
+      "fieldConfig": { "defaults": { "unit": "none", "min": 0 }, "overrides": [] }
+    }
+  ]
+}

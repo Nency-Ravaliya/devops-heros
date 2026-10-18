@@ -1,0 +1,32 @@
+# Gitleaks configuration: secret scanning of the whole git history.
+# Used by the secret-scan job of devsecops.yml and by run-security-scans.sh:
+#   gitleaks git <repo> --config security/.gitleaks.toml --redact
+
+title = "StockPilot gitleaks configuration"
+
+# Keep every built-in rule (AWS keys, GitHub / Slack / Stripe tokens, private keys, JWTs,
+# generic high-entropy API keys, ...) and only add exceptions on top.
+[extend]
+useDefault = true
+
+# ---------------------------------------------------------------------------
+# Allowlist. Each entry must be narrow and explained; a broad allowlist hides real leaks.
+# ---------------------------------------------------------------------------
+[[allowlists]]
+description = "Test fixtures: pytest uses dummy values only (in-memory SQLite, no real credentials)"
+paths = [
+  '''^backend/tests/''',
+]
+
+[[allowlists]]
+description = "Lock files contain integrity hashes (sha512-...) that look like high-entropy secrets"
+paths = [
+  '''(^|/)package-lock\.json$''',
+  '''(^|/)\.terraform\.lock\.hcl$''',
+]
+
+[[allowlists]]
+description = "Obvious placeholders such as 'changeme' that appear in documentation and examples"
+regexes = [
+  '''(?i)(changeme|your[-_]?password[-_]?here|<[a-z-]*password>)''',
+]

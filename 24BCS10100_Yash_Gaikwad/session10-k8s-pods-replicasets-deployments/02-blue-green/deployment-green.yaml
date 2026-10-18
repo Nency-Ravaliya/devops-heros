@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-green
+  labels:
+    app: bg
+    version: green
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: bg
+      version: green
+  template:
+    metadata:
+      labels:
+        app: bg
+        version: green
+    spec:
+      containers:
+        - name: web
+          image: hashicorp/http-echo:1.0
+          args: ["-text=GREEN (new version)", "-listen=:5678"]
+          ports:
+            - containerPort: 5678
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 5678
+            periodSeconds: 2

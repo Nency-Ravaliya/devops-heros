@@ -1,0 +1,13 @@
+# My variant of 02-pending.yaml: the request (64Gi) is bigger than any memory this node has
+apiVersion: v1
+kind: Pod
+metadata:
+  name: lifecycle-pending-64gi
+spec:
+  containers:
+    - name: impossible-resource
+      image: nginx:1.27
+      resources:
+        requests:
+          cpu: "1"
+          memory: "64Gi"

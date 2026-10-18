@@ -1,0 +1,61 @@
+# Troubleshooting lab 2: a Service with no endpoints
+#
+#   kubectl apply -f troubleshooting/broken-service.yaml
+#   kubectl get pods -n stockpilot --show-labels     # the pod is Running and Ready...
+#   kubectl get svc,endpoints -n stockpilot          # ...but the Service has no endpoints
+#   kubectl describe svc broken-service -n stockpilot
+#   kubectl run -n stockpilot curl --rm -it --restart=Never --image=busybox:1.37 -- wget -qO- -T 3 http://broken-service
+#
+# Symptom : requests to the Service hang or fail, although the pods are healthy.
+# Cause   : a Service finds its pods through label selectors. The selector below
+#           (app: webapp) does not match the pod label (app: web), so the Service has
+#           no endpoints and no traffic can reach any pod.
+# Fix     : make the selector match the pod labels:
+#   kubectl patch svc broken-service -n stockpilot -p '{"spec":{"selector":{"app":"web"}}}'
+#
+# Clean up: kubectl delete -f troubleshooting/broken-service.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: broken-service-web
+  namespace: stockpilot
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: web
+  template:
+    metadata:
+      labels:
+        app: web
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: web
+          image: nginxinc/nginx-unprivileged:1.30-alpine
+          ports:
+            - containerPort: 8080
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ALL]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: broken-service
+  namespace: stockpilot
+spec:
+  selector:
+    # BUG: the pods are labelled app=web, not app=webapp
+    app: webapp
+  ports:
+    - port: 80
+      targetPort: 8080

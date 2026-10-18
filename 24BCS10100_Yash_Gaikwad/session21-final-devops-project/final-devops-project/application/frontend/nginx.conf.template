@@ -1,0 +1,50 @@
+server {
+    listen 8080;
+    server_name _;
+
+    root /usr/share/nginx/html;
+    index index.html;
+
+    # Re-resolve the backend name at request time (Docker / Kubernetes DNS) instead of
+    # only at startup, so nginx still boots if the backend is not up yet.
+    resolver ${NGINX_LOCAL_RESOLVERS} valid=10s ipv6=off;
+
+    gzip on;
+    gzip_types text/css application/javascript application/json image/svg+xml;
+
+    add_header X-Content-Type-Options nosniff always;
+    add_header X-Frame-Options SAMEORIGIN always;
+    add_header Referrer-Policy strict-origin-when-cross-origin always;
+
+    # liveness / readiness probe for the frontend pod
+    location = /healthz {
+        access_log off;
+        default_type text/plain;
+        return 200 "ok\n";
+    }
+
+    # the browser only ever talks to /api; nginx forwards it to the backend service
+    location /api/ {
+        set $backend "${BACKEND_URL}";
+        proxy_pass $backend;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_connect_timeout 5s;
+        proxy_read_timeout 30s;
+    }
+
+    # hashed build assets can be cached for a long time
+    location /assets/ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+        try_files $uri =404;
+    }
+
+    # single page app: unknown paths fall back to index.html
+    location / {
+        add_header Cache-Control "no-cache";
+        try_files $uri /index.html;
+    }
+}

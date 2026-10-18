@@ -1,0 +1,140 @@
+# FastAPI backend. The image is the one that the pipeline built, scanned and pushed for
+# commit 8999ad3 (run #4 of the StockPilot repository). The deploy job of devsecops.yml
+# replaces the tag with the SHA of the commit being deployed (kubectl set image).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: stockpilot
+  labels:
+    app.kubernetes.io/name: backend
+    app.kubernetes.io/component: api
+    app.kubernetes.io/part-of: stockpilot
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: backend
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: backend
+        app.kubernetes.io/component: api
+        app.kubernetes.io/part-of: stockpilot
+    spec:
+      automountServiceAccountToken: false
+      # numeric uid 10001 = the "appuser" created in the Dockerfile; Kubernetes can verify it
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      initContainers:
+        # wait until PostgreSQL accepts connections so the migration does not crash-loop
+        - name: wait-for-db
+          image: postgres:16-alpine
+          command:
+            - sh
+            - -c
+            - until pg_isready -h postgres -p 5432 -U stockpilot; do echo "waiting for postgres"; sleep 2; done
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+            limits:
+              cpu: 50m
+              memory: 32Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+      containers:
+        - name: backend
+          image: ghcr.io/yash-1706/stockpilot-backend:8999ad3d61ab1a182cadaa0c78c906ba61ab7697
+          ports:
+            - name: http
+              containerPort: 8000
+          env:
+            # the variables below are combined into DATABASE_URL; $(NAME) is expanded by Kubernetes
+            # and only works for variables defined EARLIER in this list. The password comes from a
+            # Secret, so it never appears in this file.
+            - name: POSTGRES_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: stockpilot-config
+                  key: POSTGRES_USER
+            - name: POSTGRES_DB
+              valueFrom:
+                configMapKeyRef:
+                  name: stockpilot-config
+                  key: POSTGRES_DB
+            - name: POSTGRES_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: stockpilot-config
+                  key: POSTGRES_HOST
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: stockpilot-db
+                  key: POSTGRES_PASSWORD
+            - name: DATABASE_URL
+              value: "postgresql+psycopg://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@$(POSTGRES_HOST):5432/$(POSTGRES_DB)"
+          # the container runs "alembic upgrade head" before it starts uvicorn, so allow time for that
+          startupProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 2
+            failureThreshold: 60
+          # liveness: is the process alive? (does not touch the database)
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 3
+          # readiness: can it serve traffic? (checks database access)
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: http
+            periodSeconds: 5
+            timeoutSeconds: 3
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 384Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+  namespace: stockpilot
+  labels:
+    app.kubernetes.io/name: backend
+    app.kubernetes.io/part-of: stockpilot
+spec:
+  type: ClusterIP            # not reachable from outside the cluster
+  selector:
+    app.kubernetes.io/name: backend
+  ports:
+    - name: http
+      port: 8000
+      targetPort: http
