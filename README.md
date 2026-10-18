@@ -5,5 +5,8 @@
 
 ## Submission link
 - Section A: https://forms.gle/ydjAJcwxjpjBXgxB8
-- Section B: https://forms.gle/pAuXQaokwVzhRzit6                      
+- Section B: https://forms.gle/pAuXQaokwVzhRzit6
 
+## Homework submission
+
+[PENTA GUNA SAI KUMAR — 24BCS10070](devops-homework/README.md): assignments for Sessions 2–21.

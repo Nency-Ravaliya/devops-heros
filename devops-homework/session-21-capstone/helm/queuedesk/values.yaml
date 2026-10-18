@@ -1,0 +1,44 @@
+backend:
+  image:
+    repository: queuedesk-backend
+    tag: local
+    pullPolicy: IfNotPresent
+  replicas: 2
+  resources:
+    requests: {cpu: 100m, memory: 128Mi}
+    limits: {cpu: '1', memory: 512Mi}
+frontend:
+  image:
+    repository: queuedesk-frontend
+    tag: local
+    pullPolicy: IfNotPresent
+  replicas: 2
+  resources:
+    requests: {cpu: 50m, memory: 32Mi}
+    limits: {cpu: 250m, memory: 128Mi}
+database:
+  existingSecret: queuedesk-database
+  name: queuedesk
+  user: queuedesk
+postgres:
+  image: postgres:17-alpine
+  storage: 5Gi
+  storageClass: ''
+  resources:
+    requests: {cpu: 100m, memory: 128Mi}
+    limits: {cpu: '1', memory: 512Mi}
+imagePullSecrets: []
+ingress:
+  enabled: false
+  className: alb
+  host: ''
+  annotations: {}
+  tls: []
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 6
+  targetCPUUtilizationPercentage: 65
+monitoring:
+  enabled: false
+  release: monitoring

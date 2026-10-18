@@ -1,0 +1,78 @@
+{{- range $component := list "backend" "frontend" }}
+{{- $config := index $.Values $component }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "queuedesk.name" $ }}-{{ $component }}
+  labels:
+    {{- include "queuedesk.labels" $ | nindent 4 }}
+    app.kubernetes.io/component: {{ $component }}
+spec:
+  {{- if or (eq $component "frontend") (not $.Values.autoscaling.enabled) }}
+  replicas: {{ $config.replicas }}
+  {{- end }}
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: {{ $.Release.Name }}
+      app.kubernetes.io/component: {{ $component }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: queuedesk
+        app.kubernetes.io/instance: {{ $.Release.Name }}
+        app.kubernetes.io/component: {{ $component }}
+    spec:
+      automountServiceAccountToken: false
+      {{- with $.Values.imagePullSecrets }}
+      imagePullSecrets: {{ toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: {{ if eq $component "backend" }}10001{{ else }}101{{ end }}
+        runAsGroup: {{ if eq $component "backend" }}10001{{ else }}101{{ end }}
+        fsGroup: {{ if eq $component "backend" }}10001{{ else }}101{{ end }}
+        seccompProfile: {type: RuntimeDefault}
+      containers:
+        - name: {{ $component }}
+          image: {{ printf "%s:%s" $config.image.repository $config.image.tag | quote }}
+          imagePullPolicy: {{ $config.image.pullPolicy }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: [ALL]}
+          ports:
+            - {name: http, containerPort: {{ if eq $component "backend" }}8000{{ else }}8080{{ end }}}
+          {{- if eq $component "backend" }}
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef: {name: {{ $.Values.database.existingSecret }}, key: DATABASE_URL}
+            - {name: APP_VERSION, value: {{ $config.image.tag | quote }}}
+          {{- end }}
+          startupProbe:
+            httpGet: {path: {{ if eq $component "backend" }}/health{{ else }}/nginx-health{{ end }}, port: http}
+            failureThreshold: 30
+            periodSeconds: 5
+          livenessProbe:
+            httpGet: {path: {{ if eq $component "backend" }}/health{{ else }}/nginx-health{{ end }}, port: http}
+            periodSeconds: 10
+          readinessProbe:
+            httpGet: {path: {{ if eq $component "backend" }}/ready{{ else }}/nginx-health{{ end }}, port: http}
+            periodSeconds: 5
+          resources: {{ toYaml $config.resources | nindent 12 }}
+          volumeMounts:
+            - {name: tmp, mountPath: /tmp}
+            {{- if eq $component "frontend" }}
+            - {name: nginx-config, mountPath: /etc/nginx/conf.d}
+            {{- end }}
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        {{- if eq $component "frontend" }}
+        - name: nginx-config
+          configMap:
+            name: {{ include "queuedesk.name" $ }}-nginx
+        {{- end }}
+{{- end }}

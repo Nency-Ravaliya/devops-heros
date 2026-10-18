@@ -1,0 +1,16 @@
+grafana:
+  service:
+    type: ClusterIP
+  persistence:
+    enabled: true
+    storageClassName: gp3
+    size: 2Gi
+  sidecar:
+    dashboards:
+      enabled: true
+      label: grafana_dashboard
+      labelValue: '1'
+      searchNamespace: monitoring
+  resources:
+    requests: {cpu: 100m, memory: 128Mi}
+    limits: {cpu: 500m, memory: 512Mi}

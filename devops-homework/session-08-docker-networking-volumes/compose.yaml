@@ -1,0 +1,19 @@
+services:
+  frontend:
+    image: nginx:stable-alpine
+    networks: [front]
+  backend:
+    image: busybox:1.37
+    command: ["sh", "-c", "mkdir -p /www; echo backend > /www/index.html; httpd -f -p 8080 -h /www"]
+    networks: [front, data]
+  database:
+    image: mysql:8.4
+    environment:
+      MYSQL_RANDOM_ROOT_PASSWORD: "yes"
+    networks: [data]
+    volumes: [mysql-data:/var/lib/mysql]
+networks:
+  front: {}
+  data: {}
+volumes:
+  mysql-data: {}

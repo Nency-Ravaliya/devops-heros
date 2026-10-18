@@ -1,0 +1,7 @@
+$ docker image inspect --format "{{.RepoTags}} {{.Id}}" <six assignment images>
+[student-node:assignment] sha256:b547a201ed604e126b8dbecc8fe2ce171a10da2a3d36b298e83e730b6d994811
+[student-python:assignment] sha256:fb0c2ed9cb6153bdb179b1650abf05432818db5ad53abd6c9137c3e19cc5fc5e
+[student-java:assignment] sha256:e8f9cf98d311926a3e64503545b3f20c429416d363b6e4f63ddbf693e0abde71
+[student-apache:assignment] sha256:298dd344e11e631063e8ba839a09f99c5cf5812a90164cfe9cd29d7abc759333
+[student-react:assignment] sha256:81d9253ddb04b0189ecd349963e31294101a3c59eff2537ccae146d78d20c5a7
+[student-nginx:assignment] sha256:00dd3248db276f4949d8f68e78991873d6fa24e76115fdafa9b3be576a6e0463

@@ -1,0 +1,42 @@
+Recorded output from the README exercise commands.
+Disposable repository: /tmp/tmp.bRLoMGYoi3
+Initialized empty Git repository in /tmp/tmp.bRLoMGYoi3/.git/
+[main (root-commit) 5fb679a] Start practice notes
+ 1 file changed, 1 insertion(+)
+ create mode 100644 notes.txt
+[main 225b445] Update tracked notes
+ 1 file changed, 1 insertion(+)
+[main 21d882e] Update only the tracked file
+ 1 file changed, 1 insertion(+)
+?? new.txt
+[main 7411790] Add the new file explicitly
+ 1 file changed, 1 insertion(+)
+ create mode 100644 new.txt
+Switched to a new branch 'practice-feature'
+[practice-feature 8176db1] Add a change to cherry-pick
+ 1 file changed, 1 insertion(+)
+ create mode 100644 selected.txt
+[practice-feature a8cd93e] Add a feature-only note
+ 1 file changed, 1 insertion(+)
+ create mode 100644 feature-only.txt
+* a8cd93e Add a feature-only note
+* 8176db1 Add a change to cherry-pick
+* 7411790 Add the new file explicitly
+* 21d882e Update only the tracked file
+* 225b445 Update tracked notes
+* 5fb679a Start practice notes
+Switched to branch 'main'
+[main 8176db1] Add a change to cherry-pick
+ Date: Sat Oct 17 20:17:50 2026 +0530
+ 1 file changed, 1 insertion(+)
+ create mode 100644 selected.txt
+* a8cd93e Add a feature-only note
+* 8176db1 Add a change to cherry-pick
+* 7411790 Add the new file explicitly
+* 21d882e Update only the tracked file
+* 225b445 Update tracked notes
+* 5fb679a Start practice notes
+independent change
+Selected change is present; feature-only file is absent.
+
+Exit: 0

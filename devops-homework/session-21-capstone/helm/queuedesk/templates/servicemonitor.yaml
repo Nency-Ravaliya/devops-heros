@@ -1,0 +1,16 @@
+{{- if .Values.monitoring.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "queuedesk.name" . }}
+  labels:
+    {{- include "queuedesk.labels" . | nindent 4 }}
+    release: {{ .Values.monitoring.release }}
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      app.kubernetes.io/component: backend
+  endpoints:
+    - {port: http, path: /metrics, interval: 15s}
+{{- end }}

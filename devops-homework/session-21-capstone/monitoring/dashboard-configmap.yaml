@@ -1,0 +1,200 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: queuedesk-dashboard
+  labels:
+    grafana_dashboard: "1"
+data:
+  queuedesk.json: |
+    {
+      "uid": "queuedesk-overview",
+      "title": "QueueDesk \u00b7 Application overview",
+      "schemaVersion": 39,
+      "version": 1,
+      "refresh": "15s",
+      "timezone": "browser",
+      "time": {
+        "from": "now-30m",
+        "to": "now"
+      },
+      "tags": [
+        "queuedesk",
+        "capstone"
+      ],
+      "panels": [
+        {
+          "id": 1,
+          "type": "timeseries",
+          "title": "API request rate",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 0
+          },
+          "targets": [
+            {
+              "expr": "sum by (route) (rate(queuedesk_http_requests_total[2m]))",
+              "legendFormat": "{{route}} {{pod}}",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "reqps",
+              "min": 0
+            },
+            "overrides": []
+          }
+        },
+        {
+          "id": 2,
+          "type": "timeseries",
+          "title": "95th percentile latency",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 0
+          },
+          "targets": [
+            {
+              "expr": "histogram_quantile(0.95, sum by (le) (rate(queuedesk_http_request_duration_seconds_bucket[5m])))",
+              "legendFormat": "{{route}} {{pod}}",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "s",
+              "min": 0
+            },
+            "overrides": []
+          }
+        },
+        {
+          "id": 3,
+          "type": "timeseries",
+          "title": "Server error rate",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 8
+          },
+          "targets": [
+            {
+              "expr": "sum(rate(queuedesk_http_requests_total{status=~\"5..\"}[5m])) or vector(0)",
+              "legendFormat": "{{route}} {{pod}}",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "reqps",
+              "min": 0
+            },
+            "overrides": []
+          }
+        },
+        {
+          "id": 4,
+          "type": "timeseries",
+          "title": "Backend CPU cores",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 8
+          },
+          "targets": [
+            {
+              "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=\"queuedesk\",container=\"backend\"}[5m]))",
+              "legendFormat": "{{route}} {{pod}}",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "min": 0
+            },
+            "overrides": []
+          }
+        },
+        {
+          "id": 5,
+          "type": "timeseries",
+          "title": "Backend replicas requested by HPA",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 16
+          },
+          "targets": [
+            {
+              "expr": "kube_horizontalpodautoscaler_status_desired_replicas{namespace=\"queuedesk\"}",
+              "legendFormat": "{{route}} {{pod}}",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "min": 0
+            },
+            "overrides": []
+          }
+        },
+        {
+          "id": 6,
+          "type": "timeseries",
+          "title": "Scrape target availability",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 16
+          },
+          "targets": [
+            {
+              "expr": "up{namespace=\"queuedesk\",service=\"queuedesk-backend\"}",
+              "legendFormat": "{{route}} {{pod}}",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "min": 0
+            },
+            "overrides": []
+          }
+        }
+      ]
+    }

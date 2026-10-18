@@ -1,0 +1,216 @@
+name: 24BCS10070 Session 21 QueueDesk
+on:
+  push:
+    branches: [main, 24BCS10070-all-assignments]
+    paths: ['devops-homework/session-21-capstone/**', '.github/workflows/session21-capstone.yml']
+  pull_request:
+    branches: [main]
+    paths: ['devops-homework/session-21-capstone/**', '.github/workflows/session21-capstone.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  PROJECT: devops-homework/session-21-capstone
+
+concurrency:
+  group: queuedesk-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: queuedesk
+          POSTGRES_PASSWORD: test-only
+          POSTGRES_DB: test_queuedesk
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U queuedesk -d test_queuedesk"
+          --health-interval 5s --health-timeout 3s --health-retries 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: ${{ env.PROJECT }}/backend/requirements*.txt
+      - run: pip install -r "$PROJECT/backend/requirements-dev.txt"
+      - name: Lint Python
+        run: ruff check "$PROJECT/backend" && ruff format --check "$PROJECT/backend"
+      - name: PostgreSQL migration and API tests
+        working-directory: ${{ env.PROJECT }}/backend
+        env:
+          DATABASE_URL: postgresql+psycopg://queuedesk:test-only@localhost:5432/test_queuedesk
+          TEST_DATABASE_URL: postgresql+psycopg://queuedesk:test-only@localhost:5432/test_queuedesk
+        run: |
+          alembic upgrade head
+          alembic check
+          pytest -v --junitxml=../evidence/pytest.xml
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: ${{ env.PROJECT }}/frontend/package-lock.json
+      - run: npm ci && npm run format:check && npm run build
+        working-directory: ${{ env.PROJECT }}/frontend
+      - uses: azure/setup-helm@v5
+        with:
+          version: v3.19.0
+      - name: Validate Helm chart and Compose configuration
+        working-directory: ${{ env.PROJECT }}
+        run: |
+          helm lint helm/queuedesk --strict
+          helm lint helm/queuedesk -f helm/queuedesk/values-aws.yaml --strict
+          helm template queuedesk helm/queuedesk > /dev/null
+          helm template queuedesk helm/queuedesk -f helm/queuedesk/values-aws.yaml > /dev/null
+          docker compose config --quiet
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: '1.13.3'
+      - name: Validate Terraform without creating infrastructure
+        working-directory: ${{ env.PROJECT }}/terraform
+        run: |
+          terraform fmt -check
+          terraform init -backend=false -input=false
+          terraform validate
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: ${{ env.PROJECT }}/evidence/pytest.xml
+
+  source-security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Install audit tools
+        run: pip install bandit pip-audit
+      - name: Python SAST
+        run: bandit -r "$PROJECT/backend/app"
+      - name: Audit locked runtime dependencies
+        run: pip-audit -r "$PROJECT/backend/requirements.txt"
+      - name: Scan source for secrets
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: fs
+          scan-ref: ${{ env.PROJECT }}
+          scanners: secret
+          exit-code: '1'
+
+  build-scan-publish:
+    needs: [test, source-security]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image_prefix: ${{ steps.images.outputs.prefix }}
+    steps:
+      - uses: actions/checkout@v5
+      - name: Normalize GHCR image names
+        id: images
+        env:
+          REPOSITORY: ${{ github.repository }}
+        run: echo "prefix=ghcr.io/${REPOSITORY,,}-queuedesk" >> "$GITHUB_OUTPUT"
+      - uses: docker/setup-buildx-action@v3
+      - name: Build backend
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ env.PROJECT }}/backend
+          load: true
+          push: false
+          tags: ${{ steps.images.outputs.prefix }}-backend:${{ github.sha }}
+      - name: Build frontend
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ env.PROJECT }}/frontend
+          load: true
+          push: false
+          tags: ${{ steps.images.outputs.prefix }}-frontend:${{ github.sha }}
+      - name: Scan backend (HIGH and CRITICAL block publication)
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: ${{ steps.images.outputs.prefix }}-backend:${{ github.sha }}
+          severity: HIGH,CRITICAL
+          exit-code: '1'
+          ignore-unfixed: false
+          format: table
+          output: trivy-backend.txt
+      - name: Scan frontend (HIGH and CRITICAL block publication)
+        if: ${{ !cancelled() }}
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: ${{ steps.images.outputs.prefix }}-frontend:${{ github.sha }}
+          severity: HIGH,CRITICAL
+          exit-code: '1'
+          ignore-unfixed: false
+          format: table
+          output: trivy-frontend.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: security-scans
+          path: trivy-*.txt
+      - uses: docker/login-action@v3
+        if: github.repository == 'chinna-328/devops-heros' && github.event_name != 'pull_request'
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Publish both scanned images
+        if: github.repository == 'chinna-328/devops-heros' && github.event_name != 'pull_request'
+        env:
+          PREFIX: ${{ steps.images.outputs.prefix }}
+          SHA: ${{ github.sha }}
+        run: |
+          docker push "$PREFIX-backend:$SHA"
+          docker push "$PREFIX-frontend:$SHA"
+
+  deploy:
+    needs: build-scan-publish
+    if: github.repository == 'chinna-328/devops-heros' && github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && vars.DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v5
+      - uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+      - uses: azure/setup-helm@v5
+        with:
+          version: v3.19.0
+      - name: Configure cluster access
+        env:
+          CLUSTER: ${{ vars.EKS_CLUSTER_NAME }}
+        run: aws eks update-kubeconfig --name "$CLUSTER"
+      - name: Deploy immutable commit images
+        working-directory: ${{ env.PROJECT }}
+        env:
+          PREFIX: ${{ needs.build-scan-publish.outputs.image_prefix }}
+          SHA: ${{ github.sha }}
+        run: |
+          helm upgrade --install queuedesk ./helm/queuedesk \
+            --namespace queuedesk -f helm/queuedesk/values-aws.yaml \
+            --set-string backend.image.repository="$PREFIX-backend" \
+            --set-string frontend.image.repository="$PREFIX-frontend" \
+            --set-string backend.image.tag="$SHA" \
+            --set-string frontend.image.tag="$SHA" \
+            --atomic --wait --wait-for-jobs --timeout 15m --history-max 5
+          kubectl rollout status deployment/queuedesk-backend -n queuedesk --timeout=180s
+          kubectl rollout status deployment/queuedesk-frontend -n queuedesk --timeout=180s

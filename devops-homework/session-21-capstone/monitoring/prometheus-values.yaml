@@ -1,0 +1,27 @@
+prometheus:
+  prometheusSpec:
+    retention: 2d
+    serviceMonitorSelectorNilUsesHelmValues: false
+    serviceMonitorSelector:
+      matchLabels:
+        release: monitoring
+    serviceMonitorNamespaceSelector: {}
+    resources:
+      requests: {cpu: 200m, memory: 512Mi}
+      limits: {cpu: '1', memory: 1536Mi}
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: gp3
+          accessModes: [ReadWriteOnce]
+          resources:
+            requests:
+              storage: 10Gi
+kubeEtcd:
+  enabled: false
+kubeControllerManager:
+  enabled: false
+kubeScheduler:
+  enabled: false
+alertmanager:
+  enabled: false

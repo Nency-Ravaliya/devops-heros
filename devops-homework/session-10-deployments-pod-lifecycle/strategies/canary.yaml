@@ -1,0 +1,52 @@
+{
+  "apiVersion": "apps/v1",
+  "kind": "Deployment",
+  "metadata": {
+    "name": "canary"
+  },
+  "spec": {
+    "replicas": 1,
+    "selector": {
+      "matchLabels": {
+        "app": "canary-web",
+        "version": "canary"
+      }
+    },
+    "template": {
+      "metadata": {
+        "labels": {
+          "app": "canary-web",
+          "version": "canary"
+        }
+      },
+      "spec": {
+        "containers": [
+          {
+            "name": "web",
+            "image": "nginx:stable-alpine",
+            "ports": [
+              {
+                "containerPort": 80
+              }
+            ],
+            "resources": {
+              "requests": {
+                "cpu": "50m",
+                "memory": "32Mi"
+              },
+              "limits": {
+                "cpu": "500m",
+                "memory": "128Mi"
+              }
+            },
+            "command": [
+              "sh",
+              "-c",
+              "echo '<h1>canary</h1>' > /usr/share/nginx/html/index.html; exec nginx -g 'daemon off;' "
+            ]
+          }
+        ]
+      }
+    }
+  }
+}

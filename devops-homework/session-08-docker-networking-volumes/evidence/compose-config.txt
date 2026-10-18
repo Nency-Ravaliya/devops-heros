@@ -1,0 +1,9 @@
+docker compose config -q
+Passed: Compose configuration parsed successfully.
+
+2026-10-18: Backend image correction
+- Alpine 3.22 did not contain the configured httpd executable.
+- BusyBox 1.37 provides /bin/httpd.
+- Started httpd on port 8080 inside a disposable BusyBox container.
+- wget http://127.0.0.1:8080 returned: backend
+- Full MySQL and cross-container networking checks remain pending.

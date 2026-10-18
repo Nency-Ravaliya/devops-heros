@@ -1,0 +1,19 @@
+{
+  "apiVersion": "v1",
+  "kind": "Service",
+  "metadata": {
+    "name": "config-web"
+  },
+  "spec": {
+    "type": "ClusterIP",
+    "selector": {
+      "app": "config-web"
+    },
+    "ports": [
+      {
+        "port": 80,
+        "targetPort": 80
+      }
+    ]
+  }
+}

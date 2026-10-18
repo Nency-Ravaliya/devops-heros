@@ -1,0 +1,21 @@
+{{- range $component := list "backend" "frontend" }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "queuedesk.name" $ }}-{{ $component }}
+  labels:
+    {{- include "queuedesk.labels" $ | nindent 4 }}
+    app.kubernetes.io/component: {{ $component }}
+  {{- if eq $component "frontend" }}
+  annotations:
+    alb.ingress.kubernetes.io/healthcheck-path: /nginx-health
+  {{- end }}
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/instance: {{ $.Release.Name }}
+    app.kubernetes.io/component: {{ $component }}
+  ports:
+    - {name: http, port: {{ if eq $component "backend" }}8000{{ else }}8080{{ end }}, targetPort: http}
+{{- end }}

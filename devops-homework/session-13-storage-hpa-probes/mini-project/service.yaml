@@ -1,0 +1,19 @@
+{
+  "apiVersion": "v1",
+  "kind": "Service",
+  "metadata": {
+    "name": "storage-web"
+  },
+  "spec": {
+    "type": "ClusterIP",
+    "selector": {
+      "app": "storage-web"
+    },
+    "ports": [
+      {
+        "port": 80,
+        "targetPort": 80
+      }
+    ]
+  }
+}

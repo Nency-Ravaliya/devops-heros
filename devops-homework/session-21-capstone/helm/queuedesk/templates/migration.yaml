@@ -1,0 +1,41 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "queuedesk.name" . }}-migrate-{{ .Release.Revision }}
+  labels:
+    {{- include "queuedesk.labels" . | nindent 4 }}
+spec:
+  backoffLimit: 8
+  activeDeadlineSeconds: 600
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/component: migration
+    spec:
+      restartPolicy: OnFailure
+      automountServiceAccountToken: false
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets: {{ toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        seccompProfile: {type: RuntimeDefault}
+      containers:
+        - name: migrate
+          image: {{ printf "%s:%s" .Values.backend.image.repository .Values.backend.image.tag | quote }}
+          imagePullPolicy: {{ .Values.backend.image.pullPolicy }}
+          command: [alembic, upgrade, head]
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef: {name: {{ .Values.database.existingSecret }}, key: DATABASE_URL}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: [ALL]}
+          resources:
+            requests: {cpu: 100m, memory: 128Mi}
+            limits: {cpu: '1', memory: 256Mi}

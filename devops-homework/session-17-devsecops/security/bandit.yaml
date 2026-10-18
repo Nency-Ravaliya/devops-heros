@@ -1,0 +1,2 @@
+# Intentional all-interface bind inside the container.
+skips: [B104]

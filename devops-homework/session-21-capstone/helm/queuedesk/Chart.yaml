@@ -1,0 +1,6 @@
+apiVersion: v2
+name: queuedesk
+description: A support ticket tracker with a FastAPI API and PostgreSQL
+type: application
+version: 1.0.0
+appVersion: '1.0.0'

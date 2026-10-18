@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: queuedesk-lab
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: service-lab
+  namespace: queuedesk-lab
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: service-lab}
+  template:
+    metadata:
+      labels: {app: service-lab}
+    spec:
+      containers:
+        - name: web
+          image: nginxinc/nginx-unprivileged:stable-alpine
+          ports:
+            - {containerPort: 8080}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: service-lab
+  namespace: queuedesk-lab
+spec:
+  selector: {app: wrong-label}
+  ports:
+    - {port: 80, targetPort: 8080}

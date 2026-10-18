@@ -1,0 +1,8 @@
+aws_region         = "ap-south-1"
+project_name       = "queuedesk"
+kubernetes_version = "1.34"
+github_repository  = "chinna-328/devops-heros"
+# Your public IPv4 address and the deployment runner egress CIDRs.
+allowed_api_cidrs = ["203.0.113.10/32"]
+# Set this only if the GitHub OIDC provider already exists.
+github_oidc_provider_arn = ""
