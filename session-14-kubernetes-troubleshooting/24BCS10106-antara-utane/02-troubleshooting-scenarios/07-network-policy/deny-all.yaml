@@ -1,0 +1,10 @@
+# Default-deny ingress for every Pod in the namespace. Applied "by another team",
+# it silently blocks client -> shop-api traffic.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-ingress
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress

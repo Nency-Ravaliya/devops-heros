@@ -1,0 +1,26 @@
+# Both values now come from the ConfigMap with the correct (lower-case) keys.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: config-app
+spec:
+  containers:
+    - name: app
+      image: busybox:1.36
+      command: ["sh", "-c"]
+      args:
+        - |
+          echo "DB_HOST=$DB_HOST LOG_LEVEL=$LOG_LEVEL"
+          case "$LOG_LEVEL" in debug|info|warn|error) ;; *) echo "invalid LOG_LEVEL '$LOG_LEVEL'"; exit 1;; esac
+          echo "config OK, app running"; sleep 3600
+      env:
+        - name: DB_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: db_host
+        - name: LOG_LEVEL
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: log_level
