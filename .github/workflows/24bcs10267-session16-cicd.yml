@@ -1,0 +1,225 @@
+# Session 16 - CI/CD with GitHub Actions (24BCS10267 Ujjawal Prabhat)
+# CI: test + security-check -> build (docker image artifact)
+# CD: deliver (push to GHCR) -> deploy (kind + kubectl + smoke test)
+name: "24BCS10267 - Session 16 CI/CD"
+
+on:
+  push:
+    branches: [24BCS10267/session-16]
+    paths:
+      - "session-16-github-actions/24BCS10267-ujjawal-prabhat/**"
+      - ".github/workflows/24bcs10267-session16-cicd.yml"
+      - "!**/*.md"
+  pull_request:
+    branches: [main]
+    paths:
+      - "session-16-github-actions/24BCS10267-ujjawal-prabhat/**"
+      - ".github/workflows/24bcs10267-session16-cicd.yml"
+      - "!**/*.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: s16-24bcs10267-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  APP_DIR: session-16-github-actions/24BCS10267-ujjawal-prabhat
+  LOCAL_IMAGE: s16-cicd-demo:${{ github.sha }}
+
+defaults:
+  run:
+    working-directory: session-16-github-actions/24BCS10267-ujjawal-prabhat
+
+jobs:
+  test:
+    name: Test (lint + unit tests)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: ${{ env.APP_DIR }}/package-lock.json
+
+      - name: Show runner info
+        run: |
+          echo "Runner OS: $RUNNER_OS / arch: $RUNNER_ARCH"
+          node --version
+          npm --version
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-report
+          path: ${{ env.APP_DIR }}/reports/junit.xml
+          retention-days: 14
+
+  security-check:
+    name: Security Check
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v7
+
+      - name: Check for sensitive files
+        run: |
+          if find . -type f \( -name ".env" -o -name "*.pem" -o -name "*.key" \) | grep .; then
+            echo "Potential sensitive file found."
+            exit 1
+          fi
+          echo "No common sensitive files found."
+
+      - name: npm audit (fail on high/critical)
+        run: npm audit --audit-level=high
+
+  build:
+    name: Build Docker image
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v7
+
+      - name: Docker build
+        run: |
+          docker build \
+            --label "org.opencontainers.image.source=https://github.com/$GITHUB_REPOSITORY" \
+            --label "org.opencontainers.image.revision=$GITHUB_SHA" \
+            -t "$LOCAL_IMAGE" .
+          docker image ls s16-cicd-demo
+
+      - name: Smoke test the container
+        run: |
+          docker run -d --name smoke -p 3000:3000 "$LOCAL_IMAGE"
+          for _ in $(seq 1 15); do curl -fs http://localhost:3000/health && break; sleep 1; done
+          echo
+          curl -fs "http://localhost:3000/api/power?a=2&b=10"
+          echo
+          docker rm -f smoke
+
+      - name: Save image to tarball
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE/dist"
+          docker save "$LOCAL_IMAGE" | gzip > "$GITHUB_WORKSPACE/dist/s16-cicd-demo.tar.gz"
+          ls -lh "$GITHUB_WORKSPACE/dist"
+
+      - name: Upload image artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: docker-image
+          path: dist/s16-cicd-demo.tar.gz
+          retention-days: 7
+
+  deliver:
+    name: Push image to GHCR
+    needs: [build, security-check]
+    if: github.repository == 'UjjawalPrabhat/devops-heros' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    defaults:
+      run:
+        working-directory: .
+    steps:
+      - name: Download image artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: docker-image
+
+      - name: Load image
+        run: docker load -i s16-cicd-demo.tar.gz
+
+      - name: Set lowercase image name
+        env:
+          OWNER: ${{ github.repository_owner }}
+        run: echo "IMAGE=ghcr.io/${OWNER,,}/s16-cicd-demo-24bcs10267" >> "$GITHUB_ENV"
+
+      - name: Login to GHCR with GITHUB_TOKEN
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Tag and push
+        run: |
+          docker tag "$LOCAL_IMAGE" "$IMAGE:${GITHUB_SHA::7}"
+          docker tag "$LOCAL_IMAGE" "$IMAGE:latest"
+          docker push "$IMAGE:${GITHUB_SHA::7}"
+          docker push "$IMAGE:latest"
+
+  deploy:
+    name: Deploy to Kubernetes (kind)
+    needs: deliver
+    if: github.repository == 'UjjawalPrabhat/devops-heros'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v7
+
+      - name: Download image artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: docker-image
+          path: ${{ runner.temp }}
+
+      - name: Create kind cluster
+        uses: helm/kind-action@v1
+        with:
+          cluster_name: s16-24bcs10267
+
+      - name: Load image into kind
+        working-directory: ${{ runner.temp }}
+        run: |
+          gunzip s16-cicd-demo.tar.gz
+          kind load image-archive s16-cicd-demo.tar --name s16-24bcs10267
+
+      - name: Create app secret from repo secret
+        env:
+          APP_GREETING: ${{ secrets.APP_GREETING }}
+        run: |
+          kubectl create secret generic s16-app-secrets \
+            --from-literal=APP_GREETING="$APP_GREETING"
+          kubectl get secrets
+
+      - name: Render manifests and apply
+        run: |
+          sed -i "s|__IMAGE__|$LOCAL_IMAGE|; s|__VERSION__|${GITHUB_SHA::7}|" k8s/deployment.yaml
+          grep -n "image:" k8s/deployment.yaml
+          kubectl apply -f k8s/
+
+      - name: Wait for rollout
+        run: |
+          kubectl rollout status deployment/s16-cicd-demo --timeout=180s
+          kubectl get deploy,rs,pods,svc -o wide
+
+      - name: Smoke test through the Service
+        run: |
+          kubectl port-forward service/s16-cicd-demo 8080:80 >/dev/null 2>&1 &
+          for _ in $(seq 1 15); do curl -fs http://localhost:8080/health && break; sleep 1; done
+          echo
+          SOURCE=$(curl -fs http://localhost:8080/ | jq -r .greetingSource)
+          VERSION=$(curl -fs http://localhost:8080/ | jq -r .version)
+          echo "greetingSource=$SOURCE version=$VERSION"
+          test "$SOURCE" = "secret"
+          curl -fs "http://localhost:8080/api/add?a=40&b=2"
+          echo

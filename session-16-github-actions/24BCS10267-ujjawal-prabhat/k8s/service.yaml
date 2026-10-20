@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: s16-cicd-demo
+spec:
+  type: ClusterIP
+  selector:
+    app: s16-cicd-demo
+  ports:
+    - port: 80
+      targetPort: 3000
