@@ -1,0 +1,45 @@
+# The kube-prometheus-stack Grafana sidecar loads ConfigMaps labelled grafana_dashboard=1.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: podinfo-dashboard
+  namespace: session20-monitoring
+  labels:
+    grafana_dashboard: "1"
+data:
+  podinfo.json: |
+    {
+      "uid": "session20-podinfo",
+      "title": "Session 20 - podinfo",
+      "schemaVersion": 39,
+      "refresh": "30s",
+      "time": { "from": "now-30m", "to": "now" },
+      "panels": [
+        {
+          "id": 1, "type": "timeseries", "title": "CPU utilization (% of limit)",
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "fieldConfig": { "defaults": { "unit": "percentunit" } },
+          "targets": [ { "refId": "A", "legendFormat": "{{pod}}", "expr": "sum by (pod) (rate(container_cpu_usage_seconds_total{namespace=\"session20-monitoring\", container=\"podinfo\"}[5m])) / sum by (pod) (kube_pod_container_resource_limits{namespace=\"session20-monitoring\", container=\"podinfo\", resource=\"cpu\"})" } ]
+        },
+        {
+          "id": 2, "type": "timeseries", "title": "Memory utilization (% of limit)",
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "fieldConfig": { "defaults": { "unit": "percentunit" } },
+          "targets": [ { "refId": "A", "legendFormat": "{{pod}}", "expr": "sum by (pod) (container_memory_working_set_bytes{namespace=\"session20-monitoring\", container=\"podinfo\"}) / sum by (pod) (kube_pod_container_resource_limits{namespace=\"session20-monitoring\", container=\"podinfo\", resource=\"memory\"})" } ]
+        },
+        {
+          "id": 3, "type": "timeseries", "title": "HTTP requests/s by status",
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "targets": [ { "refId": "A", "legendFormat": "{{status}}", "expr": "sum by (status) (rate(http_request_duration_seconds_count{namespace=\"session20-monitoring\"}[1m]))" } ]
+        },
+        {
+          "id": 4, "type": "stat", "title": "Ready pods",
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "targets": [ { "refId": "A", "expr": "sum(kube_pod_status_ready{namespace=\"session20-monitoring\", condition=\"true\"})" } ]
+        }
+      ]
+    }

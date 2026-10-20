@@ -1,0 +1,24 @@
+# Applied once with kubectl; kept outside the watched app/ path.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: session20-mini
+  namespace: argocd
+spec:
+  project: default
+
+  source:
+    repoURL: https://github.com/UjjawalPrabhat/devops-heros.git
+    targetRevision: 24BCS10267/session-20
+    path: session20-monitoring-observability-gitops/24BCS10267-ujjawal-prabhat/gitops/app
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: session20
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

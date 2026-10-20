@@ -1,0 +1,13 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: podinfo
+  namespace: session20-monitoring
+spec:
+  selector:
+    matchLabels:
+      app: podinfo
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 15s

@@ -1,0 +1,62 @@
+# podinfo serves /metrics, /healthz and /readyz on port 9898.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: session20-monitoring
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: podinfo
+  namespace: session20-monitoring
+  labels:
+    app: podinfo
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: podinfo
+  template:
+    metadata:
+      labels:
+        app: podinfo
+    spec:
+      containers:
+        - name: podinfo
+          image: ghcr.io/stefanprodan/podinfo:6.7.1
+          command: ["./podinfo", "--port=9898", "--level=debug"]
+          ports:
+            - name: http
+              containerPort: 9898
+          # limits give CPU/memory utilization a denominator (usage / limit)
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: http
+            periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: podinfo
+  namespace: session20-monitoring
+  labels:
+    app: podinfo
+spec:
+  selector:
+    app: podinfo
+  ports:
+    - name: http
+      port: 9898
+      targetPort: http

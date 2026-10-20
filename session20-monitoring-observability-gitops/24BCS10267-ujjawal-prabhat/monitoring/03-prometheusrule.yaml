@@ -1,0 +1,38 @@
+# Short "for:" durations so the alerts fire quickly in the lab.
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: podinfo-alerts
+  namespace: session20-monitoring
+spec:
+  groups:
+    - name: podinfo.rules
+      rules:
+        # When the app is scaled to 0 its targets disappear and sum(up) returns no
+        # series at all; "or vector(0)" turns that into 0 so the alert still fires.
+        - alert: PodinfoDown
+          expr: (sum(up{namespace="session20-monitoring", job="podinfo"}) or vector(0)) == 0
+          for: 30s
+          labels:
+            severity: critical
+          annotations:
+            summary: "podinfo has no healthy scrape target"
+
+        - alert: PodinfoPodNotReady
+          expr: sum by (pod) (kube_pod_status_ready{namespace="session20-monitoring", condition="false"}) > 0
+          for: 30s
+          labels:
+            severity: warning
+          annotations:
+            summary: "Pod {{ $labels.pod }} is not ready (readiness probe failing)"
+
+        - alert: PodinfoHighCPU
+          expr: |
+            sum by (pod) (rate(container_cpu_usage_seconds_total{namespace="session20-monitoring", container="podinfo"}[5m]))
+              / sum by (pod) (kube_pod_container_resource_limits{namespace="session20-monitoring", container="podinfo", resource="cpu"})
+              > 0.8
+          for: 1m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Pod {{ $labels.pod }} uses more than 80% of its CPU limit"
