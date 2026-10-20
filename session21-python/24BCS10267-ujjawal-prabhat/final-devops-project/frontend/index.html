@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>StockPilot Inventory</title>
+</head>
+<body>
+<header><strong>StockPilot</strong><small id="env">loading...</small></header>
+<main>
+  <section class="kpis">
+    <div class="kpi">SKUs<b id="k-items">-</b></div>
+    <div class="kpi">Units on hand<b id="k-units">-</b></div>
+    <div class="kpi">Low stock<b id="k-low">-</b></div>
+    <div class="kpi">Inventory value<b id="k-value">-</b></div>
+  </section>
+  <form id="f">
+    <input name="sku" placeholder="SKU (e.g. BOLT-M8)" required>
+    <input name="name" placeholder="Name" required>
+    <input name="quantity" type="number" min="0" placeholder="Qty" required>
+    <input name="unit_price_paise" type="number" min="0" placeholder="Price (paise)">
+    <button>Add item</button>
+  </form>
+  <p id="err"></p>
+  <table>
+    <thead><tr><th>SKU</th><th>Name</th><th>Location</th><th>Qty</th><th></th></tr></thead>
+    <tbody id="rows"></tbody>
+  </table>
+</main>
+<script type="module" src="/src/main.js"></script>
+</body>
+</html>

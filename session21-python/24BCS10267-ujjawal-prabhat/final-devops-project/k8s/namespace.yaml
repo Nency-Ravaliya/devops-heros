@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: final
+  labels:
+    app.kubernetes.io/part-of: stockpilot
+    owner: 24bcs10267

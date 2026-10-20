@@ -1,0 +1,62 @@
+$ kubectl -n monitoring port-forward svc/kps-grafana 13000:80 &
+
+$ scripts/grafana-check.sh
+$ curl -s -u admin:*** 'http://localhost:13000/api/search?tag=stockpilot'
+[
+    {
+        "id": 4246512556322816,
+        "uid": "stockpilot-final",
+        "orgId": 1,
+        "title": "StockPilot (final)",
+        "uri": "db/stockpilot-final",
+        "url": "/d/stockpilot-final/stockpilot-final",
+        "slug": "",
+        "type": "dash-db",
+        "tags": [
+            "24bcs10267",
+            "stockpilot"
+        ],
+        "isStarred": false,
+        "sortMeta": 0,
+        "isDeleted": false
+    },
+    {
+        "id": 4253980883693568,
+        "uid": "stockpilot-final-gitops",
+        "orgId": 1,
+        "title": "StockPilot API (final-gitops)",
+        "uri": "db/stockpilot-api-final-gitops",
+        "url": "/d/stockpilot-final-gitops/stockpilot-api-final-gitops",
+        "slug": "",
+        "type": "dash-db",
+        "tags": [
+            "24bcs10267",
+            "stockpilot"
+        ],
+        "isStarred": false,
+        "sortMeta": 0,
+        "isDeleted": false
+    }
+]
+
+$ curl -s -u admin:*** http://localhost:13000/api/dashboards/uid/stockpilot-final  (panel list)
+  title: StockPilot (final)
+  - [stat] Healthy backend targets
+  - [stat] Request rate (req/s)
+  - [stat] Low-stock SKUs
+  - [stat] 5xx ratio (5m)
+  - [timeseries] Requests per second by route
+  - [timeseries] Latency p50 / p95
+  - [timeseries] Pod CPU (cores)
+  - [timeseries] Stock movements per minute
+
+Evaluating each panel query through Grafana's datasource proxy (datasource uid=prometheus):
+  Healthy backend targets             1 series  value=5
+  Request rate (req/s)                1 series  value=1.49
+  Low-stock SKUs                      1 series  value=2
+  5xx ratio (5m)                      1 series  value=0
+  Requests per second by route   {{ro 6 series  /ready=1, /health=0.489, /api/info=0, /api/items=0
+  Latency p50 / p95              p50  1 series  value=0.00288
+  Latency p50 / p95              p95  1 series  value=0.012
+  Pod CPU (cores)                {{po 5 series  stockpilot-backend-94f54b467-6psgg=0.063, stockpilot-backend-94f54b467-nvjgt=0.0593, stockpilot-backend-94f54b
+  Stock movements per minute     {{di 0 series  

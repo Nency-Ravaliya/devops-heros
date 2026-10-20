@@ -1,0 +1,18 @@
+# Shared Trivy settings, used by CI for both scan types (run from the project folder):
+#   trivy fs    --config security/trivy.yaml .        # SCA: requirements.txt, package-lock.json
+#   trivy image --config security/trivy.yaml <image>  # container image: OS packages + Python/npm libs
+severity:
+  - HIGH
+  - CRITICAL
+scan:
+  scanners:
+    - vuln
+vulnerability:
+  # Block only on findings that have a fixed version; unfixed OS CVEs cannot be
+  # remediated by a rebuild (see README, DevSecOps).
+  ignore-unfixed: true
+pkg:
+  # also scan build-time npm packages (vite) in package-lock.json
+  include-dev-deps: true
+ignorefile: security/.trivyignore
+exit-code: 1

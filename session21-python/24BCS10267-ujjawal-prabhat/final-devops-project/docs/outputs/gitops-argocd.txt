@@ -1,0 +1,91 @@
+# remove the Argo CD app of the previous layout (finalizer prunes its resources)
+$ kubectl -n argocd delete application final-stockpilot-24bcs10267 --wait=true --timeout=180s
+application.argoproj.io "final-stockpilot-24bcs10267" deleted from argocd namespace
+
+$ kubectl -n final-gitops get all,pvc,secret
+NAME                                             STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE
+persistentvolumeclaim/stockpilot-postgres-data   Bound    pvc-60a3f7bc-e729-4546-8fff-cceb678f0d92   1Gi        RWO            standard       <unset>                 13d
+
+NAME                        TYPE     DATA   AGE
+secret/stockpilot-db-prod   Opaque   2      13d
+
+# leftovers of the old release: PVC (resource-policy keep) and the old out-of-band Secret
+$ kubectl -n final-gitops delete pvc stockpilot-postgres-data && kubectl -n final-gitops delete secret stockpilot-db-prod
+persistentvolumeclaim "stockpilot-postgres-data" deleted from final-gitops namespace
+secret "stockpilot-db-prod" deleted from final-gitops namespace
+
+$ scripts/gitops-bootstrap.sh
+$ kubectl create namespace final-gitops
+Error from server (AlreadyExists): namespaces "final-gitops" already exists
+
+$ kubectl -n final-gitops create secret generic stockpilot-db-gitops --from-literal=DB_USER=stockpilot --from-literal=DB_PASSWORD="$(openssl rand -hex 16)"
+secret/stockpilot-db-gitops created
+
+$ kubectl apply -f gitops/application.yaml
+Warning: metadata.finalizers: "resources-finalizer.argocd.argoproj.io": prefer a domain-qualified finalizer name including a path (/) to avoid accidental conflicts with other finalizer writers
+application.argoproj.io/final-stockpilot-24bcs10267 created
+
+
+# (waited until Synced/Healthy)
+$ kubectl -n argocd get application final-stockpilot-24bcs10267 -o wide
+NAME                          SYNC STATUS   HEALTH STATUS   REVISION                                   PROJECT
+final-stockpilot-24bcs10267   Synced        Healthy         ee4c5293077606853f3567ec269ed680e89d14c4   default
+
+$ kubectl -n argocd get application final-stockpilot-24bcs10267 -o jsonpath='{.status.operationState.phase} {.status.operationState.message}{"\n"}{.status.summary.images}{"\n"}'
+Succeeded successfully synced (all tasks run)
+["ghcr.io/ujjawalprabhat/stockpilot-backend:a6a18febabde5e45bc4cdc026626eb9fe6841949","ghcr.io/ujjawalprabhat/stockpilot-frontend:a6a18febabde5e45bc4cdc026626eb9fe6841949","postgres:17-alpine"]
+
+$ kubectl -n final-gitops get pods -o custom-columns=POD:.metadata.name,IMAGE:.spec.containers[0].image,NODE:.spec.nodeName,STATUS:.status.phase
+POD                                    IMAGE                                                                                 NODE                   STATUS
+stockpilot-backend-67f795df56-2g885    ghcr.io/ujjawalprabhat/stockpilot-backend:a6a18febabde5e45bc4cdc026626eb9fe6841949    devops-heros-worker    Running
+stockpilot-backend-67f795df56-9phs9    ghcr.io/ujjawalprabhat/stockpilot-backend:a6a18febabde5e45bc4cdc026626eb9fe6841949    devops-heros-worker2   Running
+stockpilot-frontend-66c85fd847-bjxgl   ghcr.io/ujjawalprabhat/stockpilot-frontend:a6a18febabde5e45bc4cdc026626eb9fe6841949   devops-heros-worker    Running
+stockpilot-frontend-66c85fd847-qt76f   ghcr.io/ujjawalprabhat/stockpilot-frontend:a6a18febabde5e45bc4cdc026626eb9fe6841949   devops-heros-worker2   Running
+stockpilot-postgres-7bfff75575-hmb87   postgres:17-alpine                                                                    devops-heros-worker2   Running
+
+$ kubectl get nodes -o custom-columns=NAME:.metadata.name,ARCH:.status.nodeInfo.architecture
+NAME                         ARCH
+devops-heros-control-plane   arm64
+devops-heros-worker          arm64
+devops-heros-worker2         arm64
+
+$ kubectl -n final-gitops get svc,ingress,hpa,pvc
+NAME                          TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)    AGE
+service/stockpilot-backend    ClusterIP   10.96.170.204   <none>        80/TCP     55s
+service/stockpilot-frontend   ClusterIP   10.96.200.245   <none>        80/TCP     55s
+service/stockpilot-postgres   ClusterIP   10.96.183.150   <none>        5432/TCP   55s
+
+NAME                                   CLASS   HOSTS                     ADDRESS     PORTS   AGE
+ingress.networking.k8s.io/stockpilot   nginx   stockpilot-gitops.local   localhost   80      55s
+
+NAME                                                     REFERENCE                       TARGETS       MINPODS   MAXPODS   REPLICAS   AGE
+horizontalpodautoscaler.autoscaling/stockpilot-backend   Deployment/stockpilot-backend   cpu: 6%/60%   2         5         2          55s
+
+NAME                                      STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE
+persistentvolumeclaim/stockpilot-pgdata   Bound    pvc-88829b20-a32e-45d5-9378-2bd16a2c646c   1Gi        RWO            standard       <unset>                 55s
+
+$ HOST=stockpilot-gitops.local scripts/smoke-ingress.sh
+$ curl -s -H 'Host: stockpilot-gitops.local' -o /dev/null -w %{http_code} %{content_type}\n localhost:8081/
+200 text/html
+
+
+$ curl -s -H 'Host: stockpilot-gitops.local' localhost:8081/api/info
+{"service":"StockPilot","version":"a6a18febabde5e45bc4cdc026626eb9fe6841949","env":"gitops"}
+
+$ curl -s -H 'Host: stockpilot-gitops.local' -X POST -H Content-Type: application/json localhost:8081/api/items -d {"sku":"SMOKE-1","name":"smoke test item","quantity":3}
+{"id":1,"sku":"SMOKE-1","name":"smoke test item","location":"MAIN","quantity":3,"reorder_level":10,"unit_price_paise":0,"low_stock":true,"updated_at":"2026-10-20T06:27:53.326081Z"}
+
+$ curl -s -H 'Host: stockpilot-gitops.local' -X PUT -H Content-Type: application/json localhost:8081/api/items/1 -d {"quantity":30}
+{"id":1,"sku":"SMOKE-1","name":"smoke test item","location":"MAIN","quantity":30,"reorder_level":10,"unit_price_paise":0,"low_stock":false,"updated_at":"2026-10-20T06:27:53.390332Z"}
+
+$ curl -s -H 'Host: stockpilot-gitops.local' localhost:8081/api/items
+[{"id":1,"sku":"SMOKE-1","name":"smoke test item","location":"MAIN","quantity":30,"reorder_level":10,"unit_price_paise":0,"low_stock":false,"updated_at":"2026-10-20T06:27:53.390332Z"}]
+
+$ curl -s -H 'Host: stockpilot-gitops.local' -X DELETE -o /dev/null -w %{http_code}\n localhost:8081/api/items/1
+204
+
+
+$ curl -s -H 'Host: stockpilot-gitops.local' localhost:8081/api/summary
+{"total_items":0,"total_units":0,"low_stock_items":0,"inventory_value_paise":0}
+
+

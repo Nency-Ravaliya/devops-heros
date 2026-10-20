@@ -1,0 +1,65 @@
+$ troubleshooting/04-hpa-no-requests.sh
+
+############ BREAK: remove resources (requests/limits) from the backend containers ############
+
+$ helm upgrade --install stockpilot helm/stockpilot -n final-trouble -f helm/stockpilot/values-dev.yaml -f troubleshooting/values-trouble.yaml --set backend.resources=null | grep -E 'STATUS|REVISION|Error'
+STATUS: deployed
+REVISION: 43
+
+
+############ SYMPTOM ############
+
+$ kubectl -n final-trouble get hpa
+NAME                 REFERENCE                       TARGETS              MINPODS   MAXPODS   REPLICAS   AGE
+stockpilot-backend   Deployment/stockpilot-backend   cpu: <unknown>/60%   2         3         2          3m18s
+
+
+############ INVESTIGATE ############
+
+$ kubectl -n final-trouble describe hpa stockpilot-backend | sed -n '/Conditions/,$p' | cut -c1-220
+Conditions:
+  Type            Status  Reason                   Message
+  ----            ------  ------                   -------
+  AbleToScale     True    SucceededGetScale        the HPA controller was able to get the target's current scale
+  ScaledToZero    False   NotScaledToZero          the HPA controller did not scale the workload to zero
+  ScalingActive   False   FailedGetResourceMetric  the HPA was unable to compute the replica count: failed to get cpu utilization: missing request for cpu in container backend of Pod stockpilot-backend-6fb785d664-2sksc
+  ScalingLimited  False   DesiredWithinRange       the desired count is within the acceptable range
+Events:
+  Type     Reason                        Age                  From                       Message
+  ----     ------                        ----                 ----                       -------
+  Normal   SuccessfulRescale             3m18s                horizontal-pod-autoscaler  New size: 2; reason: Current number of replicas below Spec.MinReplicas
+  Warning  FailedGetResourceMetric       3m3s                 horizontal-pod-autoscaler  failed to get cpu utilization: unable to get metrics for resource cpu: no metrics returned from resource metrics API
+  Warning  FailedComputeMetricsReplicas  3m3s                 horizontal-pod-autoscaler  invalid metrics (1 invalid out of 1), first error is: failed to get cpu resource metric value: failed to get cpu utilization: unabl
+  Warning  FailedGetResourceMetric       48s (x5 over 2m48s)  horizontal-pod-autoscaler  failed to get cpu utilization: did not receive metrics for targeted pods (pods might be unready)
+  Warning  FailedComputeMetricsReplicas  48s (x5 over 2m48s)  horizontal-pod-autoscaler  invalid metrics (1 invalid out of 1), first error is: failed to get cpu resource metric value: failed to get cpu utilization: did n
+  Warning  FailedGetResourceMetric       3s (x3 over 33s)     horizontal-pod-autoscaler  failed to get cpu utilization: missing request for cpu in container backend of Pod stockpilot-backend-6fb785d664-2sksc
+  Warning  FailedComputeMetricsReplicas  3s (x3 over 33s)     horizontal-pod-autoscaler  invalid metrics (1 invalid out of 1), first error is: failed to get cpu resource metric value: failed to get cpu utilization: missi
+
+$ kubectl -n final-trouble get deploy stockpilot-backend -o jsonpath='{.spec.template.spec.containers[0].resources}{"\n"}'
+{}
+
+$ kubectl -n final-trouble top pods -l app.kubernetes.io/component=backend
+NAME                                  CPU(cores)   MEMORY(bytes)   
+stockpilot-backend-6fb785d664-2sksc   3m           67Mi            
+stockpilot-backend-6fb785d664-bdfm7   3m           63Mi            
+
+
+############ ROOT CAUSE: utilization = usage / request. With no CPU request the ratio is undefined, so the HPA reports <unknown> (metrics-server works: kubectl top answers). ############
+
+
+############ FIX ############
+
+$ helm upgrade --install stockpilot helm/stockpilot -n final-trouble -f helm/stockpilot/values-dev.yaml -f troubleshooting/values-trouble.yaml --wait --timeout 5m | grep -E 'STATUS|REVISION|Error'
+STATUS: deployed
+REVISION: 44
+
+
+############ VERIFY ############
+
+$ kubectl -n final-trouble get deploy stockpilot-backend -o jsonpath='{.spec.template.spec.containers[0].resources}{"\n"}'
+{"limits":{"cpu":"500m","memory":"256Mi"},"requests":{"cpu":"50m","memory":"96Mi"}}
+
+$ kubectl -n final-trouble get hpa
+NAME                 REFERENCE                       TARGETS       MINPODS   MAXPODS   REPLICAS   AGE
+stockpilot-backend   Deployment/stockpilot-backend   cpu: 8%/60%   2         3         2          4m19s
+

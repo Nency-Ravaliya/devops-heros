@@ -1,0 +1,92 @@
+# Default values for the StockPilot chart.
+# Overlays: values-dev.yaml (local kind cluster), values-gitops.yaml (Argo CD).
+
+image:
+  registry: ghcr.io/ujjawalprabhat   # "" = local image names (kind load docker-image)
+  tag: ""                            # git SHA from CI; defaults to .Chart.AppVersion
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+
+backend:
+  replicas: 2            # used only when hpa.enabled=false
+  containerPort: 8000
+  probes:
+    liveness:
+      path: /health
+      initialDelaySeconds: 5
+      periodSeconds: 10
+      failureThreshold: 3
+    readiness:
+      path: /ready
+      initialDelaySeconds: 3
+      periodSeconds: 5
+      failureThreshold: 3
+  resources:
+    requests: {cpu: 50m, memory: 96Mi}
+    limits: {cpu: 500m, memory: 256Mi}
+
+frontend:
+  replicas: 2
+  containerPort: 8080
+  resources:
+    requests: {cpu: 10m, memory: 16Mi}
+    limits: {cpu: 200m, memory: 64Mi}
+
+# Non-secret backend config -> ConfigMap (envFrom)
+config:
+  APP_ENV: default
+  LOG_LEVEL: info
+  DEFAULT_REORDER_LEVEL: "10"
+  DB_NAME: stockpilot
+  DB_PORT: "5432"
+
+# Database credentials -> Secret. PLACEHOLDER ONLY: override with --set, or point
+# existingSecret at a Secret created outside Git (see values-gitops.yaml).
+database:
+  existingSecret: ""
+  username: stockpilot
+  password: change-me-placeholder
+
+podSecurityContext:
+  runAsNonRoot: true
+  seccompProfile:
+    type: RuntimeDefault
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop: ["ALL"]
+
+ingress:
+  enabled: true
+  className: nginx
+  host: stockpilot.local
+
+# Backend autoscaling (frontend is static and stays at frontend.replicas)
+hpa:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 60
+
+# In-cluster PostgreSQL: one replica + PVC (on AWS this would be RDS).
+postgres:
+  enabled: true
+  image: postgres:17-alpine
+  storage:
+    size: 1Gi
+    storageClassName: ""   # "" = cluster default (kind: standard)
+  resources:
+    requests: {cpu: 50m, memory: 128Mi}
+    limits: {cpu: 500m, memory: 512Mi}
+
+monitoring:
+  serviceMonitor:
+    enabled: false
+    interval: 15s
+  prometheusRule:
+    enabled: false
+  grafanaDashboard:
+    enabled: false

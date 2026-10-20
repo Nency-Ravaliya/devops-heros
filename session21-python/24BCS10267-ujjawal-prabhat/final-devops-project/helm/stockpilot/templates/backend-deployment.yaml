@@ -1,0 +1,82 @@
+{{- $fullname := include "stockpilot.fullname" . -}}
+{{- $b := .Values.backend -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $fullname }}-backend
+  labels:
+    {{- include "stockpilot.labels" . | nindent 4 }}
+    app.kubernetes.io/component: backend
+spec:
+  {{- if not .Values.hpa.enabled }}
+  replicas: {{ $b.replicas }}
+  {{- end }}
+  revisionHistoryLimit: 5
+  strategy:
+    type: RollingUpdate
+    rollingUpdate: {maxSurge: 1, maxUnavailable: 0}
+  selector:
+    matchLabels:
+      {{- include "stockpilot.selectorLabels" (list . "backend") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "stockpilot.selectorLabels" (list . "backend") | nindent 8 }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        checksum/secret: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      automountServiceAccountToken: false
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      initContainers:
+        # alembic upgrade head; waits for PostgreSQL instead of crash-looping
+        - name: migrate
+          image: {{ include "stockpilot.image" (list . "stockpilot-backend") }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["python", "-m", "app.migrate"]
+          envFrom:
+            - configMapRef:
+                name: {{ $fullname }}-config
+            - secretRef:
+                name: {{ include "stockpilot.secretName" . }}
+          resources:
+            {{- toYaml $b.resources | nindent 12 }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+      containers:
+        - name: backend
+          image: {{ include "stockpilot.image" (list . "stockpilot-backend") }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ $b.containerPort }}
+          envFrom:
+            - configMapRef:
+                name: {{ $fullname }}-config
+            - secretRef:
+                name: {{ include "stockpilot.secretName" . }}
+          livenessProbe:
+            httpGet: {path: {{ $b.probes.liveness.path }}, port: http}
+            initialDelaySeconds: {{ $b.probes.liveness.initialDelaySeconds }}
+            periodSeconds: {{ $b.probes.liveness.periodSeconds }}
+            failureThreshold: {{ $b.probes.liveness.failureThreshold }}
+          readinessProbe:
+            httpGet: {path: {{ $b.probes.readiness.path }}, port: http}
+            initialDelaySeconds: {{ $b.probes.readiness.initialDelaySeconds }}
+            periodSeconds: {{ $b.probes.readiness.periodSeconds }}
+            failureThreshold: {{ $b.probes.readiness.failureThreshold }}
+          {{- with $b.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          volumeMounts:
+            - {name: tmp, mountPath: /tmp}
+      volumes:
+        - {name: tmp, emptyDir: {}}

@@ -1,0 +1,8 @@
+# run from the repository root
+$ docker run --rm -v "$PWD:/repo" -w /repo rhysd/actionlint:1.7.12 -no-color .github/workflows/24bcs10267-final-project.yml && echo "actionlint: no problems found"
+Unable to find image 'rhysd/actionlint:1.7.12' locally
+1.7.12: Pulling from rhysd/actionlint
+Digest: sha256:b1934ee5f1c509618f2508e6eb47ee0d3520686341fec936f3b79331f9315667
+Status: Downloaded newer image for rhysd/actionlint:1.7.12
+actionlint: no problems found
+

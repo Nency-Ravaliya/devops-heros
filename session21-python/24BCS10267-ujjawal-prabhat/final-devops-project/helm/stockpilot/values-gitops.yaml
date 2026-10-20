@@ -1,0 +1,18 @@
+# Argo CD environment (Application final-stockpilot-24bcs10267, namespace final-gitops).
+# image.tag is rewritten by the CI job "gitops-promote" after both images are pushed.
+image:
+  tag: 13bfb230927d94859b7d0a818e378ce066262a28
+
+config:
+  APP_ENV: gitops
+
+# kubectl -n final-gitops create secret generic stockpilot-db-gitops \
+#   --from-literal=DB_USER=stockpilot --from-literal=DB_PASSWORD="$(openssl rand -hex 16)"
+database:
+  existingSecret: stockpilot-db-gitops
+
+ingress:
+  host: stockpilot-gitops.local
+
+monitoring:
+  serviceMonitor: {enabled: true}

@@ -1,0 +1,48 @@
+$ docker compose up --build -d 2>&1 | grep -E 'Built|Started|Healthy|Exited'
+ Image stockpilot-backend:compose Built 
+ Image stockpilot-frontend:compose Built 
+ Container final-devops-project-postgres-1 Started 
+ Container final-devops-project-postgres-1 Healthy 
+ Container final-devops-project-migrate-1 Started 
+ Container final-devops-project-migrate-1 Exited 
+ Container final-devops-project-backend-1 Started 
+ Container final-devops-project-frontend-1 Started 
+
+$ until curl -sf localhost:8000/ready && curl -sf -o /dev/null localhost:3000/; do sleep 1; done; echo
+{"status":"READY"}{"status":"READY"}{"status":"READY"}
+
+$ docker compose ps -a --format 'table {{.Service}}\t{{.Status}}\t{{.Ports}}'
+SERVICE    STATUS                     PORTS
+backend    Up 3 seconds               0.0.0.0:8000->8000/tcp, [::]:8000->8000/tcp
+frontend   Up 3 seconds               0.0.0.0:3000->8080/tcp, [::]:3000->8080/tcp
+migrate    Exited (0) 3 seconds ago   
+postgres   Up 7 seconds (healthy)     5432/tcp
+
+$ docker compose logs migrate
+migrate-1  | INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+migrate-1  | INFO  [alembic.runtime.migration] Will assume transactional DDL.
+migrate-1  | INFO  [alembic.runtime.migration] Running upgrade  -> 0001_create_items, create items table
+migrate-1  | database schema is at head
+
+$ curl -s localhost:8000/health
+{"status":"UP"}
+$ curl -s -o /dev/null -w '%{http_code} %{content_type}\n' localhost:3000/
+200 text/html
+
+$ curl -s -X POST localhost:3000/api/items -H 'Content-Type: application/json' -d '{"sku":"BOLT-M8","name":"M8 hex bolt","quantity":120}'
+{"id":1,"sku":"BOLT-M8","name":"M8 hex bolt","location":"MAIN","quantity":120,"reorder_level":10,"unit_price_paise":0,"low_stock":false,"updated_at":"2026-10-20T05:02:23.290169Z"}
+$ curl -s localhost:3000/api/summary
+{"total_items":1,"total_units":120,"low_stock_items":0,"inventory_value_paise":0}
+$ docker compose exec backend id; docker compose exec frontend id
+uid=10001(app) gid=10001(app) groups=10001(app)
+uid=101(nginx) gid=101(nginx) groups=101(nginx)
+
+$ docker compose exec postgres psql -U stockpilot -d stockpilot -c '\dt'
+               List of relations
+ Schema |      Name       | Type  |   Owner    
+--------+-----------------+-------+------------
+ public | alembic_version | table | stockpilot
+ public | items           | table | stockpilot
+(2 rows)
+
+

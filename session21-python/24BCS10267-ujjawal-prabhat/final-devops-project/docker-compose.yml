@@ -1,0 +1,52 @@
+# Full local stack: docker compose up --build  ->  http://localhost:3000
+# Credentials below are local-only defaults for a throwaway database.
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: stockpilot
+      POSTGRES_USER: stockpilot
+      POSTGRES_PASSWORD: stockpilot-local
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U stockpilot -d stockpilot"]
+      interval: 3s
+      retries: 20
+
+  # One-shot: alembic upgrade head, then exit (same image as the backend).
+  migrate:
+    build: ./backend
+    image: stockpilot-backend:compose
+    command: ["python", "-m", "app.migrate"]
+    environment: &backend-env
+      DB_HOST: postgres
+      DB_USER: stockpilot
+      DB_PASSWORD: stockpilot-local
+      DB_NAME: stockpilot
+      APP_ENV: compose
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  backend:
+    image: stockpilot-backend:compose
+    environment: *backend-env
+    ports:
+      - "8000:8000"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  frontend:
+    build: ./frontend
+    image: stockpilot-frontend:compose
+    environment:
+      BACKEND_URL: http://backend:8000
+    ports:
+      - "3000:8080"
+    depends_on:
+      - backend
+
+volumes:
+  postgres-data:

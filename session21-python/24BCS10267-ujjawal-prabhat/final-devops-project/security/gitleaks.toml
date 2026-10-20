@@ -1,0 +1,6 @@
+# Gitleaks: the default ruleset, no allowlists.
+#   gitleaks dir . --config security/gitleaks.toml --redact
+title = "stockpilot gitleaks config"
+
+[extend]
+useDefault = true

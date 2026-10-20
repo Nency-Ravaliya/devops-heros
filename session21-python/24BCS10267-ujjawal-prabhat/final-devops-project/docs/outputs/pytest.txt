@@ -1,0 +1,27 @@
+$ docker run --rm -v "$PWD/backend:/src:ro" -w /src -e PYTHONDONTWRITEBYTECODE=1 python:3.12-slim sh -c "pip install -q --root-user-action=ignore --disable-pip-version-check -r requirements-dev.txt && pytest -v -p no:cacheprovider"
+============================= test session starts ==============================
+platform linux -- Python 3.12.15, pytest-9.1.1, pluggy-1.7.0 -- /usr/local/bin/python3.12
+rootdir: /src
+configfile: pytest.ini
+testpaths: tests
+plugins: anyio-4.15.1, cov-7.1.0
+collecting ... collected 15 items
+
+tests/test_api.py::test_health PASSED                                    [  6%]
+tests/test_api.py::test_ready_checks_database PASSED                     [ 13%]
+tests/test_api.py::test_root_identifies_service PASSED                   [ 20%]
+tests/test_api.py::test_info_reports_env PASSED                          [ 26%]
+tests/test_api.py::test_create_and_get_item PASSED                       [ 33%]
+tests/test_api.py::test_duplicate_sku_conflict PASSED                    [ 40%]
+tests/test_api.py::test_invalid_sku_rejected PASSED                      [ 46%]
+tests/test_api.py::test_default_reorder_level_from_config PASSED         [ 53%]
+tests/test_api.py::test_list_and_filter_by_location PASSED               [ 60%]
+tests/test_api.py::test_update_item PASSED                               [ 66%]
+tests/test_api.py::test_adjust_stock_in_and_out PASSED                   [ 73%]
+tests/test_api.py::test_adjust_stock_cannot_go_negative PASSED           [ 80%]
+tests/test_api.py::test_low_stock_and_summary PASSED                     [ 86%]
+tests/test_api.py::test_delete_item_and_404 PASSED                       [ 93%]
+tests/test_api.py::test_metrics_exposed PASSED                           [100%]
+
+============================== 15 passed in 0.11s ==============================
+

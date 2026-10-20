@@ -1,0 +1,66 @@
+$ troubleshooting/02-readiness-probe-wrong-path.sh
+
+############ BREAK: backend readiness probe path /readyz (the app serves /ready) ############
+
+$ helm upgrade --install stockpilot helm/stockpilot -n final-trouble -f helm/stockpilot/values-dev.yaml -f troubleshooting/values-trouble.yaml --set backend.probes.readiness.path=/readyz | grep -E 'STATUS|REVISION|Error'
+STATUS: deployed
+REVISION: 37
+
+
+############ SYMPTOM ############
+
+$ kubectl -n final-trouble get pods -l app.kubernetes.io/component=backend
+NAME                                  READY   STATUS    RESTARTS   AGE
+stockpilot-backend-6d9967d74d-dg52z   1/1     Running   0          74s
+stockpilot-backend-6d9967d74d-lp96j   1/1     Running   0          74s
+stockpilot-backend-84c99f598b-4n84n   0/1     Running   0          30s
+
+$ kubectl -n final-trouble get endpointslices -l kubernetes.io/service-name=stockpilot-backend -o jsonpath='{range .items[*].endpoints[*]}{.targetRef.name}  {.addresses[0]}  ready={.conditions.ready}{"\n"}{end}'
+stockpilot-backend-6d9967d74d-lp96j  10.244.1.25  ready=true
+stockpilot-backend-6d9967d74d-dg52z  10.244.2.22  ready=true
+stockpilot-backend-84c99f598b-4n84n  10.244.1.31  ready=false
+
+
+############ INVESTIGATE ############
+
+$ kubectl -n final-trouble describe pod -l app.kubernetes.io/component=backend | grep -E 'Readiness:' | sort | uniq -c
+   2     Readiness:  http-get http://:http/ready delay=3s timeout=1s period=5s #success=1 #failure=3
+   1     Readiness:  http-get http://:http/readyz delay=3s timeout=1s period=5s #success=1 #failure=3
+
+$ kubectl -n final-trouble get events --field-selector reason=Unhealthy | grep 'statuscode: 404' | tail -2 | cut -c1-200
+3s          Warning   Unhealthy   pod/stockpilot-backend-84c99f598b-4n84n    Readiness probe failed: HTTP probe failed with statuscode: 404
+
+$ kubectl -n final-trouble exec pod/stockpilot-backend-84c99f598b-4n84n -c backend -- python -c "import urllib.request as u
+for p in ('/readyz','/ready'):
+    try: print(p, u.urlopen('http://127.0.0.1:8000'+p).status)
+    except Exception as e: print(p, e)"
+/readyz HTTP Error 404: Not Found
+/ready 200
+
+
+############ ROOT CAUSE: kubelet probes GET /readyz -> 404, so the new pod never joins the Service endpoints and the rollout stalls. ############
+
+
+############ FIX ############
+
+$ helm upgrade --install stockpilot helm/stockpilot -n final-trouble -f helm/stockpilot/values-dev.yaml -f troubleshooting/values-trouble.yaml --wait --timeout 5m | grep -E 'STATUS|REVISION|Error'
+STATUS: deployed
+REVISION: 38
+
+
+############ VERIFY ############
+
+$ kubectl -n final-trouble get pods -l app.kubernetes.io/component=backend
+NAME                                  READY   STATUS        RESTARTS   AGE
+stockpilot-backend-6d9967d74d-dg52z   1/1     Running       0          76s
+stockpilot-backend-6d9967d74d-lp96j   1/1     Running       0          76s
+stockpilot-backend-84c99f598b-4n84n   0/1     Terminating   0          32s
+
+$ kubectl -n final-trouble get endpointslices -l kubernetes.io/service-name=stockpilot-backend -o jsonpath='{range .items[*].endpoints[*]}{.targetRef.name}  {.addresses[0]}  ready={.conditions.ready}{"\n"}{end}'
+stockpilot-backend-6d9967d74d-lp96j  10.244.1.25  ready=true
+stockpilot-backend-6d9967d74d-dg52z  10.244.2.22  ready=true
+stockpilot-backend-84c99f598b-4n84n  10.244.1.31  ready=false
+
+$ curl -s -o /dev/null -w 'HTTP %{http_code}\n' -H 'Host: trouble.stockpilot.local' localhost:8081/api/summary
+HTTP 200
+

@@ -1,0 +1,66 @@
+$ cat security/negative_test.py
+import uvicorn
+from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import text
+
+
+def find(conn, sku):
+    return conn.execute(text(f"SELECT * FROM items WHERE sku='{sku}'"))
+
+
+URL = "postgresql+psycopg://admin:hunter2@db:5432/stockpilot"
+app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True)
+uvicorn.run("app.main:app", reload=True)
+
+$ semgrep scan --metrics=off --disable-version-check --config security/semgrep.yml security/negative_test.py
+               
+               
+┌─────────────┐
+│ Scan Status │
+└─────────────┘
+  Scanning 1 file tracked by git with 4 Code rules:
+  Scanning 1 file with 4 python rules.
+                
+                
+┌──────────────┐
+│ Scan Summary │
+└──────────────┘
+✅ Scan completed successfully.
+ • Findings: 4 (4 blocking)
+ • Rules run: 4
+ • Targets scanned: 1
+ • Parsed lines: ~100.0%
+ • No ignore information available
+Ran 4 rules on 1 file: 4 findings.
+                   
+                   
+┌─────────────────┐
+│ 4 Code Findings │
+└─────────────────┘
+                             
+    security/negative_test.py
+   ❯❯❱ security.stockpilot-no-raw-sql-fstring
+          ❰❰ Blocking ❱❱
+          SQL built with an f-string/format. Use SQLAlchemy expressions or bound parameters
+          (text(...).bindparams) to avoid SQL injection.                                   
+                                                                                           
+            7┆ return conn.execute(text(f"SELECT * FROM items WHERE sku='{sku}'"))
+   
+   ❯❯❱ security.stockpilot-no-hardcoded-db-password
+          ❰❰ Blocking ❱❱
+          Database password must come from the environment (K8s Secret), not source code.
+                                                                                         
+           10┆ URL = "postgresql+psycopg://admin:hunter2@db:5432/stockpilot"
+   
+   ❯❯❱ security.stockpilot-no-wildcard-cors-with-credentials
+          ❰❰ Blocking ❱❱
+          CORS allow_origins=["*"] together with allow_credentials=True is unsafe.
+                                                                                  
+           11┆ app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True)
+   
+    ❯❱ security.stockpilot-no-debug-uvicorn
+          ❰❰ Blocking ❱❱
+          uvicorn reload/debug must not be enabled in application code.
+                                                                       
+           12┆ uvicorn.run("app.main:app", reload=True)
+

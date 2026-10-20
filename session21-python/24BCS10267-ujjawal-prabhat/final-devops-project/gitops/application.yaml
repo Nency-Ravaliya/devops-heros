@@ -1,0 +1,33 @@
+# Argo CD Application: keeps namespace final-gitops in sync with the Helm chart
+# on branch 24BCS10267/session-21. Bootstrap: scripts/gitops-bootstrap.sh
+# (creates the DB Secret outside Git, then applies this file).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: final-stockpilot-24bcs10267
+  namespace: argocd
+  labels:
+    owner: 24bcs10267
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/UjjawalPrabhat/devops-heros.git
+    targetRevision: 24BCS10267/session-21
+    path: session21-python/24BCS10267-ujjawal-prabhat/final-devops-project/helm/stockpilot
+    helm:
+      releaseName: stockpilot
+      # image.tag in values-gitops.yaml is bumped by the CI job gitops-promote
+      valueFiles:
+        - values-gitops.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: final-gitops
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

@@ -1,0 +1,44 @@
+$ kubectl get pods -n final -o wide
+NAME                                   READY   STATUS    RESTARTS      AGE     IP            NODE                   NOMINATED NODE   READINESS GATES
+stockpilot-backend-94f54b467-6psgg     1/1     Running   0             23s     10.244.1.20   devops-heros-worker2   <none>           <none>
+stockpilot-backend-94f54b467-nvjgt     1/1     Running   0             15s     10.244.2.19   devops-heros-worker    <none>           <none>
+stockpilot-frontend-699d585744-2slpx   1/1     Running   0             23s     10.244.1.21   devops-heros-worker2   <none>           <none>
+stockpilot-frontend-699d585744-w587r   1/1     Running   0             22s     10.244.2.18   devops-heros-worker    <none>           <none>
+stockpilot-postgres-6bc5799cf7-9p7kw   1/1     Running   1 (10m ago)   3d15h   10.244.1.15   devops-heros-worker2   <none>           <none>
+
+$ kubectl get svc -n final
+NAME                  TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)    AGE
+stockpilot-backend    ClusterIP   10.96.254.111   <none>        80/TCP     3d15h
+stockpilot-frontend   ClusterIP   10.96.123.94    <none>        80/TCP     3d15h
+stockpilot-postgres   ClusterIP   10.96.1.113     <none>        5432/TCP   13d
+
+$ helm list -n final
+NAME      	NAMESPACE	REVISION	UPDATED                              	STATUS  	CHART           	APP VERSION
+stockpilot	final    	6       	2026-10-20 13:09:54.963968 +0800 WITA	deployed	stockpilot-0.2.0	2.0.0      
+
+$ kubectl get ingress,hpa,pvc,servicemonitor,prometheusrule -n final
+NAME                                   CLASS   HOSTS              ADDRESS     PORTS   AGE
+ingress.networking.k8s.io/stockpilot   nginx   stockpilot.local   localhost   80      13d
+
+NAME                                                     REFERENCE                       TARGETS       MINPODS   MAXPODS   REPLICAS   AGE
+horizontalpodautoscaler.autoscaling/stockpilot-backend   Deployment/stockpilot-backend   cpu: 6%/60%   2         5         2          3d15h
+
+NAME                                      STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE
+persistentvolumeclaim/stockpilot-pgdata   Bound    pvc-aa28fa97-6cf7-49e1-b8ba-84ad4754aeb4   1Gi        RWO            standard       <unset>                 3d15h
+
+NAME                                                      AGE
+servicemonitor.monitoring.coreos.com/stockpilot-backend   3d15h
+
+NAME                                                     AGE
+prometheusrule.monitoring.coreos.com/stockpilot-alerts   13d
+
+$ kubectl get ingress stockpilot -n final -o jsonpath='{range .spec.rules[0].http.paths[*]}{.path} -> {.backend.service.name}{"\n"}{end}'
+/api -> stockpilot-backend
+/ -> stockpilot-frontend
+
+$ kubectl -n final logs deploy/stockpilot-backend -c migrate
+Found 2 pods, using pod/stockpilot-backend-94f54b467-6psgg
+INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+INFO  [alembic.runtime.migration] Will assume transactional DDL.
+database schema is at head
+

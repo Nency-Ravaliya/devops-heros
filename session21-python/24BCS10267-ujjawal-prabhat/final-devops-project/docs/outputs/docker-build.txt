@@ -1,0 +1,15 @@
+$ docker build --pull --no-cache -q --build-arg APP_VERSION=2.0.0 -t stockpilot-backend:2.0.0 backend
+sha256:c9079046629a4701c72bbd1f7474d22f3ea8ff42e37393194612323fd7e2170a
+
+$ docker build --pull --no-cache -q -t stockpilot-frontend:2.0.0 frontend
+sha256:086b54a4ac9f2ab4fb8f954d46c4c85f13d9e5e1d1bc67d8b2fe32fe96ee4999
+
+$ docker image ls --format 'table {{.Repository}}\t{{.Tag}}\t{{.Size}}' 'stockpilot-*:2.0.0'
+REPOSITORY            TAG       SIZE
+stockpilot-frontend   2.0.0     112MB
+stockpilot-backend    2.0.0     306MB
+
+$ docker run --rm --entrypoint id stockpilot-backend:2.0.0; docker run --rm --entrypoint id stockpilot-frontend:2.0.0
+uid=10001(app) gid=10001(app) groups=10001(app)
+uid=101(nginx) gid=101(nginx) groups=101(nginx),101(nginx)
+

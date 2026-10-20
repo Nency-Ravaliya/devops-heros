@@ -1,0 +1,12 @@
+# Local kind cluster: images built locally and loaded with `kind load docker-image`.
+image:
+  registry: ""
+  tag: "2.0.0"
+
+config:
+  APP_ENV: dev
+
+monitoring:
+  serviceMonitor: {enabled: true}
+  prometheusRule: {enabled: true}
+  grafanaDashboard: {enabled: true}

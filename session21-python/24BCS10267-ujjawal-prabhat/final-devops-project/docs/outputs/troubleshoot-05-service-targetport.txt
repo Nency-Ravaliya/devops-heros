@@ -1,0 +1,79 @@
+$ troubleshooting/05-service-targetport.sh
+
+############ BREAK: someone hot-patches the backend Service to targetPort 9000 ############
+
+$ kubectl -n final-trouble patch svc stockpilot-backend --type=json -p "$(cat troubleshooting/patches/service-wrong-targetport.json)"
+service/stockpilot-backend patched
+
+
+############ SYMPTOM: in-cluster clients of the Service (here the frontend pod) get connection refused ############
+
+$ kubectl -n final-trouble exec deploy/stockpilot-frontend -- wget -q -O- -T 3 http://stockpilot-backend/api/summary
+wget: can't connect to remote host (10.96.133.0): Connection refused
+command terminated with exit code 1
+
+$ kubectl -n final-trouble get pods -l app.kubernetes.io/component=backend
+NAME                                  READY   STATUS    RESTARTS   AGE
+stockpilot-backend-6d9967d74d-85r8m   1/1     Running   0          12m
+stockpilot-backend-6d9967d74d-9gspv   1/1     Running   0          12m
+
+
+############ INVESTIGATE ############
+
+$ kubectl -n final-trouble get svc stockpilot-backend -o jsonpath='port={.spec.ports[0].port} targetPort={.spec.ports[0].targetPort}{"\n"}'
+port=80 targetPort=9000
+
+$ kubectl -n final-trouble get endpointslices -l kubernetes.io/service-name=stockpilot-backend -o jsonpath='{.items[*].ports}{"\n"}'
+[{"name":"http","port":9000,"protocol":"TCP"}]
+
+$ kubectl -n final-trouble get pod -l app.kubernetes.io/component=backend -o jsonpath='{range .items[*]}{.metadata.name} containerPort={.spec.containers[0].ports[0].containerPort}{"\n"}{end}'
+stockpilot-backend-6d9967d74d-85r8m containerPort=8000
+stockpilot-backend-6d9967d74d-9gspv containerPort=8000
+
+$ curl -s -o /dev/null -w 'HTTP %{http_code}\n' -H 'Host: trouble.stockpilot.local' localhost:8081/api/summary
+HTTP 200
+
+
+############ ROOT CAUSE: pods are Ready on :8000, but the Service forwards to :9000 where nothing listens. ############
+
+
+############ FIX attempt 1: re-apply the chart (the Service uses the named port 'http') ############
+
+$ helm upgrade --install stockpilot helm/stockpilot -n final-trouble -f helm/stockpilot/values-dev.yaml -f troubleshooting/values-trouble.yaml --wait --timeout 5m | grep -E 'STATUS|REVISION|Error'
+level=WARN msg="upgrade failed" name=stockpilot error="conflict occurred while applying object final-trouble/stockpilot-backend /v1, Kind=Service: Apply failed with 1 conflict: conflict with \"kubectl-patch\" using v1: .spec.ports[port=80,protocol=\"TCP\"].targetPort"
+Error: UPGRADE FAILED: conflict occurred while applying object final-trouble/stockpilot-backend /v1, Kind=Service: Apply failed with 1 conflict: conflict with "kubectl-patch" using v1: .spec.ports[port=80,protocol="TCP"].targetPort
+
+$ kubectl -n final-trouble get svc stockpilot-backend -o jsonpath='targetPort={.spec.ports[0].targetPort}{"\n"}'
+targetPort=9000
+
+$ kubectl -n final-trouble get svc stockpilot-backend --show-managed-fields -o jsonpath='{range .metadata.managedFields[*]}{.manager} {.operation}{"\n"}{end}'
+helm Apply
+kubectl-patch Update
+
+Helm 4 uses server-side apply: the kubectl-patch field manager owns .spec.ports[].targetPort now,
+so Helm refuses to overwrite it. The drift has to be taken back explicitly.
+
+############ FIX attempt 2: --force-conflicts (Helm takes ownership of the field back) ############
+
+$ helm upgrade --install stockpilot helm/stockpilot -n final-trouble -f helm/stockpilot/values-dev.yaml -f troubleshooting/values-trouble.yaml --wait --timeout 5m --force-conflicts | grep -E 'STATUS|REVISION|Error'
+STATUS: deployed
+REVISION: 63
+
+$ kubectl -n final-trouble get svc stockpilot-backend -o jsonpath='targetPort={.spec.ports[0].targetPort}{"\n"}'
+targetPort=http
+
+
+############ FIX step 3: make ingress-nginx re-read the Service port (touch the Ingress, then remove the mark) ############
+
+$ kubectl -n final-trouble annotate ingress stockpilot resync=now --overwrite && kubectl -n final-trouble annotate ingress stockpilot resync-
+ingress.networking.k8s.io/stockpilot annotated
+ingress.networking.k8s.io/stockpilot annotated
+
+
+############ VERIFY ############
+
+$ kubectl -n final-trouble exec deploy/stockpilot-frontend -- wget -q -O- -T 3 http://stockpilot-backend/api/summary
+{"total_items":0,"total_units":0,"low_stock_items":0,"inventory_value_paise":0}
+$ curl -s -o /dev/null -w 'HTTP %{http_code}\n' -H 'Host: trouble.stockpilot.local' localhost:8081/api/summary
+HTTP 200
+

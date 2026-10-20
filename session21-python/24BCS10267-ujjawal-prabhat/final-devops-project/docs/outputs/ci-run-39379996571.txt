@@ -1,0 +1,71 @@
+$ gh run view 39379996571 -R UjjawalPrabhat/devops-heros --json url,event,headBranch,headSha,conclusion --jq '.url, .event+" "+.headBranch+" "+.headSha, .conclusion'
+https://github.com/UjjawalPrabhat/devops-heros/actions/runs/39379996571
+push 24BCS10267/session-21 a6a18febabde5e45bc4cdc026626eb9fe6841949
+success
+
+$ gh run view 39379996571 -R UjjawalPrabhat/devops-heros --json jobs --jq '.jobs[] | .conclusion+"  "+.name'
+success  SAST (Semgrep)
+success  SCA (Trivy fs)
+success  Secret scan (Gitleaks)
+success  Test (pytest) + frontend build + helm lint
+success  Security gate
+success  Build + Trivy backend (amd64)
+success  Build + Trivy frontend (amd64)
+success  Build + Trivy frontend (arm64)
+success  Build + Trivy backend (arm64)
+success  Publish backend:<git sha> to GHCR
+success  Publish frontend:<git sha> to GHCR
+success  Deploy with Helm to kind + smoke test
+success  Promote to GitOps (values-gitops.yaml)
+
+$ gh run view 39379996571 -R UjjawalPrabhat/devops-heros --log > run.log; wc -l < run.log
+   12027
+
+$ awk -F'\t' '$2=="pytest" && /passed in/ {print substr($3,30)}' run.log
+============================== 15 passed in 0.26s ==============================
+
+$ awk -F'\t' '$1=="SCA (Trivy fs)" && /│ (backend|frontend)\// {print substr($3,30)}' run.log
+│ backend/requirements.txt   │ pip  │        0        │
+│ frontend/package-lock.json │ npm  │        0        │
+
+$ awk -F'\t' '$1=="Security gate" && $3 ~ /Z (test|sast|sca|secret-scan)=|Gate passed$/ {print substr($3,30)}' run.log
+test=success
+sast=success
+sca=success
+secret-scan=success
+Gate passed
+
+$ awk -F'\t' '$2 ~ /^Trivy image scan/ && /│ stockpilot-/ {print $1 ":  " substr($3,30)}' run.log
+Build + Trivy backend (amd64):  │ stockpilot-backend:scan (debian 13.7)                                            │   debian   │        0        │
+Build + Trivy frontend (amd64):  │ stockpilot-frontend:scan (alpine 3.23.4) │ alpine │        0        │
+Build + Trivy frontend (arm64):  │ stockpilot-frontend:scan (alpine 3.23.4) │ alpine │        0        │
+Build + Trivy backend (arm64):  │ stockpilot-backend:scan (debian 13.7)                                            │   debian   │        0        │
+
+$ awk -F'\t' '$1 ~ /^Publish/ && $3 ~ /Name: +ghcr|Platform:|MediaType: application\/vnd.oci.image.index/ {print substr($3,30)}' run.log
+Name:      ghcr.io/ujjawalprabhat/stockpilot-backend:a6a18febabde5e45bc4cdc026626eb9fe6841949
+MediaType: application/vnd.oci.image.index.v1+json
+  Name:      ghcr.io/ujjawalprabhat/stockpilot-backend:a6a18febabde5e45bc4cdc026626eb9fe6841949@sha256:8fc10a9f39804a7cba4756882c7ed80f84822455cbd71231953a507d246ebf1c
+  Platform:  linux/amd64
+  Name:      ghcr.io/ujjawalprabhat/stockpilot-backend:a6a18febabde5e45bc4cdc026626eb9fe6841949@sha256:f8cfd4a4335e0a3bed31307dd69f55b8eaf0cc9e742e8cedbe7ca239cc6cf04a
+  Platform:  linux/arm64
+Name:      ghcr.io/ujjawalprabhat/stockpilot-frontend:a6a18febabde5e45bc4cdc026626eb9fe6841949
+MediaType: application/vnd.oci.image.index.v1+json
+  Name:      ghcr.io/ujjawalprabhat/stockpilot-frontend:a6a18febabde5e45bc4cdc026626eb9fe6841949@sha256:99d43ab07b2cbf970551dd6d08c6da414dd5249aefb408d837ad7cf6e6178c89
+  Platform:  linux/amd64
+  Name:      ghcr.io/ujjawalprabhat/stockpilot-frontend:a6a18febabde5e45bc4cdc026626eb9fe6841949@sha256:a4ed4cd85f8a2018a7d4643fb707e6b966b5c9bd8b0441041e72090d85167543
+  Platform:  linux/arm64
+
+$ awk -F'\t' '$1 ~ /^Deploy/ && $3 ~ /Z \+ curl|STATUS: deployed/ {print substr($3,30,110)}' run.log
+STATUS: deployed
++ curl -sf localhost:8080/
++ curl -sf localhost:8080/api/info
++ curl -sf -X POST localhost:8080/api/items -H 'Content-Type: application/json' -d '{"sku":"CI-SMOKE","name":"
++ curl -sf localhost:8080/api/items/low-stock
++ curl -sf localhost:8000/ready
++ curl -sf localhost:8000/metrics
+
+$ awk -F'\t' '$1 ~ /^Promote/ && $3 ~ /Z [-+]  tag:|Z \[24BCS10267/ {print substr($3,30)}' run.log
+-  tag: pending-first-ci-run
++  tag: a6a18febabde5e45bc4cdc026626eb9fe6841949
+[24BCS10267/session-21 ee4c529] gitops: promote stockpilot images to a6a18fe
+

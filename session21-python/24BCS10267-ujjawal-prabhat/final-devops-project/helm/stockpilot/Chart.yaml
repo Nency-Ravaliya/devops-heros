@@ -1,0 +1,8 @@
+apiVersion: v2
+name: stockpilot
+description: StockPilot inventory app - frontend, backend and PostgreSQL (24BCS10267 final DevOps project)
+type: application
+version: 0.2.0
+appVersion: "2.0.0"
+maintainers:
+  - name: Ujjawal Prabhat (24BCS10267)

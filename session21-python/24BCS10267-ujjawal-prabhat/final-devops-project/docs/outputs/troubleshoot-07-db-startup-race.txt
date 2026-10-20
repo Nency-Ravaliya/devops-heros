@@ -1,0 +1,63 @@
+$ troubleshooting/07-db-startup-race.sh
+
+############ BREAK: stop PostgreSQL, then restart every backend pod ############
+
+$ kubectl -n final-trouble scale deploy/stockpilot-postgres --replicas=0
+deployment.apps/stockpilot-postgres scaled
+
+$ kubectl -n final-trouble delete pod -l app.kubernetes.io/component=backend --wait=false
+pod "stockpilot-backend-6d9967d74d-fv8kv" deleted from final-trouble namespace
+pod "stockpilot-backend-6d9967d74d-ztf22" deleted from final-trouble namespace
+
+
+############ SYMPTOM / INVESTIGATE: backend pods wait in the init container instead of crash-looping ############
+
+$ kubectl -n final-trouble get pods
+NAME                                   READY   STATUS     RESTARTS   AGE
+stockpilot-backend-6d9967d74d-85r8m    0/1     Init:0/1   0          20s
+stockpilot-backend-6d9967d74d-9gspv    0/1     Init:0/1   0          20s
+stockpilot-frontend-6dfc5b45fb-d2zff   1/1     Running    0          6m31s
+stockpilot-frontend-6dfc5b45fb-pdb64   1/1     Running    0          6m31s
+
+$ kubectl -n final-trouble logs pod/stockpilot-backend-6d9967d74d-85r8m -c migrate | tail -3 | cut -c1-160
+2026-10-20 05:20:50,324 WARNING stockpilot.migrate database not reachable (attempt 8/60): (psycopg.OperationalError) connection failed: connection to server at 
+2026-10-20 05:20:52,326 WARNING stockpilot.migrate database not reachable (attempt 9/60): (psycopg.OperationalError) connection failed: connection to server at 
+2026-10-20 05:20:54,327 WARNING stockpilot.migrate database not reachable (attempt 10/60): (psycopg.OperationalError) connection failed: connection to server at
+
+$ curl -s -o /dev/null -w 'HTTP %{http_code}\n' -H 'Host: trouble.stockpilot.local' localhost:8081/api/summary
+HTTP 503
+
+
+############ ROOT CAUSE (original bug): schema creation ran inside the app start-up and raised on a refused connection, so the container exited. Now python -m app.migrate retries in an init container. ############
+
+
+############ FIX: bring the database back ############
+
+$ kubectl -n final-trouble scale deploy/stockpilot-postgres --replicas=1
+deployment.apps/stockpilot-postgres scaled
+
+$ kubectl -n final-trouble wait --for=condition=Ready pod --all --timeout=180s
+pod/stockpilot-backend-6d9967d74d-85r8m condition met
+pod/stockpilot-backend-6d9967d74d-9gspv condition met
+pod/stockpilot-frontend-6dfc5b45fb-d2zff condition met
+pod/stockpilot-frontend-6dfc5b45fb-pdb64 condition met
+pod/stockpilot-postgres-6bc5799cf7-psm7s condition met
+
+
+############ VERIFY: all Ready, 0 restarts, migration finished ############
+
+$ kubectl -n final-trouble get pods
+NAME                                   READY   STATUS    RESTARTS   AGE
+stockpilot-backend-6d9967d74d-85r8m    1/1     Running   0          40s
+stockpilot-backend-6d9967d74d-9gspv    1/1     Running   0          40s
+stockpilot-frontend-6dfc5b45fb-d2zff   1/1     Running   0          6m51s
+stockpilot-frontend-6dfc5b45fb-pdb64   1/1     Running   0          6m51s
+stockpilot-postgres-6bc5799cf7-psm7s   1/1     Running   0          20s
+
+$ kubectl -n final-trouble logs pod/stockpilot-backend-6d9967d74d-85r8m -c migrate | tail -2 | cut -c1-160
+INFO  [alembic.runtime.migration] Will assume transactional DDL.
+database schema is at head
+
+$ curl -s -o /dev/null -w 'HTTP %{http_code}\n' -H 'Host: trouble.stockpilot.local' localhost:8081/api/summary
+HTTP 200
+

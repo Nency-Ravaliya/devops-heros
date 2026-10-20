@@ -1,0 +1,300 @@
+# StockPilot - final DevOps project of Ujjawal Prabhat (24BCS10267)
+# Project folder: session21-python/24BCS10267-ujjawal-prabhat/final-devops-project
+name: 24BCS10267 Final Project - StockPilot CI/CD
+
+on:
+  push:
+    branches: [main, "24BCS10267/session-21"]
+    # `paths` and `paths-ignore` cannot be combined, so README-only changes are
+    # excluded with a negated pattern.
+    paths:
+      - "session21-python/24BCS10267-ujjawal-prabhat/final-devops-project/**"
+      - ".github/workflows/24bcs10267-final-project.yml"
+      - "!**/*.md"
+  pull_request:
+    branches: [main]
+    paths:
+      - "session21-python/24BCS10267-ujjawal-prabhat/final-devops-project/**"
+      - ".github/workflows/24bcs10267-final-project.yml"
+      - "!**/*.md"
+  workflow_dispatch:
+
+concurrency:
+  group: 24bcs10267-final-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  PROJECT_DIR: session21-python/24BCS10267-ujjawal-prabhat/final-devops-project
+  TRIVY_IMAGE: aquasec/trivy:0.75.0
+
+defaults:
+  run:
+    working-directory: session21-python/24BCS10267-ujjawal-prabhat/final-devops-project
+
+jobs:
+  test:
+    name: Test (pytest) + frontend build + helm lint
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: ${{ env.PROJECT_DIR }}/backend/requirements*.txt
+      - name: pytest
+        working-directory: ${{ env.PROJECT_DIR }}/backend
+        run: |
+          pip install -r requirements-dev.txt
+          pytest -v
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: ${{ env.PROJECT_DIR }}/frontend/package-lock.json
+      - name: Frontend build
+        working-directory: ${{ env.PROJECT_DIR }}/frontend
+        run: |
+          npm ci
+          npm run build
+      - uses: azure/setup-helm@v5
+      - name: helm lint
+        run: |
+          helm lint helm/stockpilot
+          helm lint helm/stockpilot -f helm/stockpilot/values-dev.yaml
+          helm lint helm/stockpilot -f helm/stockpilot/values-gitops.yaml
+
+  sast:
+    name: SAST (Semgrep)
+    runs-on: ubuntu-24.04
+    container: semgrep/semgrep:1.179.0
+    steps:
+      - uses: actions/checkout@v7
+      - name: semgrep scan
+        run: |
+          semgrep scan --metrics=off --error \
+            --config p/python --config p/javascript --config p/dockerfile --config p/secrets \
+            --config security/semgrep.yml \
+            backend frontend
+
+  sca:
+    name: SCA (Trivy fs)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - name: trivy fs (requirements.txt, package-lock.json)
+        run: docker run --rm -v "$PWD:/src" -w /src "$TRIVY_IMAGE" fs --config security/trivy.yaml .
+
+  secret-scan:
+    name: Secret scan (Gitleaks)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - name: gitleaks dir
+        run: docker run --rm -v "$PWD:/src" ghcr.io/gitleaks/gitleaks:v8.30.1 dir /src --config /src/security/gitleaks.toml --redact
+
+  security-gate:
+    name: Security gate
+    needs: [test, sast, sca, secret-scan]
+    if: always()
+    runs-on: ubuntu-24.04
+    steps:
+      - name: All quality and security checks must pass
+        env:
+          RESULTS: >-
+            test=${{ needs.test.result }}
+            sast=${{ needs.sast.result }}
+            sca=${{ needs.sca.result }}
+            secret-scan=${{ needs.secret-scan.result }}
+        working-directory: .
+        run: |
+          fail=0
+          echo "| Check | Result |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|---|---|" >> "$GITHUB_STEP_SUMMARY"
+          for r in $RESULTS; do
+            echo "| ${r%%=*} | ${r#*=} |" >> "$GITHUB_STEP_SUMMARY"
+            echo "$r"
+            [ "${r#*=}" = success ] || fail=1
+          done
+          if [ "$fail" = 1 ]; then echo "Gate FAILED: no image is built or pushed"; exit 1; fi
+          echo "Gate passed"
+
+  # One job per image and CPU architecture on native runners (no QEMU). The kind
+  # cluster used for GitOps runs on arm64, GitHub-hosted and EKS nodes on amd64.
+  build:
+    name: Build + Trivy ${{ matrix.component }} (${{ matrix.arch }})
+    needs: security-gate
+    strategy:
+      fail-fast: false
+      matrix:
+        component: [backend, frontend]
+        arch: [amd64, arm64]
+        include:
+          - arch: amd64
+            runner: ubuntu-24.04
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    permissions:
+      contents: read
+      packages: write
+    env:
+      PUSH: ${{ github.event_name != 'pull_request' }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Image name
+        env:
+          OWNER: ${{ github.repository_owner }}
+        run: echo "IMAGE=ghcr.io/${OWNER,,}/stockpilot-${{ matrix.component }}" >> "$GITHUB_ENV"
+      - uses: docker/setup-buildx-action@v4
+      - name: Build (load into the local Docker engine for scanning)
+        uses: docker/build-push-action@v7
+        with:
+          context: ${{ env.PROJECT_DIR }}/${{ matrix.component }}
+          build-args: APP_VERSION=${{ github.sha }}
+          provenance: false
+          sbom: false
+          load: true
+          tags: stockpilot-${{ matrix.component }}:scan
+      - name: Trivy image scan (fail on fixable HIGH/CRITICAL)
+        run: |
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v "$PWD:/src" -w /src \
+            "$TRIVY_IMAGE" image --config security/trivy.yaml stockpilot-${{ matrix.component }}:scan
+      - uses: docker/login-action@v4
+        if: env.PUSH == 'true'
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      # Same builder and inputs as the scanned build, so every layer comes from its cache.
+      - name: Push by digest (untagged)
+        id: push
+        if: env.PUSH == 'true'
+        uses: docker/build-push-action@v7
+        with:
+          context: ${{ env.PROJECT_DIR }}/${{ matrix.component }}
+          build-args: APP_VERSION=${{ github.sha }}
+          provenance: false
+          sbom: false
+          outputs: type=image,name=${{ env.IMAGE }},push-by-digest=true,name-canonical=true,push=true
+      - name: Save digest
+        if: env.PUSH == 'true'
+        working-directory: .
+        env:
+          DIGEST: ${{ steps.push.outputs.digest }}
+        run: |
+          mkdir -p digests
+          touch "digests/${DIGEST#sha256:}"
+      - uses: actions/upload-artifact@v7
+        if: env.PUSH == 'true'
+        with:
+          name: digests-${{ matrix.component }}-${{ matrix.arch }}
+          path: digests/*
+          retention-days: 1
+
+  publish:
+    name: Publish ${{ matrix.component }}:<git sha> to GHCR
+    needs: build
+    if: github.event_name != 'pull_request'
+    strategy:
+      matrix:
+        component: [backend, frontend]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: digests-${{ matrix.component }}-*
+          merge-multiple: true
+          path: digests
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/setup-buildx-action@v4
+      - name: Multi-arch manifest tagged with the full git SHA
+        working-directory: digests
+        env:
+          OWNER: ${{ github.repository_owner }}
+        run: |
+          IMAGE="ghcr.io/${OWNER,,}/stockpilot-${{ matrix.component }}"
+          # shellcheck disable=SC2046
+          docker buildx imagetools create -t "$IMAGE:$GITHUB_SHA" $(printf "$IMAGE@sha256:%s " *)
+          docker buildx imagetools inspect "$IMAGE:$GITHUB_SHA"
+
+  deploy:
+    name: Deploy with Helm to kind + smoke test
+    needs: publish
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - uses: actions/checkout@v7
+      - uses: azure/setup-helm@v5
+      - uses: helm/kind-action@v1.15.1
+        with:
+          cluster_name: stockpilot-ci
+      - name: helm upgrade --install
+        env:
+          OWNER: ${{ github.repository_owner }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          kubectl apply -f k8s/namespace.yaml
+          kubectl -n final create secret docker-registry ghcr-pull --docker-server=ghcr.io \
+            --docker-username="${{ github.actor }}" --docker-password="$GHCR_TOKEN"
+          helm upgrade --install stockpilot helm/stockpilot -n final \
+            --set image.registry="ghcr.io/${OWNER,,}" \
+            --set image.tag="$GITHUB_SHA" \
+            --set "imagePullSecrets[0].name=ghcr-pull" \
+            --set config.APP_ENV=ci \
+            --wait --timeout 5m
+          kubectl -n final get pods,svc,ingress,hpa,pvc
+      - name: Smoke test (frontend -> /api -> backend -> PostgreSQL)
+        run: |
+          kubectl -n final port-forward svc/stockpilot-frontend 8080:80 >/dev/null 2>&1 &
+          kubectl -n final port-forward svc/stockpilot-backend 8000:80 >/dev/null 2>&1 &
+          sleep 5
+          set -x
+          curl -sf localhost:8080/ | grep -q '<title>StockPilot'
+          curl -sf localhost:8080/api/info | grep -q "\"version\":\"$GITHUB_SHA\""
+          curl -sf -X POST localhost:8080/api/items -H 'Content-Type: application/json' \
+            -d '{"sku":"CI-SMOKE","name":"smoke test item","quantity":3}'
+          curl -sf localhost:8080/api/items/low-stock | grep -q CI-SMOKE
+          curl -sf localhost:8000/ready
+          curl -sf localhost:8000/metrics | grep -q stockpilot_http_requests_total
+      - name: Debug on failure
+        if: failure()
+        run: |
+          kubectl -n final get all,events
+          kubectl -n final describe pods
+          kubectl -n final logs -l app.kubernetes.io/component=backend --all-containers --tail=50
+
+  # GitOps: write the new tag into values-gitops.yaml; Argo CD (watching this
+  # branch) rolls it out. Pushes made with GITHUB_TOKEN do not start a new run.
+  gitops-promote:
+    name: Promote to GitOps (values-gitops.yaml)
+    needs: deploy
+    if: github.event_name == 'push' && github.ref == 'refs/heads/24BCS10267/session-21'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.ref_name }}
+      - name: Commit image.tag=${{ github.sha }}
+        run: |
+          sed -i -E "s/^  tag: .*/  tag: ${GITHUB_SHA}/" helm/stockpilot/values-gitops.yaml
+          git diff
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -am "gitops: promote stockpilot images to ${GITHUB_SHA::7}"
+          git pull --rebase
+          git push

@@ -1,0 +1,13 @@
+{{- if .Values.monitoring.grafanaDashboard.enabled }}
+# Picked up by the kube-prometheus-stack Grafana sidecar (label grafana_dashboard=1).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "stockpilot.fullname" . }}-dashboard
+  labels:
+    {{- include "stockpilot.labels" . | nindent 4 }}
+    grafana_dashboard: "1"
+data:
+  stockpilot-{{ .Release.Namespace }}.json: |-
+{{ .Files.Get "dashboards/stockpilot.json" | replace "__NAMESPACE__" .Release.Namespace | indent 4 }}
+{{- end }}

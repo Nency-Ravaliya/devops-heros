@@ -1,0 +1,47 @@
+# no docker login: the packages are public
+$ docker logout ghcr.io >/dev/null 2>&1; docker buildx imagetools inspect ghcr.io/ujjawalprabhat/stockpilot-backend:a6a18febabde5e45bc4cdc026626eb9fe6841949
+Name:      ghcr.io/ujjawalprabhat/stockpilot-backend:a6a18febabde5e45bc4cdc026626eb9fe6841949
+MediaType: application/vnd.oci.image.index.v1+json
+Digest:    sha256:93459a8a4fb3d0d7a965dabb44efa4888b8d24b731e05789b25a75d18262881a
+           
+Manifests: 
+  Name:      ghcr.io/ujjawalprabhat/stockpilot-backend:a6a18febabde5e45bc4cdc026626eb9fe6841949@sha256:8fc10a9f39804a7cba4756882c7ed80f84822455cbd71231953a507d246ebf1c
+  MediaType: application/vnd.oci.image.manifest.v1+json
+  Platform:  linux/amd64
+             
+  Name:      ghcr.io/ujjawalprabhat/stockpilot-backend:a6a18febabde5e45bc4cdc026626eb9fe6841949@sha256:f8cfd4a4335e0a3bed31307dd69f55b8eaf0cc9e742e8cedbe7ca239cc6cf04a
+  MediaType: application/vnd.oci.image.manifest.v1+json
+  Platform:  linux/arm64
+
+$ docker buildx imagetools inspect ghcr.io/ujjawalprabhat/stockpilot-frontend:a6a18febabde5e45bc4cdc026626eb9fe6841949
+Name:      ghcr.io/ujjawalprabhat/stockpilot-frontend:a6a18febabde5e45bc4cdc026626eb9fe6841949
+MediaType: application/vnd.oci.image.index.v1+json
+Digest:    sha256:a395371fa56987cbb2b2fb027aab36659ff9ed2449545935c19164797eb7d738
+           
+Manifests: 
+  Name:      ghcr.io/ujjawalprabhat/stockpilot-frontend:a6a18febabde5e45bc4cdc026626eb9fe6841949@sha256:99d43ab07b2cbf970551dd6d08c6da414dd5249aefb408d837ad7cf6e6178c89
+  MediaType: application/vnd.oci.image.manifest.v1+json
+  Platform:  linux/amd64
+             
+  Name:      ghcr.io/ujjawalprabhat/stockpilot-frontend:a6a18febabde5e45bc4cdc026626eb9fe6841949@sha256:a4ed4cd85f8a2018a7d4643fb707e6b966b5c9bd8b0441041e72090d85167543
+  MediaType: application/vnd.oci.image.manifest.v1+json
+  Platform:  linux/arm64
+
+$ git log -1 --format='%h %an: %s' ee4c529
+ee4c529 github-actions[bot]: gitops: promote stockpilot images to a6a18fe
+
+$ git show ee4c529 --format= -- helm/stockpilot/values-gitops.yaml
+diff --git a/session21-python/24BCS10267-ujjawal-prabhat/final-devops-project/helm/stockpilot/values-gitops.yaml b/session21-python/24BCS10267-ujjawal-prabhat/final-devops-project/helm/stockpilot/values-gitops.yaml
+index 74fe3c4..f5dabd2 100644
+--- a/session21-python/24BCS10267-ujjawal-prabhat/final-devops-project/helm/stockpilot/values-gitops.yaml
++++ b/session21-python/24BCS10267-ujjawal-prabhat/final-devops-project/helm/stockpilot/values-gitops.yaml
+@@ -1,7 +1,7 @@
+ # Argo CD environment (Application final-stockpilot-24bcs10267, namespace final-gitops).
+ # image.tag is rewritten by the CI job "gitops-promote" after both images are pushed.
+ image:
+-  tag: pending-first-ci-run
++  tag: a6a18febabde5e45bc4cdc026626eb9fe6841949
+ 
+ config:
+   APP_ENV: gitops
+

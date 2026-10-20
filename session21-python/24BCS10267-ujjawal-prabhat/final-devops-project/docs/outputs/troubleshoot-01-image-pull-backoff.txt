@@ -1,0 +1,85 @@
+$ troubleshooting/01-image-pull-backoff.sh
+
+############ BREAK: deploy an image tag that does not exist ############
+
+$ helm upgrade --install stockpilot helm/stockpilot -n final-trouble -f helm/stockpilot/values-dev.yaml -f troubleshooting/values-trouble.yaml --set image.tag=2.0.9-typo | grep -E 'STATUS|REVISION|Error'
+STATUS: deployed
+REVISION: 34
+
+
+############ SYMPTOM ############
+
+$ kubectl -n final-trouble get pods
+NAME                                   READY   STATUS                  RESTARTS   AGE
+stockpilot-backend-5f8b8c4864-prttd    0/1     Init:ImagePullBackOff   0          25s
+stockpilot-backend-6d9967d74d-dg52z    1/1     Running                 0          42s
+stockpilot-backend-6d9967d74d-lp96j    1/1     Running                 0          42s
+stockpilot-frontend-6dfc5b45fb-d2zff   1/1     Running                 0          42s
+stockpilot-frontend-6dfc5b45fb-pdb64   1/1     Running                 0          42s
+stockpilot-frontend-9f7d85cf8-vsqgs    0/1     ImagePullBackOff        0          25s
+stockpilot-postgres-6bc5799cf7-8pj4z   1/1     Running                 0          42s
+
+$ curl -s -o /dev/null -w 'HTTP %{http_code}\n' -H 'Host: trouble.stockpilot.local' localhost:8081/api/summary
+HTTP 200
+
+
+############ INVESTIGATE ############
+
+$ kubectl -n final-trouble describe pod -l app.kubernetes.io/component=backend | grep -E '^Name:|Image:|Reason:|Back-off' | head -12
+Name:             stockpilot-backend-5f8b8c4864-prttd
+    Image:         stockpilot-backend:2.0.9-typo
+      Reason:       ImagePullBackOff
+    Image:          stockpilot-backend:2.0.9-typo
+      Reason:       PodInitializing
+Name:             stockpilot-backend-6d9967d74d-dg52z
+    Image:         stockpilot-backend:2.0.0
+      Reason:       Completed
+    Image:          stockpilot-backend:2.0.0
+Name:             stockpilot-backend-6d9967d74d-lp96j
+    Image:         stockpilot-backend:2.0.0
+      Reason:       Completed
+
+$ kubectl -n final-trouble get events --sort-by=.lastTimestamp | grep -E 'Failed|BackOff' | tail -4 | cut -c1-220
+12s         Warning   FailedComputeMetricsReplicas   horizontalpodautoscaler/stockpilot-backend   invalid metrics (1 invalid out of 1), first error is: failed to get cpu resource metric value: failed to get cpu utilizati
+12s         Warning   FailedGetResourceMetric        horizontalpodautoscaler/stockpilot-backend   failed to get cpu utilization: did not receive metrics for targeted pods (pods might be unready)
+2s          Warning   Failed                         pod/stockpilot-frontend-9f7d85cf8-vsqgs      Error: ErrImagePull
+2s          Warning   Failed                         pod/stockpilot-frontend-9f7d85cf8-vsqgs      Failed to pull image "stockpilot-frontend:2.0.9-typo": failed to pull and unpack image "docker.io/library/stockpilot-front
+
+$ helm history stockpilot -n final-trouble | tail -3
+32      	Tue Oct  6 19:56:02 2026	superseded	stockpilot-0.1.0	1.0.1      	Upgrade complete                                                                                                                                                                                                                         
+33      	Tue Oct 20 13:14:23 2026	superseded	stockpilot-0.2.0	2.0.0      	Upgrade complete                                                                                                                                                                                                                         
+34      	Tue Oct 20 13:14:41 2026	deployed  	stockpilot-0.2.0	2.0.0      	Upgrade complete                                                                                                                                                                                                                         
+
+
+############ ROOT CAUSE: tag 2.0.9-typo was never built (not on the nodes, not in any registry). ############
+
+The old ReplicaSets keep serving because maxUnavailable=0, so users see no outage.
+
+############ FIX: redeploy the known-good values from Git ############
+
+$ helm upgrade --install stockpilot helm/stockpilot -n final-trouble -f helm/stockpilot/values-dev.yaml -f troubleshooting/values-trouble.yaml --wait --timeout 5m | grep -E 'STATUS|REVISION|Error'
+STATUS: deployed
+REVISION: 35
+
+
+############ VERIFY ############
+
+$ kubectl -n final-trouble get pods
+NAME                                   READY   STATUS        RESTARTS   AGE
+stockpilot-backend-5f8b8c4864-prttd    0/1     Terminating   0          26s
+stockpilot-backend-6d9967d74d-dg52z    1/1     Running       0          43s
+stockpilot-backend-6d9967d74d-lp96j    1/1     Running       0          43s
+stockpilot-frontend-6dfc5b45fb-d2zff   1/1     Running       0          43s
+stockpilot-frontend-6dfc5b45fb-pdb64   1/1     Running       0          43s
+stockpilot-frontend-9f7d85cf8-vsqgs    0/1     Terminating   0          26s
+stockpilot-postgres-6bc5799cf7-8pj4z   1/1     Running       0          43s
+
+$ kubectl -n final-trouble get deploy -o custom-columns=NAME:.metadata.name,IMAGE:.spec.template.spec.containers[0].image
+NAME                  IMAGE
+stockpilot-backend    stockpilot-backend:2.0.0
+stockpilot-frontend   stockpilot-frontend:2.0.0
+stockpilot-postgres   postgres:17-alpine
+
+$ curl -s -o /dev/null -w 'HTTP %{http_code}\n' -H 'Host: trouble.stockpilot.local' localhost:8081/api/summary
+HTTP 200
+

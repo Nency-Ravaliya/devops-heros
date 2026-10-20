@@ -1,0 +1,15 @@
+# Values of the kube-prometheus-stack release "kps" (chart 91.9.0, namespace monitoring)
+# that provides Prometheus + Grafana for this project. Same as `helm get values -n monitoring kps`
+# except grafana.adminPassword, which is not stored in Git (see README, Monitoring).
+#
+#   helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+#   helm upgrade --install kps prometheus-community/kube-prometheus-stack --version 91.9.0 \
+#     -n monitoring --create-namespace -f monitoring/kube-prometheus-stack-values.yaml \
+#     --set grafana.adminPassword="$(openssl rand -hex 12)"
+prometheus:
+  prometheusSpec:
+    # select ServiceMonitors / PodMonitors / PrometheusRules from every namespace,
+    # not only those labelled release=kps
+    serviceMonitorSelectorNilUsesHelmValues: false
+    podMonitorSelectorNilUsesHelmValues: false
+    ruleSelectorNilUsesHelmValues: false

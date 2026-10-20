@@ -1,0 +1,24 @@
+$ scripts/smoke-ingress.sh
+$ curl -s -H 'Host: stockpilot.local' -o /dev/null -w %{http_code} %{content_type}\n localhost:8081/
+200 text/html
+
+
+$ curl -s -H 'Host: stockpilot.local' localhost:8081/api/info
+{"service":"StockPilot","version":"2.0.0","env":"dev"}
+
+$ curl -s -H 'Host: stockpilot.local' -X POST -H Content-Type: application/json localhost:8081/api/items -d {"sku":"SMOKE-1","name":"smoke test item","quantity":3}
+{"id":7,"sku":"SMOKE-1","name":"smoke test item","location":"MAIN","quantity":3,"reorder_level":10,"unit_price_paise":0,"low_stock":true,"updated_at":"2026-10-20T05:10:20.492696Z"}
+
+$ curl -s -H 'Host: stockpilot.local' -X PUT -H Content-Type: application/json localhost:8081/api/items/7 -d {"quantity":30}
+{"id":7,"sku":"SMOKE-1","name":"smoke test item","location":"MAIN","quantity":30,"reorder_level":10,"unit_price_paise":0,"low_stock":false,"updated_at":"2026-10-20T05:10:20.556053Z"}
+
+$ curl -s -H 'Host: stockpilot.local' localhost:8081/api/items
+[{"id":1,"sku":"BOLT-M8","name":"M8 hex bolt","location":"MAIN","quantity":40,"reorder_level":50,"unit_price_paise":250,"low_stock":true,"updated_at":"2026-10-16T13:14:43.888470Z"},{"id":2,"sku":"BRG-6204","name":"6204 ball bearing","location":"WH2","quantity":6,"reorder_level":10,"unit_price_paise":18000,"low_stock":true,"updated_at":"2026-10-16T13:14:43.876557Z"},{"id":7,"sku":"SMOKE-1","name":"smoke test item","location":"MAIN","quantity":30,"reorder_level":10,"unit_price_paise":0,"low_stock":false,"updated_at":"2026-10-20T05:10:20.556053Z"}]
+
+$ curl -s -H 'Host: stockpilot.local' -X DELETE -o /dev/null -w %{http_code}\n localhost:8081/api/items/7
+204
+
+
+$ curl -s -H 'Host: stockpilot.local' localhost:8081/api/summary
+{"total_items":2,"total_units":46,"low_stock_items":2,"inventory_value_paise":118000}
+

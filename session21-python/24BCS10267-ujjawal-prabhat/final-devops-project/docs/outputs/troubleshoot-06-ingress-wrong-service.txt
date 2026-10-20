@@ -1,0 +1,63 @@
+$ troubleshooting/06-ingress-wrong-service.sh
+
+############ BREAK: Ingress /api backend renamed to stockpilot-backendd ############
+
+$ kubectl -n final-trouble patch ingress stockpilot --type=json -p "$(cat troubleshooting/patches/ingress-wrong-service.json)"
+ingress.networking.k8s.io/stockpilot patched
+
+
+############ SYMPTOM ############
+
+$ curl -s -o /dev/null -w 'HTTP %{http_code}\n' -H 'Host: trouble.stockpilot.local' localhost:8081/api/summary
+HTTP 503
+
+$ curl -s -o /dev/null -w 'HTTP %{http_code}\n' -H 'Host: trouble.stockpilot.local' localhost:8081/
+HTTP 200
+
+$ kubectl -n final-trouble get pods,svc
+NAME                                       READY   STATUS    RESTARTS   AGE
+pod/stockpilot-backend-6d9967d74d-rrlqw    1/1     Running   0          74s
+pod/stockpilot-backend-6d9967d74d-zqzqd    1/1     Running   0          81s
+pod/stockpilot-frontend-6dfc5b45fb-d2zff   1/1     Running   0          4m40s
+pod/stockpilot-frontend-6dfc5b45fb-pdb64   1/1     Running   0          4m40s
+pod/stockpilot-postgres-6bc5799cf7-5qz78   1/1     Running   0          2m56s
+
+NAME                          TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)    AGE
+service/stockpilot-backend    ClusterIP   10.96.133.0     <none>        80/TCP     4m41s
+service/stockpilot-frontend   ClusterIP   10.96.145.177   <none>        80/TCP     4m41s
+service/stockpilot-postgres   ClusterIP   10.96.7.58      <none>        5432/TCP   13d
+
+
+############ INVESTIGATE ############
+
+$ kubectl -n final-trouble describe ingress stockpilot | sed -n '/Rules:/,/Annotations/p'
+Rules:
+  Host                      Path  Backends
+  ----                      ----  --------
+  trouble.stockpilot.local  
+                            /api   stockpilot-backendd:http (<error: services "stockpilot-backendd" not found>)
+                            /      stockpilot-frontend:http (10.244.1.26:8080,10.244.2.21:8080)
+Annotations:                meta.helm.sh/release-name: stockpilot
+
+$ kubectl -n ingress-nginx logs deploy/ingress-nginx-controller --tail=300 | grep -E 'stockpilot-backendd' | tail -1 | cut -c1-260
+172.18.0.1 - - [20/Oct/2026:05:19:04 +0000] "GET /api/summary HTTP/1.1" 503 190 "-" "curl/8.7.1" 98 0.000 [final-trouble-stockpilot-backendd-http] [] - - - - 58d5d05adbc0cca2459d955bca13c6b9
+
+
+############ ROOT CAUSE: typo in the /api backend Service name: the controller has no endpoints for it and returns 503 (the / path still works). ############
+
+
+############ FIX: re-apply the chart with --force-conflicts (kubectl-patch owns the field, see issue 5) ############
+
+$ helm upgrade --install stockpilot helm/stockpilot -n final-trouble -f helm/stockpilot/values-dev.yaml -f troubleshooting/values-trouble.yaml --wait --timeout 5m --force-conflicts | grep -E 'STATUS|REVISION|Error'
+STATUS: deployed
+REVISION: 49
+
+$ kubectl -n final-trouble get ingress stockpilot -o jsonpath='{.spec.rules[0].http.paths[0].backend.service.name}{"\n"}'
+stockpilot-backend
+
+
+############ VERIFY ############
+
+$ curl -s -o /dev/null -w 'HTTP %{http_code}\n' -H 'Host: trouble.stockpilot.local' localhost:8081/api/summary
+HTTP 200
+

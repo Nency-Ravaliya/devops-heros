@@ -1,0 +1,61 @@
+{{- $fullname := include "stockpilot.fullname" . -}}
+{{- $f := .Values.frontend -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $fullname }}-frontend
+  labels:
+    {{- include "stockpilot.labels" . | nindent 4 }}
+    app.kubernetes.io/component: frontend
+spec:
+  replicas: {{ $f.replicas }}
+  revisionHistoryLimit: 5
+  strategy:
+    type: RollingUpdate
+    rollingUpdate: {maxSurge: 1, maxUnavailable: 0}
+  selector:
+    matchLabels:
+      {{- include "stockpilot.selectorLabels" (list . "frontend") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "stockpilot.selectorLabels" (list . "frontend") | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      automountServiceAccountToken: false
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: frontend
+          image: {{ include "stockpilot.image" (list . "stockpilot-frontend") }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            # nginx proxies /api here when the UI is reached without the Ingress
+            # (FQDN: nginx's resolver does not use the resolv.conf search domains)
+            - name: BACKEND_URL
+              value: http://{{ $fullname }}-backend.{{ .Release.Namespace }}.svc.cluster.local:80
+          ports:
+            - name: http
+              containerPort: {{ $f.containerPort }}
+          livenessProbe:
+            httpGet: {path: /, port: http}
+            periodSeconds: 10
+          readinessProbe:
+            httpGet: {path: /, port: http}
+            periodSeconds: 5
+          {{- with $f.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          volumeMounts:
+            # writable paths for a read-only root FS: rendered config + nginx temp/pid
+            - {name: conf, mountPath: /etc/nginx/conf.d}
+            - {name: tmp, mountPath: /tmp}
+      volumes:
+        - {name: conf, emptyDir: {}}
+        - {name: tmp, emptyDir: {}}

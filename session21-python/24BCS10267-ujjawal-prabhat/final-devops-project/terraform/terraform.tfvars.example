@@ -1,0 +1,8 @@
+# Copy to terraform.tfvars (git-ignored) to override the defaults.
+# Credentials never go here: Terraform uses the normal AWS credential chain
+# (e.g. AWS_PROFILE or exported temporary credentials).
+region             = "ap-south-1"
+cluster_name       = "stockpilot-eks"
+kubernetes_version = "1.37"
+node_instance_type = "t3.small"
+node_count         = 1

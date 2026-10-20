@@ -1,0 +1,13 @@
+$ kubectl -n final port-forward svc/stockpilot-backend 18000:80 &
+
+$ curl -s localhost:18000/metrics | grep -E '^stockpilot_(http_requests_total|low_stock|stock_adj|build)'
+stockpilot_http_requests_total{method="GET",route="/ready",status="200"} 51.0
+stockpilot_http_requests_total{method="GET",route="/health",status="200"} 25.0
+stockpilot_http_requests_total{method="GET",route="/api/info",status="200"} 1.0
+stockpilot_http_requests_total{method="POST",route="/api/items",status="201"} 1.0
+stockpilot_http_requests_total{method="GET",route="/api/items",status="200"} 11404.0
+stockpilot_http_requests_total{method="DELETE",route="/api/items/{item_id}",status="204"} 1.0
+stockpilot_http_requests_total{method="GET",route="/api/summary",status="200"} 11310.0
+stockpilot_low_stock_items 2.0
+stockpilot_build_info{env="dev",version="2.0.0"} 1.0
+

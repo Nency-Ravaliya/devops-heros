@@ -1,0 +1,6 @@
+StockPilot {{ include "stockpilot.tag" . }} deployed to namespace {{ .Release.Namespace }}.
+
+  kubectl -n {{ .Release.Namespace }} get pods,svc,ingress,hpa,pvc
+{{- if .Values.ingress.enabled }}
+  curl -H 'Host: {{ .Values.ingress.host }}' http://localhost:8081/api/summary   # kind: ingress-nginx on host port 8081
+{{- end }}

@@ -1,0 +1,65 @@
+$ kubectl -n monitoring port-forward svc/kps-kube-prometheus-stack-prometheus 19090:9090 &
+
+$ scripts/prom-check.sh
+$ curl -s http://localhost:19090/api/v1/targets  (filtered: namespace=final)
+   serviceMonitor/final/stockpilot-backend/0 http://10.244.1.20:8000/metrics health=up lastScrape=2026-10-20T05:14:15
+   serviceMonitor/final/stockpilot-backend/0 http://10.244.2.19:8000/metrics health=up lastScrape=2026-10-20T05:14:15
+   serviceMonitor/final/stockpilot-backend/0 http://10.244.1.23:8000/metrics health=up lastScrape=2026-10-20T05:14:06
+   serviceMonitor/final/stockpilot-backend/0 http://10.244.2.20:8000/metrics health=up lastScrape=2026-10-20T05:14:05
+   serviceMonitor/final/stockpilot-backend/0 http://10.244.1.24:8000/metrics health=up lastScrape=2026-10-20T05:14:08
+
+$ curl -s http://localhost:19090/api/v1/query --data-urlencode 'query=up{namespace="final"}'
+  {__name__="up",job="stockpilot-backend",pod="stockpilot-backend-94f54b467-6psgg"} => 1
+  {__name__="up",job="stockpilot-backend",pod="stockpilot-backend-94f54b467-nvjgt"} => 1
+  {__name__="up",job="stockpilot-backend",pod="stockpilot-backend-94f54b467-chvdm"} => 1
+  {__name__="up",job="stockpilot-backend",pod="stockpilot-backend-94f54b467-hf4vf"} => 1
+  {__name__="up",job="stockpilot-backend",pod="stockpilot-backend-94f54b467-hpdc9"} => 1
+  (5 series)
+
+$ curl -s http://localhost:19090/api/v1/query --data-urlencode 'query=sum by (route) (rate(stockpilot_http_requests_total{namespace="final"}[2m]))'
+  {route="/ready"} => 0.9999980952562356
+  {route="/health"} => 0.49523709751517103
+  {route="/api/info"} => 0
+  {route="/api/items"} => 75.49509324400992
+  {route="/api/items/{item_id}"} => 0
+  {route="/api/summary"} => 75.57128961583585
+  (6 series)
+
+$ curl -s http://localhost:19090/api/v1/query --data-urlencode 'query=histogram_quantile(0.95, sum by (le) (rate(stockpilot_http_request_duration_seconds_bucket{namespace="final"}[5m])))'
+  {} => 0.012037001523213447
+  (1 series)
+
+$ curl -s http://localhost:19090/api/v1/query --data-urlencode 'query=max(stockpilot_low_stock_items{namespace="final"})'
+  {} => 2
+  (1 series)
+
+$ curl -s http://localhost:19090/api/v1/query --data-urlencode 'query=sum by (direction) (stockpilot_stock_adjustments_total{namespace="final"})'
+  (0 series)
+
+$ curl -s http://localhost:19090/api/v1/query --data-urlencode 'query=stockpilot:http_requests:rate5m{namespace="final",status="200"}'
+  {__name__="stockpilot:http_requests:rate5m",route="/ready",status="200"} => 0.780663334833275
+  {__name__="stockpilot:http_requests:rate5m",route="/health",status="200"} => 0.3910215462045163
+  {__name__="stockpilot:http_requests:rate5m",route="/api/info",status="200"} => 0
+  {__name__="stockpilot:http_requests:rate5m",route="/api/items",status="200"} => 161.7478726112743
+  {__name__="stockpilot:http_requests:rate5m",route="/api/summary",status="200"} => 161.9739215025966
+  {__name__="stockpilot:http_requests:rate5m",route="/api/items/{item_id}",status="200"} => 0
+  (6 series)
+
+$ curl -s http://localhost:19090/api/v1/rules  (group stockpilot.rules)
+  file: /etc/prometheus/rules/prometheus-kps-kube-prometheus-stack-prometheus-rulefiles-0/final-gitops-stockpilot-alerts-2b5ed713-ce5f-4369-961d-35685421b784.yaml
+  - recording stockpilot:http_requests:rate5m health=ok  state=-
+  - alerting  StockPilotApiDown            health=ok  state=inactive
+  - alerting  StockPilotHighErrorRate      health=ok  state=inactive
+  - alerting  StockPilotHighLatencyP95     health=ok  state=inactive
+  - alerting  StockPilotLowStockItems      health=ok  state=inactive
+  - alerting  StockPilotPodRestarting      health=ok  state=inactive
+  file: /etc/prometheus/rules/prometheus-kps-kube-prometheus-stack-prometheus-rulefiles-0/final-stockpilot-alerts-78617cd9-0c13-435a-bb6f-de7cf3d1154a.yaml
+  - recording stockpilot:http_requests:rate5m health=ok  state=-
+  - alerting  StockPilotApiDown            health=ok  state=inactive
+  - alerting  StockPilotHighErrorRate      health=ok  state=inactive
+  - alerting  StockPilotHighLatencyP95     health=ok  state=inactive
+  - alerting  StockPilotLowStockItems      health=ok  state=firing
+  - alerting  StockPilotPodRestarting      health=ok  state=inactive
+
+$ curl -s http://localhost:19090/api/v1/alerts  (StockPilot alerts)
+   StockPilotLowStockItems  firing value=2e+00 - 2 SKU(s) need reordering.

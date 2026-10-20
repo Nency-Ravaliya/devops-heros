@@ -1,0 +1,40 @@
+$ NS=final DURATION=150 scripts/hpa-load.sh
+$ kubectl -n final get hpa
+NAME                 REFERENCE                       TARGETS              MINPODS   MAXPODS   REPLICAS   AGE
+stockpilot-backend   Deployment/stockpilot-backend   cpu: <unknown>/60%   2         5         2          3d15h
+
+$ kubectl -n final run load-gen --image=busybox:1.37 --restart=Never -- sh -c '<8 parallel wget loops against http://stockpilot-backend.final.svc.cluster.local/api/summary and /api/items for 150s>'
+pod/load-gen created
+
+--- 13:10:26
+stockpilot-backend   Deployment/stockpilot-backend   cpu: <unknown>/60%   2     5     2     3d15h
+--- 13:10:41
+stockpilot-backend   Deployment/stockpilot-backend   cpu: 103%/60%   2     5     2     3d15h
+--- 13:10:56
+stockpilot-backend   Deployment/stockpilot-backend   cpu: 470%/60%   2     5     4     3d15h
+--- 13:11:12
+stockpilot-backend   Deployment/stockpilot-backend   cpu: 862%/60%   2     5     5     3d15h
+--- 13:11:27
+stockpilot-backend   Deployment/stockpilot-backend   cpu: 822%/60%   2     5     5     3d15h
+--- 13:11:42
+stockpilot-backend   Deployment/stockpilot-backend   cpu: 180%/60%   2     5     5     3d15h
+--- 13:11:57
+stockpilot-backend   Deployment/stockpilot-backend   cpu: 329%/60%   2     5     5     3d15h
+--- 13:12:12
+stockpilot-backend   Deployment/stockpilot-backend   cpu: 541%/60%   2     5     5     3d15h
+--- 13:12:27
+stockpilot-backend   Deployment/stockpilot-backend   cpu: 653%/60%   2     5     5     3d15h
+--- 13:12:43
+stockpilot-backend   Deployment/stockpilot-backend   cpu: 268%/60%   2     5     5     3d15h
+--- 13:12:58
+stockpilot-backend   Deployment/stockpilot-backend   cpu: 361%/60%   2     5     5     3d15h
+--- 13:13:13
+stockpilot-backend   Deployment/stockpilot-backend   cpu: 428%/60%   2     5     5     3d15h
+--- 13:13:28
+stockpilot-backend   Deployment/stockpilot-backend   cpu: 64%/60%   2     5     5     3d15h
+--- 13:13:43
+stockpilot-backend   Deployment/stockpilot-backend   cpu: 7%/60%   2     5     5     3d15h
+
+$ kubectl -n final describe hpa stockpilot-backend | grep SuccessfulRescale
+  Normal   SuccessfulRescale             3m20s              horizontal-pod-autoscaler  New size: 4; reason: cpu resource utilization (percentage of request) above target
+  Normal   SuccessfulRescale             3m5s               horizontal-pod-autoscaler  New size: 5; reason: cpu resource utilization (percentage of request) above target

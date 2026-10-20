@@ -1,0 +1,28 @@
+$ docker run --rm -v "$PWD:/src" -w /src semgrep/semgrep:1.179.0 semgrep scan --metrics=off --disable-version-check --error --config p/python --config p/javascript --config p/dockerfile --config p/secrets --config security/semgrep.yml backend frontend 2>&1 | grep -E 'Findings|Rules run|Targets scanned|Ran '
+ • Findings: 0 (0 blocking)
+ • Rules run: 266
+ • Targets scanned: 39
+Ran 266 rules on 39 files: 0 findings.
+
+$ docker run --rm -v "$PWD:/src" -w /src aquasec/trivy:0.75.0 fs --config security/trivy.yaml --quiet .; echo "exit code: $?"
+
+Report Summary
+
+┌────────────────────────────┬──────┬─────────────────┐
+│           Target           │ Type │ Vulnerabilities │
+├────────────────────────────┼──────┼─────────────────┤
+│ backend/requirements.txt   │ pip  │        0        │
+├────────────────────────────┼──────┼─────────────────┤
+│ frontend/package-lock.json │ npm  │        0        │
+└────────────────────────────┴──────┴─────────────────┘
+Legend:
+- '-': Not scanned
+- '0': Clean (no security findings detected)
+
+exit code: 0
+
+$ docker run --rm -v "$PWD:/src" ghcr.io/gitleaks/gitleaks:v8.30.1 dir /src --config /src/security/gitleaks.toml --redact --no-banner --no-color; echo "exit code: $?"
+5:34AM INF scanned ~306889 bytes (306.89 KB) in 59.8ms
+5:34AM INF no leaks found
+exit code: 0
+
