@@ -1,0 +1,17 @@
+# Trivy configuration shared by the SCA (trivy fs) and image (trivy image) scans.
+# Usage: trivy image --config trivy.yaml <image>   /   trivy fs --config trivy.yaml .
+# Only HIGH and CRITICAL vulnerabilities are reported. Trivy itself exits 0; the
+# security-gate job counts the findings in the JSON report and blocks the pipeline.
+severity:
+  - HIGH
+  - CRITICAL
+scan:
+  scanners:
+    - vuln
+vulnerability:
+  # Strict: unfixed CVEs also count.
+  ignore-unfixed: false
+db:
+  # mirror.gcr.io is trivy's default DB mirror; avoids GHCR rate limits on shared runners
+  repository:
+    - mirror.gcr.io/aquasec/trivy-db
