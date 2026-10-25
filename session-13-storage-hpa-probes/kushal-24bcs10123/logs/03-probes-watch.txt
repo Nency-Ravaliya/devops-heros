@@ -1,0 +1,35 @@
+NAME            READY   STATUS    RESTARTS   AGE
+liveness-demo   0/1     Pending   0          0s
+liveness-demo   0/1     Pending   0          0s
+liveness-demo   0/1     ContainerCreating   0          0s
+liveness-demo   0/1     ContainerCreating   0          0s
+liveness-demo   1/1     Running             0          0s
+liveness-demo   1/1     Running             1 (0s ago)   15s
+readiness-demo   0/1     Pending             0            0s
+readiness-demo   0/1     Pending             0            0s
+readiness-demo   0/1     ContainerCreating   0            0s
+readiness-demo   0/1     ContainerCreating   0            0s
+readiness-demo   0/1     Running             0            0s
+readiness-demo   1/1     Running             0            6s
+readiness-demo   0/1     Running             0            21s
+readiness-demo   1/1     Running             0            31s
+startup-demo     0/1     Pending             0            0s
+startup-demo     0/1     Pending             0            0s
+startup-demo     0/1     ContainerCreating   0            0s
+startup-demo     0/1     ContainerCreating   0            0s
+startup-demo     0/1     Running             0            0s
+startup-demo     0/1     Running             0            2s
+startup-demo     1/1     Running             0            2s
+slow-no-startup   0/1     Pending             0            0s
+slow-no-startup   0/1     Pending             0            0s
+slow-with-startup   0/1     Pending             0            0s
+slow-with-startup   0/1     Pending             0            0s
+slow-no-startup     0/1     ContainerCreating   0            0s
+slow-with-startup   0/1     ContainerCreating   0            0s
+slow-with-startup   0/1     ContainerCreating   0            1s
+slow-no-startup     0/1     ContainerCreating   0            1s
+slow-no-startup     1/1     Running             0            1s
+slow-with-startup   0/1     Running             0            1s
+slow-with-startup   0/1     Running             0            43s
+slow-with-startup   1/1     Running             0            43s
+slow-no-startup     1/1     Running             1 (0s ago)   46s

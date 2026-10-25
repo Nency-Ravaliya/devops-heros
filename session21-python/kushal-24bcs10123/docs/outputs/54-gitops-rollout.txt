@@ -1,0 +1,55 @@
+# After the green run the deploy job committed 'deploy: studytrack image sha-ada2a45 [skip ci]' (only helm/studytrack/values.yaml changed).
+
+$ git log --oneline -2 origin/capstone-kushal-s21
+58f742e deploy: studytrack image sha-ada2a45 [skip ci]
+ada2a45 studytrack: retry migrations while postgres starts, run trivy from its container image, fix query scripts
+
+$ git show origin/capstone-kushal-s21 -- session21-python/kushal-24bcs10123/helm/studytrack/values.yaml | grep -E '^[-+] '
+
+$ kubectl -n argocd get application studytrack -o jsonpath='{range .status.history[*]}{.id} {.deployedAt} {.revision}{"\n"}{end}'
+0 2026-10-07T18:15:49Z 676c5cd3623302bac802a8f5a9689698510cdf25
+1 2026-10-07T18:23:41Z 58f742e17b9489cab25f45c8dcd7ebf8b7ab206d
+
+$ kubectl -n argocd get application studytrack
+NAME         SYNC STATUS   HEALTH STATUS
+studytrack   Synced        Healthy
+
+$ kubectl -n studytrack get deploy -o custom-columns='NAME:.metadata.name,IMAGE:.spec.template.spec.containers[0].image,READY:.status.readyReplicas'
+NAME                  IMAGE                                                  READY
+studytrack-backend    ghcr.io/kushaltalati/studytrack-backend:sha-ada2a45    2
+studytrack-frontend   ghcr.io/kushaltalati/studytrack-frontend:sha-ada2a45   2
+studytrack-postgres   postgres:16-alpine                                     1
+
+$ kubectl -n studytrack rollout history deploy/studytrack-backend
+deployment.apps/studytrack-backend 
+REVISION  CHANGE-CAUSE
+1         <none>
+2         <none>
+
+
+$ kubectl -n studytrack get events --sort-by=.lastTimestamp | grep -E 'ScalingReplicaSet|Pulled' | tail -8
+2m55s       Normal    Pulled                         pod/studytrack-backend-97c8bb58c-twmv4           Successfully pulled image "ghcr.io/kushaltalati/studytrack-backend:sha-ada2a45" in 5.099s (5.099s including waiting). Image size: 74349573 bytes.
+2m51s       Normal    ScalingReplicaSet              deployment/studytrack-frontend                   Scaled down replica set studytrack-frontend-5499fbc4f9 from 2 to 1
+2m51s       Normal    ScalingReplicaSet              deployment/studytrack-frontend                   Scaled up replica set studytrack-frontend-f9479c859 from 1 to 2
+2m47s       Normal    Pulled                         pod/studytrack-frontend-f9479c859-vf5fj          Successfully pulled image "ghcr.io/kushaltalati/studytrack-frontend:sha-ada2a45" in 2.781s (2.781s including waiting). Image size: 26006908 bytes.
+2m46s       Normal    ScalingReplicaSet              deployment/studytrack-frontend                   Scaled down replica set studytrack-frontend-5499fbc4f9 from 1 to 0
+2m43s       Normal    ScalingReplicaSet              deployment/studytrack-backend                    Scaled down replica set studytrack-backend-5f8784687 from 2 to 1
+2m38s       Normal    Pulled                         pod/studytrack-backend-97c8bb58c-jd9bf           Successfully pulled image "ghcr.io/kushaltalati/studytrack-backend:sha-ada2a45" in 4.034s (4.034s including waiting). Image size: 74349573 bytes.
+2m27s       Normal    ScalingReplicaSet              deployment/studytrack-backend                    (combined from similar events): Scaled down replica set studytrack-backend-5f8784687 from 1 to 0
+
+$ kubectl -n studytrack get pods
+NAME                                   READY   STATUS    RESTARTS   AGE
+studytrack-backend-97c8bb58c-jd9bf     1/1     Running   0          2m44s
+studytrack-backend-97c8bb58c-twmv4     1/1     Running   0          3m3s
+studytrack-frontend-f9479c859-vf5fj    1/1     Running   0          2m52s
+studytrack-frontend-f9479c859-vzmjn    1/1     Running   0          3m3s
+studytrack-postgres-596bb76c48-86cnk   1/1     Running   0          10m
+
+$ kubectl -n studytrack logs deploy/studytrack-backend | head -3   # the new entrypoint message proves the new image is running
+Found 2 pods, using pod/studytrack-backend-97c8bb58c-twmv4
+INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+INFO  [alembic.runtime.migration] Will assume transactional DDL.
+[entrypoint] migrations applied, starting uvicorn
+
+$ curl -s -H 'Host: studytrack.local' http://localhost/api/entries/summary
+{"total_entries":5,"total_minutes":270,"done_minutes":195,"daily_goal_minutes":120,"goal_reached":true,"by_status":{"done":3,"planned":1,"in_progress":1},"by_subject":[{"subject":"DevOps","minutes":125,"entries":2},{"subject":"DBMS","minutes":60,"entries":1},{"subject":"Operating Systems","minutes":45,"entries":1},{"subject":"Computer Networks","minutes":40,"entries":1}]}

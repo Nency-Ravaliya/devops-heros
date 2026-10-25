@@ -1,0 +1,27 @@
+# Applied ONCE by hand (kubectl apply -f gitops/argocd-application.yaml).
+# From then on Argo CD keeps namespace studytrack equal to helm/studytrack on this branch.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: studytrack
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/kushaltalati/devops-heros.git
+    targetRevision: capstone-kushal-s21
+    path: session21-python/kushal-24bcs10123/helm/studytrack
+    helm:
+      valueFiles:
+        - values.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: studytrack
+  syncPolicy:
+    automated:
+      prune: true      # delete what is no longer in git
+      selfHeal: true   # undo manual kubectl edits
+    syncOptions:
+      - CreateNamespace=true

@@ -1,0 +1,6 @@
+backend:
+  replicas: 1
+frontend:
+  replicas: 1
+hpa:
+  enabled: false

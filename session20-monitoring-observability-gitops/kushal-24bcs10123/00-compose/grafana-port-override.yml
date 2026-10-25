@@ -1,0 +1,6 @@
+# Port 3000 on my Mac was already taken by another project while I ran this, so this override file
+# publishes the course's Grafana container on 19301 instead. Nothing else in the professor's compose file changes.
+services:
+  grafana:
+    ports: !override
+      - "19301:3000"

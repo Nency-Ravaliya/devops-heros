@@ -1,0 +1,131 @@
+$ kubectl -n studytrack get hpa studytrack-backend   # before load
+NAME                 REFERENCE                       TARGETS       MINPODS   MAXPODS   REPLICAS   AGE
+studytrack-backend   Deployment/studytrack-backend   cpu: 4%/50%   2         6         2          109s
+
+$ kubectl top pods -n studytrack
+NAME                                   CPU(cores)   MEMORY(bytes)   
+curl-client                            0m           0Mi             
+studytrack-backend-d5d85cb7c-82hzt     5m           63Mi            
+studytrack-backend-d5d85cb7c-zg2zb     4m           63Mi            
+studytrack-frontend-765c98686f-8tk6p   1m           5Mi             
+studytrack-frontend-765c98686f-db85b   1m           5Mi             
+studytrack-postgres-596bb76c48-92rbw   11m          26Mi            
+
+$ kubectl -n studytrack get hpa studytrack-backend -w   (background, 4 min)  +  scripts/load-test.sh 180 16
+load-test: 16 workers x 180s against http://localhost/api/entries/summary (Host: studytrack.local)
+load-test: done
+
+$ kubectl top pods -n studytrack   # right after the load
+NAME                                   CPU(cores)   MEMORY(bytes)   
+curl-client                            0m           0Mi             
+studytrack-backend-d5d85cb7c-6zbkv     249m         66Mi            
+studytrack-backend-d5d85cb7c-82hzt     255m         67Mi            
+studytrack-backend-d5d85cb7c-dnjct     248m         66Mi            
+studytrack-backend-d5d85cb7c-qm6pd     217m         66Mi            
+studytrack-backend-d5d85cb7c-zdmwt     205m         66Mi            
+studytrack-backend-d5d85cb7c-zg2zb     230m         68Mi            
+studytrack-frontend-765c98686f-8tk6p   1m           5Mi             
+studytrack-frontend-765c98686f-db85b   1m           5Mi             
+studytrack-postgres-596bb76c48-92rbw   304m         81Mi            
+
+$ kubectl -n studytrack get hpa studytrack-backend
+NAME                 REFERENCE                       TARGETS         MINPODS   MAXPODS   REPLICAS   AGE
+studytrack-backend   Deployment/studytrack-backend   cpu: 253%/50%   2         6         6          4m52s
+$ kubectl -n studytrack describe hpa studytrack-backend | sed -n "/Metrics/,/Events/p;/Events/,\$p"
+Metrics:                                               ( current / target )
+  resource cpu on pods  (as a percentage of request):  253% (253m) / 50%
+Min replicas:                                          2
+Max replicas:                                          6
+Behavior:
+  Scale Up:
+    Stabilization Window: 0 seconds
+    Select Policy: Max
+    Policies:
+      - Type: Pods     Value: 4    Period: 15 seconds
+      - Type: Percent  Value: 100  Period: 15 seconds
+  Scale Down:
+    Stabilization Window: 60 seconds
+    Select Policy: Max
+    Policies:
+      - Type: Percent  Value: 100  Period: 15 seconds
+Deployment pods:       6 current / 6 desired
+Conditions:
+  Type            Status  Reason            Message
+  ----            ------  ------            -------
+  AbleToScale     True    ReadyForNewScale  recommended size matches current size
+  ScalingActive   True    ValidMetricFound  the HPA was able to successfully calculate a replica count from cpu resource utilization (percentage of request)
+  ScalingLimited  True    TooManyReplicas   the desired replica count is more than the maximum replica count
+  ScaledToZero    False   NotScaledToZero   the HPA controller did not scale the workload to zero
+Events:
+  Type     Reason                        Age                    From                       Message
+  ----     ------                        ----                   ----                       -------
+  Warning  FailedGetResourceMetric       3m37s (x6 over 4m52s)  horizontal-pod-autoscaler  failed to get cpu utilization: unable to get metrics for resource cpu: no metrics returned from resource metrics API
+  Warning  FailedComputeMetricsReplicas  3m37s (x6 over 4m52s)  horizontal-pod-autoscaler  invalid metrics (1 invalid out of 1), first error is: failed to get cpu resource metric value: failed to get cpu utilization: unable to get metrics for resource cpu: no metrics returned from resource metrics API
+  Normal   SuccessfulRescale             2m37s                  horizontal-pod-autoscaler  New size: 6; reason: cpu resource utilization (percentage of request) above target
+
+--- kubectl get hpa -w during the test
+NAME                 REFERENCE                       TARGETS       MINPODS   MAXPODS   REPLICAS   AGE
+studytrack-backend   Deployment/studytrack-backend   cpu: 4%/50%   2         6         2          109s
+studytrack-backend   Deployment/studytrack-backend   cpu: 9%/50%   2         6         2          2m
+studytrack-backend   Deployment/studytrack-backend   cpu: 242%/50%   2         6         2          2m15s
+studytrack-backend   Deployment/studytrack-backend   cpu: 463%/50%   2         6         6          2m30s
+studytrack-backend   Deployment/studytrack-backend   cpu: 398%/50%   2         6         6          2m45s
+studytrack-backend   Deployment/studytrack-backend   cpu: 286%/50%   2         6         6          3m
+studytrack-backend   Deployment/studytrack-backend   cpu: 161%/50%   2         6         6          3m15s
+studytrack-backend   Deployment/studytrack-backend   cpu: 168%/50%   2         6         6          3m30s
+studytrack-backend   Deployment/studytrack-backend   cpu: 160%/50%   2         6         6          3m45s
+studytrack-backend   Deployment/studytrack-backend   cpu: 239%/50%   2         6         6          4m
+studytrack-backend   Deployment/studytrack-backend   cpu: 290%/50%   2         6         6          4m15s
+studytrack-backend   Deployment/studytrack-backend   cpu: 275%/50%   2         6         6          4m30s
+studytrack-backend   Deployment/studytrack-backend   cpu: 253%/50%   2         6         6          4m45s
+studytrack-backend   Deployment/studytrack-backend   cpu: 234%/50%   2         6         6          5m1s
+studytrack-backend   Deployment/studytrack-backend   cpu: 188%/50%   2         6         6          5m16s
+studytrack-backend   Deployment/studytrack-backend   cpu: 11%/50%    2         6         6          5m31s
+studytrack-backend   Deployment/studytrack-backend   cpu: 9%/50%     2         6         6          5m46s
+studytrack-backend   Deployment/studytrack-backend   cpu: 13%/50%    2         6         6          6m1s
+
+--- kubectl get pods -l app=studytrack-backend -w during the test
+NAME                                 READY   STATUS    RESTARTS      AGE
+studytrack-backend-d5d85cb7c-82hzt   1/1     Running   3 (71s ago)   109s
+studytrack-backend-d5d85cb7c-zg2zb   1/1     Running   3 (74s ago)   109s
+studytrack-backend-d5d85cb7c-zdmwt   0/1     Pending   0             0s
+studytrack-backend-d5d85cb7c-qm6pd   0/1     Pending   0             0s
+studytrack-backend-d5d85cb7c-6zbkv   0/1     Pending   0             0s
+studytrack-backend-d5d85cb7c-qm6pd   0/1     Pending   0             0s
+studytrack-backend-d5d85cb7c-zdmwt   0/1     Pending   0             0s
+studytrack-backend-d5d85cb7c-6zbkv   0/1     Pending   0             0s
+studytrack-backend-d5d85cb7c-dnjct   0/1     Pending   0             0s
+studytrack-backend-d5d85cb7c-qm6pd   0/1     ContainerCreating   0             0s
+studytrack-backend-d5d85cb7c-dnjct   0/1     Pending             0             0s
+studytrack-backend-d5d85cb7c-zdmwt   0/1     ContainerCreating   0             0s
+studytrack-backend-d5d85cb7c-6zbkv   0/1     ContainerCreating   0             0s
+studytrack-backend-d5d85cb7c-dnjct   0/1     ContainerCreating   0             0s
+studytrack-backend-d5d85cb7c-6zbkv   0/1     ContainerCreating   0             1s
+studytrack-backend-d5d85cb7c-dnjct   0/1     ContainerCreating   0             1s
+studytrack-backend-d5d85cb7c-zdmwt   0/1     ContainerCreating   0             1s
+studytrack-backend-d5d85cb7c-qm6pd   0/1     ContainerCreating   0             1s
+studytrack-backend-d5d85cb7c-qm6pd   0/1     Running             0             1s
+studytrack-backend-d5d85cb7c-6zbkv   0/1     Running             0             1s
+studytrack-backend-d5d85cb7c-dnjct   0/1     Running             0             1s
+studytrack-backend-d5d85cb7c-zdmwt   0/1     Running             0             1s
+studytrack-backend-d5d85cb7c-zdmwt   0/1     Running             0             3s
+studytrack-backend-d5d85cb7c-qm6pd   0/1     Running             0             3s
+studytrack-backend-d5d85cb7c-6zbkv   0/1     Running             0             3s
+studytrack-backend-d5d85cb7c-dnjct   0/1     Running             0             3s
+studytrack-backend-d5d85cb7c-zdmwt   0/1     Running             0             9s
+studytrack-backend-d5d85cb7c-qm6pd   0/1     Running             0             9s
+studytrack-backend-d5d85cb7c-6zbkv   0/1     Running             0             9s
+studytrack-backend-d5d85cb7c-qm6pd   1/1     Running             0             9s
+studytrack-backend-d5d85cb7c-zdmwt   1/1     Running             0             9s
+studytrack-backend-d5d85cb7c-dnjct   0/1     Running             0             10s
+studytrack-backend-d5d85cb7c-6zbkv   1/1     Running             0             10s
+studytrack-backend-d5d85cb7c-dnjct   1/1     Running             0             10s
+
+$ kubectl -n studytrack get hpa,pods -l app=studytrack-backend   # ~75s after the load stopped (scale-down waits for the 60s stabilisation window)
+NAME                                     READY   STATUS    RESTARTS        AGE
+pod/studytrack-backend-d5d85cb7c-6zbkv   1/1     Running   0               3m52s
+pod/studytrack-backend-d5d85cb7c-82hzt   1/1     Running   3 (5m29s ago)   6m7s
+pod/studytrack-backend-d5d85cb7c-dnjct   1/1     Running   0               3m52s
+pod/studytrack-backend-d5d85cb7c-qm6pd   1/1     Running   0               3m52s
+pod/studytrack-backend-d5d85cb7c-zdmwt   1/1     Running   0               3m52s
+pod/studytrack-backend-d5d85cb7c-zg2zb   1/1     Running   3 (5m32s ago)   6m7s

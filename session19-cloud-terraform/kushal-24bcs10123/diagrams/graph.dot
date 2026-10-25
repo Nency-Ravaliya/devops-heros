@@ -1,0 +1,33 @@
+digraph G {
+  rankdir = "RL";
+  node [shape = rect, fontname = "sans-serif"];
+  "data.aws_ami.al2023" [label="data.aws_ami.al2023"];
+  "aws_instance.web" [label="aws_instance.web"];
+  "aws_internet_gateway.main" [label="aws_internet_gateway.main"];
+  "aws_key_pair.web" [label="aws_key_pair.web"];
+  "aws_route_table.public" [label="aws_route_table.public"];
+  "aws_route_table_association.public" [label="aws_route_table_association.public"];
+  "aws_s3_bucket.assets" [label="aws_s3_bucket.assets"];
+  "aws_s3_bucket_public_access_block.assets" [label="aws_s3_bucket_public_access_block.assets"];
+  "aws_s3_bucket_versioning.assets" [label="aws_s3_bucket_versioning.assets"];
+  "aws_s3_object.instance_info" [label="aws_s3_object.instance_info"];
+  "aws_security_group.web" [label="aws_security_group.web"];
+  "aws_subnet.public" [label="aws_subnet.public"];
+  "aws_vpc.main" [label="aws_vpc.main"];
+  "tls_private_key.ssh" [label="tls_private_key.ssh"];
+  "aws_instance.web" -> "data.aws_ami.al2023";
+  "aws_instance.web" -> "aws_key_pair.web";
+  "aws_instance.web" -> "aws_route_table_association.public";
+  "aws_instance.web" -> "aws_security_group.web";
+  "aws_internet_gateway.main" -> "aws_vpc.main";
+  "aws_key_pair.web" -> "tls_private_key.ssh";
+  "aws_route_table.public" -> "aws_internet_gateway.main";
+  "aws_route_table_association.public" -> "aws_route_table.public";
+  "aws_route_table_association.public" -> "aws_subnet.public";
+  "aws_s3_bucket_public_access_block.assets" -> "aws_s3_bucket.assets";
+  "aws_s3_bucket_versioning.assets" -> "aws_s3_bucket.assets";
+  "aws_s3_object.instance_info" -> "aws_instance.web";
+  "aws_s3_object.instance_info" -> "aws_s3_bucket.assets";
+  "aws_security_group.web" -> "aws_vpc.main";
+  "aws_subnet.public" -> "aws_vpc.main";
+}

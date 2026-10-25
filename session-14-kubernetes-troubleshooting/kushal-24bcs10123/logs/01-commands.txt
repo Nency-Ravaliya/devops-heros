@@ -1,0 +1,435 @@
+namespace/s14-commands created
+
+############ kubectl get ############
+
+$ kubectl -n s14-commands apply -f 01-kubectl-get/pod.yaml && wait_ready s14-commands get-demo
+pod/get-demo created
+pod/get-demo condition met
+
+$ kubectl -n s14-commands get pods
+NAME       READY   STATUS    RESTARTS   AGE
+get-demo   1/1     Running   0          0s
+
+$ kubectl -n s14-commands get pods -o wide
+NAME       READY   STATUS    RESTARTS   AGE   IP            NODE                NOMINATED NODE   READINESS GATES
+get-demo   1/1     Running   0          0s    10.244.3.29   kushal-lab-worker   <none>           <none>
+
+$ kubectl -n s14-commands get pods --show-labels
+NAME       READY   STATUS    RESTARTS   AGE   LABELS
+get-demo   1/1     Running   0          1s    app=get-demo
+
+$ kubectl -n s14-commands get pod get-demo -o yaml | sed -n '/^status:/,$p' | head -40
+status:
+  conditions:
+  - lastProbeTime: null
+    lastTransitionTime: "2026-10-07T17:44:50Z"
+    observedGeneration: 1
+    status: "True"
+    type: PodReadyToStartContainers
+  - lastProbeTime: null
+    lastTransitionTime: "2026-10-07T17:44:50Z"
+    observedGeneration: 1
+    status: "True"
+    type: Initialized
+  - lastProbeTime: null
+    lastTransitionTime: "2026-10-07T17:44:50Z"
+    observedGeneration: 1
+    status: "True"
+    type: Ready
+  - lastProbeTime: null
+    lastTransitionTime: "2026-10-07T17:44:50Z"
+    observedGeneration: 1
+    status: "True"
+    type: ContainersReady
+  - lastProbeTime: null
+    lastTransitionTime: "2026-10-07T17:44:50Z"
+    observedGeneration: 1
+    status: "True"
+    type: PodScheduled
+  containerStatuses:
+  - containerID: containerd://e8eb4a16a2396af6a6bfbcb233687406dffa83358b4d1aef55146843b4bcfe13
+    image: docker.io/library/nginx:1.27
+    imageID: docker.io/library/nginx@sha256:6784fb0834aa7dbbe12e3d7471e69c290df3e6ba810dc38b34ae33d3c1c05f7d
+    lastState: {}
+    name: nginx
+    ready: true
+    resources: {}
+    restartCount: 0
+    started: true
+    state:
+      running:
+        startedAt: "2026-10-07T17:44:50Z"
+
+$ kubectl -n s14-commands get pod get-demo -o jsonpath='{.status.phase} {.status.podIP} {.spec.nodeName}{"\n"}'
+Running 10.244.3.29 kushal-lab-worker
+
+$ kubectl -n s14-commands get pod get-demo -o custom-columns='NAME:.metadata.name,IMAGE:.spec.containers[0].image,NODE:.spec.nodeName,IP:.status.podIP'
+NAME       IMAGE        NODE                IP
+get-demo   nginx:1.27   kushal-lab-worker   10.244.3.29
+
+$ kubectl get pods -A | head -12                      # -A: every namespace
+NAMESPACE            NAME                                                        READY   STATUS              RESTARTS        AGE
+argocd               argocd-application-controller-0                             1/1     Running             1 (4m46s ago)   10h
+argocd               argocd-applicationset-controller-76fd8cdd4f-929dr           1/1     Running             1 (4m46s ago)   10h
+argocd               argocd-dex-server-66c78cf887-wgwk7                          1/1     Running             1 (4m46s ago)   10h
+argocd               argocd-notifications-controller-7fb9868fd6-gp8tc            1/1     Running             1 (4m46s ago)   10h
+argocd               argocd-redis-bdbdffcb4-gnzmv                                1/1     Running             1 (4m46s ago)   10h
+argocd               argocd-repo-server-d89c7967d-pbgxz                          1/1     Running             1 (4m46s ago)   10h
+argocd               argocd-server-776b7cdd4d-wklr9                              1/1     Running             1 (4m46s ago)   10h
+ingress-nginx        ingress-nginx-admission-create-gmr2j                        0/1     Completed           0               19d
+ingress-nginx        ingress-nginx-admission-patch-bb9df                         0/1     Completed           0               19d
+ingress-nginx        ingress-nginx-controller-56f5db4996-xz5qj                   1/1     Running             3 (4m46s ago)   19d
+kube-system          coredns-559f6c778d-5gr9q                                    1/1     Running             3 (4m46s ago)   19d
+
+$ kubectl get pods -A --field-selector=status.phase!=Running | head
+NAMESPACE       NAME                                       READY   STATUS         RESTARTS   AGE
+ingress-nginx   ingress-nginx-admission-create-gmr2j       0/1     Completed      0          19d
+ingress-nginx   ingress-nginx-admission-patch-bb9df        0/1     Completed      0          19d
+s15-helm        web-app-app-7f4f854d55-fflx7               0/1     Pending        0          0s
+studytrack      studytrack-broken-image-68fd7b8cf6-8spbh   0/1     ErrImagePull   0          11s
+
+$ kubectl -n s14-commands get all
+NAME           READY   STATUS    RESTARTS   AGE
+pod/get-demo   1/1     Running   0          1s
+
+$ kubectl get nodes -o wide | cut -c1-120
+NAME                       STATUS   ROLES           AGE   VERSION   INTERNAL-IP   EXTERNAL-IP   OS-IMAGE                
+kushal-lab-control-plane   Ready    control-plane   19d   v1.37.0   172.18.0.2    <none>        Debian GNU/Linux 13 (tri
+kushal-lab-worker          Ready    <none>          19d   v1.37.0   172.18.0.4    <none>        Debian GNU/Linux 13 (tri
+kushal-lab-worker2         Ready    <none>          19d   v1.37.0   172.18.0.3    <none>        Debian GNU/Linux 13 (tri
+
+$ kubectl api-resources | grep -E '^(pods|services|deployments|events|endpoints) '
+endpoints                           ep                 v1                                true         Endpoints
+events                              ev                 v1                                true         Event
+pods                                po                 v1                                true         Pod
+services                            svc                v1                                true         Service
+deployments                         deploy             apps/v1                           true         Deployment
+events                              ev                 events.k8s.io/v1                  true         Event
+pods                                                   metrics.k8s.io/v1beta1            true         PodMetrics
+
+############ kubectl describe ############
+
+$ kubectl -n s14-commands apply -f 02-kubectl-describe/demo-pod.yaml && wait_ready s14-commands describe-demo
+pod/describe-demo created
+pod/describe-demo condition met
+
+$ kubectl -n s14-commands describe pod describe-demo
+Name:             describe-demo
+Namespace:        s14-commands
+Priority:         0
+Service Account:  default
+Node:             kushal-lab-worker2/172.18.0.3
+Start Time:       Wed, 07 Oct 2026 23:14:51 +0530
+Labels:           app=describe-demo
+Annotations:      <none>
+Status:           Running
+IP:               10.244.1.20
+IPs:
+  IP:  10.244.1.20
+Containers:
+  nginx:
+    Container ID:   containerd://b1ad0b7845e1c4b7bca713bdc7ef892a7fd3f548fdde4a5f94cab6b105343c51
+    Image:          nginx:1.27
+    Image ID:       docker.io/library/nginx@sha256:6784fb0834aa7dbbe12e3d7471e69c290df3e6ba810dc38b34ae33d3c1c05f7d
+    Port:           80/TCP
+    Host Port:      0/TCP
+    State:          Running
+      Started:      Wed, 07 Oct 2026 23:14:51 +0530
+    Ready:          True
+    Restart Count:  0
+    Environment:    <none>
+    Mounts:
+      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-srw7k (ro)
+Conditions:
+  Type                        Status
+  PodReadyToStartContainers   True 
+  Initialized                 True 
+  Ready                       True 
+  ContainersReady             True 
+  PodScheduled                True 
+Volumes:
+  kube-api-access-srw7k:
+    Type:                    Projected (a volume that contains injected data from multiple sources)
+    TokenExpirationSeconds:  3607
+    ConfigMapName:           kube-root-ca.crt
+    Optional:                false
+    DownwardAPI:             true
+QoS Class:                   BestEffort
+Node-Selectors:              <none>
+Tolerations:                 node.kubernetes.io/not-ready:NoExecute op=Exists for 300s
+                             node.kubernetes.io/unreachable:NoExecute op=Exists for 300s
+Events:
+  Type    Reason     Age   From               Message
+  ----    ------     ----  ----               -------
+  Normal  Scheduled  1s    default-scheduler  Successfully assigned s14-commands/describe-demo to kushal-lab-worker2
+  Normal  Pulled     1s    kubelet            Container image "nginx:1.27" already present on machine and can be accessed by the pod
+  Normal  Created    1s    kubelet            Container created
+  Normal  Started    1s    kubelet            Container started
+
+$ kubectl -n s14-commands describe node kushal-lab-worker | sed -n '/^Allocated resources/,/^Events/p'
+Allocated resources:
+  (Total limits may be over 100 percent, i.e., overcommitted.)
+  Resource           Requests   Limits
+  --------           --------   ------
+  cpu                100m (1%)  0 (0%)
+  memory             50Mi (0%)  0 (0%)
+  ephemeral-storage  0 (0%)     0 (0%)
+  hugepages-1Gi      0 (0%)     0 (0%)
+  hugepages-2Mi      0 (0%)     0 (0%)
+  hugepages-32Mi     0 (0%)     0 (0%)
+  hugepages-64Ki     0 (0%)     0 (0%)
+Events:
+
+############ kubectl logs ############
+
+$ kubectl -n s14-commands apply -f 03-kubectl-logs/pod.yaml && wait_ready s14-commands logs-demo
+pod/logs-demo created
+pod/logs-demo condition met
+
+$ sleep 12; kubectl -n s14-commands logs logs-demo
+Application started
+Connecting to database...
+Database connection successful
+Application is running
+Application is healthy
+Application is healthy
+Application is healthy
+
+$ timeout 12 kubectl -n s14-commands logs -f logs-demo; echo '(followed for 12 s, ctrl-c)'
+Application started
+Connecting to database...
+Database connection successful
+Application is running
+Application is healthy
+Application is healthy
+Application is healthy
+Application is healthy
+Application is healthy
+(followed for 12 s, ctrl-c)
+
+$ kubectl -n s14-commands logs logs-demo --tail=2
+Application is healthy
+Application is healthy
+
+$ kubectl -n s14-commands logs logs-demo --since=10s --timestamps
+2026-10-07T17:45:07.650502586Z Application is healthy
+2026-10-07T17:45:12.651534631Z Application is healthy
+
+############ logs -c for a multi-container pod, and --previous after a crash ############
+
+$ kubectl -n s14-commands apply -f /tmp/two-75392.yaml; sleep 25; kubectl -n s14-commands get pod two-containers
+pod/two-containers created
+NAME             READY   STATUS   RESTARTS      AGE
+two-containers   1/2     Error    2 (24s ago)   26s
+
+$ kubectl -n s14-commands logs two-containers 2>&1 | head -3                # error: you must pick a container
+Defaulted container "web" out of: web, sidecar
+/docker-entrypoint.sh: /docker-entrypoint.d/ is not empty, will attempt to perform configuration
+/docker-entrypoint.sh: Looking for shell scripts in /docker-entrypoint.d/
+
+$ kubectl -n s14-commands logs two-containers -c web | tail -2
+2026/10/07 17:45:17 [notice] 1#1: start worker process 37
+2026/10/07 17:45:17 [notice] 1#1: start worker process 38
+
+$ kubectl -n s14-commands logs two-containers -c sidecar
+sidecar attempt 17:45:31
+
+$ kubectl -n s14-commands logs two-containers -c sidecar --previous        # the output of the container that already died
+unable to retrieve container logs for containerd://5bc9dec1f20de280357762cbc502546de365bef3c9c86b11d00d51879a10ec08
+$ kubectl -n s14-commands logs two-containers --all-containers --prefix | tail -4
+[pod/two-containers/web] 2026/10/07 17:45:17 [notice] 1#1: start worker process 36
+[pod/two-containers/web] 2026/10/07 17:45:17 [notice] 1#1: start worker process 37
+[pod/two-containers/web] 2026/10/07 17:45:17 [notice] 1#1: start worker process 38
+[pod/two-containers/sidecar] sidecar attempt 17:45:31
+
+############ kubectl exec ############
+
+$ kubectl -n s14-commands apply -f 04-kubectl-exec/pod.yaml && wait_ready s14-commands exec-demo
+pod/exec-demo created
+pod/exec-demo condition met
+
+$ kubectl -n s14-commands exec exec-demo -- hostname
+exec-demo
+
+$ kubectl -n s14-commands exec exec-demo -- ls /usr/share/nginx/html
+50x.html
+index.html
+
+$ kubectl -n s14-commands exec exec-demo -- curl -s -o /dev/null -w 'HTTP %{http_code}\n' localhost
+HTTP 200
+
+$ kubectl -n s14-commands exec exec-demo -- nginx -T 2>/dev/null | grep -E 'listen|root' | head -3
+    listen       80;
+    listen  [::]:80;
+        root   /usr/share/nginx/html;
+
+$ kubectl -n s14-commands exec exec-demo -- sh -c 'cat /etc/resolv.conf; echo; env | grep KUBERNETES_SERVICE'
+search s14-commands.svc.cluster.local svc.cluster.local cluster.local
+nameserver 10.96.0.10
+options ndots:5
+
+KUBERNETES_SERVICE_PORT=443
+KUBERNETES_SERVICE_PORT_HTTPS=443
+KUBERNETES_SERVICE_HOST=10.96.0.1
+
+$ kubectl -n s14-commands exec exec-demo -c nginx -- id
+uid=0(root) gid=0(root) groups=0(root)
+
+$ kubectl -n s14-commands exec exec-demo -- bash -c 'echo "interactive shell would be: kubectl exec -it exec-demo -- bash"'
+interactive shell would be: kubectl exec -it exec-demo -- bash
+
+############ events ############
+
+$ kubectl -n s14-commands apply -f 05-events/pod.yaml && wait_ready s14-commands events-demo
+pod/events-demo created
+pod/events-demo condition met
+
+$ kubectl -n s14-commands get events --sort-by=.lastTimestamp | tail -12
+13s         Normal    Started     pod/two-containers   Container started
+13s         Normal    Created     pod/two-containers   Container created
+13s         Normal    Pulled      pod/two-containers   Container image "busybox:1.36" already present on machine and can be accessed by the pod
+12s         Warning   BackOff     pod/two-containers   Back-off restarting failed container sidecar in pod two-containers_s14-commands(4a671e85-143f-48b1-bbbd-0d91b23438e8)
+2s          Normal    Scheduled   pod/exec-demo        Successfully assigned s14-commands/exec-demo to kushal-lab-worker
+2s          Normal    Started     pod/exec-demo        Container started
+2s          Normal    Pulled      pod/exec-demo        Container image "nginx:1.27" already present on machine and can be accessed by the pod
+2s          Normal    Created     pod/exec-demo        Container created
+1s          Normal    Scheduled   pod/events-demo      Successfully assigned s14-commands/events-demo to kushal-lab-worker2
+1s          Normal    Pulled      pod/events-demo      Container image "nginx:1.27" already present on machine and can be accessed by the pod
+1s          Normal    Created     pod/events-demo      Container created
+1s          Normal    Started     pod/events-demo      Container started
+
+$ kubectl -n s14-commands events --for pod/events-demo
+LAST SEEN   TYPE     REASON      OBJECT            MESSAGE
+1s          Normal   Scheduled   Pod/events-demo   Successfully assigned s14-commands/events-demo to kushal-lab-worker2
+1s          Normal   Pulled      Pod/events-demo   Container image "nginx:1.27" already present on machine and can be accessed by the pod
+1s          Normal   Created     Pod/events-demo   Container created
+1s          Normal   Started     Pod/events-demo   Container started
+
+$ kubectl -n s14-commands events --types=Warning
+LAST SEEN           TYPE      REASON    OBJECT               MESSAGE
+12s (x2 over 25s)   Warning   BackOff   Pod/two-containers   Back-off restarting failed container sidecar in pod two-containers_s14-commands(4a671e85-143f-48b1-bbbd-0d91b23438e8)
+
+$ kubectl -n s14-commands events --types=Warning --for pod/two-containers
+LAST SEEN           TYPE      REASON    OBJECT               MESSAGE
+12s (x2 over 25s)   Warning   BackOff   Pod/two-containers   Back-off restarting failed container sidecar in pod two-containers_s14-commands(4a671e85-143f-48b1-bbbd-0d91b23438e8)
+
+$ kubectl -n s14-commands describe pod events-demo | sed -n '/^Events/,$p'
+Events:
+  Type    Reason     Age   From               Message
+  ----    ------     ----  ----               -------
+  Normal  Scheduled  1s    default-scheduler  Successfully assigned s14-commands/events-demo to kushal-lab-worker2
+  Normal  Pulled     1s    kubelet            Container image "nginx:1.27" already present on machine and can be accessed by the pod
+  Normal  Created    1s    kubelet            Container created
+  Normal  Started    1s    kubelet            Container started
+
+$ timeout 8 kubectl -n s14-commands events --watch >/dev/null; echo '(kubectl events --watch streams new events live)'
+(kubectl events --watch streams new events live)
+
+############ kubectl explain ############
+
+$ kubectl explain pod.spec.containers.livenessProbe | head -25
+KIND:       Pod
+VERSION:    v1
+
+FIELD: livenessProbe <Probe>
+
+
+DESCRIPTION:
+    Periodic probe of container liveness. Container will be restarted if the
+    probe fails. Cannot be updated. More info:
+    https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes
+    Probe describes a health check to be performed against a container to
+    determine whether it is alive or ready to receive traffic.
+    
+FIELDS:
+  exec	<ExecAction>
+    Exec specifies a command to execute in the container.
+
+  failureThreshold	<integer>
+    Minimum consecutive failures for the probe to be considered failed after
+    having succeeded. Defaults to 3. Minimum value is 1.
+
+  grpc	<GRPCAction>
+    GRPC specifies a GRPC HealthCheckRequest.
+
+  httpGet	<HTTPGetAction>
+
+$ kubectl explain pod.spec.nodeSelector
+KIND:       Pod
+VERSION:    v1
+
+FIELD: nodeSelector <map[string]string>
+
+
+DESCRIPTION:
+    NodeSelector is a selector which must be true for the pod to fit on a node.
+    Selector which must match a node's labels for the pod to be scheduled on
+    that node. More info:
+    https://kubernetes.io/docs/concepts/configuration/assign-pod-node/
+    
+
+
+$ kubectl explain deployment.spec.strategy.rollingUpdate.maxUnavailable | head -12
+GROUP:      apps
+KIND:       Deployment
+VERSION:    v1
+
+FIELD: maxUnavailable <IntOrString>
+
+
+DESCRIPTION:
+    The maximum number of pods that can be unavailable during the update. Value
+    can be an absolute number (ex: 5) or a percentage of desired pods (ex: 10%).
+    Absolute number is calculated from percentage by rounding down. This can not
+    be 0 if MaxSurge is 0. Defaults to 25%. Example: when this is set to 30%,
+
+$ kubectl explain pod.spec.containers.resources.limits | head -12
+KIND:       Pod
+VERSION:    v1
+
+FIELD: limits <map[string]Quantity>
+
+
+DESCRIPTION:
+    Limits describes the maximum amount of compute resources allowed. More info:
+    https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+    Quantity is a fixed-point representation of a number. It provides convenient
+    marshaling/unmarshaling in JSON and YAML, in addition to String() and
+    AsInt64() accessors.
+
+############ kubectl top ############
+
+$ kubectl top nodes
+NAME                       CPU(cores)   CPU(%)   MEMORY(bytes)   MEMORY(%)   
+kushal-lab-control-plane   206m         3%       1795Mi          11%         
+kushal-lab-worker          113m         1%       1657Mi          10%         
+kushal-lab-worker2         110m         1%       1425Mi          8%          
+
+$ kubectl -n s14-commands top pods
+NAME             CPU(cores)   MEMORY(bytes)   
+describe-demo    0m           5Mi             
+get-demo         0m           5Mi             
+logs-demo        1m           0Mi             
+two-containers   0m           5Mi             
+
+$ kubectl -n s14-commands top pods --containers | head
+POD              NAME    CPU(cores)   MEMORY(bytes)   
+describe-demo    nginx   0m           5Mi             
+get-demo         nginx   0m           5Mi             
+logs-demo        app     1m           0Mi             
+two-containers   web     0m           5Mi             
+
+$ kubectl top pods -A --sort-by=cpu | head -8
+NAMESPACE            NAME                                                        CPU(cores)   MEMORY(bytes)   
+kube-system          kube-apiserver-kushal-lab-control-plane                     67m          662Mi           
+kube-system          etcd-kushal-lab-control-plane                               28m          148Mi           
+monitoring           prometheus-kube-prometheus-stack-prometheus-0               26m          488Mi           
+kube-system          kube-controller-manager-kushal-lab-control-plane            19m          151Mi           
+monitoring           kube-prometheus-stack-grafana-67c6cc7598-lpsf7              15m          691Mi           
+kube-system          kube-scheduler-kushal-lab-control-plane                     9m           71Mi            
+argocd               argocd-redis-bdbdffcb4-gnzmv                                6m           32Mi            
+
+############ cleanup ############
+
+$ kubectl delete ns s14-commands --wait=false
+namespace "s14-commands" deleted

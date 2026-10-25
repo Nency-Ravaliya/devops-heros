@@ -1,0 +1,532 @@
+
+############ CHANGE 1: a bigger instance type -> update in place (EC2 supports it after a stop) ############
+
+$ tf plan -input=false -var-file=localstack.tfvars -var instance_type=t3.small | grep -E '~|-/\+|Plan:'
+  ~ update in-place
+  ~ resource "aws_instance" "web" {
+      ~ instance_type                        = "t3.micro" -> "t3.small"
+      ~ public_dns                           = "ec2-54-214-155-183.ap-south-1.compute.amazonaws.com" -> (known after apply)
+      ~ public_ip                            = "54.214.155.183" -> (known after apply)
+      ~ vpc_security_group_ids               = [
+  ~ resource "aws_s3_bucket" "assets" {
+      ~ tags                        = {
+      ~ tags_all                    = {
+  ~ resource "aws_subnet" "public" {
+      ~ tags                                           = {
+      ~ tags_all                                       = {
+Plan: 0 to add, 3 to change, 0 to destroy.
+  ~ instance_public_ip  = "54.214.155.183" -> (known after apply)
+
+############ CHANGE 2: a different subnet CIDR -> the subnet must be replaced, and everything that depends on it ############
+
+$ tf plan -input=false -var-file=localstack.tfvars -var public_subnet_cidr=10.20.2.0/24 | grep -E '^  # |Plan:'
+  # aws_instance.web must be replaced
+  # aws_route_table_association.public must be replaced
+  # aws_s3_bucket.assets will be updated in-place
+  # aws_s3_object.instance_info will be updated in-place
+  # aws_subnet.public must be replaced
+Plan: 3 to add, 2 to change, 3 to destroy.
+
+############ terraform destroy ############
+
+$ tf destroy -input=false -auto-approve -var-file=localstack.tfvars
+tls_private_key.ssh: Refreshing state... [id=b649337b9e8832946123eef22832c973e81b7324]
+aws_key_pair.web: Refreshing state... [id=s19-kushal-key]
+aws_vpc.main: Refreshing state... [id=vpc-98dac775]
+aws_s3_bucket.assets: Refreshing state... [id=s19-kushal-assets-24bcs10123]
+aws_internet_gateway.main: Refreshing state... [id=igw-381d562a]
+aws_subnet.public: Refreshing state... [id=subnet-2a044d51]
+aws_security_group.web: Refreshing state... [id=sg-9e865c56a484cf533]
+aws_route_table.public: Refreshing state... [id=rtb-2a430a2f]
+aws_route_table_association.public: Refreshing state... [id=rtbassoc-782c89f5]
+aws_instance.web: Refreshing state... [id=i-3842fe9324347c9fe]
+aws_s3_bucket_versioning.assets: Refreshing state... [id=s19-kushal-assets-24bcs10123]
+aws_s3_bucket_public_access_block.assets: Refreshing state... [id=s19-kushal-assets-24bcs10123]
+aws_s3_object.instance_info: Refreshing state... [id=s19-kushal-assets-24bcs10123/infra/instance.json]
+
+Terraform used the selected providers to generate the following execution
+plan. Resource actions are indicated with the following symbols:
+  - destroy
+
+Terraform will perform the following actions:
+
+  # aws_instance.web will be destroyed
+  - resource "aws_instance" "web" {
+      - ami                                  = "ami-03cf127a" -> null
+      - arn                                  = "arn:aws:ec2:ap-south-1::instance/i-3842fe9324347c9fe" -> null
+      - associate_public_ip_address          = true -> null
+      - availability_zone                    = "ap-south-1a" -> null
+      - disable_api_stop                     = false -> null
+      - disable_api_termination              = false -> null
+      - ebs_optimized                        = false -> null
+      - force_destroy                        = false -> null
+      - get_password_data                    = false -> null
+      - hibernation                          = false -> null
+      - id                                   = "i-3842fe9324347c9fe" -> null
+      - instance_initiated_shutdown_behavior = "stop" -> null
+      - instance_state                       = "running" -> null
+      - instance_type                        = "t3.micro" -> null
+      - ipv6_address_count                   = 0 -> null
+      - ipv6_addresses                       = [] -> null
+      - key_name                             = "s19-kushal-key" -> null
+      - monitoring                           = false -> null
+      - placement_partition_number           = 0 -> null
+      - primary_network_interface_id         = "eni-7b6eea23" -> null
+      - private_dns                          = "ip-10-20-1-4.ap-south-1.compute.internal" -> null
+      - private_ip                           = "10.20.1.4" -> null
+      - public_dns                           = "ec2-54-214-155-183.ap-south-1.compute.amazonaws.com" -> null
+      - public_ip                            = "54.214.155.183" -> null
+      - region                               = "ap-south-1" -> null
+      - secondary_private_ips                = [] -> null
+      - security_groups                      = [] -> null
+      - source_dest_check                    = true -> null
+      - subnet_id                            = "subnet-2a044d51" -> null
+      - tags                                 = {
+          - "Name" = "s19-kushal-web"
+        } -> null
+      - tags_all                             = {
+          - "ManagedBy" = "Terraform"
+          - "Name"      = "s19-kushal-web"
+          - "Owner"     = "kushal-24bcs10123"
+          - "Project"   = "session19"
+        } -> null
+      - tenancy                              = "default" -> null
+      - user_data                            = <<-EOT
+            #!/bin/bash
+            # Runs once at first boot (cloud-init). Installs nginx and serves a page that names the instance.
+            set -eux
+            dnf install -y nginx
+            TOKEN=$(curl -s -X PUT http://169.254.169.254/latest/api/token -H 'X-aws-ec2-metadata-token-ttl-seconds: 300')
+            IID=$(curl -s -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/instance-id)
+            AZ=$(curl -s -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/placement/availability-zone)
+            cat > /usr/share/nginx/html/index.html <<HTML
+            <h1>Session 19 - Terraform built this</h1>
+            <p>instance: ${IID} in ${AZ}</p>
+            <p>kushal-24bcs10123</p>
+            HTML
+            systemctl enable --now nginx
+        EOT -> null
+      - user_data_replace_on_change          = false -> null
+      - vpc_security_group_ids               = [] -> null
+        # (8 unchanged attributes hidden)
+
+      - primary_network_interface {
+          - delete_on_termination = true -> null
+          - network_interface_id  = "eni-7b6eea23" -> null
+        }
+
+      - root_block_device {
+          - delete_on_termination = true -> null
+          - device_name           = "/dev/sda1" -> null
+          - encrypted             = false -> null
+          - iops                  = 3000 -> null
+          - tags                  = {} -> null
+          - tags_all              = {
+              - "ManagedBy" = "Terraform"
+              - "Owner"     = "kushal-24bcs10123"
+              - "Project"   = "session19"
+            } -> null
+          - throughput            = 0 -> null
+          - volume_id             = "vol-b7dafcea" -> null
+          - volume_size           = 8 -> null
+          - volume_type           = "gp3" -> null
+            # (1 unchanged attribute hidden)
+        }
+    }
+
+  # aws_internet_gateway.main will be destroyed
+  - resource "aws_internet_gateway" "main" {
+      - arn      = "arn:aws:ec2:ap-south-1:000000000000:internet-gateway/igw-381d562a" -> null
+      - id       = "igw-381d562a" -> null
+      - owner_id = "000000000000" -> null
+      - region   = "ap-south-1" -> null
+      - tags     = {
+          - "Name" = "s19-kushal-igw"
+        } -> null
+      - tags_all = {
+          - "ManagedBy" = "Terraform"
+          - "Name"      = "s19-kushal-igw"
+          - "Owner"     = "kushal-24bcs10123"
+          - "Project"   = "session19"
+        } -> null
+      - vpc_id   = "vpc-98dac775" -> null
+    }
+
+  # aws_key_pair.web will be destroyed
+  - resource "aws_key_pair" "web" {
+      - arn             = "arn:aws:ec2:ap-south-1::key-pair/s19-kushal-key" -> null
+      - fingerprint     = "86:d6:96:bd:ef:06:20:c1:3d:8a:41:4c:9f:2f:1c:ad:e8:5a:47:ae:e8:fd:62:e4:e0:b4:d6:9c:bc:2a:12:7f" -> null
+      - id              = "s19-kushal-key" -> null
+      - key_name        = "s19-kushal-key" -> null
+      - key_pair_id     = "key-8a19fa0d" -> null
+      - public_key      = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAg88zLao7I5rLvfO00RCJgnmDe45QffG6go90Yc62mB" -> null
+      - region          = "ap-south-1" -> null
+      - tags            = {} -> null
+      - tags_all        = {
+          - "ManagedBy" = "Terraform"
+          - "Owner"     = "kushal-24bcs10123"
+          - "Project"   = "session19"
+        } -> null
+        # (2 unchanged attributes hidden)
+    }
+
+  # aws_route_table.public will be destroyed
+  - resource "aws_route_table" "public" {
+      - arn              = "arn:aws:ec2:ap-south-1:000000000000:route-table/rtb-2a430a2f" -> null
+      - id               = "rtb-2a430a2f" -> null
+      - owner_id         = "000000000000" -> null
+      - propagating_vgws = [] -> null
+      - region           = "ap-south-1" -> null
+      - route            = [
+          - {
+              - cidr_block                 = "0.0.0.0/0"
+              - gateway_id                 = "igw-381d562a"
+                # (12 unchanged attributes hidden)
+            },
+        ] -> null
+      - tags             = {
+          - "Name" = "s19-kushal-public-rt"
+        } -> null
+      - tags_all         = {
+          - "ManagedBy" = "Terraform"
+          - "Name"      = "s19-kushal-public-rt"
+          - "Owner"     = "kushal-24bcs10123"
+          - "Project"   = "session19"
+        } -> null
+      - vpc_id           = "vpc-98dac775" -> null
+    }
+
+  # aws_route_table_association.public will be destroyed
+  - resource "aws_route_table_association" "public" {
+      - id             = "rtbassoc-782c89f5" -> null
+      - region         = "ap-south-1" -> null
+      - route_table_id = "rtb-2a430a2f" -> null
+      - subnet_id      = "subnet-2a044d51" -> null
+        # (1 unchanged attribute hidden)
+    }
+
+  # aws_s3_bucket.assets will be destroyed
+  - resource "aws_s3_bucket" "assets" {
+      - arn                         = "arn:aws:s3:::s19-kushal-assets-24bcs10123" -> null
+      - bucket                      = "s19-kushal-assets-24bcs10123" -> null
+      - bucket_domain_name          = "s19-kushal-assets-24bcs10123.s3.amazonaws.com" -> null
+      - bucket_namespace            = "global" -> null
+      - bucket_region               = "ap-south-1" -> null
+      - bucket_regional_domain_name = "s19-kushal-assets-24bcs10123.s3.ap-south-1.amazonaws.com" -> null
+      - force_destroy               = true -> null
+      - hosted_zone_id              = "Z11RGJOFQNVJUP" -> null
+      - id                          = "s19-kushal-assets-24bcs10123" -> null
+      - object_lock_enabled         = false -> null
+      - region                      = "ap-south-1" -> null
+      - request_payer               = "BucketOwner" -> null
+      - tags                        = {} -> null
+      - tags_all                    = {} -> null
+        # (3 unchanged attributes hidden)
+
+      - grant {
+          - id          = "75aa57f09aa0c8caeab4f8c24e99d10f8e7faeebf76c078efc7c6caea54ba06a" -> null
+          - permissions = [
+              - "FULL_CONTROL",
+            ] -> null
+          - type        = "CanonicalUser" -> null
+            # (1 unchanged attribute hidden)
+        }
+
+      - server_side_encryption_configuration {
+          - rule {
+              - bucket_key_enabled = false -> null
+
+              - apply_server_side_encryption_by_default {
+                  - sse_algorithm     = "AES256" -> null
+                    # (1 unchanged attribute hidden)
+                }
+            }
+        }
+
+      - versioning {
+          - enabled    = true -> null
+          - mfa_delete = false -> null
+        }
+    }
+
+  # aws_s3_bucket_public_access_block.assets will be destroyed
+  - resource "aws_s3_bucket_public_access_block" "assets" {
+      - block_public_acls       = true -> null
+      - block_public_policy     = true -> null
+      - bucket                  = "s19-kushal-assets-24bcs10123" -> null
+      - id                      = "s19-kushal-assets-24bcs10123" -> null
+      - ignore_public_acls      = true -> null
+      - region                  = "ap-south-1" -> null
+      - restrict_public_buckets = true -> null
+    }
+
+  # aws_s3_bucket_versioning.assets will be destroyed
+  - resource "aws_s3_bucket_versioning" "assets" {
+      - bucket                = "s19-kushal-assets-24bcs10123" -> null
+      - id                    = "s19-kushal-assets-24bcs10123" -> null
+      - region                = "ap-south-1" -> null
+        # (1 unchanged attribute hidden)
+
+      - versioning_configuration {
+          - mfa_delete = "Disabled" -> null
+          - status     = "Enabled" -> null
+        }
+    }
+
+  # aws_s3_object.instance_info will be destroyed
+  - resource "aws_s3_object" "instance_info" {
+      - arn                           = "arn:aws:s3:::s19-kushal-assets-24bcs10123/infra/instance.json" -> null
+      - bucket                        = "s19-kushal-assets-24bcs10123" -> null
+      - bucket_key_enabled            = false -> null
+      - content                       = jsonencode(
+            {
+              - instance_id = "i-3842fe9324347c9fe"
+              - private_ip  = "10.20.1.4"
+              - vpc_id      = "vpc-98dac775"
+            }
+        ) -> null
+      - content_type                  = "application/json" -> null
+      - etag                          = "0e88a58a5a6a896e94b736633d8d102d" -> null
+      - force_destroy                 = false -> null
+      - id                            = "s19-kushal-assets-24bcs10123/infra/instance.json" -> null
+      - key                           = "infra/instance.json" -> null
+      - metadata                      = {} -> null
+      - region                        = "ap-south-1" -> null
+      - server_side_encryption        = "AES256" -> null
+      - storage_class                 = "STANDARD" -> null
+      - tags                          = {} -> null
+      - tags_all                      = {
+          - "ManagedBy" = "Terraform"
+          - "Owner"     = "kushal-24bcs10123"
+          - "Project"   = "session19"
+        } -> null
+      - version_id                    = "qs7zZq3XHnLQ2R3tI5fjpCnNDyZ8j5KR" -> null
+        # (13 unchanged attributes hidden)
+    }
+
+  # aws_security_group.web will be destroyed
+  - resource "aws_security_group" "web" {
+      - arn                    = "arn:aws:ec2:ap-south-1:000000000000:security-group/sg-9e865c56a484cf533" -> null
+      - description            = "HTTP/HTTPS from anywhere, SSH from the admin range" -> null
+      - egress                 = [
+          - {
+              - cidr_blocks      = [
+                  - "0.0.0.0/0",
+                ]
+              - description      = "all outbound"
+              - from_port        = 0
+              - ipv6_cidr_blocks = []
+              - prefix_list_ids  = []
+              - protocol         = "-1"
+              - security_groups  = []
+              - self             = false
+              - to_port          = 0
+            },
+        ] -> null
+      - id                     = "sg-9e865c56a484cf533" -> null
+      - ingress                = [
+          - {
+              - cidr_blocks      = [
+                  - "0.0.0.0/0",
+                ]
+              - description      = "HTTP"
+              - from_port        = 80
+              - ipv6_cidr_blocks = []
+              - prefix_list_ids  = []
+              - protocol         = "tcp"
+              - security_groups  = []
+              - self             = false
+              - to_port          = 80
+            },
+          - {
+              - cidr_blocks      = [
+                  - "0.0.0.0/0",
+                ]
+              - description      = "HTTPS"
+              - from_port        = 443
+              - ipv6_cidr_blocks = []
+              - prefix_list_ids  = []
+              - protocol         = "tcp"
+              - security_groups  = []
+              - self             = false
+              - to_port          = 443
+            },
+          - {
+              - cidr_blocks      = [
+                  - "10.0.0.0/8",
+                ]
+              - description      = "SSH from admin range only"
+              - from_port        = 22
+              - ipv6_cidr_blocks = []
+              - prefix_list_ids  = []
+              - protocol         = "tcp"
+              - security_groups  = []
+              - self             = false
+              - to_port          = 22
+            },
+        ] -> null
+      - name                   = "s19-kushal-web-sg" -> null
+      - owner_id               = "000000000000" -> null
+      - region                 = "ap-south-1" -> null
+      - revoke_rules_on_delete = false -> null
+      - tags                   = {
+          - "Name" = "s19-kushal-web-sg"
+        } -> null
+      - tags_all               = {
+          - "ManagedBy" = "Terraform"
+          - "Name"      = "s19-kushal-web-sg"
+          - "Owner"     = "kushal-24bcs10123"
+          - "Project"   = "session19"
+        } -> null
+      - vpc_id                 = "vpc-98dac775" -> null
+        # (1 unchanged attribute hidden)
+    }
+
+  # aws_subnet.public will be destroyed
+  - resource "aws_subnet" "public" {
+      - arn                                            = "arn:aws:ec2:ap-south-1:000000000000:subnet/subnet-2a044d51" -> null
+      - assign_ipv6_address_on_creation                = false -> null
+      - availability_zone                              = "ap-south-1a" -> null
+      - availability_zone_id                           = "aps1-az1" -> null
+      - cidr_block                                     = "10.20.1.0/24" -> null
+      - enable_dns64                                   = false -> null
+      - enable_lni_at_device_index                     = 0 -> null
+      - enable_resource_name_dns_a_record_on_launch    = false -> null
+      - enable_resource_name_dns_aaaa_record_on_launch = false -> null
+      - id                                             = "subnet-2a044d51" -> null
+      - ipv6_native                                    = false -> null
+      - map_customer_owned_ip_on_launch                = false -> null
+      - map_public_ip_on_launch                        = true -> null
+      - owner_id                                       = "000000000000" -> null
+      - private_dns_hostname_type_on_launch            = "ip-name" -> null
+      - region                                         = "ap-south-1" -> null
+      - tags                                           = {} -> null
+      - tags_all                                       = {} -> null
+      - vpc_id                                         = "vpc-98dac775" -> null
+        # (4 unchanged attributes hidden)
+    }
+
+  # aws_vpc.main will be destroyed
+  - resource "aws_vpc" "main" {
+      - arn                                  = "arn:aws:ec2:ap-south-1:000000000000:vpc/vpc-98dac775" -> null
+      - assign_generated_ipv6_cidr_block     = false -> null
+      - cidr_block                           = "10.20.0.0/16" -> null
+      - default_network_acl_id               = "acl-54765d3e" -> null
+      - default_route_table_id               = "rtb-f7502b64" -> null
+      - default_security_group_id            = "sg-34f862a474f1ea136" -> null
+      - dhcp_options_id                      = "default" -> null
+      - enable_dns_hostnames                 = true -> null
+      - enable_dns_support                   = true -> null
+      - enable_network_address_usage_metrics = false -> null
+      - id                                   = "vpc-98dac775" -> null
+      - instance_tenancy                     = "default" -> null
+      - ipv6_netmask_length                  = 0 -> null
+      - main_route_table_id                  = "rtb-f7502b64" -> null
+      - owner_id                             = "000000000000" -> null
+      - region                               = "ap-south-1" -> null
+      - tags                                 = {
+          - "Name" = "s19-kushal-vpc"
+        } -> null
+      - tags_all                             = {
+          - "ManagedBy" = "Terraform"
+          - "Name"      = "s19-kushal-vpc"
+          - "Owner"     = "kushal-24bcs10123"
+          - "Project"   = "session19"
+        } -> null
+        # (4 unchanged attributes hidden)
+    }
+
+  # tls_private_key.ssh will be destroyed
+  - resource "tls_private_key" "ssh" {
+      - algorithm                     = "ED25519" -> null
+      - ecdsa_curve                   = "P224" -> null
+      - id                            = "b649337b9e8832946123eef22832c973e81b7324" -> null
+      - private_key_openssh           = (sensitive value) -> null
+      - private_key_pem               = (sensitive value) -> null
+      - private_key_pem_pkcs8         = (sensitive value) -> null
+      - public_key_fingerprint_md5    = "92:68:00:fa:46:38:85:a3:f5:0a:3d:c8:75:17:4a:c7" -> null
+      - public_key_fingerprint_sha256 = "SHA256:nhrX2RC1LhAiYPzHM8OYtUQV9GtuKlutJ/c4Crrxwpc" -> null
+      - public_key_openssh            = <<-EOT
+            ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAg88zLao7I5rLvfO00RCJgnmDe45QffG6go90Yc62mB
+        EOT -> null
+      - public_key_pem                = <<-EOT
+            -----BEGIN PUBLIC KEY-----
+            MCowBQYDK2VwAyEACDzzMtqjsjmsu987TREImCeYN7jlB98bqCj3RhzraYE=
+            -----END PUBLIC KEY-----
+        EOT -> null
+      - rsa_bits                      = 2048 -> null
+    }
+
+Plan: 0 to add, 0 to change, 13 to destroy.
+
+Changes to Outputs:
+  - ami_id              = "ami-03cf127a" -> null
+  - bucket_arn          = "arn:aws:s3:::s19-kushal-assets-24bcs10123" -> null
+  - bucket_name         = "s19-kushal-assets-24bcs10123" -> null
+  - instance_id         = "i-3842fe9324347c9fe" -> null
+  - instance_private_ip = "10.20.1.4" -> null
+  - instance_public_ip  = "54.214.155.183" -> null
+  - internet_gateway_id = "igw-381d562a" -> null
+  - public_subnet_id    = "subnet-2a044d51" -> null
+  - route_table_id      = "rtb-2a430a2f" -> null
+  - security_group_id   = "sg-9e865c56a484cf533" -> null
+  - ssh_private_key_pem = (sensitive value) -> null
+  - vpc_cidr            = "10.20.0.0/16" -> null
+  - vpc_id              = "vpc-98dac775" -> null
+aws_s3_bucket_public_access_block.assets: Destroying... [id=s19-kushal-assets-24bcs10123]
+aws_s3_bucket_versioning.assets: Destroying... [id=s19-kushal-assets-24bcs10123]
+aws_s3_object.instance_info: Destroying... [id=s19-kushal-assets-24bcs10123/infra/instance.json]
+aws_s3_bucket_versioning.assets: Destruction complete after 0s
+aws_s3_bucket_public_access_block.assets: Destruction complete after 0s
+aws_s3_object.instance_info: Destruction complete after 0s
+aws_s3_bucket.assets: Destroying... [id=s19-kushal-assets-24bcs10123]
+aws_instance.web: Destroying... [id=i-3842fe9324347c9fe]
+aws_s3_bucket.assets: Destruction complete after 0s
+aws_instance.web: Still destroying... [id=i-3842fe9324347c9fe, 00m10s elapsed]
+aws_instance.web: Destruction complete after 10s
+aws_key_pair.web: Destroying... [id=s19-kushal-key]
+aws_route_table_association.public: Destroying... [id=rtbassoc-782c89f5]
+aws_security_group.web: Destroying... [id=sg-9e865c56a484cf533]
+aws_key_pair.web: Destruction complete after 0s
+tls_private_key.ssh: Destroying... [id=b649337b9e8832946123eef22832c973e81b7324]
+tls_private_key.ssh: Destruction complete after 0s
+aws_route_table_association.public: Destruction complete after 0s
+aws_security_group.web: Destruction complete after 0s
+aws_route_table.public: Destroying... [id=rtb-2a430a2f]
+aws_subnet.public: Destroying... [id=subnet-2a044d51]
+aws_subnet.public: Destruction complete after 0s
+aws_route_table.public: Destruction complete after 0s
+aws_internet_gateway.main: Destroying... [id=igw-381d562a]
+aws_internet_gateway.main: Destruction complete after 0s
+aws_vpc.main: Destroying... [id=vpc-98dac775]
+aws_vpc.main: Destruction complete after 0s
+
+Destroy complete! Resources: 13 destroyed.
+
+############ LOCALSTACK IS EMPTY AGAIN ############
+
+$ awsl ec2 describe-vpcs --query 'Vpcs[].{VpcId:VpcId,Cidr:CidrBlock,Default:IsDefault}' --output table
+----------------------------------------------
+|                DescribeVpcs                |
++---------------+-----------+----------------+
+|     Cidr      |  Default  |     VpcId      |
++---------------+-----------+----------------+
+|  172.31.0.0/16|  True     |  vpc-5a308e7b  |
++---------------+-----------+----------------+
+
+$ awsl ec2 describe-instances --query 'Reservations[].Instances[].{Id:InstanceId,State:State.Name}' --output table
+---------------------------------------
+|          DescribeInstances          |
++----------------------+--------------+
+|          Id          |    State     |
++----------------------+--------------+
+|  i-3b79c83ae0d0cf205 |  running     |
+|  i-e6f3f17a525e385ce |  running     |
+|  i-3842fe9324347c9fe |  terminated  |
++----------------------+--------------+
+
+$ awsl s3 ls; echo "(buckets left: $(awsl s3 ls | wc -l | tr -d ' '))"
+(buckets left: 0)
+
+$ tf state list; echo '(state is empty)'
+(state is empty)

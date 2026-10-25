@@ -1,0 +1,61 @@
+{
+  "title": "StudyTrack",
+  "uid": "studytrack",
+  "tags": ["studytrack", "24bcs10123"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "refresh": "10s",
+  "time": {"from": "now-30m", "to": "now"},
+  "panels": [
+    {
+      "id": 1, "type": "stat", "title": "Backend targets UP",
+      "gridPos": {"x": 0, "y": 0, "w": 6, "h": 5},
+      "targets": [{"expr": "sum(up{job=\"studytrack-backend\"})", "refId": "A"}],
+      "fieldConfig": {"defaults": {"color": {"mode": "thresholds"}, "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "green", "value": 1}]}}}
+    },
+    {
+      "id": 2, "type": "stat", "title": "Requests / s (all handlers)",
+      "gridPos": {"x": 6, "y": 0, "w": 6, "h": 5},
+      "targets": [{"expr": "sum(rate(http_requests_total{job=\"studytrack-backend\"}[1m]))", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "reqps", "decimals": 2}}
+    },
+    {
+      "id": 3, "type": "stat", "title": "p95 latency",
+      "gridPos": {"x": 12, "y": 0, "w": 6, "h": 5},
+      "targets": [{"expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{job=\"studytrack-backend\"}[5m])) by (le))", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "s", "decimals": 3}}
+    },
+    {
+      "id": 4, "type": "stat", "title": "Study minutes logged (total)",
+      "gridPos": {"x": 18, "y": 0, "w": 6, "h": 5},
+      "targets": [{"expr": "sum(studytrack_minutes_logged_total)", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "none", "decimals": 0}}
+    },
+    {
+      "id": 5, "type": "timeseries", "title": "HTTP requests / s by handler",
+      "gridPos": {"x": 0, "y": 5, "w": 12, "h": 9},
+      "targets": [{"expr": "sum by (handler) (rate(http_requests_total{job=\"studytrack-backend\"}[1m]))", "legendFormat": "{{handler}}", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "reqps"}}
+    },
+    {
+      "id": 6, "type": "timeseries", "title": "HTTP status codes / s",
+      "gridPos": {"x": 12, "y": 5, "w": 12, "h": 9},
+      "targets": [{"expr": "sum by (status) (rate(http_requests_total{job=\"studytrack-backend\"}[1m]))", "legendFormat": "{{status}}", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "reqps"}}
+    },
+    {
+      "id": 7, "type": "timeseries", "title": "Backend pod CPU (cores) vs HPA replicas",
+      "gridPos": {"x": 0, "y": 14, "w": 12, "h": 9},
+      "targets": [
+        {"expr": "sum(rate(container_cpu_usage_seconds_total{namespace=\"studytrack\",container=\"backend\"}[2m]))", "legendFormat": "cpu cores (all backend pods)", "refId": "A"},
+        {"expr": "kube_horizontalpodautoscaler_status_current_replicas{namespace=\"studytrack\",horizontalpodautoscaler=\"studytrack-backend\"}", "legendFormat": "hpa replicas", "refId": "B"}
+      ]
+    },
+    {
+      "id": 8, "type": "timeseries", "title": "Backend pod memory",
+      "gridPos": {"x": 12, "y": 14, "w": 12, "h": 9},
+      "targets": [{"expr": "sum by (pod) (container_memory_working_set_bytes{namespace=\"studytrack\",container=\"backend\"})", "legendFormat": "{{pod}}", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "bytes"}}
+    }
+  ]
+}

@@ -1,0 +1,75 @@
+$ kubectl -n studytrack get servicemonitor studytrack-backend -o yaml | grep -A8 "^spec"
+spec:
+  endpoints:
+  - interval: 15s
+    path: /metrics
+    port: http
+  namespaceSelector:
+    matchNames:
+    - studytrack
+  selector:
+
+$ kubectl -n monitoring port-forward svc/kube-prometheus-stack-prometheus 21090:9090 &
+$ curl -s localhost:21090/api/v1/targets?state=active | python3 ...   # Prometheus Targets page, filtered to my job
+  job=studytrack-backend pod=studytrack-backend-5f8784687-sl7l8 url=http://10.244.1.78:8000/metrics health=up lastScrape=2026-10-07T18:18:55
+  job=studytrack-backend pod=studytrack-backend-5f8784687-22kc5 url=http://10.244.3.104:8000/metrics health=up lastScrape=2026-10-07T18:18:51
+
+$ scripts/prom-queries.sh      (while scripts/load-test.sh 70 6 is running)
+
+# scrape target health
+$ up{job="studytrack-backend"}
+  pod=studytrack-backend-5f8784687-22kc5 => 1
+  pod=studytrack-backend-5f8784687-sl7l8 => 1
+
+# requests per second by handler
+$ sum by (handler) (rate(http_requests_total{job="studytrack-backend"}[1m]))
+  handler=/api/entries => 0
+  handler=/api/entries/summary => 38.88670355345204
+
+# requests per second by status
+$ sum by (status) (rate(http_requests_total{job="studytrack-backend"}[1m]))
+  status=201 => 0
+  status=200 => 39.133111820786084
+
+# p95 latency (s)
+$ histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{job="studytrack-backend"}[5m])) by (le))
+   => 0.19832809021320938
+
+# entries created, by subject
+$ sum by (subject) (studytrack_entries_created_total)
+  subject=Operating Systems => 1
+  subject=DevOps => 2
+  subject=DBMS => 1
+  subject=Computer Networks => 1
+
+# minutes logged
+$ sum(studytrack_minutes_logged_total)
+   => 270
+
+# backend cpu (cores) per pod
+$ sum by (pod) (rate(container_cpu_usage_seconds_total{namespace="studytrack",container="backend"}[2m]))
+  pod=studytrack-backend-5f8784687-sl7l8 => 0.1276386675780165
+  pod=studytrack-backend-5f8784687-22kc5 => 0.12396747634304447
+  pod=studytrack-backend-5f8784687-h5vfr => 0.06682337083333333
+  pod=studytrack-backend-5f8784687-85rhr => 0.06827872083333333
+
+# backend memory per pod (bytes)
+$ sum by (pod) (container_memory_working_set_bytes{namespace="studytrack",container="backend"})
+  pod=studytrack-backend-5f8784687-sl7l8 => 68620288
+  pod=studytrack-backend-5f8784687-22kc5 => 68476928
+  pod=studytrack-backend-5f8784687-h5vfr => 65851392
+  pod=studytrack-backend-5f8784687-85rhr => 65867776
+  pod=studytrack-backend-5f8784687-7dw4j => 8990720
+  pod=studytrack-backend-5f8784687-hphnz => 2699264
+  pod=studytrack-backend-5f8784687-84hx9 => 3579904
+  pod=studytrack-backend-5f8784687-s5lh5 => 8626176
+
+# hpa current replicas
+$ kube_horizontalpodautoscaler_status_current_replicas{namespace="studytrack"}
+  horizontalpodautoscaler=studytrack-backend,pod=kube-prometheus-stack-kube-state-metrics-78dc75b868-9czmb => 2
+
+$ kubectl apply -f monitoring/prometheusrule.yaml && curl -s localhost:21090/api/v1/rules | ... grep StudyTrack
+prometheusrule.monitoring.coreos.com/studytrack-alerts unchanged
+  StudyTrackBackendDown        state=inactive health=ok
+  StudyTrackHighErrorRate      state=inactive health=ok
+  StudyTrackSlowRequests       state=inactive health=ok

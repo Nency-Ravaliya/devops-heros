@@ -1,0 +1,49 @@
+NAME                      READY   STATUS        RESTARTS   AGE
+web-app-d45775485-fkvmc   1/1     Terminating   0          13s
+web-app-d45775485-jl22j   1/1     Terminating   0          13s
+web-app-d45775485-fkvmc   0/1     Completed     0          14s
+web-app-d45775485-jl22j   0/1     Completed     0          14s
+web-app-d45775485-fkvmc   0/1     Completed     0          14s
+web-app-85d86b65d-4p7qg   0/1     Pending       0          0s
+web-app-d45775485-fkvmc   0/1     Completed     0          14s
+web-app-85d86b65d-78pqq   0/1     Pending       0          0s
+web-app-85d86b65d-4p7qg   0/1     Pending       0          0s
+web-app-85d86b65d-78pqq   0/1     Pending       0          0s
+web-app-d45775485-jl22j   0/1     Completed     0          14s
+web-app-d45775485-jl22j   0/1     Completed     0          15s
+web-app-85d86b65d-4p7qg   0/1     ContainerCreating   0          1s
+web-app-85d86b65d-78pqq   0/1     ContainerCreating   0          1s
+web-app-85d86b65d-78pqq   0/1     ContainerCreating   0          2s
+web-app-85d86b65d-4p7qg   0/1     ContainerCreating   0          2s
+web-app-85d86b65d-78pqq   0/1     Running             0          2s
+web-app-85d86b65d-4p7qg   0/1     Running             0          3s
+web-app-85d86b65d-78pqq   0/1     Running             0          4s
+web-app-85d86b65d-4p7qg   0/1     Running             0          4s
+web-app-85d86b65d-78pqq   0/1     Running             0          5s
+web-app-85d86b65d-4p7qg   0/1     Running             0          5s
+web-app-85d86b65d-78pqq   1/1     Running             0          11s
+web-app-85d86b65d-4p7qg   1/1     Running             0          12s
+web-app-85d86b65d-78pqq   0/1     Running             1 (2s ago)   23s
+web-app-85d86b65d-4p7qg   0/1     Running             1 (2s ago)   23s
+web-app-85d86b65d-78pqq   0/1     Running             1 (2s ago)   23s
+web-app-85d86b65d-4p7qg   0/1     Running             1 (2s ago)   23s
+web-app-85d86b65d-78pqq   0/1     Running             1 (4s ago)   25s
+web-app-85d86b65d-4p7qg   0/1     Running             1 (5s ago)   26s
+web-app-85d86b65d-78pqq   1/1     Running             1 (10s ago)   31s
+web-app-85d86b65d-4p7qg   1/1     Running             1 (10s ago)   31s
+web-app-85d86b65d-78pqq   0/1     Running             2 (2s ago)    43s
+web-app-85d86b65d-4p7qg   0/1     Running             2 (2s ago)    43s
+web-app-85d86b65d-78pqq   0/1     Running             2 (2s ago)    43s
+web-app-85d86b65d-4p7qg   0/1     Running             2 (2s ago)    43s
+web-app-85d86b65d-78pqq   0/1     Running             2 (4s ago)    45s
+web-app-85d86b65d-4p7qg   0/1     Running             2 (4s ago)    45s
+web-app-85d86b65d-78pqq   1/1     Running             2 (9s ago)    50s
+web-app-85d86b65d-4p7qg   1/1     Running             2 (10s ago)   51s
+web-app-85d86b65d-78pqq   0/1     Running             3 (1s ago)    62s
+web-app-85d86b65d-4p7qg   0/1     Running             3 (1s ago)    62s
+web-app-85d86b65d-78pqq   0/1     Running             3 (2s ago)    63s
+web-app-85d86b65d-4p7qg   0/1     Running             3 (2s ago)    63s
+web-app-85d86b65d-78pqq   0/1     Running             3 (4s ago)    65s
+web-app-85d86b65d-4p7qg   0/1     Running             3 (4s ago)    65s
+web-app-85d86b65d-78pqq   1/1     Running             3 (9s ago)    70s
+web-app-85d86b65d-4p7qg   1/1     Running             3 (9s ago)    70s

@@ -1,0 +1,121 @@
+NAME         READY   STATUS    RESTARTS   AGE
+crash-demo   0/1     Pending   0          0s
+crash-demo   0/1     Pending   0          0s
+crash-demo   0/1     ContainerCreating   0          0s
+crash-demo   0/1     ContainerCreating   0          0s
+crash-demo   1/1     Running             0          0s
+crash-demo   0/1     Error               0          2s
+crash-demo   1/1     Running             1 (2s ago)   2s
+crash-demo   0/1     Error               1 (3s ago)   3s
+crash-demo   0/1     CrashLoopBackOff    1 (12s ago)   14s
+crash-demo   1/1     Running             2 (12s ago)   14s
+crash-demo   0/1     Error               2 (13s ago)   15s
+crash-demo   0/1     CrashLoopBackOff    2 (22s ago)   36s
+crash-demo   1/1     Running             3 (22s ago)   36s
+crash-demo   0/1     Error               3 (23s ago)   37s
+crash-demo   0/1     Terminating         3 (46s ago)   60s
+crash-demo   0/1     Terminating         3 (46s ago)   60s
+crash-demo   0/1     Error               3 (46s ago)   60s
+crash-demo   0/1     Error               3 (47s ago)   61s
+crash-demo   0/1     Error               3 (47s ago)   61s
+crash-demo   0/1     Pending             0             0s
+crash-demo   0/1     Pending             0             0s
+crash-demo   0/1     ContainerCreating   0             0s
+crash-demo   0/1     ContainerCreating   0             0s
+crash-demo   1/1     Running             0             0s
+image-demo   0/1     Pending             0             0s
+image-demo   0/1     Pending             0             0s
+image-demo   0/1     ContainerCreating   0             0s
+image-demo   0/1     ContainerCreating   0             0s
+image-demo   0/1     ErrImagePull        0             3s
+image-demo   0/1     ImagePullBackOff    0             15s
+image-demo   0/1     ErrImagePull        0             30s
+image-demo   0/1     Terminating         0             35s
+image-demo   0/1     Terminating         0             35s
+image-demo   0/1     Terminating         0             35s
+image-demo   0/1     Terminating         0             36s
+image-demo   0/1     ContainerStatusUnknown   0             36s
+image-demo   0/1     ContainerStatusUnknown   0             36s
+image-demo   0/1     ContainerStatusUnknown   0             36s
+image-demo   0/1     Pending                  0             0s
+image-demo   0/1     Pending                  0             0s
+image-demo   0/1     ContainerCreating        0             0s
+image-demo   0/1     ContainerCreating        0             1s
+image-demo   1/1     Running                  0             1s
+private-demo   0/1     Pending                  0             0s
+private-demo   0/1     Pending                  0             0s
+private-demo   0/1     ContainerCreating        0             0s
+private-demo   0/1     ContainerCreating        0             0s
+private-demo   0/1     ErrImagePull             0             1s
+private-demo   0/1     ImagePullBackOff         0             14s
+private-demo   0/1     Terminating              0             20s
+private-demo   0/1     Terminating              0             20s
+private-demo   0/1     Terminating              0             20s
+pending-demo   0/1     Pending                  0             0s
+pending-demo   0/1     Pending                  0             0s
+private-demo   0/1     ContainerStatusUnknown   0             20s
+private-demo   0/1     ContainerStatusUnknown   0             20s
+private-demo   0/1     ContainerStatusUnknown   0             20s
+pending-demo   0/1     Terminating              0             10s
+pending-demo   0/1     Terminating              0             10s
+pending-demo   0/1     Pending                  0             0s
+pending-demo   0/1     Pending                  0             0s
+pending-demo   0/1     ContainerCreating        0             0s
+pending-demo   0/1     ContainerCreating        0             1s
+pending-demo   1/1     Running                  0             1s
+fail-3-pending-pod   0/1     Pending                  0             0s
+fail-3-pending-pod   0/1     Pending                  0             0s
+fail-3-pending-pod   0/1     Terminating              0             11s
+fail-3-pending-pod   0/1     Terminating              0             11s
+fail-3-pending-pod   0/1     Pending                  0             0s
+fail-3-pending-pod   0/1     Pending                  0             0s
+fail-3-pending-pod   0/1     ContainerCreating        0             0s
+fail-3-pending-pod   0/1     ContainerCreating        0             0s
+fail-3-pending-pod   1/1     Running                  0             9s
+creating-demo        0/1     Pending                  0             0s
+creating-demo        0/1     Pending                  0             0s
+creating-demo        0/1     ContainerCreating        0             0s
+creating-demo        0/1     ContainerCreating        0             16s
+creating-demo        1/1     Running                  0             16s
+web-557577df75-nkk5v   0/1     Pending                  0             0s
+web-557577df75-4m8vr   0/1     Pending                  0             0s
+web-557577df75-nkk5v   0/1     Pending                  0             0s
+web-557577df75-4m8vr   0/1     Pending                  0             0s
+web-557577df75-nkk5v   0/1     ContainerCreating        0             0s
+web-557577df75-4m8vr   0/1     ContainerCreating        0             0s
+web-557577df75-nkk5v   0/1     ContainerCreating        0             0s
+web-557577df75-4m8vr   0/1     ContainerCreating        0             0s
+web-557577df75-nkk5v   1/1     Running                  0             0s
+web-557577df75-4m8vr   1/1     Running                  0             0s
+dns-test               0/1     Pending                  0             0s
+dns-test               0/1     Pending                  0             0s
+dns-test               0/1     ContainerCreating        0             0s
+dns-test               0/1     ContainerCreating        0             0s
+dns-test               1/1     Running                  0             0s
+fail-4-dns-failure-pod   0/1     Pending                  0             0s
+fail-4-dns-failure-pod   0/1     Pending                  0             0s
+fail-4-dns-failure-pod   0/1     ContainerCreating        0             0s
+fail-4-dns-failure-pod   0/1     ContainerCreating        0             0s
+fail-4-dns-failure-pod   1/1     Running                  0             0s
+config-demo              0/1     Pending                  0             0s
+config-demo              0/1     Pending                  0             0s
+config-demo              0/1     ContainerCreating        0             0s
+config-demo              0/1     ContainerCreating        0             0s
+config-demo              0/1     CreateContainerConfigError   0             1s
+config-demo              0/1     Terminating                  0             15s
+config-demo              0/1     Terminating                  0             15s
+config-demo              0/1     Terminating                  0             16s
+config-demo              0/1     ContainerStatusUnknown       0             16s
+config-demo              0/1     ContainerStatusUnknown       0             16s
+config-demo              0/1     ContainerStatusUnknown       0             16s
+config-demo              0/1     Pending                      0             0s
+config-demo              0/1     Pending                      0             0s
+config-demo              0/1     ContainerCreating            0             0s
+config-demo              0/1     ContainerCreating            0             0s
+config-demo              1/1     Running                      0             0s
+bad-cmd                  0/1     Pending                      0             0s
+bad-cmd                  0/1     Pending                      0             0s
+bad-cmd                  0/1     ContainerCreating            0             0s
+bad-cmd                  0/1     ContainerCreating            0             1s
+bad-cmd                  0/1     StartError                   0             2s
+bad-cmd                  0/1     StartError                   0             3s

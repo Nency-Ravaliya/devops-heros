@@ -1,0 +1,5 @@
+# revision 1 - the initial install: one nginx 1.24 pod
+replicaCount: 1
+image:
+  repository: nginx
+  tag: "1.24"

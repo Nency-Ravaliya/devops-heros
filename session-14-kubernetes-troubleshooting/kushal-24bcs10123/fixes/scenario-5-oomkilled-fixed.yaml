@@ -1,0 +1,29 @@
+# fix for scenarios/scenario-5-oomkilled/broken.yaml: the program allocates ~1000 MiB,
+# the limit was 20Mi. Give it a limit it fits in (and a request so the scheduler knows).
+apiVersion: v1
+kind: Pod
+metadata:
+  name: fail-5-oomkilled-pod
+  labels:
+    tier: triage-gauntlet
+    scenario: oomkilled
+spec:
+  containers:
+    - name: memory-leaker
+      image: python:3.11-alpine
+      command:
+        - "python3"
+        - "-c"
+        - |
+          import time
+          print("Allocating memory rapidly...")
+          chunks = []
+          for i in range(100):
+              chunks.append(b"x" * (10 * 1024 * 1024))
+          print("allocated", len(chunks) * 10, "MiB, still alive")
+          time.sleep(3600)
+      resources:
+        requests:
+          memory: "64Mi"
+        limits:
+          memory: "1200Mi"

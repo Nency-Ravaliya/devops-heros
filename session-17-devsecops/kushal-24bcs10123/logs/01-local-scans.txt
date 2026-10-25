@@ -1,0 +1,135 @@
+
+############ unit tests ############
+
+$ pytest -q
+......                                                                   [100%]
+=============================== warnings summary ===============================
+../../../../.venvs/devsec/lib/python3.14/site-packages/fastapi/testclient.py:1
+  /Users/kushalscaler/.venvs/devsec/lib/python3.14/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+6 passed, 1 warning in 0.32s
+
+############ SAST - bandit ############
+
+$ bandit --version | head -1
+bandit 1.9.4
+
+$ bandit -c security/bandit.yaml -r app -ll -ii -f txt
+[main]	INFO	profile include tests: None
+[main]	INFO	profile exclude tests: B104
+[main]	INFO	cli include tests: None
+[main]	INFO	cli exclude tests: None
+[main]	INFO	using config: security/bandit.yaml
+[main]	INFO	running on Python 3.14.8
+Run started:2026-10-07 17:42:32.998184+00:00
+
+Test results:
+	No issues identified.
+
+Code scanned:
+	Total lines of code: 80
+	Total lines skipped (#nosec): 0
+	Total potential issues skipped due to specifically being disabled (e.g., #nosec BXXX): 0
+
+Run metrics:
+	Total issues (by severity):
+		Undefined: 0
+		Low: 0
+		Medium: 0
+		High: 0
+	Total issues (by confidence):
+		Undefined: 0
+		Low: 0
+		Medium: 0
+		High: 0
+Files skipped (0):
+
+############ SAST - semgrep (registry packs + my own rules) ############
+
+$ semgrep --version
+1.179.0
+
+$ semgrep scan --config p/python --config p/owasp-top-ten --config security/semgrep.yaml --error --metrics=off app 2>&1 | grep -vE '^\s*$'
+┌─────────────┐
+│ Scan Status │
+└─────────────┘
+  Scanning 6 files tracked by git with 566 Code rules:
+  Language      Rules   Files          Origin      Rules                                                                
+ ─────────────────────────────        ───────────────────                                                               
+  <multilang>       5       6          Community     564                                                                
+  python          153       3          Custom          2                                                                
+┌──────────────┐
+│ Scan Summary │
+└──────────────┘
+✅ Scan completed successfully.
+ • Findings: 0 (0 blocking)
+ • Rules run: 158
+ • Targets scanned: 6
+ • Parsed lines: ~100.0%
+ • Scan was limited to files tracked by git
+ • For a detailed list of skipped files and lines, run semgrep with the --verbose flag
+Ran 158 rules on 6 files: 0 findings.
+(need more rules? `semgrep login` for additional free Semgrep Registry rules)
+If Semgrep missed a finding, please send us feedback to let us know!
+See https://semgrep.dev/docs/reporting-false-negatives/
+
+############ SCA - pip-audit ############
+
+$ pip-audit -r requirements.txt --strict --desc
+No known vulnerabilities found
+
+############ SCA - trivy fs ############
+
+$ trivy fs --config security/trivy.yaml --scanners vuln . 2>&1 | grep -vE 'B / |KiB|MiB'
+2026-10-07T23:12:46+05:30	INFO	Loaded	file_path="security/trivy.yaml"
+2026-10-07T23:12:46+05:30	INFO	[vuln] Vulnerability scanning is enabled
+2026-10-07T23:12:46+05:30	INFO	Number of language-specific files	num=1
+2026-10-07T23:12:46+05:30	INFO	[pip] Detecting vulnerabilities...
+
+Report Summary
+
+┌──────────────────┬──────┬─────────────────┐
+│      Target      │ Type │ Vulnerabilities │
+├──────────────────┼──────┼─────────────────┤
+│ requirements.txt │ pip  │        0        │
+└──────────────────┴──────┴─────────────────┘
+Legend:
+- '-': Not scanned
+- '0': Clean (no security findings detected)
+
+
+############ secret scan - gitleaks ############
+
+$ gitleaks version
+8.30.1
+
+$ gitleaks dir . --config security/gitleaks.toml --exit-code 1 --redact --no-banner 2>&1; echo exit=$?
+[90m11:12PM[0m [32mINF[0m [1mscanned ~18062 bytes (18.06 KB) in 6.31ms[0m
+[90m11:12PM[0m [32mINF[0m [1mno leaks found[0m
+exit=0
+
+############ misconfiguration - trivy config on Dockerfile + k8s manifests ############
+
+$ trivy config --config security/trivy.yaml --ignorefile security/.trivyignore . 2>&1 | grep -vE 'B / |KiB|MiB'
+2026-10-07T23:12:47+05:30	INFO	Loaded	file_path="security/trivy.yaml"
+2026-10-07T23:12:47+05:30	INFO	[misconfig] Misconfiguration scanning is enabled
+2026-10-07T23:12:47+05:30	INFO	[checks-client] Using existing checks from cache	path="/Users/kushalscaler/Library/Caches/trivy/policy/content"
+2026-10-07T23:12:47+05:30	INFO	Detected config files	num=3
+
+Report Summary
+
+┌─────────────────────┬────────────┬───────────────────┐
+│       Target        │    Type    │ Misconfigurations │
+├─────────────────────┼────────────┼───────────────────┤
+│ Dockerfile          │ dockerfile │         0         │
+├─────────────────────┼────────────┼───────────────────┤
+│ k8s/deployment.yaml │ kubernetes │         0         │
+├─────────────────────┼────────────┼───────────────────┤
+│ k8s/service.yaml    │ kubernetes │         0         │
+└─────────────────────┴────────────┴───────────────────┘
+Legend:
+- '-': Not scanned
+- '0': Clean (no security findings detected)
+

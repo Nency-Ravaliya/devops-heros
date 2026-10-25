@@ -1,0 +1,376 @@
+
+$ gh run list --repo kushaltalati/devops-heros --workflow '24bcs10123 session16 ci-cd' --limit 10
+completed	success	fix the converter test and remove the planted key	24bcs10123 session16 ci-cd	ci-kushal-s16-s17	push	37663364936	2m18s	2026-10-07T17:59:38Z
+completed	failure	plant a fake access key to show the secret scan closes the gate	24bcs10123 session16 ci-cd	ci-kushal-s16-s17	push	37663051248	21s	2026-10-07T17:57:08Z
+completed	success	deploy to a kind cluster on the runner in the cd job	24bcs10123 session16 ci-cd	ci-kushal-s16-s17	push	37662547827	2m18s	2026-10-07T17:53:19Z
+completed	failure	drop pip from the runtime image and ignore unfixed os vulnerabilities…	24bcs10123 session16 ci-cd	ci-kushal-s16-s17	push	37661828713	1m36s	2026-10-07T17:47:46Z
+completed	failure	add session 17 devsecops workflow	24bcs10123 session16 ci-cd	ci-kushal-s16-s17	push	37660981058	1m28s	2026-10-07T17:41:09Z
+
+############ run 37660981058 ############
+
+$ gh run view 37660981058 --repo kushaltalati/devops-heros
+
+X ci-kushal-s16-s17 24bcs10123 session16 ci-cd · 37660981058
+Triggered via push about 23 minutes ago
+
+JOBS
+✓ test (python 3.11) in 15s (ID 112928118822)
+✓ test (python 3.12) in 11s (ID 112928119162)
+✓ build in 6s (ID 112928243000)
+✓ docker image -> GHCR in 38s (ID 112928300080)
+X cd - deploy smoke test in 19s (ID 112928594969)
+  ✓ Set up job
+  ✓ Run actions/checkout@v4
+  ✓ Run docker/login-action@v3
+  ✓ pull the image that was just pushed and run it
+  X validate kubernetes manifests (the real cluster is my laptop kind cluster)
+  - deployment summary
+  ✓ Post Run docker/login-action@v3
+  ✓ Post Run actions/checkout@v4
+  ✓ Complete job
+
+ANNOTATIONS
+! Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4, actions/setup-python@v5, actions/upload-artifact@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+test (python 3.11): .github#2
+
+! The process '/usr/bin/git' failed with exit code 128
+test (python 3.11): .github#10
+
+- "The ubuntu-latest label will migrate to Ubuntu 26 beginning October 19, 2026. For more information, see https://github.com/actions/runner-images/issues/14748"
+test (python 3.11): .github#1
+
+! Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4, actions/setup-python@v5, actions/upload-artifact@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+test (python 3.12): .github#2
+
+! The process '/usr/bin/git' failed with exit code 128
+test (python 3.12): .github#10
+
+- "The ubuntu-latest label will migrate to Ubuntu 26 beginning October 19, 2026. For more information, see https://github.com/actions/runner-images/issues/14748"
+test (python 3.12): .github#1
+
+! Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4, actions/setup-python@v5, actions/upload-artifact@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+build: .github#2
+
+! The process '/usr/bin/git' failed with exit code 128
+build: .github#10
+
+- "The ubuntu-latest label will migrate to Ubuntu 26 beginning October 19, 2026. For more information, see https://github.com/actions/runner-images/issues/14748"
+build: .github#1
+
+! Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4, actions/download-artifact@v4, docker/build-push-action@v6, docker/login-action@v3. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+docker image -> GHCR: .github#4
+
+! The process '/usr/bin/git' failed with exit code 128
+docker image -> GHCR: .github#10
+
+- "The ubuntu-latest label will migrate to Ubuntu 26 beginning October 19, 2026. For more information, see https://github.com/actions/runner-images/issues/14748"
+docker image -> GHCR: .github#1
+
+! Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4, docker/login-action@v3. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+cd - deploy smoke test: .github#2
+
+! The process '/usr/bin/git' failed with exit code 128
+cd - deploy smoke test: .github#10
+
+X Process completed with exit code 1.
+cd - deploy smoke test: .github#11
+
+- "The ubuntu-latest label will migrate to Ubuntu 26 beginning October 19, 2026. For more information, see https://github.com/actions/runner-images/issues/14748"
+cd - deploy smoke test: .github#1
+
+
+ARTIFACTS
+unit-converter-build-1
+test-report-python-3.12
+test-report-python-3.11
+kushaltalati~devops-heros~69S3SF.dockerbuild
+
+To see what failed, try: gh run view 37660981058 --log-failed
+View this run on GitHub: https://github.com/kushaltalati/devops-heros/actions/runs/37660981058
+
+############ run 37661828713 ############
+
+$ gh run view 37661828713 --repo kushaltalati/devops-heros
+
+X ci-kushal-s16-s17 24bcs10123 session16 ci-cd · 37661828713
+Triggered via push about 17 minutes ago
+
+JOBS
+✓ test (python 3.11) in 12s (ID 112931009689)
+✓ test (python 3.12) in 20s (ID 112931012727)
+✓ build in 7s (ID 112931185496)
+✓ docker image -> GHCR in 30s (ID 112931253084)
+X cd - deploy smoke test in 26s (ID 112931492087)
+  ✓ Set up job
+  ✓ Run actions/checkout@v4
+  ✓ Run docker/login-action@v3
+  ✓ pull the image that was just pushed and run it
+  X validate kubernetes manifests (the real cluster is my laptop kind cluster)
+  - deployment summary
+  ✓ Post Run docker/login-action@v3
+  ✓ Post Run actions/checkout@v4
+  ✓ Complete job
+
+ANNOTATIONS
+! Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4, actions/setup-python@v5, actions/upload-artifact@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+test (python 3.11): .github#2
+
+! The process '/usr/bin/git' failed with exit code 128
+test (python 3.11): .github#10
+
+- "The ubuntu-latest label will migrate to Ubuntu 26 beginning October 19, 2026. For more information, see https://github.com/actions/runner-images/issues/14748"
+test (python 3.11): .github#1
+
+! Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4, actions/setup-python@v5, actions/upload-artifact@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+test (python 3.12): .github#2
+
+! The process '/usr/bin/git' failed with exit code 128
+test (python 3.12): .github#10
+
+- "The ubuntu-latest label will migrate to Ubuntu 26 beginning October 19, 2026. For more information, see https://github.com/actions/runner-images/issues/14748"
+test (python 3.12): .github#1
+
+! Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4, actions/setup-python@v5, actions/upload-artifact@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+build: .github#2
+
+! The process '/usr/bin/git' failed with exit code 128
+build: .github#10
+
+- "The ubuntu-latest label will migrate to Ubuntu 26 beginning October 19, 2026. For more information, see https://github.com/actions/runner-images/issues/14748"
+build: .github#1
+
+! Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4, actions/download-artifact@v4, docker/build-push-action@v6, docker/login-action@v3. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+docker image -> GHCR: .github#4
+
+! The process '/usr/bin/git' failed with exit code 128
+docker image -> GHCR: .github#10
+
+- "The ubuntu-latest label will migrate to Ubuntu 26 beginning October 19, 2026. For more information, see https://github.com/actions/runner-images/issues/14748"
+docker image -> GHCR: .github#1
+
+! Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4, docker/login-action@v3. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+cd - deploy smoke test: .github#2
+
+! The process '/usr/bin/git' failed with exit code 128
+cd - deploy smoke test: .github#10
+
+X Process completed with exit code 1.
+cd - deploy smoke test: .github#13
+
+- "The ubuntu-latest label will migrate to Ubuntu 26 beginning October 19, 2026. For more information, see https://github.com/actions/runner-images/issues/14748"
+cd - deploy smoke test: .github#1
+
+
+ARTIFACTS
+test-report-python-3.11
+kushaltalati~devops-heros~WWNOKR.dockerbuild
+unit-converter-build-2
+test-report-python-3.12
+
+To see what failed, try: gh run view 37661828713 --log-failed
+View this run on GitHub: https://github.com/kushaltalati/devops-heros/actions/runs/37661828713
+
+############ run 37662547827 ############
+
+$ gh run view 37662547827 --repo kushaltalati/devops-heros
+
+✓ ci-kushal-s16-s17 24bcs10123 session16 ci-cd · 37662547827
+Triggered via push about 11 minutes ago
+
+JOBS
+✓ test (python 3.11) in 12s (ID 112933459530)
+✓ test (python 3.12) in 11s (ID 112933459797)
+✓ build in 6s (ID 112933564366)
+✓ docker image -> GHCR in 38s (ID 112933629158)
+✓ cd - deploy smoke test in 1m9s (ID 112933942000)
+
+ANNOTATIONS
+! Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4, actions/setup-python@v5, actions/upload-artifact@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+test (python 3.11): .github#2
+
+! The process '/usr/bin/git' failed with exit code 128
+test (python 3.11): .github#10
+
+- "The ubuntu-latest label will migrate to Ubuntu 26 beginning October 19, 2026. For more information, see https://github.com/actions/runner-images/issues/14748"
+test (python 3.11): .github#1
+
+! Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4, actions/setup-python@v5, actions/upload-artifact@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+test (python 3.12): .github#2
+
+! The process '/usr/bin/git' failed with exit code 128
+test (python 3.12): .github#10
+
+- "The ubuntu-latest label will migrate to Ubuntu 26 beginning October 19, 2026. For more information, see https://github.com/actions/runner-images/issues/14748"
+test (python 3.12): .github#1
+
+! Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4, actions/setup-python@v5, actions/upload-artifact@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+build: .github#2
+
+! The process '/usr/bin/git' failed with exit code 128
+build: .github#10
+
+- "The ubuntu-latest label will migrate to Ubuntu 26 beginning October 19, 2026. For more information, see https://github.com/actions/runner-images/issues/14748"
+build: .github#1
+
+! Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4, actions/download-artifact@v4, docker/build-push-action@v6, docker/login-action@v3. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+docker image -> GHCR: .github#4
+
+! The process '/usr/bin/git' failed with exit code 128
+docker image -> GHCR: .github#10
+
+- "The ubuntu-latest label will migrate to Ubuntu 26 beginning October 19, 2026. For more information, see https://github.com/actions/runner-images/issues/14748"
+docker image -> GHCR: .github#1
+
+! Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4, docker/login-action@v3. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+cd - deploy smoke test: .github#2
+
+! The process '/usr/bin/git' failed with exit code 128
+cd - deploy smoke test: .github#10
+
+- "The ubuntu-latest label will migrate to Ubuntu 26 beginning October 19, 2026. For more information, see https://github.com/actions/runner-images/issues/14748"
+cd - deploy smoke test: .github#1
+
+
+ARTIFACTS
+test-report-python-3.12
+unit-converter-build-3
+test-report-python-3.11
+kushaltalati~devops-heros~7YKULL.dockerbuild
+
+For more information about a job, try: gh run view --job=<job-id>
+View this run on GitHub: https://github.com/kushaltalati/devops-heros/actions/runs/37662547827
+
+############ run 37663051248 ############
+
+$ gh run view 37663051248 --repo kushaltalati/devops-heros
+
+X ci-kushal-s16-s17 24bcs10123 session16 ci-cd · 37663051248
+Triggered via push about 8 minutes ago
+
+JOBS
+X test (python 3.11) in 13s (ID 112935163741)
+  ✓ Set up job
+  ✓ checkout source
+  ✓ set up python 3.11
+  ✓ install dependencies
+  X run unit tests
+  ✓ upload test report
+  - Post set up python 3.11
+  ✓ Post checkout source
+  ✓ Complete job
+X test (python 3.12) in 16s (ID 112935164400)
+  ✓ Set up job
+  ✓ checkout source
+  ✓ set up python 3.12
+  ✓ install dependencies
+  X run unit tests
+  ✓ upload test report
+  - Post set up python 3.12
+  ✓ Post checkout source
+  ✓ Complete job
+- build (ID 112935312912)
+- docker image -> GHCR in 0s (ID 112935313617)
+- cd - deploy smoke test in 0s (ID 112935313949)
+
+ANNOTATIONS
+! Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4, actions/setup-python@v5, actions/upload-artifact@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+test (python 3.11): .github#2
+
+! The process '/usr/bin/git' failed with exit code 128
+test (python 3.11): .github#10
+
+X Process completed with exit code 1.
+test (python 3.11): .github#62
+
+- "The ubuntu-latest label will migrate to Ubuntu 26 beginning October 19, 2026. For more information, see https://github.com/actions/runner-images/issues/14748"
+test (python 3.11): .github#1
+
+! Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4, actions/setup-python@v5, actions/upload-artifact@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+test (python 3.12): .github#2
+
+! The process '/usr/bin/git' failed with exit code 128
+test (python 3.12): .github#10
+
+X Process completed with exit code 1.
+test (python 3.12): .github#62
+
+- "The ubuntu-latest label will migrate to Ubuntu 26 beginning October 19, 2026. For more information, see https://github.com/actions/runner-images/issues/14748"
+test (python 3.12): .github#1
+
+
+ARTIFACTS
+test-report-python-3.12
+test-report-python-3.11
+
+To see what failed, try: gh run view 37663051248 --log-failed
+View this run on GitHub: https://github.com/kushaltalati/devops-heros/actions/runs/37663051248
+
+############ run 37663364936 ############
+
+$ gh run view 37663364936 --repo kushaltalati/devops-heros
+
+✓ ci-kushal-s16-s17 24bcs10123 session16 ci-cd · 37663364936
+Triggered via push about 5 minutes ago
+
+JOBS
+✓ test (python 3.11) in 12s (ID 112936254486)
+✓ test (python 3.12) in 16s (ID 112936254965)
+✓ build in 6s (ID 112936389779)
+✓ docker image -> GHCR in 32s (ID 112936455591)
+✓ cd - deploy smoke test in 1m13s (ID 112936717936)
+
+ANNOTATIONS
+! Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4, actions/setup-python@v5, actions/upload-artifact@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+test (python 3.11): .github#2
+
+! The process '/usr/bin/git' failed with exit code 128
+test (python 3.11): .github#10
+
+- "The ubuntu-latest label will migrate to Ubuntu 26 beginning October 19, 2026. For more information, see https://github.com/actions/runner-images/issues/14748"
+test (python 3.11): .github#1
+
+! Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4, actions/setup-python@v5, actions/upload-artifact@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+test (python 3.12): .github#2
+
+! The process '/usr/bin/git' failed with exit code 128
+test (python 3.12): .github#10
+
+- "The ubuntu-latest label will migrate to Ubuntu 26 beginning October 19, 2026. For more information, see https://github.com/actions/runner-images/issues/14748"
+test (python 3.12): .github#1
+
+! Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4, actions/setup-python@v5, actions/upload-artifact@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+build: .github#2
+
+! The process '/usr/bin/git' failed with exit code 128
+build: .github#10
+
+- "The ubuntu-latest label will migrate to Ubuntu 26 beginning October 19, 2026. For more information, see https://github.com/actions/runner-images/issues/14748"
+build: .github#1
+
+! Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4, actions/download-artifact@v4, docker/build-push-action@v6, docker/login-action@v3. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+docker image -> GHCR: .github#4
+
+! The process '/usr/bin/git' failed with exit code 128
+docker image -> GHCR: .github#10
+
+- "The ubuntu-latest label will migrate to Ubuntu 26 beginning October 19, 2026. For more information, see https://github.com/actions/runner-images/issues/14748"
+docker image -> GHCR: .github#1
+
+! Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4, docker/login-action@v3. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+cd - deploy smoke test: .github#2
+
+! The process '/usr/bin/git' failed with exit code 128
+cd - deploy smoke test: .github#10
+
+- "The ubuntu-latest label will migrate to Ubuntu 26 beginning October 19, 2026. For more information, see https://github.com/actions/runner-images/issues/14748"
+cd - deploy smoke test: .github#1
+
+
+ARTIFACTS
+test-report-python-3.11
+test-report-python-3.12
+kushaltalati~devops-heros~VLA6CY.dockerbuild
+unit-converter-build-5
+
+For more information about a job, try: gh run view --job=<job-id>
+View this run on GitHub: https://github.com/kushaltalati/devops-heros/actions/runs/37663364936

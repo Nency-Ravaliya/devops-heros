@@ -1,0 +1,113 @@
+
+$ cat 02-metrics-logs-traces/k8s-demo/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: session20-demo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: session20-demo
+  template:
+    metadata:
+      labels:
+        app: session20-demo
+    spec:
+      containers:
+        - name: app
+          image: busybox:1.36
+          command:
+            - /bin/sh
+            - -c
+            - |
+              echo "Session 20 observability demo started"
+              while true; do
+                echo "Request received"
+                echo "Health check OK"
+                sleep 10
+              done
+
+$ kubectl -n s20-monitoring apply -f 02-metrics-logs-traces/k8s-demo/
+deployment.apps/session20-demo created
+service/session20-demo created
+
+$ kubectl -n s20-monitoring rollout status deployment/session20-demo --timeout=120s
+Waiting for deployment "session20-demo" rollout to finish: 0 of 1 updated replicas are available...
+deployment "session20-demo" successfully rolled out
+
+$ kubectl -n s20-monitoring get pods -o wide
+NAME                               READY   STATUS    RESTARTS   AGE   IP            NODE                 NOMINATED NODE   READINESS GATES
+s20-metrics-app-7d8665dc97-rhtrn   1/1     Running   0          47s   10.244.1.64   kushal-lab-worker2   <none>           <none>
+session20-demo-6698db549f-dqmfn    1/1     Running   0          1s    10.244.3.94   kushal-lab-worker    <none>           <none>
+
+############ Logs: what the container printed to stdout, kept by the kubelet on the node ############
+
+$ sleep 25; kubectl -n s20-monitoring logs deployment/session20-demo
+Session 20 observability demo started
+Request received
+Health check OK
+Request received
+Health check OK
+Request received
+Health check OK
+
+$ kubectl -n s20-monitoring logs deployment/session20-demo --since=15s --timestamps
+2026-10-07T18:07:21.346883638Z Request received
+2026-10-07T18:07:21.348641222Z Health check OK
+
+$ kubectl -n s20-monitoring logs deployment/session20-demo --tail=2
+Request received
+Health check OK
+
+$ kubectl -n s20-monitoring logs deployment/session20-demo -f --tail=0     # follow for 12 seconds
+
+$ docker exec kushal-lab-worker sh -c 'ls /var/log/pods | grep session20-demo'; docker exec kushal-lab-worker2 sh -c 'ls /var/log/pods | grep session20-demo'    # where those lines physically live
+s20-monitoring_session20-demo-6698db549f-dqmfn_5a0aa64f-7596-4ad8-b2a9-e2370af4dd41
+
+############ Metrics the easy way: metrics-server -> kubectl top ############
+
+$ kubectl top nodes
+NAME                       CPU(cores)   CPU(%)   MEMORY(bytes)   MEMORY(%)   
+kushal-lab-control-plane   510m         8%       2017Mi          12%         
+kushal-lab-worker          1548m        25%      2413Mi          15%         
+kushal-lab-worker2         995m         16%      2277Mi          14%         
+
+$ kubectl top pods -n s20-monitoring --containers
+POD                                NAME   CPU(cores)   MEMORY(bytes)   
+s20-metrics-app-7d8665dc97-rhtrn   app    2m           15Mi            
+session20-demo-6698db549f-dqmfn    app    1m           0Mi             
+
+$ kubectl top pods -n monitoring | sort -k2 -h -r | head -5     # the monitoring stack itself is the heaviest thing on the cluster
+prometheus-kube-prometheus-stack-prometheus-0               33m          617Mi           
+kube-prometheus-stack-grafana-67c6cc7598-lpsf7              11m          959Mi           
+kube-prometheus-stack-prometheus-node-exporter-tllx4        4m           28Mi            
+kube-prometheus-stack-prometheus-node-exporter-xlmfp        3m           29Mi            
+kube-prometheus-stack-operator-5b45f5c978-k4vxd             2m           36Mi            
+
+$ kubectl get --raw /apis/metrics.k8s.io/v1beta1/namespaces/s20-monitoring/pods | python3 -c 'import sys,json; [print(p["metadata"]["name"], c["usage"]) for p in json.load(sys.stdin)["items"] for c in p["containers"]]'
+s20-metrics-app-7d8665dc97-rhtrn {'cpu': '1380740n', 'memory': '15700Ki'}
+session20-demo-6698db549f-dqmfn {'cpu': '11041n', 'memory': '316Ki'}
+
+############ Events and describe: the control plane's own log about the pod ############
+
+$ kubectl -n s20-monitoring get events --sort-by=.lastTimestamp -o custom-columns='LAST:.lastTimestamp,TYPE:.type,REASON:.reason,OBJECT:.involvedObject.name,MESSAGE:.message' | tail -8
+2026-10-07T18:06:14Z   Normal    Scheduled           s20-metrics-app-7d8665dc97-rhtrn   Successfully assigned s20-monitoring/s20-metrics-app-7d8665dc97-rhtrn to kushal-lab-worker2
+2026-10-07T18:06:14Z   Normal    SuccessfulCreate    s20-metrics-app-7d8665dc97         Created pod: s20-metrics-app-7d8665dc97-rhtrn
+2026-10-07T18:07:00Z   Normal    Scheduled           session20-demo-6698db549f-dqmfn    Successfully assigned s20-monitoring/session20-demo-6698db549f-dqmfn to kushal-lab-worker
+2026-10-07T18:07:00Z   Normal    SuccessfulCreate    session20-demo-6698db549f          Created pod: session20-demo-6698db549f-dqmfn
+2026-10-07T18:07:00Z   Normal    ScalingReplicaSet   session20-demo                     Scaled up replica set session20-demo-6698db549f from 0 to 1
+2026-10-07T18:07:01Z   Normal    Pulled              session20-demo-6698db549f-dqmfn    Container image "busybox:1.36" already present on machine and can be accessed by the pod
+2026-10-07T18:07:01Z   Normal    Created             session20-demo-6698db549f-dqmfn    Container created
+2026-10-07T18:07:01Z   Normal    Started             session20-demo-6698db549f-dqmfn    Container started
+
+$ kubectl -n s20-monitoring describe pod session20-demo-6698db549f-dqmfn | sed -n '/^Containers:/,/^Conditions:/p' | grep -E 'Image:|State:|Started:|Ready:|Restart Count:'
+    Image:         busybox:1.36
+    State:          Running
+      Started:      Wed, 07 Oct 2026 23:37:01 +0530
+    Ready:          True
+    Restart Count:  0
+
+$ kubectl -n s20-monitoring delete -f 02-metrics-logs-traces/k8s-demo/
+deployment.apps "session20-demo" deleted from s20-monitoring namespace
+service "session20-demo" deleted from s20-monitoring namespace

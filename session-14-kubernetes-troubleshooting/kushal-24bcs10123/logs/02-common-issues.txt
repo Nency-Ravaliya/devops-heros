@@ -1,0 +1,626 @@
+namespace/s14-issues created
+
+############ A. CrashLoopBackOff (06-crashloopbackoff) ############
+
+$ cat 06-crashloopbackoff/broken-pod.yaml
+apiVersion: v1
+kind: Pod
+
+metadata:
+  name: crash-demo
+
+spec:
+  containers:
+    - name: app
+      image: busybox:1.36
+      command:
+        - sh
+        - -c
+        - |
+          echo "Application starting..."
+          echo "Something went wrong!"
+          exit 1
+$ kubectl -n s14-issues apply -f 06-crashloopbackoff/broken-pod.yaml
+pod/crash-demo created
+
+$ sleep 60; kubectl -n s14-issues get pod crash-demo
+NAME         READY   STATUS   RESTARTS      AGE
+crash-demo   0/1     Error    3 (46s ago)   60s
+
+$ kubectl -n s14-issues describe pod crash-demo | grep -E 'State|Reason|Exit Code|Restart Count|Back-off' | sed 's/^ *//'
+State:          Terminated
+Reason:       Error
+Exit Code:    1
+Last State:     Terminated
+Reason:       Error
+Exit Code:    1
+Restart Count:  3
+Type     Reason     Age                From               Message
+Warning  BackOff    23s (x3 over 57s)  kubelet            Back-off restarting failed container app in pod crash-demo_s14-issues(95e5d547-d2a4-462a-80a5-608ed5e8cc25)
+
+$ kubectl -n s14-issues logs crash-demo
+Application starting...
+Something went wrong!
+
+$ kubectl -n s14-issues logs crash-demo --previous
+unable to retrieve container logs for containerd://1ce2fa896b8d8a5a6885ed5615e74d1fa521ca70a864801ab9e47fed202b7652
+$ kubectl -n s14-issues get pod crash-demo -o jsonpath='restartPolicy={.spec.restartPolicy} exitCode={.status.containerStatuses[0].lastState.terminated.exitCode}{"\n"}'
+restartPolicy=Always exitCode=1
+ROOT CAUSE: the container command runs 'exit 1' after printing the error, so the process ends with a non-zero code and restartPolicy Always restarts it with growing back-off.
+
+$ diff 06-crashloopbackoff/broken-pod.yaml 06-crashloopbackoff/fixed-pod.yaml
+16,17c16,17
+<           echo "Something went wrong!"
+<           exit 1
+\ No newline at end of file
+---
+>           echo "Application is healthy"
+>           sleep 3600
+\ No newline at end of file
+
+$ kubectl -n s14-issues delete pod crash-demo && kubectl -n s14-issues apply -f 06-crashloopbackoff/fixed-pod.yaml && wait_ready s14-issues crash-demo
+pod "crash-demo" deleted from s14-issues namespace
+pod/crash-demo created
+pod/crash-demo condition met
+
+$ kubectl -n s14-issues get pod crash-demo; kubectl -n s14-issues logs crash-demo
+NAME         READY   STATUS    RESTARTS   AGE
+crash-demo   1/1     Running   0          1s
+Application starting...
+Application is healthy
+
+############ B. ErrImagePull -> ImagePullBackOff (07-imagepullbackoff) ############
+
+$ cat 07-imagepullbackoff/broken-pod.yaml
+apiVersion: v1
+kind: Pod
+
+metadata:
+  name: image-demo
+
+spec:
+  containers:
+    - name: app
+      image: nginx:this-image-does-not-exist
+$ kubectl -n s14-issues apply -f 07-imagepullbackoff/broken-pod.yaml
+pod/image-demo created
+
+$ for i in 1 2 3 4 5 6; do sleep 5; kubectl -n s14-issues get pod image-demo --no-headers; done     # ErrImagePull first, then ImagePullBackOff
+image-demo   0/1   ErrImagePull   0     5s
+image-demo   0/1   ErrImagePull   0     10s
+image-demo   0/1   ErrImagePull   0     15s
+image-demo   0/1   ImagePullBackOff   0     20s
+image-demo   0/1   ImagePullBackOff   0     25s
+image-demo   0/1   ErrImagePull   0     30s
+
+$ kubectl -n s14-issues describe pod image-demo | sed -n '/^Events/,$p'
+Events:
+  Type     Reason     Age                From               Message
+  ----     ------     ----               ----               -------
+  Normal   Scheduled  30s                default-scheduler  Successfully assigned s14-issues/image-demo to kushal-lab-worker
+  Normal   Pulling    15s (x2 over 30s)  kubelet            Pulling image "nginx:this-image-does-not-exist"
+  Warning  Failed     14s (x2 over 28s)  kubelet            Failed to pull image "nginx:this-image-does-not-exist": rpc error: code = NotFound desc = failed to pull and unpack image "docker.io/library/nginx:this-image-does-not-exist": failed to resolve reference "docker.io/library/nginx:this-image-does-not-exist": docker.io/library/nginx:this-image-does-not-exist: not found
+  Warning  Failed     14s (x2 over 28s)  kubelet            Error: ErrImagePull
+  Normal   BackOff    0s (x2 over 27s)   kubelet            Back-off pulling image "nginx:this-image-does-not-exist"
+  Warning  Failed     0s (x2 over 27s)   kubelet            Error: ImagePullBackOff
+
+$ kubectl -n s14-issues get pod image-demo -o jsonpath='{.status.containerStatuses[0].state.waiting.reason}: {.status.containerStatuses[0].state.waiting.message}{"\n"}'
+ErrImagePull: rpc error: code = NotFound desc = failed to pull and unpack image "docker.io/library/nginx:this-image-does-not-exist": failed to resolve reference "docker.io/library/nginx:this-image-does-not-exist": docker.io/library/nginx:this-image-does-not-exist: not found
+
+$ docker manifest inspect nginx:this-image-does-not-exist 2>&1 | head -2       # confirm from outside the cluster: the tag does not exist
+no such manifest: docker.io/library/nginx:this-image-does-not-exist
+ROOT CAUSE: image tag nginx:this-image-does-not-exist is not in the registry. ErrImagePull is the single failed attempt, ImagePullBackOff is kubelet waiting before retrying.
+
+$ kubectl -n s14-issues delete pod image-demo && kubectl -n s14-issues apply -f 07-imagepullbackoff/fixed-pod.yaml && wait_ready s14-issues image-demo && kubectl -n s14-issues get pod image-demo
+pod "image-demo" deleted from s14-issues namespace
+pod/image-demo created
+pod/image-demo condition met
+NAME         READY   STATUS    RESTARTS   AGE
+image-demo   1/1     Running   0          1s
+
+############ B2. same symptom, different cause: private registry without credentials ############
+
+$ kubectl -n s14-issues run private-demo --image=ghcr.io/kushaltalati/does-not-exist:1.0 --restart=Never; sleep 20; kubectl -n s14-issues get pod private-demo
+pod/private-demo created
+NAME           READY   STATUS             RESTARTS   AGE
+private-demo   0/1     ImagePullBackOff   0          20s
+
+$ kubectl -n s14-issues describe pod private-demo | grep -E 'Failed to pull|unauthorized|denied|not found' | sed 's/^ *//' | head -2
+Warning  Failed     5s (x2 over 19s)  kubelet            Failed to pull image "ghcr.io/kushaltalati/does-not-exist:1.0": failed to pull and unpack image "ghcr.io/kushaltalati/does-not-exist:1.0": failed to resolve reference "ghcr.io/kushaltalati/does-not-exist:1.0": failed to authorize: failed to fetch anonymous token: unexpected status from GET request to https://ghcr.io/token?scope=repository%3Akushaltalati%2Fdoes-not-exist%3Apull&service=ghcr.io: 403 Forbidden
+
+$ kubectl -n s14-issues delete pod private-demo --wait=false
+pod "private-demo" deleted from s14-issues namespace
+
+############ C. Pending (08-pending-pods) - nodeSelector that matches nothing ############
+
+$ cat 08-pending-pods/broken-pod.yaml
+apiVersion: v1
+kind: Pod
+
+metadata:
+  name: pending-demo
+
+spec:
+  nodeSelector:
+    kubernetes.io/hostname: node-that-does-not-exist
+
+  containers:
+    - name: nginx
+      image: nginx:1.27
+$ kubectl -n s14-issues apply -f 08-pending-pods/broken-pod.yaml; sleep 10; kubectl -n s14-issues get pod pending-demo
+pod/pending-demo created
+NAME           READY   STATUS    RESTARTS   AGE
+pending-demo   0/1     Pending   0          10s
+
+$ kubectl -n s14-issues describe pod pending-demo | sed -n '/^Events/,$p'
+Events:
+  Type     Reason            Age   From               Message
+  ----     ------            ----  ----               -------
+  Warning  FailedScheduling  10s   default-scheduler  0/3 nodes are available: 1 node(s) had untolerated taint(s), 2 node(s) didn't match Pod's node affinity/selector. preemption: 0/3 nodes are available: 3 Preemption is not helpful for scheduling.
+
+$ kubectl get nodes --show-labels | tr ',' '\n' | grep hostname
+kubernetes.io/hostname=kushal-lab-control-plane
+kubernetes.io/hostname=kushal-lab-worker
+kubernetes.io/hostname=kushal-lab-worker2
+ROOT CAUSE: nodeSelector kubernetes.io/hostname=node-that-does-not-exist; no node carries that label so the scheduler has 0 candidates.
+
+$ kubectl -n s14-issues delete pod pending-demo && kubectl -n s14-issues apply -f 08-pending-pods/fixed-pod.yaml && wait_ready s14-issues pending-demo && kubectl -n s14-issues get pod pending-demo -o wide
+pod "pending-demo" deleted from s14-issues namespace
+pod/pending-demo created
+pod/pending-demo condition met
+NAME           READY   STATUS    RESTARTS   AGE   IP            NODE                NOMINATED NODE   READINESS GATES
+pending-demo   1/1     Running   0          1s    10.244.3.69   kushal-lab-worker   <none>           <none>
+
+############ C2. Pending because of resources (scenarios/scenario-3-pending) ############
+
+$ kubectl -n s14-issues apply -f scenarios/scenario-3-pending/broken.yaml; sleep 10; kubectl -n s14-issues get pod fail-3-pending-pod
+pod/fail-3-pending-pod created
+NAME                 READY   STATUS    RESTARTS   AGE
+fail-3-pending-pod   0/1     Pending   0          10s
+
+$ kubectl -n s14-issues describe pod fail-3-pending-pod | grep -A2 '^Events' | tail -1 | sed 's/^ *//'
+----     ------            ----  ----               -------
+
+$ kubectl get nodes -o custom-columns='NODE:.metadata.name,ALLOC_CPU:.status.allocatable.cpu,ALLOC_MEM:.status.allocatable.memory'
+NODE                       ALLOC_CPU   ALLOC_MEM
+kushal-lab-control-plane   6           16356428Ki
+kushal-lab-worker          6           16356428Ki
+kushal-lab-worker2         6           16356428Ki
+ROOT CAUSE: the pod requests 500 CPUs and 1000Gi; every node has 6 CPUs / ~15Gi allocatable -> 'Insufficient cpu, Insufficient memory'.
+
+$ sed 's/cpu: "500"/cpu: "100m"/; s/memory: "1000Gi"/memory: "64Mi"/' scenarios/scenario-3-pending/broken.yaml | kubectl -n s14-issues apply -f -   # fixing requests in place is allowed? no:
+The Pod "fail-3-pending-pod" is invalid: spec: Forbidden: pod updates may not change fields other than `spec.containers[*].image`,`spec.initContainers[*].image`,`spec.activeDeadlineSeconds`,`spec.tolerations` (only additions to existing tolerations),`spec.terminationGracePeriodSeconds` (allow it to be set to 1 if it was previously negative)
+@@ -106,8 +106,8 @@
+    "Resources": {
+     "Limits": null,
+     "Requests": {
+-     "cpu": "500",
+-     "memory": "1000Gi"
++     "cpu": "100m",
++     "memory": "64Mi"
+     },
+     "Claims": null
+    },
+
+
+$ kubectl -n s14-issues delete pod fail-3-pending-pod; sed 's/cpu: "500"/cpu: "100m"/; s/memory: "1000Gi"/memory: "64Mi"/' scenarios/scenario-3-pending/broken.yaml | kubectl -n s14-issues apply -f - && wait_ready s14-issues fail-3-pending-pod 180 && kubectl -n s14-issues get pod fail-3-pending-pod
+pod "fail-3-pending-pod" deleted from s14-issues namespace
+pod/fail-3-pending-pod created
+pod/fail-3-pending-pod condition met
+NAME                 READY   STATUS    RESTARTS   AGE
+fail-3-pending-pod   1/1     Running   0          10s
+
+############ D. ContainerCreating - a volume that points at a missing ConfigMap ############
+
+$ cat /tmp/cc-80418.yaml
+apiVersion: v1
+kind: Pod
+metadata: { name: creating-demo }
+spec:
+  containers:
+    - name: nginx
+      image: nginx:1.27
+      volumeMounts: [{ name: cfg, mountPath: /etc/app }]
+  volumes:
+    - name: cfg
+      configMap: { name: app-config }
+
+$ kubectl -n s14-issues apply -f /tmp/cc-80418.yaml; sleep 15; kubectl -n s14-issues get pod creating-demo
+pod/creating-demo created
+NAME            READY   STATUS              RESTARTS   AGE
+creating-demo   0/1     ContainerCreating   0          15s
+
+$ kubectl -n s14-issues describe pod creating-demo | sed -n '/^Events/,$p'
+Events:
+  Type     Reason       Age               From               Message
+  ----     ------       ----              ----               -------
+  Normal   Scheduled    15s               default-scheduler  Successfully assigned s14-issues/creating-demo to kushal-lab-worker2
+  Warning  FailedMount  8s (x5 over 15s)  kubelet            MountVolume.SetUp failed for volume "cfg" : configmap "app-config" not found
+
+$ kubectl -n s14-issues get configmap app-config
+Error from server (NotFound): configmaps "app-config" not found
+ROOT CAUSE: the pod mounts configMap app-config, which does not exist, so kubelet cannot build the container sandbox volumes and the pod stays ContainerCreating (no restart, no crash).
+
+$ kubectl -n s14-issues create configmap app-config --from-literal=MODE=prod
+configmap/app-config created
+
+$ wait_ready s14-issues creating-demo 90; kubectl -n s14-issues get pod creating-demo; kubectl -n s14-issues exec creating-demo -- cat /etc/app/MODE; echo
+pod/creating-demo condition met
+NAME            READY   STATUS    RESTARTS   AGE
+creating-demo   1/1     Running   0          16s
+prod
+
+############ E. Service connectivity (09-service-dns-troubleshooting) ############
+
+$ kubectl -n s14-issues apply -f 09-service-dns-troubleshooting/deployment.yaml && kubectl -n s14-issues rollout status deploy/web --timeout=120s
+deployment.apps/web created
+Waiting for deployment "web" rollout to finish: 0 of 2 updated replicas are available...
+Waiting for deployment "web" rollout to finish: 1 of 2 updated replicas are available...
+deployment "web" successfully rolled out
+
+$ cat 09-service-dns-troubleshooting/service.yaml
+apiVersion: v1
+kind: Service
+
+metadata:
+  name: web-service
+
+spec:
+  selector:
+    app: web-ahsgdf
+
+  ports:
+    - port: 80
+      targetPort: 80
+
+  type: ClusterIP
+$ kubectl -n s14-issues apply -f 09-service-dns-troubleshooting/service.yaml
+service/web-service created
+
+$ kubectl -n s14-issues get svc web-service; kubectl -n s14-issues get endpoints web-service
+NAME          TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)   AGE
+web-service   ClusterIP   10.96.147.86   <none>        80/TCP    0s
+Warning: v1 Endpoints is deprecated in v1.33+; use discovery.k8s.io/v1 EndpointSlice
+NAME          ENDPOINTS   AGE
+web-service   <none>      0s
+
+$ docker manifest inspect registry.k8s.io/e2e-test-images/dnsutils:1.3 2>&1 | tail -1    # the course image does not resolve any more, so I use busybox (has nslookup/wget)
+no such manifest: registry.k8s.io/e2e-test-images/dnsutils:1.3
+
+$ sed 's#registry.k8s.io/e2e-test-images/dnsutils:1.3#busybox:1.36#' 09-service-dns-troubleshooting/dns-test-pod.yaml | kubectl -n s14-issues apply -f - && wait_ready s14-issues dns-test 180
+pod/dns-test created
+pod/dns-test condition met
+
+$ kubectl -n s14-issues exec dns-test -- sh -c 'wget -qO- -T 3 http://web-service 2>&1 | head -2 || echo CONNECTION FAILED'
+wget: can't connect to remote host (10.96.147.86): Connection refused
+
+$ kubectl -n s14-issues describe svc web-service | grep -E 'Selector|Endpoints|TargetPort'
+Selector:                 app=web-ahsgdf
+TargetPort:               80/TCP
+Endpoints:                
+
+$ kubectl -n s14-issues get pods -l app=web --show-labels
+NAME                   READY   STATUS    RESTARTS   AGE   LABELS
+web-557577df75-4m8vr   1/1     Running   0          6s    app=web,pod-template-hash=557577df75
+web-557577df75-nkk5v   1/1     Running   0          6s    app=web,pod-template-hash=557577df75
+ROOT CAUSE: the Service selector is app=web-ahsgdf but the pods carry app=web, so the endpoint list is empty and the ClusterIP has nowhere to send traffic.
+
+$ kubectl -n s14-issues patch svc web-service -p '{"spec":{"selector":{"app":"web"}}}'
+service/web-service patched
+
+$ sleep 2; kubectl -n s14-issues get endpoints web-service
+Warning: v1 Endpoints is deprecated in v1.33+; use discovery.k8s.io/v1 EndpointSlice
+NAME          ENDPOINTS                       AGE
+web-service   10.244.1.49:80,10.244.3.71:80   7s
+
+$ kubectl -n s14-issues exec dns-test -- sh -c 'wget -qO- -T 3 http://web-service | grep title'
+<title>Welcome to nginx!</title>
+
+############ E2. endpoints exist but targetPort is wrong ############
+
+$ kubectl -n s14-issues patch svc web-service -p '{"spec":{"ports":[{"port":80,"targetPort":8080}]}}'
+service/web-service patched
+
+$ kubectl -n s14-issues get endpoints web-service    # endpoints now say :8080 - nothing listens there
+Warning: v1 Endpoints is deprecated in v1.33+; use discovery.k8s.io/v1 EndpointSlice
+NAME          ENDPOINTS                           AGE
+web-service   10.244.1.49:8080,10.244.3.71:8080   7s
+
+$ kubectl -n s14-issues exec dns-test -- sh -c 'wget -qO- -T 3 http://web-service 2>&1 | tail -1'
+wget: can't connect to remote host (10.96.147.86): Connection refused
+
+$ kubectl -n s14-issues exec web-$(kubectl -n s14-issues get pods -l app=web -o jsonpath='{.items[0].metadata.name}' | cut -d- -f2-) -- sh -c 'cat /proc/net/tcp | awk "NR>1{print \$2}" | cut -d: -f2 | sort -u | while read p; do echo listening on $((16#$p)); done'
+sh: 1: arithmetic expression: expecting EOF: "16#0050"
+command terminated with exit code 2
+
+$ kubectl -n s14-issues patch svc web-service -p '{"spec":{"ports":[{"port":80,"targetPort":80}]}}' && sleep 2 && kubectl -n s14-issues exec dns-test -- sh -c 'wget -qO- -T 3 http://web-service | grep title'
+service/web-service patched
+<title>Welcome to nginx!</title>
+
+$ kubectl -n s14-issues apply -f 09-service-dns-troubleshooting/broken-service.yaml; kubectl -n s14-issues get endpoints broken-service; kubectl -n s14-issues describe svc broken-service | grep Selector
+service/broken-service created
+Warning: v1 Endpoints is deprecated in v1.33+; use discovery.k8s.io/v1 EndpointSlice
+NAME             ENDPOINTS   AGE
+broken-service   <none>      0s
+Selector:                 app=does-not-exist
+
+############ F. DNS ############
+
+$ kubectl -n s14-issues exec dns-test -- nslookup web-service
+Server:		10.96.0.10
+Address:	10.96.0.10:53
+
+Name:	web-service.s14-issues.svc.cluster.local
+Address: 10.96.147.86
+
+** server can't find web-service.cluster.local: NXDOMAIN
+
+** server can't find web-service.cluster.local: NXDOMAIN
+
+
+** server can't find web-service.svc.cluster.local: NXDOMAIN
+
+** server can't find web-service.svc.cluster.local: NXDOMAIN
+
+command terminated with exit code 1
+
+$ kubectl -n s14-issues exec dns-test -- nslookup web-service.s14-issues.svc.cluster.local
+Server:		10.96.0.10
+Address:	10.96.0.10:53
+
+Name:	web-service.s14-issues.svc.cluster.local
+Address: 10.96.147.86
+
+
+
+$ kubectl -n s14-issues exec dns-test -- cat /etc/resolv.conf
+search s14-issues.svc.cluster.local svc.cluster.local cluster.local
+nameserver 10.96.0.10
+options ndots:5
+
+$ kubectl get svc -n kube-system kube-dns
+NAME       TYPE        CLUSTER-IP   EXTERNAL-IP   PORT(S)                  AGE
+kube-dns   ClusterIP   10.96.0.10   <none>        53/UDP,53/TCP,9153/TCP   19d
+
+$ kubectl get pods -n kube-system -l k8s-app=kube-dns
+NAME                       READY   STATUS    RESTARTS      AGE
+coredns-559f6c778d-5gr9q   1/1     Running   3 (19m ago)   19d
+coredns-559f6c778d-rk8fg   1/1     Running   3 (19m ago)   19d
+
+$ kubectl -n s14-issues exec dns-test -- nslookup web-service.default.svc.cluster.local 2>&1 | tail -2     # wrong namespace -> NXDOMAIN
+
+command terminated with exit code 1
+
+$ kubectl -n s14-issues exec dns-test -- nslookup kubernetes.default
+Server:		10.96.0.10
+Address:	10.96.0.10:53
+
+** server can't find kubernetes.default: NXDOMAIN
+
+** server can't find kubernetes.default: NXDOMAIN
+
+command terminated with exit code 1
+
+$ kubectl -n s14-issues apply -f scenarios/scenario-4-dns-failure/broken.yaml && wait_ready s14-issues fail-4-dns-failure-pod 180
+pod/fail-4-dns-failure-pod created
+pod/fail-4-dns-failure-pod condition met
+
+$ kubectl -n s14-issues logs fail-4-dns-failure-pod
+Attempting connection to internal database...
+Process sleeping...
+
+$ kubectl -n s14-issues exec fail-4-dns-failure-pod -- sh -c 'nslookup postgres-db-wrong-name.production.svc.cluster.local 2>&1 | tail -2'
+** server can't find postgres-db-wrong-name.production.svc.cluster.local: NXDOMAIN
+
+
+$ kubectl logs -n kube-system -l k8s-app=kube-dns --tail=3
+linux/arm64, go1.26.5, 424d125
+[INFO] plugin/ready: Plugins not ready: "kubernetes"
+[INFO] plugin/ready: Plugins not ready: "kubernetes"
+linux/arm64, go1.26.5, 424d125
+[INFO] plugin/ready: Plugins not ready: "kubernetes"
+[INFO] plugin/ready: Plugins not ready: "kubernetes"
+ROOT CAUSE: the client asks for postgres-db-wrong-name in namespace production; neither the service nor the namespace exists, CoreDNS correctly answers NXDOMAIN. Fix = point the client at the real service name (shown in 03-scenarios).
+
+############ G. Pod networking - reach the pod IP directly, bypassing the Service ############
+
+$ kubectl -n s14-issues get pods -l app=web -o wide --no-headers | awk '{print $1, $6, $7}'
+web-557577df75-4m8vr 10.244.1.49 kushal-lab-worker2
+web-557577df75-nkk5v 10.244.3.71 kushal-lab-worker
+
+$ kubectl -n s14-issues exec dns-test -- sh -c 'wget -qO- -T 3 http://10.244.1.49 | grep title'      # pod-to-pod across nodes works (kindnet CNI)
+<title>Welcome to nginx!</title>
+
+$ kubectl -n s14-issues exec dns-test -- sh -c 'wget -qO- -T 3 http://10.244.1.49:8080 2>&1 | tail -1'   # wrong port on the pod itself
+wget: can't connect to remote host (10.244.1.49): Connection refused
+
+$ kubectl get pods -n kube-system -l app=kindnet -o wide --no-headers | awk '{print $1, $3, $7}'
+kindnet-dvds7 Running 19d
+kindnet-ff7q6 Running 19d
+kindnet-ktxnx Running 19d
+
+$ kubectl get pods -n kube-system -l k8s-app=kube-proxy --no-headers | awk '{print $1, $3}'
+kube-proxy-g6pcp Running
+kube-proxy-jj27f Running
+kube-proxy-nnnhg Running
+
+############ H. Configuration issues ############
+
+$ kubectl -n s14-issues create configmap web-config --from-literal=GREETING=hello
+configmap/web-config created
+
+$ cat /tmp/cfg-80418.yaml
+apiVersion: v1
+kind: Pod
+metadata: { name: config-demo }
+spec:
+  restartPolicy: Never
+  containers:
+    - name: app
+      image: busybox:1.36
+      command: ["sh","-c","echo GREETING=$GREETING; sleep 3600"]
+      env:
+        - name: GREETING
+          valueFrom: { configMapKeyRef: { name: web-config, key: GRETING } }
+
+$ kubectl -n s14-issues apply -f /tmp/cfg-80418.yaml; sleep 15; kubectl -n s14-issues get pod config-demo
+pod/config-demo created
+NAME          READY   STATUS                       RESTARTS   AGE
+config-demo   0/1     CreateContainerConfigError   0          15s
+
+$ kubectl -n s14-issues describe pod config-demo | sed -n '/^Events/,$p'
+Events:
+  Type     Reason     Age               From               Message
+  ----     ------     ----              ----               -------
+  Normal   Scheduled  15s               default-scheduler  Successfully assigned s14-issues/config-demo to kushal-lab-worker
+  Normal   Pulled     0s (x3 over 15s)  kubelet            Container image "busybox:1.36" already present on machine and can be accessed by the pod
+  Warning  Failed     0s (x3 over 15s)  kubelet            Error: couldn't find key GRETING in ConfigMap s14-issues/web-config
+ROOT CAUSE: the env var references key GRETING (typo) in ConfigMap web-config; the key is GREETING. CreateContainerConfigError = the container cannot even be created.
+
+$ kubectl -n s14-issues delete pod config-demo; sed 's/GRETING/GREETING/' /tmp/cfg-80418.yaml | kubectl -n s14-issues apply -f - && wait_ready s14-issues config-demo && kubectl -n s14-issues logs config-demo
+pod "config-demo" deleted from s14-issues namespace
+pod/config-demo created
+pod/config-demo condition met
+GREETING=hello
+
+############ H2. wrong command ############
+
+$ kubectl -n s14-issues run bad-cmd --image=nginx:1.27 --restart=Never --command -- /usr/bin/does-not-exist; sleep 10; kubectl -n s14-issues get pod bad-cmd
+pod/bad-cmd created
+NAME      READY   STATUS       RESTARTS   AGE
+bad-cmd   0/1     StartError   0          10s
+
+$ kubectl -n s14-issues describe pod bad-cmd | grep -E 'Reason|Message|Exit Code' | sed 's/^ *//' | head -4
+Reason:       StartError
+Message:      failed to create containerd task: failed to create shim task: OCI runtime create failed: runc create failed: unable to start container process: error during container init: exec: "/usr/bin/does-not-exist": stat /usr/bin/does-not-exist: no such file or directory
+Exit Code:    128
+Type     Reason     Age   From               Message
+
+$ cat /Users/kushalscaler/devops-heros/session-14-kubernetes-troubleshooting/kushal-24bcs10123/logs/02-common-issues-watch.txt
+NAME         READY   STATUS    RESTARTS   AGE
+crash-demo   0/1     Pending   0          0s
+crash-demo   0/1     Pending   0          0s
+crash-demo   0/1     ContainerCreating   0          0s
+crash-demo   0/1     ContainerCreating   0          0s
+crash-demo   1/1     Running             0          0s
+crash-demo   0/1     Error               0          2s
+crash-demo   1/1     Running             1 (2s ago)   2s
+crash-demo   0/1     Error               1 (3s ago)   3s
+crash-demo   0/1     CrashLoopBackOff    1 (12s ago)   14s
+crash-demo   1/1     Running             2 (12s ago)   14s
+crash-demo   0/1     Error               2 (13s ago)   15s
+crash-demo   0/1     CrashLoopBackOff    2 (22s ago)   36s
+crash-demo   1/1     Running             3 (22s ago)   36s
+crash-demo   0/1     Error               3 (23s ago)   37s
+crash-demo   0/1     Terminating         3 (46s ago)   60s
+crash-demo   0/1     Terminating         3 (46s ago)   60s
+crash-demo   0/1     Error               3 (46s ago)   60s
+crash-demo   0/1     Error               3 (47s ago)   61s
+crash-demo   0/1     Error               3 (47s ago)   61s
+crash-demo   0/1     Pending             0             0s
+crash-demo   0/1     Pending             0             0s
+crash-demo   0/1     ContainerCreating   0             0s
+crash-demo   0/1     ContainerCreating   0             0s
+crash-demo   1/1     Running             0             0s
+image-demo   0/1     Pending             0             0s
+image-demo   0/1     Pending             0             0s
+image-demo   0/1     ContainerCreating   0             0s
+image-demo   0/1     ContainerCreating   0             0s
+image-demo   0/1     ErrImagePull        0             3s
+image-demo   0/1     ImagePullBackOff    0             15s
+image-demo   0/1     ErrImagePull        0             30s
+image-demo   0/1     Terminating         0             35s
+image-demo   0/1     Terminating         0             35s
+image-demo   0/1     Terminating         0             35s
+image-demo   0/1     Terminating         0             36s
+image-demo   0/1     ContainerStatusUnknown   0             36s
+image-demo   0/1     ContainerStatusUnknown   0             36s
+image-demo   0/1     ContainerStatusUnknown   0             36s
+image-demo   0/1     Pending                  0             0s
+image-demo   0/1     Pending                  0             0s
+image-demo   0/1     ContainerCreating        0             0s
+image-demo   0/1     ContainerCreating        0             1s
+image-demo   1/1     Running                  0             1s
+private-demo   0/1     Pending                  0             0s
+private-demo   0/1     Pending                  0             0s
+private-demo   0/1     ContainerCreating        0             0s
+private-demo   0/1     ContainerCreating        0             0s
+private-demo   0/1     ErrImagePull             0             1s
+private-demo   0/1     ImagePullBackOff         0             14s
+private-demo   0/1     Terminating              0             20s
+private-demo   0/1     Terminating              0             20s
+private-demo   0/1     Terminating              0             20s
+pending-demo   0/1     Pending                  0             0s
+pending-demo   0/1     Pending                  0             0s
+private-demo   0/1     ContainerStatusUnknown   0             20s
+private-demo   0/1     ContainerStatusUnknown   0             20s
+private-demo   0/1     ContainerStatusUnknown   0             20s
+pending-demo   0/1     Terminating              0             10s
+pending-demo   0/1     Terminating              0             10s
+pending-demo   0/1     Pending                  0             0s
+pending-demo   0/1     Pending                  0             0s
+pending-demo   0/1     ContainerCreating        0             0s
+pending-demo   0/1     ContainerCreating        0             1s
+pending-demo   1/1     Running                  0             1s
+fail-3-pending-pod   0/1     Pending                  0             0s
+fail-3-pending-pod   0/1     Pending                  0             0s
+fail-3-pending-pod   0/1     Terminating              0             11s
+fail-3-pending-pod   0/1     Terminating              0             11s
+fail-3-pending-pod   0/1     Pending                  0             0s
+fail-3-pending-pod   0/1     Pending                  0             0s
+fail-3-pending-pod   0/1     ContainerCreating        0             0s
+fail-3-pending-pod   0/1     ContainerCreating        0             0s
+fail-3-pending-pod   1/1     Running                  0             9s
+creating-demo        0/1     Pending                  0             0s
+creating-demo        0/1     Pending                  0             0s
+creating-demo        0/1     ContainerCreating        0             0s
+creating-demo        0/1     ContainerCreating        0             16s
+creating-demo        1/1     Running                  0             16s
+web-557577df75-nkk5v   0/1     Pending                  0             0s
+web-557577df75-4m8vr   0/1     Pending                  0             0s
+web-557577df75-nkk5v   0/1     Pending                  0             0s
+web-557577df75-4m8vr   0/1     Pending                  0             0s
+web-557577df75-nkk5v   0/1     ContainerCreating        0             0s
+web-557577df75-4m8vr   0/1     ContainerCreating        0             0s
+web-557577df75-nkk5v   0/1     ContainerCreating        0             0s
+web-557577df75-4m8vr   0/1     ContainerCreating        0             0s
+web-557577df75-nkk5v   1/1     Running                  0             0s
+web-557577df75-4m8vr   1/1     Running                  0             0s
+dns-test               0/1     Pending                  0             0s
+dns-test               0/1     Pending                  0             0s
+dns-test               0/1     ContainerCreating        0             0s
+dns-test               0/1     ContainerCreating        0             0s
+dns-test               1/1     Running                  0             0s
+fail-4-dns-failure-pod   0/1     Pending                  0             0s
+fail-4-dns-failure-pod   0/1     Pending                  0             0s
+fail-4-dns-failure-pod   0/1     ContainerCreating        0             0s
+fail-4-dns-failure-pod   0/1     ContainerCreating        0             0s
+fail-4-dns-failure-pod   1/1     Running                  0             0s
+config-demo              0/1     Pending                  0             0s
+config-demo              0/1     Pending                  0             0s
+config-demo              0/1     ContainerCreating        0             0s
+config-demo              0/1     ContainerCreating        0             0s
+config-demo              0/1     CreateContainerConfigError   0             1s
+config-demo              0/1     Terminating                  0             15s
+config-demo              0/1     Terminating                  0             15s
+config-demo              0/1     Terminating                  0             16s
+config-demo              0/1     ContainerStatusUnknown       0             16s
+config-demo              0/1     ContainerStatusUnknown       0             16s
+config-demo              0/1     ContainerStatusUnknown       0             16s
+config-demo              0/1     Pending                      0             0s
+config-demo              0/1     Pending                      0             0s
+config-demo              0/1     ContainerCreating            0             0s
+config-demo              0/1     ContainerCreating            0             0s
+config-demo              1/1     Running                      0             0s
+bad-cmd                  0/1     Pending                      0             0s
+bad-cmd                  0/1     Pending                      0             0s
+bad-cmd                  0/1     ContainerCreating            0             0s
+bad-cmd                  0/1     ContainerCreating            0             1s
+bad-cmd                  0/1     StartError                   0             2s
+bad-cmd                  0/1     StartError                   0             3s
+screenshot -> screenshots/02-common-issues-watch.png
+
+############ cleanup ############
+
+$ kubectl delete ns s14-issues --wait=false
+namespace "s14-issues" deleted

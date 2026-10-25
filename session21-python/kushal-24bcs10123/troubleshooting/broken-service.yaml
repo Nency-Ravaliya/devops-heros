@@ -1,0 +1,7 @@
+# scenario 2 (from the course): Service selector matches no pod -> no endpoints, connection refused
+apiVersion: v1
+kind: Service
+metadata: {name: broken-service, namespace: studytrack}
+spec:
+  selector: {app: label-that-does-not-exist}
+  ports: [{port: 8080, targetPort: 8080}]

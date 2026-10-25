@@ -1,0 +1,5 @@
+# bandit (SAST) configuration - run with: bandit -c security/bandit.yaml -r app
+exclude_dirs: ["tests", ".venv", "build"]
+# B104 = binding to 0.0.0.0. Inside a container that is exactly what we want; uvicorn must
+# listen on all interfaces for the pod network. Everything else stays enabled.
+skips: ["B104"]

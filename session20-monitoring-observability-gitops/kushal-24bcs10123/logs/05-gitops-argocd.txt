@@ -1,0 +1,245 @@
+
+$ kubectl -n argocd get pods
+NAME                                                READY   STATUS    RESTARTS      AGE
+argocd-application-controller-0                     1/1     Running   1 (21m ago)   11h
+argocd-applicationset-controller-76fd8cdd4f-929dr   1/1     Running   1 (21m ago)   11h
+argocd-dex-server-66c78cf887-wgwk7                  1/1     Running   1 (21m ago)   11h
+argocd-notifications-controller-7fb9868fd6-gp8tc    1/1     Running   1 (21m ago)   11h
+argocd-redis-bdbdffcb4-gnzmv                        1/1     Running   1 (21m ago)   11h
+argocd-repo-server-d89c7967d-pbgxz                  1/1     Running   1 (21m ago)   11h
+argocd-server-776b7cdd4d-wklr9                      1/1     Running   1 (21m ago)   11h
+
+$ kubectl -n argocd get deploy argocd-server -o jsonpath='Argo CD image: {.spec.template.spec.containers[0].image}{"\n"}'
+Argo CD image: quay.io/argoproj/argocd:v3.5.4
+
+############ The Git side: what is in the repo ############
+
+$ git -C /Users/kushalscaler/devops-heros-s20 -c user.name=kushaltalati -c user.email=kushaltalati@users.noreply.github.com log --oneline -3 -- session20-monitoring-observability-gitops/kushal-24bcs10123/gitops
+75382d1 argocd application manifest, back to two replicas
+15aa7c4 scale session20-mini to three replicas
+4579da9 gitops demo manifests
+
+$ git -C /Users/kushalscaler/devops-heros-s20 -c user.name=kushaltalati -c user.email=kushaltalati@users.noreply.github.com ls-remote --heads origin gitops-kushal-s20
+75382d1fcb1f60b2fee56d8b6141e056fd8b8e34	refs/heads/gitops-kushal-s20
+
+$ find /Users/kushalscaler/devops-heros-s20/session20-monitoring-observability-gitops/kushal-24bcs10123/gitops -type f | sed 's|/Users/kushalscaler/devops-heros-s20/||' | sort
+session20-monitoring-observability-gitops/kushal-24bcs10123/gitops/app/deployment.yaml
+session20-monitoring-observability-gitops/kushal-24bcs10123/gitops/app/namespace.yaml
+session20-monitoring-observability-gitops/kushal-24bcs10123/gitops/app/service.yaml
+session20-monitoring-observability-gitops/kushal-24bcs10123/gitops/argocd-application.yaml
+
+$ cat /Users/kushalscaler/devops-heros-s20/session20-monitoring-observability-gitops/kushal-24bcs10123/gitops/app/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: session20-mini
+  namespace: s20-gitops
+  labels:
+    app: session20-mini
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: session20-mini
+  template:
+    metadata:
+      labels:
+        app: session20-mini
+    spec:
+      containers:
+        - name: app
+          image: nginx:1.27-alpine
+          ports:
+            - containerPort: 80
+
+$ cat /Users/kushalscaler/devops-heros-s20/session20-monitoring-observability-gitops/kushal-24bcs10123/gitops/argocd-application.yaml
+# Applied once by hand (kubectl apply -f gitops/argocd-application.yaml). It is deliberately NOT inside gitops/app/,
+# because gitops/app/ is the folder Argo CD renders as workload manifests.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: session20-mini
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/kushaltalati/devops-heros.git
+    targetRevision: gitops-kushal-s20
+    path: session20-monitoring-observability-gitops/kushal-24bcs10123/gitops/app
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: s20-gitops
+  syncPolicy:
+    automated:
+      prune: true        # delete cluster objects whose file was removed from Git
+      selfHeal: true     # undo manual kubectl changes that drift from Git
+    syncOptions:
+      - CreateNamespace=true
+
+############ Log the CLI in (through a port-forward to argocd-server) ############
+
+$ argocd login localhost:19443 --insecure --username admin --password '***' --grpc-web >/dev/null && echo 'logged in (password read from secret argocd-initial-admin-secret, not shown)'
+{"level":"fatal","msg":"rpc error: code = Unauthenticated desc = Invalid username or password","time":"2026-10-07T23:31:45+05:30"}
+  argocd login ok
+
+$ argocd version --short
+argocd: v3.5.4+d6d5b24.dirty
+argocd-server: v3.5.4
+
+############ Step 5: register the Application (the only thing I apply by hand) ############
+
+$ kubectl apply -f /Users/kushalscaler/devops-heros-s20/session20-monitoring-observability-gitops/kushal-24bcs10123/gitops/argocd-application.yaml
+application.argoproj.io/session20-mini created
+
+$ kubectl -n argocd get applications
+NAME             SYNC STATUS   HEALTH STATUS
+session20-mini   Synced        Healthy
+
+$ argocd app get session20-mini --grpc-web | sed -n '1,40p'
+Name:               argocd/session20-mini
+Project:            default
+Server:             https://kubernetes.default.svc
+Namespace:          s20-gitops
+URL:                https://localhost:19443/applications/session20-mini
+Source:
+- Repo:             https://github.com/kushaltalati/devops-heros.git
+  Target:           gitops-kushal-s20
+  Path:             session20-monitoring-observability-gitops/kushal-24bcs10123/gitops/app
+SyncWindow:         Sync Allowed
+Sync Policy:        Automated (Prune)
+Sync Status:        Synced to gitops-kushal-s20 (75382d1)
+Health Status:      Healthy
+
+GROUP  KIND        NAMESPACE   NAME            STATUS  HEALTH   HOOK  MESSAGE
+apps   Deployment  s20-gitops  session20-mini  Synced  Healthy        deployment.apps/session20-mini unchanged
+       Namespace               s20-gitops      Synced                 
+       Service     s20-gitops  session20-mini  Synced  Healthy        
+
+############ Step 6: the cluster now has what Git says (I never ran kubectl apply on these files) ############
+
+$ kubectl -n s20-gitops get all
+NAME                                  READY   STATUS    RESTARTS   AGE
+pod/session20-mini-68946db7dd-55zzg   1/1     Running   0          2s
+pod/session20-mini-68946db7dd-6tp6w   1/1     Running   0          2s
+
+NAME                     TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)   AGE
+service/session20-mini   ClusterIP   10.96.148.17   <none>        80/TCP    2s
+
+NAME                             READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/session20-mini   2/2     2            2           2s
+
+NAME                                        DESIRED   CURRENT   READY   AGE
+replicaset.apps/session20-mini-68946db7dd   2         2         2       2s
+
+$ kubectl -n s20-gitops get deploy session20-mini -o jsonpath='managed by: {.metadata.labels}{"\n"}annotations: {.metadata.annotations}{"\n"}' | cut -c1-300
+managed by: {"app":"session20-mini"}
+annotations: {"argocd.argoproj.io/tracking-id":"session20-mini:apps/Deployment:s20-gitops/session20-mini","deployment.kubernetes.io/revision":"1","kubectl.kubernetes.io/last-applied-configuration":"{\"apiVersion\":\"apps/v1\",\"kind\":\"Deployment\",\"metadata\":{\"annotations\":{\"argocd.argoproj.i
+
+$ curl -s -m 5 http://localhost:19081 | grep -o '<title>.*</title>'
+<title>Welcome to nginx!</title>
+saved /Users/kushalscaler/devops-heros/session20-monitoring-observability-gitops/kushal-24bcs10123/screenshots/05-argocd-app-synced-2-replicas.png
+
+############ Step 7: change Git (replicas 2 -> 3), push, do NOT touch the cluster ############
+
+$ sed -i '' 's/replicas: 2/replicas: 3/' /Users/kushalscaler/devops-heros-s20/session20-monitoring-observability-gitops/kushal-24bcs10123/gitops/app/deployment.yaml && grep -n replicas /Users/kushalscaler/devops-heros-s20/session20-monitoring-observability-gitops/kushal-24bcs10123/gitops/app/deployment.yaml
+9:  replicas: 3
+
+$ git -C /Users/kushalscaler/devops-heros-s20 -c user.name=kushaltalati -c user.email=kushaltalati@users.noreply.github.com add -A && git -C /Users/kushalscaler/devops-heros-s20 -c user.name=kushaltalati -c user.email=kushaltalati@users.noreply.github.com commit -q -m 'scale session20-mini to three replicas' && git -C /Users/kushalscaler/devops-heros-s20 -c user.name=kushaltalati -c user.email=kushaltalati@users.noreply.github.com push -q origin gitops-kushal-s20 && git -C /Users/kushalscaler/devops-heros-s20 -c user.name=kushaltalati -c user.email=kushaltalati@users.noreply.github.com log --oneline -1
+688ebc1 scale session20-mini to three replicas
+  waiting for Argo CD to notice the new commit (it polls the repo every 3 minutes by default; no manual sync) ...
+  cluster reached 3/3 after 208s
+
+$ cat /Users/kushalscaler/devops-heros/session20-monitoring-observability-gitops/kushal-24bcs10123/logs/05-deploy-watch-git-change.txt
+NAME             READY   UP-TO-DATE   AVAILABLE   AGE
+session20-mini   2/2     2            2           17s
+session20-mini   2/3     2            2           3m44s
+session20-mini   2/3     2            2           3m44s
+session20-mini   2/3     2            2           3m44s
+session20-mini   2/3     3            2           3m44s
+session20-mini   3/3     3            3           3m44s
+
+$ kubectl -n s20-gitops get pods
+NAME                              READY   STATUS    RESTARTS   AGE
+session20-mini-68946db7dd-55zzg   1/1     Running   0          3m48s
+session20-mini-68946db7dd-6tp6w   1/1     Running   0          3m48s
+session20-mini-68946db7dd-wv8c8   1/1     Running   0          4s
+
+$ argocd app get session20-mini --grpc-web | grep -E 'Sync Status|Health Status|Revision|Repo|Target'
+- Repo:             https://github.com/kushaltalati/devops-heros.git
+  Target:           gitops-kushal-s20
+Sync Status:        Synced to gitops-kushal-s20 (688ebc1)
+Health Status:      Healthy
+
+$ argocd app history session20-mini --grpc-web
+SOURCE  https://github.com/kushaltalati/devops-heros.git
+ID      DATE                           REVISION
+0       2026-10-07 23:31:50 +0530 IST  gitops-kushal-s20 (75382d1)
+1       2026-10-07 23:35:34 +0530 IST  gitops-kushal-s20 (688ebc1)
+
+############ Step 8: self-healing - drift the cluster by hand, Argo CD puts it back ############
+
+$ kubectl -n s20-gitops scale deployment session20-mini --replicas=1
+deployment.apps/session20-mini scaled
+  spec.replicas is back to 3 after 3s
+
+$ cat /Users/kushalscaler/devops-heros/session20-monitoring-observability-gitops/kushal-24bcs10123/logs/05-deploy-watch-selfheal.txt
+NAME             READY   UP-TO-DATE   AVAILABLE   AGE
+session20-mini   3/1     3            3           3m49s
+session20-mini   1/1     1            1           3m49s
+session20-mini   1/1     1            1           3m49s
+session20-mini   1/3     1            1           3m50s
+session20-mini   1/3     1            1           3m50s
+session20-mini   1/3     1            1           3m50s
+session20-mini   1/3     3            1           3m50s
+session20-mini   2/3     3            2           3m50s
+session20-mini   3/3     3            3           3m50s
+
+$ kubectl -n s20-gitops get deploy session20-mini
+NAME             READY   UP-TO-DATE   AVAILABLE   AGE
+session20-mini   3/3     3            3           3m59s
+
+$ kubectl -n argocd get application session20-mini -o jsonpath='{range .status.history[*]}revision {.id}: {.revision} deployed {.deployedAt}{"\n"}{end}'
+revision 0: 75382d1fcb1f60b2fee56d8b6141e056fd8b8e34 deployed 2026-10-07T18:01:50Z
+revision 1: 688ebc1e10292b3122d031cce2029aa147269ed4 deployed 2026-10-07T18:05:34Z
+
+$ kubectl -n argocd get events --field-selector involvedObject.name=session20-mini -o custom-columns='LAST:.lastTimestamp,REASON:.reason,MESSAGE:.message' | tail -6 | cut -c1-200
+2026-10-07T18:05:39Z   OperationStarted     Initiated automated sync to '688ebc1e10292b3122d031cce2029aa147269ed4'
+2026-10-07T18:05:39Z   ResourceUpdated      Updated sync status: Synced -> OutOfSync
+2026-10-07T18:05:40Z   OperationCompleted   Partial sync operation to 688ebc1e10292b3122d031cce2029aa147269ed4 succeeded
+2026-10-07T18:05:40Z   ResourceUpdated      Updated sync status: OutOfSync -> Synced
+2026-10-07T18:05:40Z   ResourceUpdated      Updated health status: Healthy -> Progressing
+2026-10-07T18:05:40Z   ResourceUpdated      Updated health status: Progressing -> Healthy
+saved /Users/kushalscaler/devops-heros/session20-monitoring-observability-gitops/kushal-24bcs10123/screenshots/05-argocd-app-3-replicas.png
+saved /Users/kushalscaler/devops-heros/session20-monitoring-observability-gitops/kushal-24bcs10123/screenshots/05-argocd-applications-list.png
+
+############ Step 9: observe ############
+
+$ kubectl -n s20-gitops logs deployment/session20-mini --tail=3 2>&1 | cut -c1-120
+Found 3 pods, using pod/session20-mini-68946db7dd-55zzg
+2026/10/07 18:01:51 [notice] 1#1: start worker process 38
+2026/10/07 18:01:51 [notice] 1#1: start worker process 39
+127.0.0.1 - - [07/Oct/2026:18:01:54 +0000] "GET / HTTP/1.1" 200 615 "-" "curl/8.7.1" "-"
+
+$ argocd app diff session20-mini --grpc-web && echo 'no diff: Git == cluster'
+no diff: Git == cluster
+
+############ Cleanup: deleting the Application (cascade) removes everything it created; the Git branch stays ############
+
+$ kubectl -n argocd delete application session20-mini
+application.argoproj.io "session20-mini" deleted from argocd namespace
+
+$ sleep 15; kubectl get ns s20-gitops 2>&1
+NAME         STATUS   AGE
+s20-gitops   Active   4m41s
+
+############ Cleanup, second attempt: a plain kubectl delete of the Application left the resources behind (no finalizer), so --cascade ############
+
+$ argocd app delete session20-mini --cascade --yes --grpc-web
+application 'session20-mini' deleted
+
+$ kubectl get ns s20-gitops
+Error from server (NotFound): namespaces "s20-gitops" not found
+
+$ kubectl -n argocd get applications
+NAME         SYNC STATUS   HEALTH STATUS
+studytrack   OutOfSync     Progressing

@@ -1,0 +1,219 @@
+
+$ helm -n monitoring list
+NAME                 	NAMESPACE 	REVISION	UPDATED                             	STATUS  	CHART                       	APP VERSION
+kube-prometheus-stack	monitoring	1       	2026-10-07 22:32:32.179451 +0530 IST	deployed	kube-prometheus-stack-92.1.0	v0.94.1    
+
+$ kubectl -n monitoring get prometheus,alertmanager,servicemonitor | head -20
+NAME                                                                VERSION              DESIRED   READY   RECONCILED   AVAILABLE   AGE
+prometheus.monitoring.coreos.com/kube-prometheus-stack-prometheus   v3.15.0-distroless   1         1       True         True        42m
+
+NAME                                                                    VERSION   REPLICAS   READY   RECONCILED   AVAILABLE   AGE
+alertmanager.monitoring.coreos.com/kube-prometheus-stack-alertmanager   v0.34.1   1          1       True         True        42m
+
+NAME                                                                                  AGE
+servicemonitor.monitoring.coreos.com/kube-prometheus-stack-alertmanager               42m
+servicemonitor.monitoring.coreos.com/kube-prometheus-stack-apiserver                  42m
+servicemonitor.monitoring.coreos.com/kube-prometheus-stack-coredns                    42m
+servicemonitor.monitoring.coreos.com/kube-prometheus-stack-grafana                    42m
+servicemonitor.monitoring.coreos.com/kube-prometheus-stack-kube-controller-manager    42m
+servicemonitor.monitoring.coreos.com/kube-prometheus-stack-kube-etcd                  42m
+servicemonitor.monitoring.coreos.com/kube-prometheus-stack-kube-proxy                 42m
+servicemonitor.monitoring.coreos.com/kube-prometheus-stack-kube-scheduler             42m
+servicemonitor.monitoring.coreos.com/kube-prometheus-stack-kube-state-metrics         42m
+servicemonitor.monitoring.coreos.com/kube-prometheus-stack-kubelet                    42m
+servicemonitor.monitoring.coreos.com/kube-prometheus-stack-operator                   42m
+servicemonitor.monitoring.coreos.com/kube-prometheus-stack-prometheus                 42m
+servicemonitor.monitoring.coreos.com/kube-prometheus-stack-prometheus-node-exporter   42m
+
+############ Deploy the app (Deployment + Service + probes) ############
+
+$ sed -n '1,45p' /Users/kushalscaler/devops-heros/session20-monitoring-observability-gitops/kushal-24bcs10123/01-monitoring/metrics-app.yaml
+# A tiny HTTP app that exposes Prometheus metrics on /metrics, a health endpoint for the probes,
+# and /burn?seconds=N which spins the CPU so the CPU alert has something to fire on.
+# Plain Python standard library, so the python:3.11-alpine image already on the nodes is enough.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: s20-metrics-app-code
+  namespace: s20-monitoring
+data:
+  server.py: |
+    import time, threading, json
+    from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
+    from urllib.parse import urlparse, parse_qs
+    START = time.time()
+    REQUESTS = {}            # path -> count
+    LOCK = threading.Lock()
+    def count(path):
+        with LOCK: REQUESTS[path] = REQUESTS.get(path, 0) + 1
+    class H(BaseHTTPRequestHandler):
+        def log_message(self, fmt, *a):   # one JSON log line per request -> the "logs" pillar
+            print(json.dumps({"ts": round(time.time(), 3), "level": "info", "method": self.command,
+                              "path": self.path, "status": a[1] if len(a) > 1 else "", "client": self.client_address[0]}), flush=True)
+        def _send(self, code, body, ctype="text/plain; version=0.0.4"):
+            self.send_response(code); self.send_header("Content-Type", ctype); self.end_headers(); self.wfile.write(body.encode())
+        def do_GET(self):
+            u = urlparse(self.path); count(u.path)
+            if u.path == "/health":
+                return self._send(200, "ok\n")
+            if u.path == "/burn":
+                secs = float(parse_qs(u.query).get("seconds", ["5"])[0]); t = time.time()
+                while time.time() - t < secs: pass
+                return self._send(200, f"burned cpu for {secs}s\n")
+            if u.path == "/metrics":
+                out = ["# HELP http_requests_total Requests served, by path.", "# TYPE http_requests_total counter"]
+                with LOCK:
+                    out += [f'http_requests_total{{path="{p}"}} {c}' for p, c in sorted(REQUESTS.items())]
+                out += ["# HELP app_uptime_seconds Seconds since the process started.", "# TYPE app_uptime_seconds gauge",
+                        f"app_uptime_seconds {time.time() - START:.1f}",
+                        "# HELP app_info Static build information.", "# TYPE app_info gauge",
+                        'app_info{version="1.0",owner="kushal-24bcs10123"} 1']
+                return self._send(200, "\n".join(out) + "\n")
+            return self._send(200, "hello from s20-metrics-app\n")
+    ThreadingHTTPServer(("", 8000), H).serve_forever()
+---
+apiVersion: apps/v1
+
+$ kubectl apply -f /Users/kushalscaler/devops-heros/session20-monitoring-observability-gitops/kushal-24bcs10123/01-monitoring/metrics-app.yaml
+configmap/s20-metrics-app-code created
+deployment.apps/s20-metrics-app created
+service/s20-metrics-app created
+
+$ kubectl -n s20-monitoring rollout status deployment/s20-metrics-app --timeout=180s
+Waiting for deployment "s20-metrics-app" rollout to finish: 0 of 1 updated replicas are available...
+deployment "s20-metrics-app" successfully rolled out
+
+$ kubectl -n s20-monitoring get pods,svc,endpointslices -l app=s20-metrics-app
+NAME                                   READY   STATUS    RESTARTS   AGE
+pod/s20-metrics-app-7d8665dc97-bb44w   1/1     Running   0          2s
+
+NAME                      TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)    AGE
+service/s20-metrics-app   ClusterIP   10.96.140.132   <none>        8000/TCP   2s
+
+NAME                                                   ADDRESSTYPE   PORTS   ENDPOINTS     AGE
+endpointslice.discovery.k8s.io/s20-metrics-app-ggdnm   IPv4          8000    10.244.3.35   2s
+
+$ for i in 1 2 3; do curl -s http://localhost:19080/; done; curl -s http://localhost:19080/health; curl -s http://localhost:19080/doesnotexist
+hello from s20-metrics-app
+hello from s20-metrics-app
+hello from s20-metrics-app
+ok
+hello from s20-metrics-app
+
+$ curl -s http://localhost:19080/metrics
+# HELP http_requests_total Requests served, by path.
+# TYPE http_requests_total counter
+http_requests_total{path="/"} 3
+http_requests_total{path="/doesnotexist"} 1
+http_requests_total{path="/health"} 3
+http_requests_total{path="/metrics"} 1
+# HELP app_uptime_seconds Seconds since the process started.
+# TYPE app_uptime_seconds gauge
+app_uptime_seconds 7.6
+# HELP app_info Static build information.
+# TYPE app_info gauge
+app_info{version="1.0",owner="kushal-24bcs10123"} 1
+
+$ kubectl -n s20-monitoring logs deployment/s20-metrics-app --tail=4        # structured JSON access logs = the logs pillar from the same app
+{"ts": 1791395105.974, "level": "info", "method": "GET", "path": "/health", "status": "200", "client": "10.244.3.1"}
+{"ts": 1791395106.183, "level": "info", "method": "GET", "path": "/health", "status": "200", "client": "127.0.0.1"}
+{"ts": 1791395107.209, "level": "info", "method": "GET", "path": "/doesnotexist", "status": "200", "client": "127.0.0.1"}
+{"ts": 1791395108.231, "level": "info", "method": "GET", "path": "/metrics", "status": "200", "client": "127.0.0.1"}
+
+############ Application health: readiness and liveness probes ############
+
+$ kubectl -n s20-monitoring get deploy s20-metrics-app -o jsonpath='{.spec.template.spec.containers[0].readinessProbe}{"\n"}{.spec.template.spec.containers[0].livenessProbe}{"\n"}'
+{"failureThreshold":3,"httpGet":{"path":"/health","port":"http","scheme":"HTTP"},"periodSeconds":5,"successThreshold":1,"timeoutSeconds":1}
+{"failureThreshold":3,"httpGet":{"path":"/health","port":"http","scheme":"HTTP"},"periodSeconds":10,"successThreshold":1,"timeoutSeconds":1}
+
+$ kubectl -n s20-monitoring get pod -l app=s20-metrics-app -o jsonpath='{range .items[*]}{.metadata.name}  ready={.status.containerStatuses[0].ready}  restarts={.status.containerStatuses[0].restartCount}{"\n"}{end}'
+s20-metrics-app-7d8665dc97-bb44w  ready=true  restarts=0
+
+############ Tell Prometheus to scrape it: ServiceMonitor ############
+
+$ cat /Users/kushalscaler/devops-heros/session20-monitoring-observability-gitops/kushal-24bcs10123/01-monitoring/servicemonitor.yaml
+# Tells the Prometheus Operator: scrape /metrics on port "http" of every Service labelled app=s20-metrics-app,
+# every 15 seconds. The operator turns this into a scrape job in the in-cluster Prometheus.
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: s20-metrics-app
+  namespace: s20-monitoring
+  labels:
+    app: s20-metrics-app
+spec:
+  selector:
+    matchLabels:
+      app: s20-metrics-app
+  namespaceSelector:
+    matchNames: [s20-monitoring]
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 15s
+
+$ kubectl apply -f /Users/kushalscaler/devops-heros/session20-monitoring-observability-gitops/kushal-24bcs10123/01-monitoring/servicemonitor.yaml
+servicemonitor.monitoring.coreos.com/s20-metrics-app created
+  waiting for the operator to reload Prometheus and for the first scrapes...
+
+$ curl -s http://localhost:19090/api/v1/targets | python3 -c 'import sys,json; [print(t["labels"]["job"], t["scrapeUrl"], t["health"]) for t in json.load(sys.stdin)["data"]["activeTargets"] if "s20" in t["labels"]["job"]]'
+s20-metrics-app http://10.244.3.35:8000/metrics unknown
+
+$ curl -s 'http://localhost:19090/api/v1/status/config' | grep -o 'job_name: serviceMonitor/s20-monitoring/s20-metrics-app/0'
+job_name: serviceMonitor/s20-monitoring/s20-metrics-app/0
+
+############ PromQL: metrics from the app ############
+
+$ echo 'up{job="s20-metrics-app"}'; promql 'up{job="s20-metrics-app"}'
+up{job="s20-metrics-app"}
+  {'__name__': 'up', 'container': 'app', 'instance': '10.244.3.35:8000', 'job': 's20-metrics-app', 'namespace': 's20-monitoring', 'pod': 's20-metrics-app-7d8665dc97-bb44w'} => 1
+
+
+$ echo 'http_requests_total{job="s20-metrics-app"}'; promql 'http_requests_total{job="s20-metrics-app"}'
+http_requests_total{job="s20-metrics-app"}
+  {'__name__': 'http_requests_total', 'container': 'app', 'instance': '10.244.3.35:8000', 'job': 's20-metrics-app', 'namespace': 's20-monitoring', 'path': '/', 'pod': 's20-metrics-app-7d8665dc97-bb44w'} => 123
+  {'__name__': 'http_requests_total', 'container': 'app', 'instance': '10.244.3.35:8000', 'job': 's20-metrics-app', 'namespace': 's20-monitoring', 'path': '/doesnotexist', 'pod': 's20-metrics-app-7d8665dc97-bb44w'} => 1
+  {'__name__': 'http_requests_total', 'container': 'app', 'instance': '10.244.3.35:8000', 'job': 's20-metrics-app', 'namespace': 's20-monitoring', 'path': '/health', 'pod': 's20-metrics-app-7d8665dc97-bb44w'} => 64
+  {'__name__': 'http_requests_total', 'container': 'app', 'instance': '10.244.3.35:8000', 'job': 's20-metrics-app', 'namespace': 's20-monitoring', 'path': '/metrics', 'pod': 's20-metrics-app-7d8665dc97-bb44w'} => 12
+
+
+$ echo 'sum by (path)(rate(http_requests_total{job="s20-metrics-app"}[1m]))'; promql 'sum by (path)(rate(http_requests_total{job="s20-metrics-app"}[1m]))'
+sum by (path)(rate(http_requests_total{job="s20-metrics-app"}[1m]))
+  {'path': '/'} => 0.17777777777777776
+  {'path': '/doesnotexist'} => 0
+  {'path': '/health'} => 0.5111111111111111
+  {'path': '/metrics'} => 0.06666666666666665
+
+
+$ echo 'app_uptime_seconds'; promql 'app_uptime_seconds'
+app_uptime_seconds
+  {'__name__': 'app_uptime_seconds', 'container': 'app', 'instance': '10.244.3.35:8000', 'job': 's20-metrics-app', 'namespace': 's20-monitoring', 'pod': 's20-metrics-app-7d8665dc97-bb44w'} => 178.2
+
+
+############ PromQL: CPU and memory utilization (from cAdvisor via the kubelet, no app code needed) ############
+
+$ echo 'sum by (pod)(rate(container_cpu_usage_seconds_total{namespace="s20-monitoring",container="app"}[2m]))'; promql 'sum by (pod)(rate(container_cpu_usage_seconds_total{namespace="s20-monitoring",container="app"}[2m]))'
+sum by (pod)(rate(container_cpu_usage_seconds_total{namespace="s20-monitoring",container="app"}[2m]))
+  {'pod': 's20-metrics-app-7d8665dc97-bb44w'} => 0.0018906407816536783
+
+
+$ echo 'container_memory_working_set_bytes{namespace="s20-monitoring",container="app"}'; promql 'container_memory_working_set_bytes{namespace="s20-monitoring",container="app"}'
+container_memory_working_set_bytes{namespace="s20-monitoring",container="app"}
+  {'__name__': 'container_memory_working_set_bytes', 'container': 'app', 'instance': '172.18.0.4:10250', 'job': 'kubelet', 'namespace': 's20-monitoring', 'pod': 's20-metrics-app-7d8665dc97-bb44w'} => 22532096
+
+
+$ echo 'kube_pod_container_resource_limits{namespace="s20-monitoring",resource="cpu"}'; promql 'kube_pod_container_resource_limits{namespace="s20-monitoring",resource="cpu"}'
+kube_pod_container_resource_limits{namespace="s20-monitoring",resource="cpu"}
+  {'__name__': 'kube_pod_container_resource_limits', 'container': 'app', 'instance': '10.244.1.5:8080', 'job': 'kube-state-metrics', 'namespace': 's20-monitoring', 'pod': 's20-metrics-app-7d8665dc97-bb44w'} => 0.5
+
+
+$ echo 'kube_pod_container_status_ready{namespace="s20-monitoring"}'; promql 'kube_pod_container_status_ready{namespace="s20-monitoring"}'
+kube_pod_container_status_ready{namespace="s20-monitoring"}
+  {'__name__': 'kube_pod_container_status_ready', 'container': 'app', 'instance': '10.244.1.5:8080', 'job': 'kube-state-metrics', 'namespace': 's20-monitoring', 'pod': 's20-metrics-app-7d8665dc97-bb44w'} => 1
+
+
+$ kubectl top pods -n s20-monitoring --containers
+POD                                NAME   CPU(cores)   MEMORY(bytes)   
+s20-metrics-app-7d8665dc97-bb44w   app    2m           21Mi            
+saved /Users/kushalscaler/devops-heros/session20-monitoring-observability-gitops/kushal-24bcs10123/screenshots/02-prometheus-requests-rate.png
+saved /Users/kushalscaler/devops-heros/session20-monitoring-observability-gitops/kushal-24bcs10123/screenshots/02-prometheus-targets.png

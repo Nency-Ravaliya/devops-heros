@@ -1,0 +1,444 @@
+namespace/s13-hpa created
+
+############ 1. deploy the application + service ############
+
+$ cat 04-hpa/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hpa-demo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hpa-demo
+  template:
+    metadata:
+      labels:
+        app: hpa-demo
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:1.27
+          resources:
+            requests:
+              cpu: 100m
+            limits:
+              cpu: 200m
+          ports:
+            - containerPort: 80
+
+$ kubectl -n s13-hpa apply -f 04-hpa/deployment.yaml && kubectl -n s13-hpa apply -f 04-hpa/service.yaml
+deployment.apps/hpa-demo created
+service/hpa-demo-service created
+
+$ kubectl -n s13-hpa rollout status deploy/hpa-demo --timeout=120s
+Waiting for deployment "hpa-demo" rollout to finish: 0 of 1 updated replicas are available...
+deployment "hpa-demo" successfully rolled out
+
+$ kubectl -n s13-hpa get deploy,svc,pods -o wide
+NAME                       READY   UP-TO-DATE   AVAILABLE   AGE   CONTAINERS   IMAGES       SELECTOR
+deployment.apps/hpa-demo   1/1     1            1           1s    nginx        nginx:1.27   app=hpa-demo
+
+NAME                       TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)   AGE   SELECTOR
+service/hpa-demo-service   ClusterIP   10.96.153.173   <none>        80/TCP    1s    app=hpa-demo
+
+NAME                            READY   STATUS    RESTARTS   AGE   IP             NODE                NOMINATED NODE   READINESS GATES
+pod/hpa-demo-5d6676989b-6prtx   1/1     Running   0          1s    10.244.3.117   kushal-lab-worker   <none>           <none>
+
+############ 2. metrics server is working ############
+
+$ kubectl get deploy metrics-server -n kube-system
+NAME             READY   UP-TO-DATE   AVAILABLE   AGE
+metrics-server   1/1     1            1           11h
+
+$ kubectl top nodes
+NAME                       CPU(cores)   CPU(%)   MEMORY(bytes)   MEMORY(%)   
+kushal-lab-control-plane   370m         6%       2130Mi          13%         
+kushal-lab-worker          236m         3%       1927Mi          12%         
+kushal-lab-worker2         337m         5%       2368Mi          14%         
+
+$ sleep 20; kubectl -n s13-hpa top pods
+NAME                        CPU(cores)   MEMORY(bytes)   
+hpa-demo-5d6676989b-6prtx   5m           5Mi             
+
+############ 3. configure the HPA ############
+
+$ cat 04-hpa/hpa.yaml
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: hpa-demo
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: hpa-demo
+  minReplicas: 1
+  maxReplicas: 5
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 50
+
+$ kubectl -n s13-hpa apply -f 04-hpa/hpa.yaml
+horizontalpodautoscaler.autoscaling/hpa-demo created
+
+$ sleep 20; kubectl -n s13-hpa get hpa
+NAME       REFERENCE             TARGETS       MINPODS   MAXPODS   REPLICAS   AGE
+hpa-demo   Deployment/hpa-demo   cpu: 0%/50%   1         5         1          20s
+
+$ kubectl -n s13-hpa describe hpa hpa-demo | sed -n '/^Metrics/,/^Events/p'
+Metrics:                                               ( current / target )
+  resource cpu on pods  (as a percentage of request):  0% (0) / 50%
+Min replicas:                                          1
+Max replicas:                                          5
+Deployment pods:                                       1 current / 1 desired
+Conditions:
+  Type            Status  Reason               Message
+  ----            ------  ------               -------
+  AbleToScale     True    ScaleDownStabilized  recent recommendations were higher than current one, applying the highest recent recommendation
+  ScalingActive   True    ValidMetricFound     the HPA was able to successfully calculate a replica count from cpu resource utilization (percentage of request)
+  ScalingLimited  False   DesiredWithinRange   the desired count is within the acceptable range
+Events:
+
+############ 4. load generator (in-cluster, 3 busybox pods looping wget) ############
+
+$ kubectl -n s13-hpa run load-generator-1 --image=busybox:1.36 --restart=Never -- /bin/sh -c 'while true; do wget -q -O- http://hpa-demo-service >/dev/null; done'
+pod/load-generator-1 created
+
+$ kubectl -n s13-hpa run load-generator-2 --image=busybox:1.36 --restart=Never -- /bin/sh -c 'while true; do wget -q -O- http://hpa-demo-service >/dev/null; done'
+pod/load-generator-2 created
+
+$ kubectl -n s13-hpa run load-generator-3 --image=busybox:1.36 --restart=Never -- /bin/sh -c 'while true; do wget -q -O- http://hpa-demo-service >/dev/null; done'
+pod/load-generator-3 created
+
+$ kubectl -n s13-hpa get pods
+NAME                        READY   STATUS              RESTARTS   AGE
+hpa-demo-5d6676989b-6prtx   1/1     Running             0          43s
+load-generator-1            0/1     ContainerCreating   0          1s
+load-generator-2            0/1     ContainerCreating   0          1s
+load-generator-3            0/1     ContainerCreating   0          1s
+
+############ 5. observe CPU and scaling (one sample every 30 s) ############
+
+--- t+30s
+NAME                        CPU(cores)   MEMORY(bytes)   
+hpa-demo-5d6676989b-6prtx   200m         6Mi             
+hpa-demo   Deployment/hpa-demo   cpu: 200%/50%   1     5     1     52s
+   hpa-demo-5d6676989b-6prtx Running
+   hpa-demo-5d6676989b-f4ndj Running
+   hpa-demo-5d6676989b-qjkkw Running
+   hpa-demo-5d6676989b-r6jdc Running
+
+--- t+60s
+NAME                        CPU(cores)   MEMORY(bytes)   
+hpa-demo-5d6676989b-6prtx   59m          6Mi             
+hpa-demo-5d6676989b-f4ndj   63m          5Mi             
+hpa-demo-5d6676989b-qjkkw   57m          5Mi             
+hpa-demo-5d6676989b-r6jdc   62m          5Mi             
+hpa-demo   Deployment/hpa-demo   cpu: 60%/50%   1     5     4     82s
+   hpa-demo-5d6676989b-6prtx Running
+   hpa-demo-5d6676989b-f4ndj Running
+   hpa-demo-5d6676989b-qjkkw Running
+   hpa-demo-5d6676989b-r6jdc Running
+   hpa-demo-5d6676989b-zjxvw Running
+
+--- t+90s
+NAME                        CPU(cores)   MEMORY(bytes)   
+hpa-demo-5d6676989b-6prtx   47m          6Mi             
+hpa-demo-5d6676989b-f4ndj   52m          5Mi             
+hpa-demo-5d6676989b-qjkkw   47m          5Mi             
+hpa-demo-5d6676989b-r6jdc   52m          5Mi             
+hpa-demo-5d6676989b-zjxvw   47m          5Mi             
+hpa-demo   Deployment/hpa-demo   cpu: 49%/50%   1     5     5     112s
+   hpa-demo-5d6676989b-6prtx Running
+   hpa-demo-5d6676989b-f4ndj Running
+   hpa-demo-5d6676989b-qjkkw Running
+   hpa-demo-5d6676989b-r6jdc Running
+   hpa-demo-5d6676989b-zjxvw Running
+
+--- t+120s
+NAME                        CPU(cores)   MEMORY(bytes)   
+hpa-demo-5d6676989b-6prtx   48m          6Mi             
+hpa-demo-5d6676989b-f4ndj   54m          5Mi             
+hpa-demo-5d6676989b-qjkkw   49m          5Mi             
+hpa-demo-5d6676989b-r6jdc   55m          5Mi             
+hpa-demo-5d6676989b-zjxvw   49m          5Mi             
+hpa-demo   Deployment/hpa-demo   cpu: 51%/50%   1     5     5     2m23s
+   hpa-demo-5d6676989b-6prtx Running
+   hpa-demo-5d6676989b-f4ndj Running
+   hpa-demo-5d6676989b-qjkkw Running
+   hpa-demo-5d6676989b-r6jdc Running
+   hpa-demo-5d6676989b-zjxvw Running
+
+--- t+150s
+NAME                        CPU(cores)   MEMORY(bytes)   
+hpa-demo-5d6676989b-6prtx   48m          5Mi             
+hpa-demo-5d6676989b-f4ndj   53m          6Mi             
+hpa-demo-5d6676989b-qjkkw   48m          5Mi             
+hpa-demo-5d6676989b-r6jdc   52m          5Mi             
+hpa-demo-5d6676989b-zjxvw   49m          5Mi             
+hpa-demo   Deployment/hpa-demo   cpu: 50%/50%   1     5     5     2m53s
+   hpa-demo-5d6676989b-6prtx Running
+   hpa-demo-5d6676989b-f4ndj Running
+   hpa-demo-5d6676989b-qjkkw Running
+   hpa-demo-5d6676989b-r6jdc Running
+   hpa-demo-5d6676989b-zjxvw Running
+
+--- t+180s
+NAME                        CPU(cores)   MEMORY(bytes)   
+hpa-demo-5d6676989b-6prtx   46m          5Mi             
+hpa-demo-5d6676989b-f4ndj   52m          5Mi             
+hpa-demo-5d6676989b-qjkkw   48m          5Mi             
+hpa-demo-5d6676989b-r6jdc   52m          5Mi             
+hpa-demo-5d6676989b-zjxvw   47m          5Mi             
+hpa-demo   Deployment/hpa-demo   cpu: 49%/50%   1     5     5     3m23s
+   hpa-demo-5d6676989b-6prtx Running
+   hpa-demo-5d6676989b-f4ndj Running
+   hpa-demo-5d6676989b-qjkkw Running
+   hpa-demo-5d6676989b-r6jdc Running
+   hpa-demo-5d6676989b-zjxvw Running
+
+--- t+210s
+NAME                        CPU(cores)   MEMORY(bytes)   
+hpa-demo-5d6676989b-6prtx   48m          5Mi             
+hpa-demo-5d6676989b-f4ndj   50m          5Mi             
+hpa-demo-5d6676989b-qjkkw   47m          5Mi             
+hpa-demo-5d6676989b-r6jdc   50m          5Mi             
+hpa-demo-5d6676989b-zjxvw   47m          5Mi             
+hpa-demo   Deployment/hpa-demo   cpu: 48%/50%   1     5     5     3m53s
+   hpa-demo-5d6676989b-6prtx Running
+   hpa-demo-5d6676989b-f4ndj Running
+   hpa-demo-5d6676989b-qjkkw Running
+   hpa-demo-5d6676989b-r6jdc Running
+   hpa-demo-5d6676989b-zjxvw Running
+
+--- t+240s
+NAME                        CPU(cores)   MEMORY(bytes)   
+hpa-demo-5d6676989b-6prtx   47m          5Mi             
+hpa-demo-5d6676989b-f4ndj   50m          5Mi             
+hpa-demo-5d6676989b-qjkkw   48m          5Mi             
+hpa-demo-5d6676989b-r6jdc   51m          5Mi             
+hpa-demo-5d6676989b-zjxvw   48m          5Mi             
+hpa-demo   Deployment/hpa-demo   cpu: 48%/50%   1     5     5     4m23s
+   hpa-demo-5d6676989b-6prtx Running
+   hpa-demo-5d6676989b-f4ndj Running
+   hpa-demo-5d6676989b-qjkkw Running
+   hpa-demo-5d6676989b-r6jdc Running
+   hpa-demo-5d6676989b-zjxvw Running
+
+--- t+270s
+NAME                        CPU(cores)   MEMORY(bytes)   
+hpa-demo-5d6676989b-6prtx   47m          5Mi             
+hpa-demo-5d6676989b-f4ndj   53m          5Mi             
+hpa-demo-5d6676989b-qjkkw   48m          5Mi             
+hpa-demo-5d6676989b-r6jdc   53m          5Mi             
+hpa-demo-5d6676989b-zjxvw   48m          5Mi             
+hpa-demo   Deployment/hpa-demo   cpu: 49%/50%   1     5     5     4m54s
+   hpa-demo-5d6676989b-6prtx Running
+   hpa-demo-5d6676989b-f4ndj Running
+   hpa-demo-5d6676989b-qjkkw Running
+   hpa-demo-5d6676989b-r6jdc Running
+   hpa-demo-5d6676989b-zjxvw Running
+
+--- t+300s
+NAME                        CPU(cores)   MEMORY(bytes)   
+hpa-demo-5d6676989b-6prtx   48m          5Mi             
+hpa-demo-5d6676989b-f4ndj   53m          5Mi             
+hpa-demo-5d6676989b-qjkkw   48m          5Mi             
+hpa-demo-5d6676989b-r6jdc   52m          5Mi             
+hpa-demo-5d6676989b-zjxvw   48m          5Mi             
+hpa-demo   Deployment/hpa-demo   cpu: 49%/50%   1     5     5     5m24s
+   hpa-demo-5d6676989b-6prtx Running
+   hpa-demo-5d6676989b-f4ndj Running
+   hpa-demo-5d6676989b-qjkkw Running
+   hpa-demo-5d6676989b-r6jdc Running
+   hpa-demo-5d6676989b-zjxvw Running
+
+$ kubectl -n s13-hpa describe hpa hpa-demo | sed -n '/^Metrics/,$p'
+Metrics:                                               ( current / target )
+  resource cpu on pods  (as a percentage of request):  49% (49m) / 50%
+Min replicas:                                          1
+Max replicas:                                          5
+Deployment pods:                                       5 current / 5 desired
+Conditions:
+  Type            Status  Reason              Message
+  ----            ------  ------              -------
+  AbleToScale     True    ReadyForNewScale    recommended size matches current size
+  ScalingActive   True    ValidMetricFound    the HPA was able to successfully calculate a replica count from cpu resource utilization (percentage of request)
+  ScalingLimited  False   DesiredWithinRange  the desired count is within the acceptable range
+  ScaledToZero    False   NotScaledToZero     the HPA controller did not scale the workload to zero
+Events:
+  Type     Reason                        Age    From                       Message
+  ----     ------                        ----   ----                       -------
+  Warning  FailedGetResourceMetric       5m24s  horizontal-pod-autoscaler  failed to get cpu utilization: did not receive metrics for targeted pods (pods might be unready)
+  Warning  FailedComputeMetricsReplicas  5m24s  horizontal-pod-autoscaler  invalid metrics (1 invalid out of 1), first error is: failed to get cpu resource metric value: failed to get cpu utilization: did not receive metrics for targeted pods (pods might be unready)
+  Normal   SuccessfulRescale             4m39s  horizontal-pod-autoscaler  New size: 4; reason: cpu resource utilization (percentage of request) above target
+  Normal   SuccessfulRescale             4m9s   horizontal-pod-autoscaler  New size: 5; reason: cpu resource utilization (percentage of request) above target
+
+$ kubectl -n s13-hpa get deploy hpa-demo
+NAME       READY   UP-TO-DATE   AVAILABLE   AGE
+hpa-demo   5/5     5            5           5m45s
+
+############ 6. the course host script hpa/load_generator.sh (10 parallel curl loops through a port-forward) ############
+
+$ bash hpa/load_generator.sh http://localhost:18080/ > /tmp/lg-12436.txt 2>&1 & echo started pid $!; sleep 60; pkill -f 'hpa/load_generator.sh'; pkill -f 'curl -s http://localhost:18080'; echo '(script and its 10 curl workers killed after 60 s - the loops are infinite by design)'; head -8 /tmp/lg-12436.txt
+started pid 13369
+(script and its 10 curl workers killed after 60 s - the loops are infinite by design)
+==================================================
+      KUBERNETES HPA TRAFFIC LOAD GENERATOR       
+==================================================
+Pounding target endpoint: http://localhost:18080/
+Simulating traffic spike. Press Ctrl+C to stop.
+
+Traffic load active! In another terminal, run: kubectl get hpa -w
+
+$ kubectl -n s13-hpa top pods -l app=hpa-demo
+NAME                        CPU(cores)   MEMORY(bytes)   
+hpa-demo-5d6676989b-6prtx   92m          6Mi             
+hpa-demo-5d6676989b-f4ndj   45m          5Mi             
+hpa-demo-5d6676989b-qjkkw   41m          5Mi             
+hpa-demo-5d6676989b-r6jdc   46m          5Mi             
+hpa-demo-5d6676989b-zjxvw   40m          5Mi             
+
+$ kubectl -n s13-hpa get hpa hpa-demo
+NAME       REFERENCE             TARGETS        MINPODS   MAXPODS   REPLICAS   AGE
+hpa-demo   Deployment/hpa-demo   cpu: 52%/50%   1         5         5          6m26s
+
+############ 7. stop the load, wait for scale-down (default stabilization window is 300 s) ############
+
+$ kubectl -n s13-hpa delete pod load-generator-1 load-generator-2 load-generator-3 --wait=false
+pod "load-generator-1" deleted from s13-hpa namespace
+pod "load-generator-2" deleted from s13-hpa namespace
+pod "load-generator-3" deleted from s13-hpa namespace
+
+--- t+30s after load stopped
+hpa-demo   Deployment/hpa-demo   cpu: 48%/50%   1     5     5     6m57s
+   pods: 5
+
+--- t+60s after load stopped
+hpa-demo   Deployment/hpa-demo   cpu: 13%/50%   1     5     5     7m27s
+   pods: 5
+
+--- t+90s after load stopped
+hpa-demo   Deployment/hpa-demo   cpu: 0%/50%   1     5     5     7m57s
+   pods: 5
+
+--- t+120s after load stopped
+hpa-demo   Deployment/hpa-demo   cpu: 0%/50%   1     5     5     8m27s
+   pods: 5
+
+--- t+150s after load stopped
+hpa-demo   Deployment/hpa-demo   cpu: 0%/50%   1     5     5     8m57s
+   pods: 5
+
+--- t+180s after load stopped
+hpa-demo   Deployment/hpa-demo   cpu: 0%/50%   1     5     5     9m28s
+   pods: 5
+
+--- t+210s after load stopped
+hpa-demo   Deployment/hpa-demo   cpu: 0%/50%   1     5     5     9m58s
+   pods: 5
+
+--- t+240s after load stopped
+hpa-demo   Deployment/hpa-demo   cpu: 0%/50%   1     5     5     10m
+   pods: 5
+
+--- t+270s after load stopped
+hpa-demo   Deployment/hpa-demo   cpu: 0%/50%   1     5     5     10m
+   pods: 5
+
+--- t+300s after load stopped
+hpa-demo   Deployment/hpa-demo   cpu: 0%/50%   1     5     5     11m
+   pods: 5
+
+--- t+330s after load stopped
+hpa-demo   Deployment/hpa-demo   cpu: 0%/50%   1     5     5     11m
+   pods: 5
+
+--- t+360s after load stopped
+hpa-demo   Deployment/hpa-demo   cpu: 0%/50%   1     5     2     12m
+   pods: 1
+
+--- t+390s after load stopped
+hpa-demo   Deployment/hpa-demo   cpu: 0%/50%   1     5     1     12m
+   pods: 1
+
+--- t+420s after load stopped
+hpa-demo   Deployment/hpa-demo   cpu: 0%/50%   1     5     1     13m
+   pods: 1
+
+$ kubectl -n s13-hpa describe hpa hpa-demo | sed -n '/^Events/,$p'
+Events:
+  Type     Reason                        Age   From                       Message
+  ----     ------                        ----  ----                       -------
+  Warning  FailedGetResourceMetric       13m   horizontal-pod-autoscaler  failed to get cpu utilization: did not receive metrics for targeted pods (pods might be unready)
+  Warning  FailedComputeMetricsReplicas  13m   horizontal-pod-autoscaler  invalid metrics (1 invalid out of 1), first error is: failed to get cpu resource metric value: failed to get cpu utilization: did not receive metrics for targeted pods (pods might be unready)
+  Normal   SuccessfulRescale             12m   horizontal-pod-autoscaler  New size: 4; reason: cpu resource utilization (percentage of request) above target
+  Normal   SuccessfulRescale             12m   horizontal-pod-autoscaler  New size: 5; reason: cpu resource utilization (percentage of request) above target
+  Normal   SuccessfulRescale             88s   horizontal-pod-autoscaler  New size: 2; reason: All metrics below target
+  Normal   SuccessfulRescale             73s   horizontal-pod-autoscaler  New size: 1; reason: All metrics below target
+
+$ cat /Users/kushalscaler/devops-heros/session-13-storage-hpa-probes/kushal-24bcs10123/logs/02-hpa-watch.txt
+NAME       REFERENCE             TARGETS       MINPODS   MAXPODS   REPLICAS   AGE
+hpa-demo   Deployment/hpa-demo   cpu: 0%/50%   1         5         1          20s
+hpa-demo   Deployment/hpa-demo   cpu: 46%/50%   1         5         1          30s
+hpa-demo   Deployment/hpa-demo   cpu: 200%/50%   1         5         1          45s
+hpa-demo   Deployment/hpa-demo   cpu: 132%/50%   1         5         4          60s
+hpa-demo   Deployment/hpa-demo   cpu: 60%/50%    1         5         4          75s
+hpa-demo   Deployment/hpa-demo   cpu: 54%/50%    1         5         5          90s
+hpa-demo   Deployment/hpa-demo   cpu: 49%/50%    1         5         5          105s
+hpa-demo   Deployment/hpa-demo   cpu: 50%/50%    1         5         5          2m
+hpa-demo   Deployment/hpa-demo   cpu: 51%/50%    1         5         5          2m15s
+hpa-demo   Deployment/hpa-demo   cpu: 49%/50%    1         5         5          2m30s
+hpa-demo   Deployment/hpa-demo   cpu: 50%/50%    1         5         5          2m45s
+hpa-demo   Deployment/hpa-demo   cpu: 49%/50%    1         5         5          3m
+hpa-demo   Deployment/hpa-demo   cpu: 48%/50%    1         5         5          3m30s
+hpa-demo   Deployment/hpa-demo   cpu: 49%/50%    1         5         5          4m
+hpa-demo   Deployment/hpa-demo   cpu: 48%/50%    1         5         5          4m15s
+hpa-demo   Deployment/hpa-demo   cpu: 49%/50%    1         5         5          4m30s
+hpa-demo   Deployment/hpa-demo   cpu: 47%/50%    1         5         5          5m46s
+hpa-demo   Deployment/hpa-demo   cpu: 51%/50%    1         5         5          6m1s
+hpa-demo   Deployment/hpa-demo   cpu: 52%/50%    1         5         5          6m16s
+hpa-demo   Deployment/hpa-demo   cpu: 51%/50%    1         5         5          6m31s
+hpa-demo   Deployment/hpa-demo   cpu: 48%/50%    1         5         5          6m46s
+hpa-demo   Deployment/hpa-demo   cpu: 13%/50%    1         5         5          7m16s
+hpa-demo   Deployment/hpa-demo   cpu: 0%/50%     1         5         5          7m31s
+hpa-demo   Deployment/hpa-demo   cpu: 0%/50%     1         5         5          12m
+hpa-demo   Deployment/hpa-demo   cpu: 0%/50%     1         5         2          12m
+hpa-demo   Deployment/hpa-demo   cpu: 0%/50%     1         5         1          12m
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            hpa-demo   Deployment/hpa-demo   cpu: 46%/50%         1         5         1          30s
+hpa-demo   Deployment/hpa-demo   cpu: 200%/50%        1         5         1          45s
+hpa-demo   Deployment/hpa-demo   cpu: 132%/50%        1         5         4          60s
+hpa-demo   Deployment/hpa-demo   cpu: 60%/50%         1         5         4          75s
+hpa-demo   Deployment/hpa-demo   cpu: 54%/50%         1         5         5          90s
+hpa-demo   Deployment/hpa-demo   cpu: 49%/50%         1         5         5          105s
+hpa-demo   Deployment/hpa-demo   cpu: 50%/50%         1         5         5          2m
+hpa-demo   Deployment/hpa-demo   cpu: 51%/50%         1         5         5          2m15s
+hpa-demo   Deployment/hpa-demo   cpu: 49%/50%         1         5         5          2m30s
+hpa-demo   Deployment/hpa-demo   cpu: 50%/50%         1         5         5          2m45s
+hpa-demo   Deployment/hpa-demo   cpu: 49%/50%         1         5         5          3m
+hpa-demo   Deployment/hpa-demo   cpu: 48%/50%         1         5         5          3m30s
+hpa-demo   Deployment/hpa-demo   cpu: 49%/50%         1         5         5          4m
+hpa-demo   Deployment/hpa-demo   cpu: 48%/50%         1         5         5          4m15s
+hpa-demo   Deployment/hpa-demo   cpu: 49%/50%         1         5         5          4m30s
+hpa-demo   Deployment/hpa-demo   cpu: 47%/50%         1         5         5          5m46s
+hpa-demo   Deployment/hpa-demo   cpu: 51%/50%         1         5         5          6m1s
+hpa-demo   Deployment/hpa-demo   cpu: 52%/50%         1         5         5          6m16s
+hpa-demo   Deployment/hpa-demo   cpu: 51%/50%         1         5         5          6m31s
+hpa-demo   Deployment/hpa-demo   cpu: 48%/50%         1         5         5          6m46s
+hpa-demo   Deployment/hpa-demo   cpu: 13%/50%         1         5         5          7m16s
+hpa-demo   Deployment/hpa-demo   cpu: 0%/50%          1         5         5          7m31s
+hpa-demo   Deployment/hpa-demo   cpu: 0%/50%          1         5         5          12m
+hpa-demo   Deployment/hpa-demo   cpu: 0%/50%          1         5         2          12m
+hpa-demo   Deployment/hpa-demo   cpu: 0%/50%          1         5         1          12m
+screenshot -> screenshots/02-hpa-watch.png
+
+############ cleanup ############
+
+$ kubectl delete ns s13-hpa --wait=false
+namespace "s13-hpa" deleted

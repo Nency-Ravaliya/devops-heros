@@ -1,0 +1,7 @@
+
+$ kubectl apply -f k8s/namespace.yaml
+namespace/studytrack created
+
+$ kubectl get ns studytrack --show-labels
+NAME         STATUS   AGE   LABELS
+studytrack   Active   0s    app.kubernetes.io/part-of=studytrack,kubernetes.io/metadata.name=studytrack,owner=kushal-24bcs10123

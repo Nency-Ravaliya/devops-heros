@@ -1,0 +1,16 @@
+$ terraform plan -var-file=localstack.tfvars -var create_eks=true   # EKS API is not in LocalStack community; this shows the full plan incl. the module
+  # aws_subnet.public[0] will be updated in-place
+  # aws_subnet.public[1] will be updated in-place
+  # module.eks[0].data.aws_iam_policy_document.cluster_assume will be read during apply
+  # (depends on a resource or a module with changes pending)
+  # module.eks[0].data.aws_iam_policy_document.node_assume will be read during apply
+  # (depends on a resource or a module with changes pending)
+  # module.eks[0].aws_eks_cluster.main will be created
+  # module.eks[0].aws_eks_node_group.default will be created
+  # module.eks[0].aws_iam_role.cluster will be created
+  # module.eks[0].aws_iam_role.node will be created
+  # module.eks[0].aws_iam_role_policy_attachment.cluster_policy will be created
+  # module.eks[0].aws_iam_role_policy_attachment.node["arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"] will be created
+  # module.eks[0].aws_iam_role_policy_attachment.node["arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy"] will be created
+  # module.eks[0].aws_iam_role_policy_attachment.node["arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy"] will be created
+Plan: 8 to add, 2 to change, 0 to destroy.

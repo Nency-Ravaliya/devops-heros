@@ -1,0 +1,51 @@
+$ docker compose exec postgres psql -U studytrack -d studytrack -c "\dt" -c "select version_num from alembic_version" -c "select id,subject,minutes,status from study_entries"
+               List of relations
+ Schema |      Name       | Type  |   Owner    
+--------+-----------------+-------+------------
+ public | alembic_version | table | studytrack
+ public | study_entries   | table | studytrack
+(2 rows)
+
+ version_num 
+-------------
+ 0001
+(1 row)
+
+ id |      subject      | minutes | status 
+----+-------------------+---------+--------
+  1 | Operating Systems |      45 | done
+  2 | DBMS              |      60 | done
+  4 | Operating Systems |      30 | done
+  5 | DevOps            |      90 | done
+(4 rows)
+
+
+$ docker compose logs backend | head -8
+backend-1  | [entrypoint] running alembic upgrade head
+backend-1  | INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+backend-1  | INFO  [alembic.runtime.migration] Will assume transactional DDL.
+backend-1  | [entrypoint] starting uvicorn
+backend-1  | INFO:     Started server process [1]
+backend-1  | INFO:     Waiting for application startup.
+backend-1  | INFO:     Application startup complete.
+backend-1  | INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+
+$ docker compose exec backend id
+uid=10001(studytrack) gid=10001 groups=10001
+$ docker compose exec frontend id
+uid=101(nginx) gid=101(nginx) groups=101(nginx)
+
+$ docker images | grep studytrack
+WARNING: This output is designed for human readability. For machine-readable output, please use --format.
+studytrack-backend:latest                                                              7d344ba6fab4        340MB         74.4MB   U    
+studytrack-frontend:latest                                                             58f372c30357       76.3MB         21.9MB   U    
+
+$ docker history studytrack-frontend   # only nginx layers survive, the node build stage is discarded
+CREATED BY                                      SIZE
+USER 101                                        0B
+EXPOSE [8080/tcp]                               0B
+COPY /src/dist /usr/share/nginx/html # build…   262kB
+COPY nginx.conf.template /etc/nginx/template…   20.5kB
+ENV BACKEND_URL=http://backend:8000             0B
+USER 101                                        0B
+RUN |2 UID=101 GID=101 /bin/sh -c set -x    …   39.7MB

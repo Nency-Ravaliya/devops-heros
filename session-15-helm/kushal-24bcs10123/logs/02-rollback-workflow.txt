@@ -1,0 +1,208 @@
+
+$ cat 07-install-upgrade/app-chart/Chart.yaml
+apiVersion: v2
+name: app-chart
+description: Install and upgrade demo chart
+type: application
+version: 0.1.0
+appVersion: "1.0"
+
+$ cat 07-install-upgrade/app-chart/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-app
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}
+    spec:
+      containers:
+        - name: app
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          ports:
+            - containerPort: 80
+
+$ head -20 /Users/kushalscaler/devops-heros/session-15-helm/kushal-24bcs10123/02-rollback-workflow/values-v1.yaml /Users/kushalscaler/devops-heros/session-15-helm/kushal-24bcs10123/02-rollback-workflow/values-v2.yaml /Users/kushalscaler/devops-heros/session-15-helm/kushal-24bcs10123/02-rollback-workflow/values-v3.yaml
+==> /Users/kushalscaler/devops-heros/session-15-helm/kushal-24bcs10123/02-rollback-workflow/values-v1.yaml <==
+# revision 1 - the initial install: one nginx 1.24 pod
+replicaCount: 1
+image:
+  repository: nginx
+  tag: "1.24"
+
+==> /Users/kushalscaler/devops-heros/session-15-helm/kushal-24bcs10123/02-rollback-workflow/values-v2.yaml <==
+# revision 2 - first upgrade: scale to two pods and move to nginx 1.25
+replicaCount: 2
+image:
+  repository: nginx
+  tag: "1.25"
+
+==> /Users/kushalscaler/devops-heros/session-15-helm/kushal-24bcs10123/02-rollback-workflow/values-v3.yaml <==
+# revision 3 - second upgrade: three pods on nginx 1.26
+replicaCount: 3
+image:
+  repository: nginx
+  tag: "1.26"
+
+############ 1. INSTALL (revision 1) ############
+
+$ helm install web-app 07-install-upgrade/app-chart -f /Users/kushalscaler/devops-heros/session-15-helm/kushal-24bcs10123/02-rollback-workflow/values-v1.yaml
+NAME: web-app
+LAST DEPLOYED: Wed Oct  7 23:14:48 2026
+NAMESPACE: s15-helm
+STATUS: deployed
+REVISION: 1
+DESCRIPTION: Install complete
+TEST SUITE: None
+
+$ ready web-app-app
+deployment "web-app-app" successfully rolled out
+
+$ pods web-app
+NAME                           IMAGE        STATUS    READY
+web-app-app-5769cccf7c-p6f6b   nginx:1.24   Running   true
+
+$ helm history web-app
+REVISION	UPDATED                 	STATUS  	CHART          	APP VERSION	DESCRIPTION     
+1       	Wed Oct  7 23:14:48 2026	deployed	app-chart-0.1.0	1.0        	Install complete
+
+############ 2. UPGRADE (revision 2) -> 3. VERIFY ############
+
+$ helm upgrade web-app 07-install-upgrade/app-chart -f /Users/kushalscaler/devops-heros/session-15-helm/kushal-24bcs10123/02-rollback-workflow/values-v2.yaml
+Release "web-app" has been upgraded. Happy Helming!
+NAME: web-app
+LAST DEPLOYED: Wed Oct  7 23:14:49 2026
+NAMESPACE: s15-helm
+STATUS: deployed
+REVISION: 2
+DESCRIPTION: Upgrade complete
+TEST SUITE: None
+
+$ ready web-app-app
+deployment "web-app-app" successfully rolled out
+
+$ pods web-app
+NAME                           IMAGE        STATUS      READY
+web-app-app-5769cccf7c-p6f6b   nginx:1.24   Succeeded   false
+web-app-app-5769cccf7c-pmnx7   nginx:1.24   Running     true
+web-app-app-79bdc85c7d-8nqb2   nginx:1.25   Running     true
+web-app-app-79bdc85c7d-lrhxb   nginx:1.25   Running     true
+
+$ helm get values web-app
+USER-SUPPLIED VALUES:
+image:
+  repository: nginx
+  tag: "1.25"
+replicaCount: 2
+
+$ helm history web-app
+REVISION	UPDATED                 	STATUS    	CHART          	APP VERSION	DESCRIPTION     
+1       	Wed Oct  7 23:14:48 2026	superseded	app-chart-0.1.0	1.0        	Install complete
+2       	Wed Oct  7 23:14:49 2026	deployed  	app-chart-0.1.0	1.0        	Upgrade complete
+
+############ 4. UPGRADE AGAIN (revision 3) -> 5. VERIFY ############
+
+$ helm upgrade web-app 07-install-upgrade/app-chart -f /Users/kushalscaler/devops-heros/session-15-helm/kushal-24bcs10123/02-rollback-workflow/values-v3.yaml
+Release "web-app" has been upgraded. Happy Helming!
+NAME: web-app
+LAST DEPLOYED: Wed Oct  7 23:14:50 2026
+NAMESPACE: s15-helm
+STATUS: deployed
+REVISION: 3
+DESCRIPTION: Upgrade complete
+TEST SUITE: None
+
+$ ready web-app-app
+deployment "web-app-app" successfully rolled out
+
+$ pods web-app
+NAME                           IMAGE        STATUS      READY
+web-app-app-5769cccf7c-pmnx7   nginx:1.24   Succeeded   false
+web-app-app-79bdc85c7d-8nqb2   nginx:1.25   Running     true
+web-app-app-79bdc85c7d-b7xln   nginx:1.25   Succeeded   false
+web-app-app-7f4f854d55-fflx7   nginx:1.26   Running     true
+web-app-app-7f4f854d55-fs9zr   nginx:1.26   Running     true
+web-app-app-7f4f854d55-hvl86   nginx:1.26   Running     true
+
+$ kubectl -n s15-helm rollout history deployment/web-app-app
+deployment.apps/web-app-app 
+REVISION  CHANGE-CAUSE
+1         <none>
+2         <none>
+3         <none>
+
+
+$ helm history web-app
+REVISION	UPDATED                 	STATUS    	CHART          	APP VERSION	DESCRIPTION     
+1       	Wed Oct  7 23:14:48 2026	superseded	app-chart-0.1.0	1.0        	Install complete
+2       	Wed Oct  7 23:14:49 2026	superseded	app-chart-0.1.0	1.0        	Upgrade complete
+3       	Wed Oct  7 23:14:50 2026	deployed  	app-chart-0.1.0	1.0        	Upgrade complete
+
+############ 6. ROLLBACK to revision 2 -> 7. VERIFY ############
+
+$ helm rollback web-app 2
+Rollback was a success! Happy Helming!
+
+$ ready web-app-app
+deployment "web-app-app" successfully rolled out
+
+$ pods web-app
+NAME                           IMAGE        STATUS      READY
+web-app-app-79bdc85c7d-9854r   nginx:1.25   Running     true
+web-app-app-79bdc85c7d-pn2ll   nginx:1.25   Running     true
+web-app-app-7f4f854d55-fflx7   nginx:1.26   Succeeded   false
+web-app-app-7f4f854d55-fs9zr   nginx:1.26   Running     true
+web-app-app-7f4f854d55-hvl86   nginx:1.26   Succeeded   false
+
+$ helm get values web-app      # the values of revision 2 are back
+USER-SUPPLIED VALUES:
+image:
+  repository: nginx
+  tag: "1.25"
+replicaCount: 2
+
+$ helm history web-app          # rollback did not delete anything, it added revision 4
+REVISION	UPDATED                 	STATUS    	CHART          	APP VERSION	DESCRIPTION     
+1       	Wed Oct  7 23:14:48 2026	superseded	app-chart-0.1.0	1.0        	Install complete
+2       	Wed Oct  7 23:14:49 2026	superseded	app-chart-0.1.0	1.0        	Upgrade complete
+3       	Wed Oct  7 23:14:50 2026	superseded	app-chart-0.1.0	1.0        	Upgrade complete
+4       	Wed Oct  7 23:14:52 2026	deployed  	app-chart-0.1.0	1.0        	Rollback to 2   
+
+$ helm diff 2>/dev/null || helm get manifest web-app --revision 2 | diff - <(helm get manifest web-app) && echo 'manifest of revision 4 == manifest of revision 2'
+manifest of revision 4 == manifest of revision 2
+
+############ Bonus: a broken upgrade with --atomic rolls itself back ############
+
+$ helm upgrade web-app 07-install-upgrade/app-chart -f /Users/kushalscaler/devops-heros/session-15-helm/kushal-24bcs10123/02-rollback-workflow/values-v2.yaml --set image.tag=doesnotexist --atomic --timeout 45s 2>&1 | tail -3
+level=WARN msg="upgrade failed" name=web-app error="resource Deployment/s15-helm/web-app-app not ready. status: InProgress, message: Updated: 1/2\ncontext deadline exceeded"
+Error: UPGRADE FAILED: release web-app failed, and has been rolled back due to rollback-on-failure being set: resource Deployment/s15-helm/web-app-app not ready. status: InProgress, message: Updated: 1/2
+context deadline exceeded
+
+$ helm history web-app
+REVISION	UPDATED                 	STATUS    	CHART          	APP VERSION	DESCRIPTION                                                                                                            
+1       	Wed Oct  7 23:14:48 2026	superseded	app-chart-0.1.0	1.0        	Install complete                                                                                                       
+2       	Wed Oct  7 23:14:49 2026	superseded	app-chart-0.1.0	1.0        	Upgrade complete                                                                                                       
+3       	Wed Oct  7 23:14:50 2026	superseded	app-chart-0.1.0	1.0        	Upgrade complete                                                                                                       
+4       	Wed Oct  7 23:14:52 2026	superseded	app-chart-0.1.0	1.0        	Rollback to 2                                                                                                          
+5       	Wed Oct  7 23:14:53 2026	failed    	app-chart-0.1.0	1.0        	Upgrade "web-app" failed: resource Deployment/s15-helm/web-app-app not ready. status: InProgress, message: Updated: ...
+6       	Wed Oct  7 23:15:38 2026	deployed  	app-chart-0.1.0	1.0        	Rollback to 4                                                                                                          
+
+$ pods web-app
+NAME                           IMAGE                STATUS    READY
+web-app-app-5c66747c-p9zkm     nginx:doesnotexist   Pending   false
+web-app-app-79bdc85c7d-9854r   nginx:1.25           Running   true
+web-app-app-79bdc85c7d-pn2ll   nginx:1.25           Running   true
+
+############ Cleanup ############
+
+$ helm uninstall web-app
+release "web-app" uninstalled
+
+$ helm list
+NAME	NAMESPACE	REVISION	UPDATED	STATUS	CHART	APP VERSION

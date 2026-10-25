@@ -1,0 +1,359 @@
+$ terraform destroy -auto-approve -var-file=localstack.tfvars
+data.aws_availability_zones.available: Reading...
+aws_vpc.main: Refreshing state... [id=vpc-98e2ca57]
+aws_s3_bucket.backups: Refreshing state... [id=studytrack-24bcs10123-backups-dev]
+data.aws_availability_zones.available: Read complete after 0s [id=us-east-1]
+aws_internet_gateway.main: Refreshing state... [id=igw-d293e201]
+aws_subnet.public[0]: Refreshing state... [id=subnet-0fe094cb]
+aws_subnet.public[1]: Refreshing state... [id=subnet-291d6d0a]
+aws_security_group.web: Refreshing state... [id=sg-244bdadd7db034858]
+aws_route_table.public: Refreshing state... [id=rtb-f436db58]
+aws_route_table_association.public[1]: Refreshing state... [id=rtbassoc-0d6a2208]
+aws_route_table_association.public[0]: Refreshing state... [id=rtbassoc-bad7171d]
+aws_s3_bucket_versioning.backups: Refreshing state... [id=studytrack-24bcs10123-backups-dev]
+aws_s3_bucket_public_access_block.backups: Refreshing state... [id=studytrack-24bcs10123-backups-dev]
+aws_s3_object.readme: Refreshing state... [id=README.txt]
+
+Terraform used the selected providers to generate the following execution
+plan. Resource actions are indicated with the following symbols:
+  - destroy
+
+Terraform will perform the following actions:
+
+  # aws_internet_gateway.main will be destroyed
+  - resource "aws_internet_gateway" "main" {
+      - arn      = "arn:aws:ec2:us-east-1:000000000000:internet-gateway/igw-d293e201" -> null
+      - id       = "igw-d293e201" -> null
+      - owner_id = "000000000000" -> null
+      - tags     = {
+          - "Name" = "studytrack-dev-igw"
+        } -> null
+      - tags_all = {
+          - "ManagedBy" = "terraform"
+          - "Name"      = "studytrack-dev-igw"
+          - "Owner"     = "kushal-24bcs10123"
+          - "Project"   = "studytrack"
+        } -> null
+      - vpc_id   = "vpc-98e2ca57" -> null
+    }
+
+  # aws_route_table.public will be destroyed
+  - resource "aws_route_table" "public" {
+      - arn              = "arn:aws:ec2:us-east-1:000000000000:route-table/rtb-f436db58" -> null
+      - id               = "rtb-f436db58" -> null
+      - owner_id         = "000000000000" -> null
+      - propagating_vgws = [] -> null
+      - route            = [
+          - {
+              - cidr_block                 = "0.0.0.0/0"
+              - gateway_id                 = "igw-d293e201"
+                # (11 unchanged attributes hidden)
+            },
+        ] -> null
+      - tags             = {
+          - "Name" = "studytrack-dev-public-rt"
+        } -> null
+      - tags_all         = {
+          - "ManagedBy" = "terraform"
+          - "Name"      = "studytrack-dev-public-rt"
+          - "Owner"     = "kushal-24bcs10123"
+          - "Project"   = "studytrack"
+        } -> null
+      - vpc_id           = "vpc-98e2ca57" -> null
+    }
+
+  # aws_route_table_association.public[0] will be destroyed
+  - resource "aws_route_table_association" "public" {
+      - id             = "rtbassoc-bad7171d" -> null
+      - route_table_id = "rtb-f436db58" -> null
+      - subnet_id      = "subnet-0fe094cb" -> null
+        # (1 unchanged attribute hidden)
+    }
+
+  # aws_route_table_association.public[1] will be destroyed
+  - resource "aws_route_table_association" "public" {
+      - id             = "rtbassoc-0d6a2208" -> null
+      - route_table_id = "rtb-f436db58" -> null
+      - subnet_id      = "subnet-291d6d0a" -> null
+        # (1 unchanged attribute hidden)
+    }
+
+  # aws_s3_bucket.backups will be destroyed
+  - resource "aws_s3_bucket" "backups" {
+      - arn                         = "arn:aws:s3:::studytrack-24bcs10123-backups-dev" -> null
+      - bucket                      = "studytrack-24bcs10123-backups-dev" -> null
+      - bucket_domain_name          = "studytrack-24bcs10123-backups-dev.s3.amazonaws.com" -> null
+      - bucket_regional_domain_name = "studytrack-24bcs10123-backups-dev.s3.us-east-1.amazonaws.com" -> null
+      - force_destroy               = true -> null
+      - hosted_zone_id              = "Z3AQBSTGFYJSTF" -> null
+      - id                          = "studytrack-24bcs10123-backups-dev" -> null
+      - object_lock_enabled         = false -> null
+      - region                      = "us-east-1" -> null
+      - request_payer               = "BucketOwner" -> null
+      - tags                        = {
+          - "Name" = "studytrack-24bcs10123-backups-dev"
+        } -> null
+      - tags_all                    = {
+          - "ManagedBy" = "terraform"
+          - "Name"      = "studytrack-24bcs10123-backups-dev"
+          - "Owner"     = "kushal-24bcs10123"
+          - "Project"   = "studytrack"
+        } -> null
+        # (3 unchanged attributes hidden)
+
+      - grant {
+          - id          = "75aa57f09aa0c8caeab4f8c24e99d10f8e7faeebf76c078efc7c6caea54ba06a" -> null
+          - permissions = [
+              - "FULL_CONTROL",
+            ] -> null
+          - type        = "CanonicalUser" -> null
+            # (1 unchanged attribute hidden)
+        }
+
+      - server_side_encryption_configuration {
+          - rule {
+              - bucket_key_enabled = false -> null
+
+              - apply_server_side_encryption_by_default {
+                  - sse_algorithm     = "AES256" -> null
+                    # (1 unchanged attribute hidden)
+                }
+            }
+        }
+
+      - versioning {
+          - enabled    = true -> null
+          - mfa_delete = false -> null
+        }
+    }
+
+  # aws_s3_bucket_public_access_block.backups will be destroyed
+  - resource "aws_s3_bucket_public_access_block" "backups" {
+      - block_public_acls       = true -> null
+      - block_public_policy     = true -> null
+      - bucket                  = "studytrack-24bcs10123-backups-dev" -> null
+      - id                      = "studytrack-24bcs10123-backups-dev" -> null
+      - ignore_public_acls      = true -> null
+      - restrict_public_buckets = true -> null
+    }
+
+  # aws_s3_bucket_versioning.backups will be destroyed
+  - resource "aws_s3_bucket_versioning" "backups" {
+      - bucket                = "studytrack-24bcs10123-backups-dev" -> null
+      - id                    = "studytrack-24bcs10123-backups-dev" -> null
+        # (1 unchanged attribute hidden)
+
+      - versioning_configuration {
+          - status     = "Enabled" -> null
+            # (1 unchanged attribute hidden)
+        }
+    }
+
+  # aws_s3_object.readme will be destroyed
+  - resource "aws_s3_object" "readme" {
+      - arn                           = "arn:aws:s3:::studytrack-24bcs10123-backups-dev/README.txt" -> null
+      - bucket                        = "studytrack-24bcs10123-backups-dev" -> null
+      - bucket_key_enabled            = false -> null
+      - content                       = <<-EOT
+            StudyTrack dev backups bucket, created by Terraform on 2026-10-07T17:42:21Z
+        EOT -> null
+      - content_type                  = "application/octet-stream" -> null
+      - etag                          = "b8e4df600ec8d10d4c106ec8cfe9b1a4" -> null
+      - force_destroy                 = false -> null
+      - id                            = "README.txt" -> null
+      - key                           = "README.txt" -> null
+      - metadata                      = {} -> null
+      - server_side_encryption        = "AES256" -> null
+      - storage_class                 = "STANDARD" -> null
+      - tags                          = {} -> null
+      - tags_all                      = {
+          - "ManagedBy" = "terraform"
+          - "Owner"     = "kushal-24bcs10123"
+          - "Project"   = "studytrack"
+        } -> null
+      - version_id                    = "hQUIJoFzA_rZSjGH5vbdrzlCn4XaOo1K" -> null
+        # (13 unchanged attributes hidden)
+    }
+
+  # aws_security_group.web will be destroyed
+  - resource "aws_security_group" "web" {
+      - arn                    = "arn:aws:ec2:us-east-1:000000000000:security-group/sg-244bdadd7db034858" -> null
+      - description            = "HTTP/HTTPS in from anywhere, everything out" -> null
+      - egress                 = [
+          - {
+              - cidr_blocks      = [
+                  - "0.0.0.0/0",
+                ]
+              - from_port        = 0
+              - ipv6_cidr_blocks = []
+              - prefix_list_ids  = []
+              - protocol         = "-1"
+              - security_groups  = []
+              - self             = false
+              - to_port          = 0
+                # (1 unchanged attribute hidden)
+            },
+        ] -> null
+      - id                     = "sg-244bdadd7db034858" -> null
+      - ingress                = [
+          - {
+              - cidr_blocks      = [
+                  - "0.0.0.0/0",
+                ]
+              - description      = "HTTP"
+              - from_port        = 80
+              - ipv6_cidr_blocks = []
+              - prefix_list_ids  = []
+              - protocol         = "tcp"
+              - security_groups  = []
+              - self             = false
+              - to_port          = 80
+            },
+          - {
+              - cidr_blocks      = [
+                  - "0.0.0.0/0",
+                ]
+              - description      = "HTTPS"
+              - from_port        = 443
+              - ipv6_cidr_blocks = []
+              - prefix_list_ids  = []
+              - protocol         = "tcp"
+              - security_groups  = []
+              - self             = false
+              - to_port          = 443
+            },
+        ] -> null
+      - name                   = "studytrack-dev-web-sg" -> null
+      - owner_id               = "000000000000" -> null
+      - revoke_rules_on_delete = false -> null
+      - tags                   = {
+          - "Name" = "studytrack-dev-web-sg"
+        } -> null
+      - tags_all               = {
+          - "ManagedBy" = "terraform"
+          - "Name"      = "studytrack-dev-web-sg"
+          - "Owner"     = "kushal-24bcs10123"
+          - "Project"   = "studytrack"
+        } -> null
+      - vpc_id                 = "vpc-98e2ca57" -> null
+        # (1 unchanged attribute hidden)
+    }
+
+  # aws_subnet.public[0] will be destroyed
+  - resource "aws_subnet" "public" {
+      - arn                                            = "arn:aws:ec2:us-east-1:000000000000:subnet/subnet-0fe094cb" -> null
+      - assign_ipv6_address_on_creation                = false -> null
+      - availability_zone                              = "us-east-1a" -> null
+      - availability_zone_id                           = "use1-az6" -> null
+      - cidr_block                                     = "10.42.1.0/24" -> null
+      - enable_dns64                                   = false -> null
+      - enable_lni_at_device_index                     = 0 -> null
+      - enable_resource_name_dns_a_record_on_launch    = false -> null
+      - enable_resource_name_dns_aaaa_record_on_launch = false -> null
+      - id                                             = "subnet-0fe094cb" -> null
+      - ipv6_native                                    = false -> null
+      - map_customer_owned_ip_on_launch                = false -> null
+      - map_public_ip_on_launch                        = true -> null
+      - owner_id                                       = "000000000000" -> null
+      - private_dns_hostname_type_on_launch            = "ip-name" -> null
+      - tags                                           = {} -> null
+      - tags_all                                       = {} -> null
+      - vpc_id                                         = "vpc-98e2ca57" -> null
+        # (4 unchanged attributes hidden)
+    }
+
+  # aws_subnet.public[1] will be destroyed
+  - resource "aws_subnet" "public" {
+      - arn                                            = "arn:aws:ec2:us-east-1:000000000000:subnet/subnet-291d6d0a" -> null
+      - assign_ipv6_address_on_creation                = false -> null
+      - availability_zone                              = "us-east-1b" -> null
+      - availability_zone_id                           = "use1-az1" -> null
+      - cidr_block                                     = "10.42.2.0/24" -> null
+      - enable_dns64                                   = false -> null
+      - enable_lni_at_device_index                     = 0 -> null
+      - enable_resource_name_dns_a_record_on_launch    = false -> null
+      - enable_resource_name_dns_aaaa_record_on_launch = false -> null
+      - id                                             = "subnet-291d6d0a" -> null
+      - ipv6_native                                    = false -> null
+      - map_customer_owned_ip_on_launch                = false -> null
+      - map_public_ip_on_launch                        = true -> null
+      - owner_id                                       = "000000000000" -> null
+      - private_dns_hostname_type_on_launch            = "ip-name" -> null
+      - tags                                           = {} -> null
+      - tags_all                                       = {} -> null
+      - vpc_id                                         = "vpc-98e2ca57" -> null
+        # (4 unchanged attributes hidden)
+    }
+
+  # aws_vpc.main will be destroyed
+  - resource "aws_vpc" "main" {
+      - arn                                  = "arn:aws:ec2:us-east-1:000000000000:vpc/vpc-98e2ca57" -> null
+      - assign_generated_ipv6_cidr_block     = false -> null
+      - cidr_block                           = "10.42.0.0/16" -> null
+      - default_network_acl_id               = "acl-6ec2cfe1" -> null
+      - default_route_table_id               = "rtb-b6f42a9d" -> null
+      - default_security_group_id            = "sg-8cbc949e793c92172" -> null
+      - dhcp_options_id                      = "default" -> null
+      - enable_dns_hostnames                 = true -> null
+      - enable_dns_support                   = true -> null
+      - enable_network_address_usage_metrics = false -> null
+      - id                                   = "vpc-98e2ca57" -> null
+      - instance_tenancy                     = "default" -> null
+      - ipv6_netmask_length                  = 0 -> null
+      - main_route_table_id                  = "rtb-b6f42a9d" -> null
+      - owner_id                             = "000000000000" -> null
+      - tags                                 = {
+          - "Name" = "studytrack-dev-vpc"
+        } -> null
+      - tags_all                             = {
+          - "ManagedBy" = "terraform"
+          - "Name"      = "studytrack-dev-vpc"
+          - "Owner"     = "kushal-24bcs10123"
+          - "Project"   = "studytrack"
+        } -> null
+        # (4 unchanged attributes hidden)
+    }
+
+Plan: 0 to add, 0 to change, 12 to destroy.
+
+Changes to Outputs:
+  - backup_bucket         = "studytrack-24bcs10123-backups-dev" -> null
+  - eks_cluster_name      = "not created (create_eks=false)" -> null
+  - public_subnet_ids     = [
+      - "subnet-0fe094cb",
+      - "subnet-291d6d0a",
+    ] -> null
+  - vpc_id                = "vpc-98e2ca57" -> null
+  - web_security_group_id = "sg-244bdadd7db034858" -> null
+aws_s3_bucket_public_access_block.backups: Destroying... [id=studytrack-24bcs10123-backups-dev]
+aws_s3_bucket_versioning.backups: Destroying... [id=studytrack-24bcs10123-backups-dev]
+aws_route_table_association.public[0]: Destroying... [id=rtbassoc-bad7171d]
+aws_s3_object.readme: Destroying... [id=README.txt]
+aws_route_table_association.public[1]: Destroying... [id=rtbassoc-0d6a2208]
+aws_security_group.web: Destroying... [id=sg-244bdadd7db034858]
+aws_s3_bucket_versioning.backups: Destruction complete after 0s
+aws_route_table_association.public[0]: Destruction complete after 0s
+aws_s3_bucket_public_access_block.backups: Destruction complete after 0s
+aws_s3_object.readme: Destruction complete after 0s
+aws_security_group.web: Destruction complete after 0s
+aws_route_table_association.public[1]: Destruction complete after 0s
+aws_s3_bucket.backups: Destroying... [id=studytrack-24bcs10123-backups-dev]
+aws_subnet.public[0]: Destroying... [id=subnet-0fe094cb]
+aws_route_table.public: Destroying... [id=rtb-f436db58]
+aws_subnet.public[1]: Destroying... [id=subnet-291d6d0a]
+aws_subnet.public[0]: Destruction complete after 0s
+aws_subnet.public[1]: Destruction complete after 0s
+aws_s3_bucket.backups: Destruction complete after 0s
+aws_route_table.public: Destruction complete after 1s
+aws_internet_gateway.main: Destroying... [id=igw-d293e201]
+aws_internet_gateway.main: Destruction complete after 0s
+aws_vpc.main: Destroying... [id=vpc-98e2ca57]
+aws_vpc.main: Destruction complete after 0s
+
+Destroy complete! Resources: 12 destroyed.
+
+$ terraform state list   (empty after destroy)
+
+$ aws --endpoint-url=http://localhost:4566 s3 ls
+$ aws ec2 describe-vpcs --filters Name=cidr,Values=10.42.0.0/16
+[]

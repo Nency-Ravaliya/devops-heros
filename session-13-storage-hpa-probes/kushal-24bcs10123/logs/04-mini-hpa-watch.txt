@@ -1,0 +1,22 @@
+NAME          REFERENCE            TARGETS       MINPODS   MAXPODS   REPLICAS   AGE
+web-app-hpa   Deployment/web-app   cpu: 1%/50%   2         5         2          53s
+web-app-hpa   Deployment/web-app   cpu: 1%/50%   2         5         2          60s
+web-app-hpa   Deployment/web-app   cpu: 5%/50%   2         5         2          75s
+web-app-hpa   Deployment/web-app   cpu: 53%/50%   2         5         2          90s
+web-app-hpa   Deployment/web-app   cpu: 63%/50%   2         5         2          105s
+web-app-hpa   Deployment/web-app   cpu: 46%/50%   2         5         3          2m
+web-app-hpa   Deployment/web-app   cpu: 53%/50%   2         5         3          2m16s
+web-app-hpa   Deployment/web-app   cpu: 44%/50%   2         5         3          2m31s
+web-app-hpa   Deployment/web-app   cpu: 43%/50%   2         5         3          3m1s
+web-app-hpa   Deployment/web-app   cpu: 44%/50%   2         5         3          3m16s
+web-app-hpa   Deployment/web-app   cpu: 43%/50%   2         5         3          3m31s
+web-app-hpa   Deployment/web-app   cpu: 42%/50%   2         5         3          3m46s
+web-app-hpa   Deployment/web-app   cpu: 41%/50%   2         5         3          4m16s
+web-app-hpa   Deployment/web-app   cpu: 36%/50%   2         5         3          4m31s
+web-app-hpa   Deployment/web-app   cpu: 29%/50%   2         5         3          4m47s
+web-app-hpa   Deployment/web-app   cpu: 29%/30%   2         5         3          4m58s
+web-app-hpa   Deployment/web-app   cpu: 20%/30%   2         5         3          4m58s
+web-app-hpa   Deployment/web-app   cpu: 14%/30%   2         5         3          5m18s
+web-app-hpa   Deployment/web-app   cpu: 7%/30%    2         5         3          5m33s
+web-app-hpa   Deployment/web-app   cpu: 7%/50%    2         5         3          5m46s
+web-app-hpa   Deployment/web-app   cpu: 7%/50%    2         5         3          5m47s

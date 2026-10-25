@@ -1,0 +1,221 @@
+namespace/s13-probes created
+
+############ 1. liveness ############
+
+$ cat 05-probes/liveness.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: liveness-demo
+spec:
+  containers:
+    - name: nginx
+      image: nginx:1.27
+      ports:
+        - containerPort: 80
+      livenessProbe:
+        httpGet:
+          path: /
+          port: 80
+        initialDelaySeconds: 5
+        periodSeconds: 5
+        timeoutSeconds: 2
+        failureThreshold: 3
+
+$ kubectl -n s13-probes apply -f 05-probes/liveness.yaml && wait_ready s13-probes liveness-demo
+pod/liveness-demo created
+pod/liveness-demo condition met
+
+$ kubectl -n s13-probes describe pod liveness-demo | grep -E 'Liveness|Restart Count'
+    Restart Count:  0
+    Liveness:       http-get http://:80/ delay=5s timeout=2s period=5s #success=1 #failure=3
+
+############ break it: remove index.html, nginx answers 403 on / -> probe fails 3 times -> restart ############
+
+$ kubectl -n s13-probes exec liveness-demo -- rm /usr/share/nginx/html/index.html
+
+$ kubectl -n s13-probes exec liveness-demo -- curl -s -o /dev/null -w 'nginx now answers %{http_code}\n' localhost/
+nginx now answers 403
+
+$ sleep 30; kubectl -n s13-probes get pod liveness-demo
+NAME            READY   STATUS    RESTARTS      AGE
+liveness-demo   1/1     Running   1 (16s ago)   31s
+
+$ kubectl -n s13-probes describe pod liveness-demo | grep -E 'Unhealthy|Killing' | sed 's/^ *//' | head -5
+Warning  Unhealthy  16s (x3 over 26s)  kubelet            Liveness probe failed: HTTP probe failed with statuscode: 403
+Normal   Killing    16s                kubelet            Container nginx failed liveness probe, will be restarted
+
+$ kubectl -n s13-probes exec liveness-demo -- curl -s -o /dev/null -w 'after restart: %{http_code}\n' localhost/   # fresh container, index.html is back
+after restart: 200
+
+############ 2. readiness ############
+
+$ cat 05-probes/readiness.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: readiness-demo
+  labels:
+    app: readiness-demo
+spec:
+  containers:
+    - name: nginx
+      image: nginx:1.27
+      ports:
+        - containerPort: 80
+      readinessProbe:
+        httpGet:
+          path: /
+          port: 80
+        initialDelaySeconds: 5
+        periodSeconds: 5
+
+$ kubectl -n s13-probes apply -f 05-probes/readiness.yaml && wait_ready s13-probes readiness-demo
+pod/readiness-demo created
+pod/readiness-demo condition met
+
+$ kubectl -n s13-probes expose pod readiness-demo --name=readiness-service --port=80
+service/readiness-service exposed
+
+$ kubectl -n s13-probes get endpoints readiness-service
+Warning: v1 Endpoints is deprecated in v1.33+; use discovery.k8s.io/v1 EndpointSlice
+NAME                ENDPOINTS        AGE
+readiness-service   10.244.3.24:80   0s
+
+############ break it: readiness fails -> pod stays Running, READY 0/1, endpoint removed, NO restart ############
+
+$ kubectl -n s13-probes exec readiness-demo -- rm /usr/share/nginx/html/index.html
+
+$ sleep 20; kubectl -n s13-probes get pod readiness-demo
+NAME             READY   STATUS    RESTARTS   AGE
+readiness-demo   0/1     Running   0          26s
+
+$ kubectl -n s13-probes get endpoints readiness-service
+Warning: v1 Endpoints is deprecated in v1.33+; use discovery.k8s.io/v1 EndpointSlice
+NAME                ENDPOINTS   AGE
+readiness-service               20s
+
+$ kubectl -n s13-probes describe pod readiness-demo | grep -E 'Unhealthy' | sed 's/^ *//' | tail -1
+Warning  Unhealthy  0s (x5 over 15s)  kubelet            Readiness probe failed: HTTP probe failed with statuscode: 403
+
+############ fix it in place -> endpoint comes back without a restart ############
+
+$ kubectl -n s13-probes exec readiness-demo -- sh -c 'echo ok > /usr/share/nginx/html/index.html'
+
+$ sleep 12; kubectl -n s13-probes get pod readiness-demo; kubectl -n s13-probes get endpoints readiness-service
+NAME             READY   STATUS    RESTARTS   AGE
+readiness-demo   1/1     Running   0          39s
+Warning: v1 Endpoints is deprecated in v1.33+; use discovery.k8s.io/v1 EndpointSlice
+NAME                ENDPOINTS        AGE
+readiness-service   10.244.3.24:80   33s
+
+############ 3. startup probe protects slow starters ############
+
+$ cat 05-probes/startup.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: startup-demo
+spec:
+  containers:
+    - name: nginx
+      image: nginx:1.27
+      ports:
+        - containerPort: 80
+      startupProbe:
+        httpGet:
+          path: /
+          port: 80
+        failureThreshold: 30
+        periodSeconds: 2
+      livenessProbe:
+        httpGet:
+          path: /
+          port: 80
+        periodSeconds: 5
+      readinessProbe:
+        httpGet:
+          path: /
+          port: 80
+        periodSeconds: 5
+
+$ kubectl -n s13-probes apply -f 05-probes/startup.yaml && wait_ready s13-probes startup-demo
+pod/startup-demo created
+pod/startup-demo condition met
+
+$ kubectl -n s13-probes describe pod startup-demo | grep -E 'Startup|Liveness|Readiness'
+    Liveness:       http-get http://:80/ delay=0s timeout=1s period=5s #success=1 #failure=3
+    Readiness:      http-get http://:80/ delay=0s timeout=1s period=5s #success=1 #failure=3
+    Startup:        http-get http://:80/ delay=0s timeout=1s period=2s #success=1 #failure=30
+
+############ a slow app without startupProbe gets killed by liveness; with it, it is allowed up to 30x2=60 s ############
+
+$ cat /tmp/slow-73692.yaml
+apiVersion: v1
+kind: Pod
+metadata: { name: slow-no-startup }
+spec:
+  containers:
+    - name: app
+      image: busybox:1.36
+      command: ["sh","-c","echo starting; sleep 40; echo ready; touch /tmp/up; sleep 3600"]
+      livenessProbe: { exec: { command: ["cat","/tmp/up"] }, periodSeconds: 5, failureThreshold: 3 }
+---
+apiVersion: v1
+kind: Pod
+metadata: { name: slow-with-startup }
+spec:
+  containers:
+    - name: app
+      image: busybox:1.36
+      command: ["sh","-c","echo starting; sleep 40; echo ready; touch /tmp/up; sleep 3600"]
+      startupProbe:  { exec: { command: ["cat","/tmp/up"] }, periodSeconds: 2, failureThreshold: 30 }
+      livenessProbe: { exec: { command: ["cat","/tmp/up"] }, periodSeconds: 5, failureThreshold: 3 }
+
+$ kubectl -n s13-probes apply -f /tmp/slow-73692.yaml
+pod/slow-no-startup created
+pod/slow-with-startup created
+
+$ sleep 70; kubectl -n s13-probes get pods slow-no-startup slow-with-startup
+NAME                READY   STATUS    RESTARTS      AGE
+slow-no-startup     1/1     Running   1 (24s ago)   70s
+slow-with-startup   1/1     Running   0             70s
+
+$ kubectl -n s13-probes describe pod slow-no-startup | grep -cE 'Killing'; kubectl -n s13-probes describe pod slow-with-startup | grep -cE 'Killing'
+1
+0
+
+$ grep -E 'liveness-demo|readiness-demo|slow-' /Users/kushalscaler/devops-heros/session-13-storage-hpa-probes/kushal-24bcs10123/logs/03-probes-watch.txt
+liveness-demo   0/1     Pending   0          0s
+liveness-demo   0/1     Pending   0          0s
+liveness-demo   0/1     ContainerCreating   0          0s
+liveness-demo   0/1     ContainerCreating   0          0s
+liveness-demo   1/1     Running             0          0s
+liveness-demo   1/1     Running             1 (0s ago)   15s
+readiness-demo   0/1     Pending             0            0s
+readiness-demo   0/1     Pending             0            0s
+readiness-demo   0/1     ContainerCreating   0            0s
+readiness-demo   0/1     ContainerCreating   0            0s
+readiness-demo   0/1     Running             0            0s
+readiness-demo   1/1     Running             0            6s
+readiness-demo   0/1     Running             0            21s
+readiness-demo   1/1     Running             0            31s
+slow-no-startup   0/1     Pending             0            0s
+slow-no-startup   0/1     Pending             0            0s
+slow-with-startup   0/1     Pending             0            0s
+slow-with-startup   0/1     Pending             0            0s
+slow-no-startup     0/1     ContainerCreating   0            0s
+slow-with-startup   0/1     ContainerCreating   0            0s
+slow-with-startup   0/1     ContainerCreating   0            1s
+slow-no-startup     0/1     ContainerCreating   0            1s
+slow-no-startup     1/1     Running             0            1s
+slow-with-startup   0/1     Running             0            1s
+slow-with-startup   0/1     Running             0            43s
+slow-with-startup   1/1     Running             0            43s
+slow-no-startup     1/1     Running             1 (0s ago)   46s
+screenshot -> screenshots/03-probes-watch.png
+
+############ cleanup ############
+
+$ kubectl delete ns s13-probes --wait=false
+namespace "s13-probes" deleted

@@ -1,0 +1,363 @@
+
+############ 5.1 namespace ############
+
+$ kubectl apply -f namespace.yaml
+namespace/production-webapp created
+
+############ 5.2 PVC ############
+
+$ kubectl apply -f pvc.yaml
+persistentvolumeclaim/web-data created
+
+$ kubectl -n production-webapp get pvc    # Pending with WaitForFirstConsumer until a pod mounts it
+NAME       STATUS    VOLUME   CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE
+web-data   Pending                                      standard       <unset>                 0s
+
+############ 5.3 deployment + service ############
+
+$ cat deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-app
+  namespace: production-webapp
+  labels:
+    app: web-app
+spec:
+  replicas: 2
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: web-app
+  template:
+    metadata:
+      labels:
+        app: web-app
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:1.27
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              cpu: 100m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+          volumeMounts:
+            - name: persistent-storage
+              mountPath: /data
+          startupProbe:
+            httpGet:
+              path: /
+              port: 80
+            failureThreshold: 30
+            periodSeconds: 2
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 2
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 3
+      volumes:
+        - name: persistent-storage
+          persistentVolumeClaim:
+            claimName: web-data
+
+$ kubectl apply -f deployment.yaml && kubectl apply -f service.yaml
+deployment.apps/web-app created
+service/web-service created
+
+$ kubectl -n production-webapp rollout status deploy/web-app --timeout=180s
+Waiting for deployment "web-app" rollout to finish: 0 of 2 updated replicas are available...
+Waiting for deployment "web-app" rollout to finish: 1 of 2 updated replicas are available...
+deployment "web-app" successfully rolled out
+
+$ kubectl -n production-webapp get pods -o wide
+NAME                      READY   STATUS    RESTARTS   AGE   IP            NODE                 NOMINATED NODE   READINESS GATES
+web-app-d45775485-p5z8n   1/1     Running   0          13s   10.244.1.72   kushal-lab-worker2   <none>           <none>
+web-app-d45775485-v2pv4   1/1     Running   0          13s   10.244.1.73   kushal-lab-worker2   <none>           <none>
+
+$ kubectl -n production-webapp get pvc
+NAME       STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE
+web-data   Bound    pvc-29fa93cd-8aba-479b-bcd0-060f64922daf   500Mi      RWO            standard       <unset>                 14s
+
+$ kubectl -n production-webapp get pods -o jsonpath='{range .items[*]}{.metadata.name}{" -> "}{.spec.nodeName}{"\n"}{end}'   # RWO local-path volume: both replicas must land on the same node
+web-app-d45775485-p5z8n -> kushal-lab-worker2
+web-app-d45775485-v2pv4 -> kushal-lab-worker2
+
+############ 5.4 HPA ############
+
+$ kubectl apply -f hpa.yaml
+horizontalpodautoscaler.autoscaling/web-app-hpa created
+
+$ sleep 30; kubectl -n production-webapp get hpa
+NAME          REFERENCE            TARGETS       MINPODS   MAXPODS   REPLICAS   AGE
+web-app-hpa   Deployment/web-app   cpu: 1%/50%   2         5         2          30s
+
+############ Task 1: storage persistence ############
+
+$ kubectl -n production-webapp exec web-app-d45775485-p5z8n -- sh -c 'echo "Student: Kushal Talati (24BCS10123)" > /data/student.txt'
+
+$ kubectl -n production-webapp exec web-app-d45775485-p5z8n -- cat /data/student.txt
+Student: Kushal Talati (24BCS10123)
+
+$ kubectl -n production-webapp delete pod web-app-d45775485-p5z8n
+pod "web-app-d45775485-p5z8n" deleted from production-webapp namespace
+
+$ kubectl -n production-webapp rollout status deploy/web-app --timeout=120s
+Waiting for deployment "web-app" rollout to finish: 1 of 2 updated replicas are available...
+deployment "web-app" successfully rolled out
+
+$ kubectl -n production-webapp get pods
+NAME                      READY   STATUS    RESTARTS   AGE
+web-app-d45775485-hstmg   1/1     Running   0          10s
+web-app-d45775485-v2pv4   1/1     Running   0          55s
+
+$ kubectl -n production-webapp exec web-app-d45775485-hstmg -- cat /data/student.txt     # new pod, same PVC, same file
+Student: Kushal Talati (24BCS10123)
+
+############ the other replica sees the same volume too ############
+
+$ kubectl -n production-webapp exec web-app-d45775485-v2pv4 -- cat /data/student.txt
+Student: Kushal Talati (24BCS10123)
+
+############ Task 2: service verification ############
+
+$ curl -s http://localhost:18081 | head -5
+<!DOCTYPE html>
+<html>
+<head>
+<title>Welcome to nginx!</title>
+<style>
+screenshot -> screenshots/04-mini-webapp-browser.png
+
+############ Task 3: HPA elastic scaling ############
+
+$ kubectl -n production-webapp run load-generator-1 --image=busybox:1.36 --restart=Never -- /bin/sh -c 'while true; do wget -q -O- http://web-service >/dev/null; done'
+pod/load-generator-1 created
+
+$ kubectl -n production-webapp run load-generator-2 --image=busybox:1.36 --restart=Never -- /bin/sh -c 'while true; do wget -q -O- http://web-service >/dev/null; done'
+pod/load-generator-2 created
+
+$ kubectl -n production-webapp run load-generator-3 --image=busybox:1.36 --restart=Never -- /bin/sh -c 'while true; do wget -q -O- http://web-service >/dev/null; done'
+pod/load-generator-3 created
+
+--- t+30s
+web-app-hpa   Deployment/web-app   cpu: 5%/50%   2     5     2     84s
+web-app-d45775485-hstmg   43m          5Mi             
+web-app-d45775485-v2pv4   64m          5Mi             
+
+--- t+60s
+web-app-hpa   Deployment/web-app   cpu: 63%/50%   2     5     2     114s
+web-app-d45775485-hstmg   45m          5Mi             
+web-app-d45775485-v2pv4   48m          5Mi             
+
+--- t+90s
+web-app-hpa   Deployment/web-app   cpu: 53%/50%   2     5     3     2m25s
+web-app-d45775485-hstmg   45m          5Mi             
+web-app-d45775485-ngmgg   44m          5Mi             
+web-app-d45775485-v2pv4   45m          5Mi             
+
+--- t+120s
+web-app-hpa   Deployment/web-app   cpu: 44%/50%   2     5     3     2m55s
+web-app-d45775485-hstmg   44m          5Mi             
+web-app-d45775485-ngmgg   42m          5Mi             
+web-app-d45775485-v2pv4   43m          5Mi             
+
+--- t+150s
+web-app-hpa   Deployment/web-app   cpu: 44%/50%   2     5     3     3m25s
+web-app-d45775485-hstmg   43m          5Mi             
+web-app-d45775485-ngmgg   41m          5Mi             
+web-app-d45775485-v2pv4   45m          5Mi             
+
+--- t+180s
+web-app-hpa   Deployment/web-app   cpu: 42%/50%   2     5     3     3m56s
+web-app-d45775485-hstmg   42m          5Mi             
+web-app-d45775485-ngmgg   43m          5Mi             
+web-app-d45775485-v2pv4   43m          5Mi             
+
+--- t+210s
+web-app-hpa   Deployment/web-app   cpu: 41%/50%   2     5     3     4m27s
+web-app-d45775485-hstmg   39m          5Mi             
+web-app-d45775485-ngmgg   38m          5Mi             
+web-app-d45775485-v2pv4   32m          5Mi             
+
+--- t+240s
+web-app-hpa   Deployment/web-app   cpu: 29%/50%   2     5     3     4m57s
+web-app-d45775485-hstmg   18m          5Mi             
+web-app-d45775485-ngmgg   24m          5Mi             
+web-app-d45775485-v2pv4   18m          5Mi             
+
+$ kubectl -n production-webapp get pods -l app=web-app
+NAME                      READY   STATUS    RESTARTS   AGE
+web-app-d45775485-hstmg   1/1     Running   0          4m27s
+web-app-d45775485-ngmgg   1/1     Running   0          3m13s
+web-app-d45775485-v2pv4   1/1     Running   0          5m12s
+
+$ kubectl -n production-webapp describe hpa web-app-hpa | sed -n '/^Events/,$p'
+Events:
+  Type     Reason                        Age    From                       Message
+  ----     ------                        ----   ----                       -------
+  Warning  FailedGetResourceMetric       4m58s  horizontal-pod-autoscaler  failed to get cpu utilization: unable to get metrics for resource cpu: no metrics returned from resource metrics API
+  Warning  FailedComputeMetricsReplicas  4m58s  horizontal-pod-autoscaler  invalid metrics (1 invalid out of 1), first error is: failed to get cpu resource metric value: failed to get cpu utilization: unable to get metrics for resource cpu: no metrics returned from resource metrics API
+  Warning  FailedGetResourceMetric       4m43s  horizontal-pod-autoscaler  failed to get cpu utilization: did not receive metrics for targeted pods (pods might be unready)
+  Warning  FailedComputeMetricsReplicas  4m43s  horizontal-pod-autoscaler  invalid metrics (1 invalid out of 1), first error is: failed to get cpu resource metric value: failed to get cpu utilization: did not receive metrics for targeted pods (pods might be unready)
+  Normal   SuccessfulRescale             3m13s  horizontal-pod-autoscaler  New size: 3; reason: cpu resource utilization (percentage of request) above target
+
+############ Challenge 1: target 50% -> 30% ############
+
+$ sed 's/averageUtilization: 50/averageUtilization: 30/' hpa.yaml | kubectl apply -f -
+horizontalpodautoscaler.autoscaling/web-app-hpa configured
+
+$ sleep 45; kubectl -n production-webapp get hpa web-app-hpa
+NAME          REFERENCE            TARGETS       MINPODS   MAXPODS   REPLICAS   AGE
+web-app-hpa   Deployment/web-app   cpu: 7%/30%   2         5         3          5m44s
+
+$ kubectl -n production-webapp delete pod load-generator-1 load-generator-2 load-generator-3 --wait=false
+pod "load-generator-1" deleted from production-webapp namespace
+pod "load-generator-2" deleted from production-webapp namespace
+pod "load-generator-3" deleted from production-webapp namespace
+
+$ kubectl apply -f hpa.yaml     # back to 50%
+horizontalpodautoscaler.autoscaling/web-app-hpa configured
+
+############ Challenge 2: readiness path -> /does-not-exist ############
+
+$ kubectl -n production-webapp patch deploy web-app --type=json -p='[{"op":"replace","path":"/spec/template/spec/containers/0/readinessProbe/httpGet/path","value":"/does-not-exist"}]'
+deployment.apps/web-app patched
+
+$ sleep 40; kubectl -n production-webapp get pods -l app=web-app
+NAME                       READY   STATUS    RESTARTS   AGE
+web-app-5945bfc776-j5tpc   0/1     Running   0          36s
+web-app-5945bfc776-tvr9v   0/1     Running   0          36s
+web-app-5945bfc776-wh85r   0/1     Running   0          36s
+
+$ kubectl -n production-webapp get endpoints web-service
+Warning: v1 Endpoints is deprecated in v1.33+; use discovery.k8s.io/v1 EndpointSlice
+NAME          ENDPOINTS   AGE
+web-service               6m44s
+
+$ kubectl -n production-webapp describe deploy web-app | grep -E 'Readiness|Replicas:'
+Replicas:           3 desired | 3 updated | 3 total | 0 available | 3 unavailable
+    Readiness:    http-get http://:80/does-not-exist delay=5s timeout=2s period=5s #success=1 #failure=2
+
+############ Challenge 3: liveness path -> /crash ############
+
+$ kubectl apply -f deployment.yaml >/dev/null; kubectl -n production-webapp rollout status deploy/web-app --timeout=120s >/dev/null
+
+$ kubectl -n production-webapp patch deploy web-app --type=json -p='[{"op":"replace","path":"/spec/template/spec/containers/0/livenessProbe/httpGet/path","value":"/crash"}]'
+deployment.apps/web-app patched
+
+$ sleep 75; kubectl -n production-webapp get pods -l app=web-app
+NAME                      READY   STATUS    RESTARTS      AGE
+web-app-85d86b65d-4p7qg   1/1     Running   3 (14s ago)   75s
+web-app-85d86b65d-78pqq   1/1     Running   3 (14s ago)   75s
+
+$ kubectl -n production-webapp describe pods -l app=web-app | grep -E 'Liveness probe failed|Restart Count' | sed 's/^ *//' | sort | uniq -c | head
+   2 Restart Count:  3
+   2 Warning  Unhealthy  4s (x10 over 64s)  kubelet            Liveness probe failed: HTTP probe failed with statuscode: 404
+
+$ cat /Users/kushalscaler/devops-heros/session-13-storage-hpa-probes/kushal-24bcs10123/logs/04-mini-liveness-watch.txt
+NAME                      READY   STATUS        RESTARTS   AGE
+web-app-d45775485-fkvmc   1/1     Terminating   0          13s
+web-app-d45775485-jl22j   1/1     Terminating   0          13s
+web-app-d45775485-fkvmc   0/1     Completed     0          14s
+web-app-d45775485-jl22j   0/1     Completed     0          14s
+web-app-d45775485-fkvmc   0/1     Completed     0          14s
+web-app-85d86b65d-4p7qg   0/1     Pending       0          0s
+web-app-d45775485-fkvmc   0/1     Completed     0          14s
+web-app-85d86b65d-78pqq   0/1     Pending       0          0s
+web-app-85d86b65d-4p7qg   0/1     Pending       0          0s
+web-app-85d86b65d-78pqq   0/1     Pending       0          0s
+web-app-d45775485-jl22j   0/1     Completed     0          14s
+web-app-d45775485-jl22j   0/1     Completed     0          15s
+web-app-85d86b65d-4p7qg   0/1     ContainerCreating   0          1s
+web-app-85d86b65d-78pqq   0/1     ContainerCreating   0          1s
+web-app-85d86b65d-78pqq   0/1     ContainerCreating   0          2s
+web-app-85d86b65d-4p7qg   0/1     ContainerCreating   0          2s
+web-app-85d86b65d-78pqq   0/1     Running             0          2s
+web-app-85d86b65d-4p7qg   0/1     Running             0          3s
+web-app-85d86b65d-78pqq   0/1     Running             0          4s
+web-app-85d86b65d-4p7qg   0/1     Running             0          4s
+web-app-85d86b65d-78pqq   0/1     Running             0          5s
+web-app-85d86b65d-4p7qg   0/1     Running             0          5s
+web-app-85d86b65d-78pqq   1/1     Running             0          11s
+web-app-85d86b65d-4p7qg   1/1     Running             0          12s
+web-app-85d86b65d-78pqq   0/1     Running             1 (2s ago)   23s
+web-app-85d86b65d-4p7qg   0/1     Running             1 (2s ago)   23s
+web-app-85d86b65d-78pqq   0/1     Running             1 (2s ago)   23s
+web-app-85d86b65d-4p7qg   0/1     Running             1 (2s ago)   23s
+web-app-85d86b65d-78pqq   0/1     Running             1 (4s ago)   25s
+web-app-85d86b65d-4p7qg   0/1     Running             1 (5s ago)   26s
+web-app-85d86b65d-78pqq   1/1     Running             1 (10s ago)   31s
+web-app-85d86b65d-4p7qg   1/1     Running             1 (10s ago)   31s
+web-app-85d86b65d-78pqq   0/1     Running             2 (2s ago)    43s
+web-app-85d86b65d-4p7qg   0/1     Running             2 (2s ago)    43s
+web-app-85d86b65d-78pqq   0/1     Running             2 (2s ago)    43s
+web-app-85d86b65d-4p7qg   0/1     Running             2 (2s ago)    43s
+web-app-85d86b65d-78pqq   0/1     Running             2 (4s ago)    45s
+web-app-85d86b65d-4p7qg   0/1     Running             2 (4s ago)    45s
+web-app-85d86b65d-78pqq   1/1     Running             2 (9s ago)    50s
+web-app-85d86b65d-4p7qg   1/1     Running             2 (10s ago)   51s
+web-app-85d86b65d-78pqq   0/1     Running             3 (1s ago)    62s
+web-app-85d86b65d-4p7qg   0/1     Running             3 (1s ago)    62s
+web-app-85d86b65d-78pqq   0/1     Running             3 (2s ago)    63s
+web-app-85d86b65d-4p7qg   0/1     Running             3 (2s ago)    63s
+web-app-85d86b65d-78pqq   0/1     Running             3 (4s ago)    65s
+web-app-85d86b65d-4p7qg   0/1     Running             3 (4s ago)    65s
+web-app-85d86b65d-78pqq   1/1     Running             3 (9s ago)    70s
+web-app-85d86b65d-4p7qg   1/1     Running             3 (9s ago)    70s
+
+$ kubectl apply -f deployment.yaml && kubectl -n production-webapp rollout status deploy/web-app --timeout=120s
+deployment.apps/web-app configured
+Waiting for deployment "web-app" rollout to finish: 0 out of 2 new replicas have been updated...
+Waiting for deployment "web-app" rollout to finish: 0 out of 2 new replicas have been updated...
+Waiting for deployment "web-app" rollout to finish: 0 out of 2 new replicas have been updated...
+Waiting for deployment "web-app" rollout to finish: 0 out of 2 new replicas have been updated...
+Waiting for deployment "web-app" rollout to finish: 0 of 2 updated replicas are available...
+Waiting for deployment "web-app" rollout to finish: 1 of 2 updated replicas are available...
+deployment "web-app" successfully rolled out
+
+############ final state ############
+
+$ kubectl -n production-webapp get all,pvc,hpa
+NAME                          READY   STATUS    RESTARTS   AGE
+pod/web-app-d45775485-6hxvt   1/1     Running   0          9s
+pod/web-app-d45775485-hg9w2   1/1     Running   0          9s
+
+NAME                  TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)   AGE
+service/web-service   ClusterIP   10.96.187.235   <none>        80/TCP    8m32s
+
+NAME                      READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/web-app   2/2     2            2           8m32s
+
+NAME                                 DESIRED   CURRENT   READY   AGE
+replicaset.apps/web-app-5945bfc776   0         0         0       2m25s
+replicaset.apps/web-app-85d86b65d    0         0         0       89s
+replicaset.apps/web-app-d45775485    2         2         2       8m32s
+
+NAME                                              REFERENCE            TARGETS              MINPODS   MAXPODS   REPLICAS   AGE
+horizontalpodautoscaler.autoscaling/web-app-hpa   Deployment/web-app   cpu: <unknown>/50%   2         5         2          8m18s
+
+NAME                             STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE
+persistentvolumeclaim/web-data   Bound    pvc-29fa93cd-8aba-479b-bcd0-060f64922daf   500Mi      RWO            standard       <unset>                 8m32s
+screenshot -> screenshots/04-mini-hpa-watch.png
+
+############ cleanup ############
+
+$ kubectl delete ns production-webapp --wait=false
+namespace "production-webapp" deleted

@@ -1,0 +1,658 @@
+test (python 3.11)	Set up job	﻿2026-10-07T17:57:13.0918972Z Current runner version: '2.337.0'
+test (python 3.11)	Set up job	2026-10-07T17:57:13.0943399Z ##[group]Runner Image Provisioner
+test (python 3.11)	Set up job	2026-10-07T17:57:13.0944292Z Hosted Compute Agent
+test (python 3.11)	Set up job	2026-10-07T17:57:13.0945023Z Version: 20260901.588
+test (python 3.11)	Set up job	2026-10-07T17:57:13.0946027Z Commit: f88ec8081b781fac6c440065ac7ff9e710ce3d0b
+test (python 3.11)	Set up job	2026-10-07T17:57:13.0946781Z Build Date: 2026-09-01T19:56:44Z
+test (python 3.11)	Set up job	2026-10-07T17:57:13.0947569Z Worker ID: {e2777f57-6b84-48b6-b588-4e2e73193dba}
+test (python 3.11)	Set up job	2026-10-07T17:57:13.0948286Z Azure Region: westus2
+test (python 3.11)	Set up job	2026-10-07T17:57:13.0948903Z ##[endgroup]
+test (python 3.11)	Set up job	2026-10-07T17:57:13.0950605Z ##[group]Operating System
+test (python 3.11)	Set up job	2026-10-07T17:57:13.0951305Z Ubuntu
+test (python 3.11)	Set up job	2026-10-07T17:57:13.0951945Z 24.04.5
+test (python 3.11)	Set up job	2026-10-07T17:57:13.0952472Z LTS
+test (python 3.11)	Set up job	2026-10-07T17:57:13.0953388Z ##[endgroup]
+test (python 3.11)	Set up job	2026-10-07T17:57:13.0954014Z ##[group]Runner Image
+test (python 3.11)	Set up job	2026-10-07T17:57:13.0954655Z Image: ubuntu-24.04
+test (python 3.11)	Set up job	2026-10-07T17:57:13.0955479Z Version: 20260927.320.1
+test (python 3.11)	Set up job	2026-10-07T17:57:13.0956585Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20260927.320/images/ubuntu/Ubuntu2404-Readme.md
+test (python 3.11)	Set up job	2026-10-07T17:57:13.0958416Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20260927.320
+test (python 3.11)	Set up job	2026-10-07T17:57:13.0959419Z ##[endgroup]
+test (python 3.11)	Set up job	2026-10-07T17:57:13.0960748Z ##[group]GITHUB_TOKEN Permissions
+test (python 3.11)	Set up job	2026-10-07T17:57:13.0962739Z Contents: read
+test (python 3.11)	Set up job	2026-10-07T17:57:13.0963490Z Metadata: read
+test (python 3.11)	Set up job	2026-10-07T17:57:13.0964075Z Packages: read
+test (python 3.11)	Set up job	2026-10-07T17:57:13.0964681Z ##[endgroup]
+test (python 3.11)	Set up job	2026-10-07T17:57:13.0967078Z Secret source: Actions
+test (python 3.11)	Set up job	2026-10-07T17:57:13.0968205Z Cache mode: write
+test (python 3.11)	Set up job	2026-10-07T17:57:13.0968936Z Prepare workflow directory
+test (python 3.11)	Set up job	2026-10-07T17:57:13.1586308Z Prepare all required actions
+test (python 3.11)	Set up job	2026-10-07T17:57:13.1636620Z Getting action download info
+test (python 3.11)	Set up job	2026-10-07T17:57:13.5487615Z Download action repository 'actions/checkout@v4' (SHA:11d5960a326750d5838078e36cf38b85af677262)
+test (python 3.11)	Set up job	2026-10-07T17:57:13.6357811Z Download action repository 'actions/setup-python@v5' (SHA:a26af69be951a213d495a4c3e4e4022e16d87065)
+test (python 3.11)	Set up job	2026-10-07T17:57:13.7130122Z Download action repository 'actions/upload-artifact@v4' (SHA:ea165f8d65b6e75b540449e92b4886f43607fa02)
+test (python 3.11)	Set up job	2026-10-07T17:57:13.9098088Z Complete job name: test (python 3.11)
+test (python 3.11)	checkout source	﻿2026-10-07T17:57:13.9785534Z ##[group]Run actions/checkout@v4
+test (python 3.11)	checkout source	2026-10-07T17:57:13.9786456Z with:
+test (python 3.11)	checkout source	2026-10-07T17:57:13.9786923Z   repository: kushaltalati/devops-heros
+test (python 3.11)	checkout source	2026-10-07T17:57:13.9790578Z   token: ***
+test (python 3.11)	checkout source	2026-10-07T17:57:13.9791008Z   ssh-strict: true
+test (python 3.11)	checkout source	2026-10-07T17:57:13.9791444Z   ssh-user: git
+test (python 3.11)	checkout source	2026-10-07T17:57:13.9791934Z   persist-credentials: true
+test (python 3.11)	checkout source	2026-10-07T17:57:13.9792420Z   clean: true
+test (python 3.11)	checkout source	2026-10-07T17:57:13.9792862Z   sparse-checkout-cone-mode: true
+test (python 3.11)	checkout source	2026-10-07T17:57:13.9793392Z   fetch-depth: 1
+test (python 3.11)	checkout source	2026-10-07T17:57:13.9793838Z   fetch-tags: false
+test (python 3.11)	checkout source	2026-10-07T17:57:13.9794295Z   show-progress: true
+test (python 3.11)	checkout source	2026-10-07T17:57:13.9794758Z   lfs: false
+test (python 3.11)	checkout source	2026-10-07T17:57:13.9795343Z   submodules: false
+test (python 3.11)	checkout source	2026-10-07T17:57:13.9795808Z   set-safe-directory: true
+test (python 3.11)	checkout source	2026-10-07T17:57:13.9796325Z   allow-unsafe-pr-checkout: false
+test (python 3.11)	checkout source	2026-10-07T17:57:13.9797096Z env:
+test (python 3.11)	checkout source	2026-10-07T17:57:13.9797690Z   APP_DIR: session-16-github-actions/kushal-24bcs10123/unit-converter
+test (python 3.11)	checkout source	2026-10-07T17:57:13.9798502Z   IMAGE: ghcr.io/kushaltalati/unit-converter
+test (python 3.11)	checkout source	2026-10-07T17:57:13.9799103Z ##[endgroup]
+test (python 3.11)	checkout source	2026-10-07T17:57:14.0829324Z Syncing repository: kushaltalati/devops-heros
+test (python 3.11)	checkout source	2026-10-07T17:57:14.0832185Z ##[group]Getting Git version info
+test (python 3.11)	checkout source	2026-10-07T17:57:14.0833544Z Working directory is '/home/runner/work/devops-heros/devops-heros'
+test (python 3.11)	checkout source	2026-10-07T17:57:14.0835832Z [command]/usr/bin/git version
+test (python 3.11)	checkout source	2026-10-07T17:57:14.0902518Z git version 2.55.0
+test (python 3.11)	checkout source	2026-10-07T17:57:14.0926849Z ##[endgroup]
+test (python 3.11)	checkout source	2026-10-07T17:57:14.0957830Z Temporarily overriding HOME='/home/runner/work/_temp/1dff76b4-e4a2-4da9-90d0-273b74c7aa40' before making global git config changes
+test (python 3.11)	checkout source	2026-10-07T17:57:14.0960949Z Adding repository directory to the temporary git global config as a safe directory
+test (python 3.11)	checkout source	2026-10-07T17:57:14.0963443Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/devops-heros/devops-heros
+test (python 3.11)	checkout source	2026-10-07T17:57:14.1017736Z Deleting the contents of '/home/runner/work/devops-heros/devops-heros'
+test (python 3.11)	checkout source	2026-10-07T17:57:14.1023886Z ##[group]Initializing the repository
+test (python 3.11)	checkout source	2026-10-07T17:57:14.1028541Z [command]/usr/bin/git init /home/runner/work/devops-heros/devops-heros
+test (python 3.11)	checkout source	2026-10-07T17:57:14.1138083Z hint: Using 'master' as the name for the initial branch. This default branch name
+test (python 3.11)	checkout source	2026-10-07T17:57:14.1139781Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+test (python 3.11)	checkout source	2026-10-07T17:57:14.1141383Z hint: to use in all of your new repositories, which will suppress this warning,
+test (python 3.11)	checkout source	2026-10-07T17:57:14.1142577Z hint: call:
+test (python 3.11)	checkout source	2026-10-07T17:57:14.1143200Z hint:
+test (python 3.11)	checkout source	2026-10-07T17:57:14.1143985Z hint: 	git config --global init.defaultBranch <name>
+test (python 3.11)	checkout source	2026-10-07T17:57:14.1145026Z hint:
+test (python 3.11)	checkout source	2026-10-07T17:57:14.1146242Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+test (python 3.11)	checkout source	2026-10-07T17:57:14.1147840Z hint: 'development'. The just-created branch can be renamed via this command:
+test (python 3.11)	checkout source	2026-10-07T17:57:14.1149049Z hint:
+test (python 3.11)	checkout source	2026-10-07T17:57:14.1149686Z hint: 	git branch -m <name>
+test (python 3.11)	checkout source	2026-10-07T17:57:14.1150431Z hint:
+test (python 3.11)	checkout source	2026-10-07T17:57:14.1151493Z hint: Disable this message with "git config set advice.defaultBranchName false"
+test (python 3.11)	checkout source	2026-10-07T17:57:14.1153267Z Initialized empty Git repository in /home/runner/work/devops-heros/devops-heros/.git/
+test (python 3.11)	checkout source	2026-10-07T17:57:14.1156178Z [command]/usr/bin/git remote add origin https://github.com/kushaltalati/devops-heros
+test (python 3.11)	checkout source	2026-10-07T17:57:14.1201774Z ##[endgroup]
+test (python 3.11)	checkout source	2026-10-07T17:57:14.1203306Z ##[group]Disabling automatic garbage collection
+test (python 3.11)	checkout source	2026-10-07T17:57:14.1207029Z [command]/usr/bin/git config --local gc.auto 0
+test (python 3.11)	checkout source	2026-10-07T17:57:14.1239460Z ##[endgroup]
+test (python 3.11)	checkout source	2026-10-07T17:57:14.1240851Z ##[group]Setting up auth
+test (python 3.11)	checkout source	2026-10-07T17:57:14.1245769Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+test (python 3.11)	checkout source	2026-10-07T17:57:14.1278826Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+test (python 3.11)	checkout source	2026-10-07T17:57:14.1657573Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+test (python 3.11)	checkout source	2026-10-07T17:57:14.1701243Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+test (python 3.11)	checkout source	2026-10-07T17:57:14.1947394Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+test (python 3.11)	checkout source	2026-10-07T17:57:14.1988736Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+test (python 3.11)	checkout source	2026-10-07T17:57:14.2241863Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+test (python 3.11)	checkout source	2026-10-07T17:57:14.2287588Z ##[endgroup]
+test (python 3.11)	checkout source	2026-10-07T17:57:14.2289061Z ##[group]Fetching the repository
+test (python 3.11)	checkout source	2026-10-07T17:57:14.2299614Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +3f1d248654659041822803c87ea1dd2714c25234:refs/remotes/origin/ci-kushal-s16-s17
+test (python 3.11)	checkout source	2026-10-07T17:57:14.7722046Z From https://github.com/kushaltalati/devops-heros
+test (python 3.11)	checkout source	2026-10-07T17:57:14.7723769Z  * [new ref]         3f1d248654659041822803c87ea1dd2714c25234 -> origin/ci-kushal-s16-s17
+test (python 3.11)	checkout source	2026-10-07T17:57:14.7728016Z ##[endgroup]
+test (python 3.11)	checkout source	2026-10-07T17:57:14.7729195Z ##[group]Determining the checkout info
+test (python 3.11)	checkout source	2026-10-07T17:57:14.7730756Z ##[endgroup]
+test (python 3.11)	checkout source	2026-10-07T17:57:14.7736676Z [command]/usr/bin/git sparse-checkout disable
+test (python 3.11)	checkout source	2026-10-07T17:57:14.7787408Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+test (python 3.11)	checkout source	2026-10-07T17:57:14.7820549Z ##[group]Checking out the ref
+test (python 3.11)	checkout source	2026-10-07T17:57:14.7825055Z [command]/usr/bin/git checkout --progress --force -B ci-kushal-s16-s17 refs/remotes/origin/ci-kushal-s16-s17
+test (python 3.11)	checkout source	2026-10-07T17:57:14.8599329Z Switched to a new branch 'ci-kushal-s16-s17'
+test (python 3.11)	checkout source	2026-10-07T17:57:14.8605890Z branch 'ci-kushal-s16-s17' set up to track 'origin/ci-kushal-s16-s17'.
+test (python 3.11)	checkout source	2026-10-07T17:57:14.8619478Z ##[endgroup]
+test (python 3.11)	checkout source	2026-10-07T17:57:14.8661438Z [command]/usr/bin/git log -1 --format=%H
+test (python 3.11)	checkout source	2026-10-07T17:57:14.8688589Z 3f1d248654659041822803c87ea1dd2714c25234
+test (python 3.11)	set up python 3.11	﻿2026-10-07T17:57:14.9056417Z ##[group]Run actions/setup-python@v5
+test (python 3.11)	set up python 3.11	2026-10-07T17:57:14.9057644Z with:
+test (python 3.11)	set up python 3.11	2026-10-07T17:57:14.9058433Z   python-version: 3.11
+test (python 3.11)	set up python 3.11	2026-10-07T17:57:14.9059356Z   cache: pip
+test (python 3.11)	set up python 3.11	2026-10-07T17:57:14.9061233Z   cache-dependency-path: session-16-github-actions/kushal-24bcs10123/unit-converter/requirements-dev.txt
+test (python 3.11)	set up python 3.11	2026-10-07T17:57:14.9063479Z   check-latest: false
+test (python 3.11)	set up python 3.11	2026-10-07T17:57:14.9073223Z   token: ***
+test (python 3.11)	set up python 3.11	2026-10-07T17:57:14.9074100Z   update-environment: true
+test (python 3.11)	set up python 3.11	2026-10-07T17:57:14.9075128Z   allow-prereleases: false
+test (python 3.11)	set up python 3.11	2026-10-07T17:57:14.9076286Z   freethreaded: false
+test (python 3.11)	set up python 3.11	2026-10-07T17:57:14.9077165Z env:
+test (python 3.11)	set up python 3.11	2026-10-07T17:57:14.9078331Z   APP_DIR: session-16-github-actions/kushal-24bcs10123/unit-converter
+test (python 3.11)	set up python 3.11	2026-10-07T17:57:14.9080012Z   IMAGE: ghcr.io/kushaltalati/unit-converter
+test (python 3.11)	set up python 3.11	2026-10-07T17:57:14.9081188Z ##[endgroup]
+test (python 3.11)	set up python 3.11	2026-10-07T17:57:15.0479933Z ##[group]Installed versions
+test (python 3.11)	set up python 3.11	2026-10-07T17:57:15.0576943Z (node:2308) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+test (python 3.11)	set up python 3.11	2026-10-07T17:57:15.0581876Z (Use `node --trace-deprecation ...` to show where the warning was created)
+test (python 3.11)	set up python 3.11	2026-10-07T17:57:15.0584727Z Successfully set up CPython (3.11.16)
+test (python 3.11)	set up python 3.11	2026-10-07T17:57:15.0587971Z ##[endgroup]
+test (python 3.11)	set up python 3.11	2026-10-07T17:57:15.0892191Z [command]/opt/hostedtoolcache/Python/3.11.16/x64/bin/pip cache dir
+test (python 3.11)	set up python 3.11	2026-10-07T17:57:15.3663475Z /home/runner/.cache/pip
+test (python 3.11)	set up python 3.11	2026-10-07T17:57:15.6462601Z Cache hit for: setup-python-Linux-x64-24.04-Ubuntu-python-3.11.16-pip-f6d5b43e16dfdf73172ce59663477dbb4af660c805813ec2ecc875003f6ef0b9
+test (python 3.11)	set up python 3.11	2026-10-07T17:57:15.6586962Z (node:2308) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+test (python 3.11)	set up python 3.11	2026-10-07T17:57:16.9424417Z Received 4194304 of 7676861 (54.6%), 4.0 MBs/sec
+test (python 3.11)	set up python 3.11	2026-10-07T17:57:17.1246139Z Received 7676861 of 7676861 (100.0%), 6.2 MBs/sec
+test (python 3.11)	set up python 3.11	2026-10-07T17:57:17.1247066Z Cache Size: ~7 MB (7676861 B)
+test (python 3.11)	set up python 3.11	2026-10-07T17:57:17.1278063Z [command]/usr/bin/tar -xf /home/runner/work/_temp/704c47d8-a323-4c46-9193-a3134b9ac156/cache.tzst -P -C /home/runner/work/devops-heros/devops-heros --use-compress-program unzstd
+test (python 3.11)	set up python 3.11	2026-10-07T17:57:17.1580414Z Cache restored successfully
+test (python 3.11)	set up python 3.11	2026-10-07T17:57:17.1589948Z Cache restored from key: setup-python-Linux-x64-24.04-Ubuntu-python-3.11.16-pip-f6d5b43e16dfdf73172ce59663477dbb4af660c805813ec2ecc875003f6ef0b9
+test (python 3.11)	install dependencies	﻿2026-10-07T17:57:17.1748319Z ##[group]Run python -m pip install --upgrade pip
+test (python 3.11)	install dependencies	2026-10-07T17:57:17.1748812Z ^[[36;1mpython -m pip install --upgrade pip^[[0m
+test (python 3.11)	install dependencies	2026-10-07T17:57:17.1749170Z ^[[36;1mpip install -r requirements-dev.txt^[[0m
+test (python 3.11)	install dependencies	2026-10-07T17:57:17.2003732Z shell: /usr/bin/bash -e {0}
+test (python 3.11)	install dependencies	2026-10-07T17:57:17.2004049Z env:
+test (python 3.11)	install dependencies	2026-10-07T17:57:17.2004393Z   APP_DIR: session-16-github-actions/kushal-24bcs10123/unit-converter
+test (python 3.11)	install dependencies	2026-10-07T17:57:17.2004881Z   IMAGE: ghcr.io/kushaltalati/unit-converter
+test (python 3.11)	install dependencies	2026-10-07T17:57:17.2005563Z   pythonLocation: /opt/hostedtoolcache/Python/3.11.16/x64
+test (python 3.11)	install dependencies	2026-10-07T17:57:17.2006091Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.11.16/x64/lib/pkgconfig
+test (python 3.11)	install dependencies	2026-10-07T17:57:17.2006609Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.16/x64
+test (python 3.11)	install dependencies	2026-10-07T17:57:17.2007061Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.16/x64
+test (python 3.11)	install dependencies	2026-10-07T17:57:17.2007499Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.16/x64
+test (python 3.11)	install dependencies	2026-10-07T17:57:17.2007943Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.11.16/x64/lib
+test (python 3.11)	install dependencies	2026-10-07T17:57:17.2008359Z ##[endgroup]
+test (python 3.11)	install dependencies	2026-10-07T17:57:17.7021922Z Requirement already satisfied: pip in /opt/hostedtoolcache/Python/3.11.16/x64/lib/python3.11/site-packages (26.2.1)
+test (python 3.11)	install dependencies	2026-10-07T17:57:18.1086348Z Collecting fastapi==0.142.2 (from -r /home/runner/work/devops-heros/devops-heros/session-16-github-actions/kushal-24bcs10123/unit-converter/requirements.txt (line 1))
+test (python 3.11)	install dependencies	2026-10-07T17:57:18.1101071Z   Using cached fastapi-0.142.2-py3-none-any.whl.metadata (27 kB)
+test (python 3.11)	install dependencies	2026-10-07T17:57:18.1285886Z Collecting uvicorn==0.54.0 (from -r /home/runner/work/devops-heros/devops-heros/session-16-github-actions/kushal-24bcs10123/unit-converter/requirements.txt (line 2))
+test (python 3.11)	install dependencies	2026-10-07T17:57:18.1305701Z   Using cached uvicorn-0.54.0-py3-none-any.whl.metadata (6.6 kB)
+test (python 3.11)	install dependencies	2026-10-07T17:57:18.2234693Z Collecting pydantic==2.13.5 (from -r /home/runner/work/devops-heros/devops-heros/session-16-github-actions/kushal-24bcs10123/unit-converter/requirements.txt (line 3))
+test (python 3.11)	install dependencies	2026-10-07T17:57:18.2250364Z   Using cached pydantic-2.13.5-py3-none-any.whl.metadata (110 kB)
+test (python 3.11)	install dependencies	2026-10-07T17:57:18.2443141Z Collecting pytest==9.1.1 (from -r requirements-dev.txt (line 2))
+test (python 3.11)	install dependencies	2026-10-07T17:57:18.2459841Z   Using cached pytest-9.1.1-py3-none-any.whl.metadata (7.6 kB)
+test (python 3.11)	install dependencies	2026-10-07T17:57:18.2555839Z Collecting httpx==0.28.1 (from -r requirements-dev.txt (line 3))
+test (python 3.11)	install dependencies	2026-10-07T17:57:18.2569985Z   Using cached httpx-0.28.1-py3-none-any.whl.metadata (7.1 kB)
+test (python 3.11)	install dependencies	2026-10-07T17:57:18.2726924Z Collecting starlette>=0.46.0 (from fastapi==0.142.2->-r /home/runner/work/devops-heros/devops-heros/session-16-github-actions/kushal-24bcs10123/unit-converter/requirements.txt (line 1))
+test (python 3.11)	install dependencies	2026-10-07T17:57:18.2740726Z   Using cached starlette-1.7.0-py3-none-any.whl.metadata (6.6 kB)
+test (python 3.11)	install dependencies	2026-10-07T17:57:18.2842441Z Collecting typing-extensions>=4.8.0 (from fastapi==0.142.2->-r /home/runner/work/devops-heros/devops-heros/session-16-github-actions/kushal-24bcs10123/unit-converter/requirements.txt (line 1))
+test (python 3.11)	install dependencies	2026-10-07T17:57:18.2855860Z   Using cached typing_extensions-4.16.0-py3-none-any.whl.metadata (3.3 kB)
+test (python 3.11)	install dependencies	2026-10-07T17:57:18.2903336Z Collecting typing-inspection>=0.4.2 (from fastapi==0.142.2->-r /home/runner/work/devops-heros/devops-heros/session-16-github-actions/kushal-24bcs10123/unit-converter/requirements.txt (line 1))
+test (python 3.11)	install dependencies	2026-10-07T17:57:18.2916505Z   Using cached typing_inspection-0.4.4-py3-none-any.whl.metadata (2.6 kB)
+test (python 3.11)	install dependencies	2026-10-07T17:57:18.2953181Z Collecting annotated-doc>=0.0.2 (from fastapi==0.142.2->-r /home/runner/work/devops-heros/devops-heros/session-16-github-actions/kushal-24bcs10123/unit-converter/requirements.txt (line 1))
+test (python 3.11)	install dependencies	2026-10-07T17:57:18.2966553Z   Using cached annotated_doc-0.0.5-py3-none-any.whl.metadata (6.5 kB)
+test (python 3.11)	install dependencies	2026-10-07T17:57:18.3067010Z Collecting opentelemetry-api>=1.44.0 (from fastapi==0.142.2->-r /home/runner/work/devops-heros/devops-heros/session-16-github-actions/kushal-24bcs10123/unit-converter/requirements.txt (line 1))
+test (python 3.11)	install dependencies	2026-10-07T17:57:18.3080812Z   Using cached opentelemetry_api-1.45.1-py3-none-any.whl.metadata (1.4 kB)
+test (python 3.11)	install dependencies	2026-10-07T17:57:18.3174588Z Collecting click>=7.0 (from uvicorn==0.54.0->-r /home/runner/work/devops-heros/devops-heros/session-16-github-actions/kushal-24bcs10123/unit-converter/requirements.txt (line 2))
+test (python 3.11)	install dependencies	2026-10-07T17:57:18.3188259Z   Using cached click-8.5.0-py3-none-any.whl.metadata (2.6 kB)
+test (python 3.11)	install dependencies	2026-10-07T17:57:18.3232191Z Collecting h11>=0.8 (from uvicorn==0.54.0->-r /home/runner/work/devops-heros/devops-heros/session-16-github-actions/kushal-24bcs10123/unit-converter/requirements.txt (line 2))
+test (python 3.11)	install dependencies	2026-10-07T17:57:18.3245486Z   Using cached h11-0.16.0-py3-none-any.whl.metadata (8.3 kB)
+test (python 3.11)	install dependencies	2026-10-07T17:57:18.3291113Z Collecting annotated-types>=0.6.0 (from pydantic==2.13.5->-r /home/runner/work/devops-heros/devops-heros/session-16-github-actions/kushal-24bcs10123/unit-converter/requirements.txt (line 3))
+test (python 3.11)	install dependencies	2026-10-07T17:57:18.3305121Z   Using cached annotated_types-0.8.0-py3-none-any.whl.metadata (15 kB)
+test (python 3.11)	install dependencies	2026-10-07T17:57:18.9072159Z Collecting pydantic-core==2.46.5 (from pydantic==2.13.5->-r /home/runner/work/devops-heros/devops-heros/session-16-github-actions/kushal-24bcs10123/unit-converter/requirements.txt (line 3))
+test (python 3.11)	install dependencies	2026-10-07T17:57:18.9087909Z   Using cached pydantic_core-2.46.5-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (6.6 kB)
+test (python 3.11)	install dependencies	2026-10-07T17:57:18.9144274Z Collecting iniconfig>=1.0.1 (from pytest==9.1.1->-r requirements-dev.txt (line 2))
+test (python 3.11)	install dependencies	2026-10-07T17:57:18.9161534Z   Using cached iniconfig-2.3.1-py3-none-any.whl.metadata (2.8 kB)
+test (python 3.11)	install dependencies	2026-10-07T17:57:18.9368889Z Collecting packaging>=22 (from pytest==9.1.1->-r requirements-dev.txt (line 2))
+test (python 3.11)	install dependencies	2026-10-07T17:57:18.9383863Z   Using cached packaging-26.3-py3-none-any.whl.metadata (3.5 kB)
+test (python 3.11)	install dependencies	2026-10-07T17:57:18.9436191Z Collecting pluggy<2,>=1.5 (from pytest==9.1.1->-r requirements-dev.txt (line 2))
+test (python 3.11)	install dependencies	2026-10-07T17:57:18.9450482Z   Using cached pluggy-1.6.0-py3-none-any.whl.metadata (4.8 kB)
+test (python 3.11)	install dependencies	2026-10-07T17:57:18.9553689Z Collecting pygments>=2.7.2 (from pytest==9.1.1->-r requirements-dev.txt (line 2))
+test (python 3.11)	install dependencies	2026-10-07T17:57:18.9567806Z   Using cached pygments-2.21.0-py3-none-any.whl.metadata (2.5 kB)
+test (python 3.11)	install dependencies	2026-10-07T17:57:18.9678192Z Collecting anyio (from httpx==0.28.1->-r requirements-dev.txt (line 3))
+test (python 3.11)	install dependencies	2026-10-07T17:57:18.9691956Z   Using cached anyio-4.15.1-py3-none-any.whl.metadata (4.7 kB)
+test (python 3.11)	install dependencies	2026-10-07T17:57:18.9800704Z Collecting certifi (from httpx==0.28.1->-r requirements-dev.txt (line 3))
+test (python 3.11)	install dependencies	2026-10-07T17:57:18.9814158Z   Using cached certifi-2026.7.22-py3-none-any.whl.metadata (2.5 kB)
+test (python 3.11)	install dependencies	2026-10-07T17:57:18.9893500Z Collecting httpcore==1.* (from httpx==0.28.1->-r requirements-dev.txt (line 3))
+test (python 3.11)	install dependencies	2026-10-07T17:57:18.9907448Z   Using cached httpcore-1.0.9-py3-none-any.whl.metadata (21 kB)
+test (python 3.11)	install dependencies	2026-10-07T17:57:18.9992253Z Collecting idna (from httpx==0.28.1->-r requirements-dev.txt (line 3))
+test (python 3.11)	install dependencies	2026-10-07T17:57:19.0006164Z   Using cached idna-3.20-py3-none-any.whl.metadata (7.2 kB)
+test (python 3.11)	install dependencies	2026-10-07T17:57:19.0145220Z Using cached fastapi-0.142.2-py3-none-any.whl (144 kB)
+test (python 3.11)	install dependencies	2026-10-07T17:57:19.0159433Z Using cached uvicorn-0.54.0-py3-none-any.whl (87 kB)
+test (python 3.11)	install dependencies	2026-10-07T17:57:19.0173421Z Using cached pydantic-2.13.5-py3-none-any.whl (472 kB)
+test (python 3.11)	install dependencies	2026-10-07T17:57:19.0188937Z Using cached pytest-9.1.1-py3-none-any.whl (386 kB)
+test (python 3.11)	install dependencies	2026-10-07T17:57:19.0204125Z Using cached httpx-0.28.1-py3-none-any.whl (73 kB)
+test (python 3.11)	install dependencies	2026-10-07T17:57:19.0218914Z Using cached pydantic_core-2.46.5-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (2.1 MB)
+test (python 3.11)	install dependencies	2026-10-07T17:57:19.0239603Z Using cached httpcore-1.0.9-py3-none-any.whl (78 kB)
+test (python 3.11)	install dependencies	2026-10-07T17:57:19.0253860Z Using cached pluggy-1.6.0-py3-none-any.whl (20 kB)
+test (python 3.11)	install dependencies	2026-10-07T17:57:19.0268260Z Using cached annotated_doc-0.0.5-py3-none-any.whl (5.3 kB)
+test (python 3.11)	install dependencies	2026-10-07T17:57:19.0282331Z Using cached annotated_types-0.8.0-py3-none-any.whl (13 kB)
+test (python 3.11)	install dependencies	2026-10-07T17:57:19.0296602Z Using cached click-8.5.0-py3-none-any.whl (125 kB)
+test (python 3.11)	install dependencies	2026-10-07T17:57:19.0311107Z Using cached h11-0.16.0-py3-none-any.whl (37 kB)
+test (python 3.11)	install dependencies	2026-10-07T17:57:19.0325264Z Using cached iniconfig-2.3.1-py3-none-any.whl (7.6 kB)
+test (python 3.11)	install dependencies	2026-10-07T17:57:19.0339627Z Using cached opentelemetry_api-1.45.1-py3-none-any.whl (60 kB)
+test (python 3.11)	install dependencies	2026-10-07T17:57:19.0353971Z Using cached packaging-26.3-py3-none-any.whl (129 kB)
+test (python 3.11)	install dependencies	2026-10-07T17:57:19.0368894Z Using cached pygments-2.21.0-py3-none-any.whl (1.3 MB)
+test (python 3.11)	install dependencies	2026-10-07T17:57:19.0387186Z Using cached starlette-1.7.0-py3-none-any.whl (78 kB)
+test (python 3.11)	install dependencies	2026-10-07T17:57:19.0401450Z Using cached anyio-4.15.1-py3-none-any.whl (132 kB)
+test (python 3.11)	install dependencies	2026-10-07T17:57:19.0415707Z Using cached idna-3.20-py3-none-any.whl (69 kB)
+test (python 3.11)	install dependencies	2026-10-07T17:57:19.0430401Z Using cached typing_extensions-4.16.0-py3-none-any.whl (45 kB)
+test (python 3.11)	install dependencies	2026-10-07T17:57:19.0444778Z Using cached typing_inspection-0.4.4-py3-none-any.whl (14 kB)
+test (python 3.11)	install dependencies	2026-10-07T17:57:19.0459345Z Using cached certifi-2026.7.22-py3-none-any.whl (136 kB)
+test (python 3.11)	install dependencies	2026-10-07T17:57:19.1374344Z Installing collected packages: typing-extensions, pygments, pluggy, packaging, iniconfig, idna, h11, click, certifi, annotated-types, annotated-doc, uvicorn, typing-inspection, pytest, pydantic-core, opentelemetry-api, httpcore, anyio, starlette, pydantic, httpx, fastapi
+test (python 3.11)	install dependencies	2026-10-07T17:57:20.9976921Z 
+test (python 3.11)	install dependencies	2026-10-07T17:57:20.9993365Z Successfully installed annotated-doc-0.0.5 annotated-types-0.8.0 anyio-4.15.1 certifi-2026.7.22 click-8.5.0 fastapi-0.142.2 h11-0.16.0 httpcore-1.0.9 httpx-0.28.1 idna-3.20 iniconfig-2.3.1 opentelemetry-api-1.45.1 packaging-26.3 pluggy-1.6.0 pydantic-2.13.5 pydantic-core-2.46.5 pygments-2.21.0 pytest-9.1.1 starlette-1.7.0 typing-extensions-4.16.0 typing-inspection-0.4.4 uvicorn-0.54.0
+test (python 3.11)	run unit tests	﻿2026-10-07T17:57:21.0739180Z ##[group]Run pytest -v --junitxml=test-report-3.11.xml
+test (python 3.11)	run unit tests	2026-10-07T17:57:21.0739641Z ^[[36;1mpytest -v --junitxml=test-report-3.11.xml^[[0m
+test (python 3.11)	run unit tests	2026-10-07T17:57:21.0806340Z shell: /usr/bin/bash -e {0}
+test (python 3.11)	run unit tests	2026-10-07T17:57:21.0806594Z env:
+test (python 3.11)	run unit tests	2026-10-07T17:57:21.0806898Z   APP_DIR: session-16-github-actions/kushal-24bcs10123/unit-converter
+test (python 3.11)	run unit tests	2026-10-07T17:57:21.0807315Z   IMAGE: ghcr.io/kushaltalati/unit-converter
+test (python 3.11)	run unit tests	2026-10-07T17:57:21.0807686Z   pythonLocation: /opt/hostedtoolcache/Python/3.11.16/x64
+test (python 3.11)	run unit tests	2026-10-07T17:57:21.0808152Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.11.16/x64/lib/pkgconfig
+test (python 3.11)	run unit tests	2026-10-07T17:57:21.0808602Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.16/x64
+test (python 3.11)	run unit tests	2026-10-07T17:57:21.0808994Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.16/x64
+test (python 3.11)	run unit tests	2026-10-07T17:57:21.0809384Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.16/x64
+test (python 3.11)	run unit tests	2026-10-07T17:57:21.0809771Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.11.16/x64/lib
+test (python 3.11)	run unit tests	2026-10-07T17:57:21.0810096Z ##[endgroup]
+test (python 3.11)	run unit tests	2026-10-07T17:57:21.4904580Z ============================= test session starts ==============================
+test (python 3.11)	run unit tests	2026-10-07T17:57:21.4905785Z platform linux -- Python 3.11.16, pytest-9.1.1, pluggy-1.6.0 -- /opt/hostedtoolcache/Python/3.11.16/x64/bin/python
+test (python 3.11)	run unit tests	2026-10-07T17:57:21.4906374Z cachedir: .pytest_cache
+test (python 3.11)	run unit tests	2026-10-07T17:57:21.4906917Z rootdir: /home/runner/work/devops-heros/devops-heros/session-16-github-actions/kushal-24bcs10123/unit-converter
+test (python 3.11)	run unit tests	2026-10-07T17:57:21.4907512Z configfile: pytest.ini
+test (python 3.11)	run unit tests	2026-10-07T17:57:21.4907750Z testpaths: tests
+test (python 3.11)	run unit tests	2026-10-07T17:57:21.4907990Z plugins: anyio-4.15.1
+test (python 3.11)	run unit tests	2026-10-07T17:57:21.9284162Z collecting ... collected 11 items
+test (python 3.11)	run unit tests	2026-10-07T17:57:21.9284779Z 
+test (python 3.11)	run unit tests	2026-10-07T17:57:21.9403332Z tests/test_api.py::test_health PASSED                                    [  9%]
+test (python 3.11)	run unit tests	2026-10-07T17:57:21.9433833Z tests/test_api.py::test_units_lists_all_categories PASSED                [ 18%]
+test (python 3.11)	run unit tests	2026-10-07T17:57:21.9468263Z tests/test_api.py::test_convert_get PASSED                               [ 27%]
+test (python 3.11)	run unit tests	2026-10-07T17:57:21.9499354Z tests/test_api.py::test_convert_post PASSED                              [ 36%]
+test (python 3.11)	run unit tests	2026-10-07T17:57:21.9527689Z tests/test_api.py::test_bad_unit_is_400 PASSED                           [ 45%]
+test (python 3.11)	run unit tests	2026-10-07T17:57:21.9536422Z tests/test_converter.py::test_km_to_m PASSED                             [ 54%]
+test (python 3.11)	run unit tests	2026-10-07T17:57:21.9825425Z tests/test_converter.py::test_feet_to_inches FAILED                      [ 63%]
+test (python 3.11)	run unit tests	2026-10-07T17:57:21.9833812Z tests/test_converter.py::test_kg_to_lb PASSED                            [ 72%]
+test (python 3.11)	run unit tests	2026-10-07T17:57:21.9841599Z tests/test_converter.py::test_celsius_to_fahrenheit PASSED               [ 81%]
+test (python 3.11)	run unit tests	2026-10-07T17:57:21.9849256Z tests/test_converter.py::test_kelvin_round_trip PASSED                   [ 90%]
+test (python 3.11)	run unit tests	2026-10-07T17:57:22.0125749Z tests/test_converter.py::test_unknown_unit_raises PASSED                 [100%]
+test (python 3.11)	run unit tests	2026-10-07T17:57:22.0126545Z 
+test (python 3.11)	run unit tests	2026-10-07T17:57:22.0126788Z =================================== FAILURES ===================================
+test (python 3.11)	run unit tests	2026-10-07T17:57:22.0127475Z _____________________________ test_feet_to_inches ______________________________
+test (python 3.11)	run unit tests	2026-10-07T17:57:22.0127954Z 
+test (python 3.11)	run unit tests	2026-10-07T17:57:22.0128119Z     def test_feet_to_inches():
+test (python 3.11)	run unit tests	2026-10-07T17:57:22.0128802Z >       assert convert("length", 1, "ft", "in") == pytest.approx(10)  # wrong on purpose: 1 ft is 12 in
+test (python 3.11)	run unit tests	2026-10-07T17:57:22.0129557Z         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+test (python 3.11)	run unit tests	2026-10-07T17:57:22.0130341Z E       assert 12.000000000000002 == 10 ± 1.0e-05
+test (python 3.11)	run unit tests	2026-10-07T17:57:22.0130798Z E         
+test (python 3.11)	run unit tests	2026-10-07T17:57:22.0131103Z E         comparison failed
+test (python 3.11)	run unit tests	2026-10-07T17:57:22.0131486Z E         Obtained: 12.000000000000002
+test (python 3.11)	run unit tests	2026-10-07T17:57:22.0131989Z E         Expected: 10 ± 1.0e-05
+test (python 3.11)	run unit tests	2026-10-07T17:57:22.0132253Z 
+test (python 3.11)	run unit tests	2026-10-07T17:57:22.0132449Z tests/test_converter.py:11: AssertionError
+test (python 3.11)	run unit tests	2026-10-07T17:57:22.0133051Z =============================== warnings summary ===============================
+test (python 3.11)	run unit tests	2026-10-07T17:57:22.0134037Z ../../../../../../../../opt/hostedtoolcache/Python/3.11.16/x64/lib/python3.11/site-packages/fastapi/testclient.py:1
+test (python 3.11)	run unit tests	2026-10-07T17:57:22.0136497Z   /opt/hostedtoolcache/Python/3.11.16/x64/lib/python3.11/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+test (python 3.11)	run unit tests	2026-10-07T17:57:22.0138401Z     from starlette.testclient import TestClient as TestClient  # noqa
+test (python 3.11)	run unit tests	2026-10-07T17:57:22.0138902Z 
+test (python 3.11)	run unit tests	2026-10-07T17:57:22.0139279Z -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+test (python 3.11)	run unit tests	2026-10-07T17:57:22.0140654Z - generated xml file: /home/runner/work/devops-heros/devops-heros/session-16-github-actions/kushal-24bcs10123/unit-converter/test-report-3.11.xml -
+test (python 3.11)	run unit tests	2026-10-07T17:57:22.0141933Z =========================== short test summary info ============================
+test (python 3.11)	run unit tests	2026-10-07T17:57:22.0142977Z FAILED tests/test_converter.py::test_feet_to_inches - assert 12.000000000000002 == 10 ± 1.0e-05
+test (python 3.11)	run unit tests	2026-10-07T17:57:22.0143725Z   
+test (python 3.11)	run unit tests	2026-10-07T17:57:22.0144030Z   comparison failed
+test (python 3.11)	run unit tests	2026-10-07T17:57:22.0144407Z   Obtained: 12.000000000000002
+test (python 3.11)	run unit tests	2026-10-07T17:57:22.0144880Z   Expected: 10 ± 1.0e-05
+test (python 3.11)	run unit tests	2026-10-07T17:57:22.0145591Z =================== 1 failed, 10 passed, 1 warning in 0.50s ====================
+test (python 3.11)	run unit tests	2026-10-07T17:57:22.0650356Z ##[error]Process completed with exit code 1.
+test (python 3.11)	upload test report	﻿2026-10-07T17:57:22.0735492Z ##[group]Run actions/upload-artifact@v4
+test (python 3.11)	upload test report	2026-10-07T17:57:22.0735828Z with:
+test (python 3.11)	upload test report	2026-10-07T17:57:22.0736051Z   name: test-report-python-3.11
+test (python 3.11)	upload test report	2026-10-07T17:57:22.0736495Z   path: session-16-github-actions/kushal-24bcs10123/unit-converter/test-report-3.11.xml
+test (python 3.11)	upload test report	2026-10-07T17:57:22.0736957Z   if-no-files-found: warn
+test (python 3.11)	upload test report	2026-10-07T17:57:22.0737197Z   compression-level: 6
+test (python 3.11)	upload test report	2026-10-07T17:57:22.0737464Z   overwrite: false
+test (python 3.11)	upload test report	2026-10-07T17:57:22.0737686Z   include-hidden-files: false
+test (python 3.11)	upload test report	2026-10-07T17:57:22.0737932Z env:
+test (python 3.11)	upload test report	2026-10-07T17:57:22.0738217Z   APP_DIR: session-16-github-actions/kushal-24bcs10123/unit-converter
+test (python 3.11)	upload test report	2026-10-07T17:57:22.0738628Z   IMAGE: ghcr.io/kushaltalati/unit-converter
+test (python 3.11)	upload test report	2026-10-07T17:57:22.0738989Z   pythonLocation: /opt/hostedtoolcache/Python/3.11.16/x64
+test (python 3.11)	upload test report	2026-10-07T17:57:22.0739422Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.11.16/x64/lib/pkgconfig
+test (python 3.11)	upload test report	2026-10-07T17:57:22.0739868Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.16/x64
+test (python 3.11)	upload test report	2026-10-07T17:57:22.0740259Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.16/x64
+test (python 3.11)	upload test report	2026-10-07T17:57:22.0740671Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.16/x64
+test (python 3.11)	upload test report	2026-10-07T17:57:22.0741058Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.11.16/x64/lib
+test (python 3.11)	upload test report	2026-10-07T17:57:22.0741380Z ##[endgroup]
+test (python 3.11)	upload test report	2026-10-07T17:57:22.2353216Z (node:2402) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+test (python 3.11)	upload test report	2026-10-07T17:57:22.2354544Z (Use `node --trace-deprecation ...` to show where the warning was created)
+test (python 3.11)	upload test report	2026-10-07T17:57:22.2399720Z With the provided path, there will be 1 file uploaded
+test (python 3.11)	upload test report	2026-10-07T17:57:22.2423082Z Artifact name is valid!
+test (python 3.11)	upload test report	2026-10-07T17:57:22.2423637Z Root directory input is valid!
+test (python 3.11)	upload test report	2026-10-07T17:57:22.6392894Z Beginning upload of artifact content to blob storage
+test (python 3.11)	upload test report	2026-10-07T17:57:22.6580846Z (node:2402) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+test (python 3.11)	upload test report	2026-10-07T17:57:22.9369905Z Uploaded bytes 711
+test (python 3.11)	upload test report	2026-10-07T17:57:23.0148747Z Finished uploading artifact content to blob storage!
+test (python 3.11)	upload test report	2026-10-07T17:57:23.0150271Z SHA256 digest of uploaded artifact zip is c56cb8a667be2246b4841697a3a6b5714401a49d4212c6cd65ade0176875c695
+test (python 3.11)	upload test report	2026-10-07T17:57:23.0151648Z Finalizing artifact upload
+test (python 3.11)	upload test report	2026-10-07T17:57:23.3114798Z Artifact test-report-python-3.11.zip successfully finalized. Artifact ID 11501987306
+test (python 3.11)	upload test report	2026-10-07T17:57:23.3116548Z Artifact test-report-python-3.11 has been successfully uploaded! Final size is 711 bytes. Artifact ID is 11501987306
+test (python 3.11)	upload test report	2026-10-07T17:57:23.3121928Z Artifact download URL: https://github.com/kushaltalati/devops-heros/actions/runs/37663051248/artifacts/11501987306
+test (python 3.11)	Post checkout source	﻿2026-10-07T17:57:23.3327547Z Post job cleanup.
+test (python 3.11)	Post checkout source	2026-10-07T17:57:23.4238237Z [command]/usr/bin/git version
+test (python 3.11)	Post checkout source	2026-10-07T17:57:23.4284153Z git version 2.55.0
+test (python 3.11)	Post checkout source	2026-10-07T17:57:23.4324828Z Temporarily overriding HOME='/home/runner/work/_temp/8c99a0bc-4d8b-419f-822b-6747278fcb4e' before making global git config changes
+test (python 3.11)	Post checkout source	2026-10-07T17:57:23.4326682Z Adding repository directory to the temporary git global config as a safe directory
+test (python 3.11)	Post checkout source	2026-10-07T17:57:23.4331683Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/devops-heros/devops-heros
+test (python 3.11)	Post checkout source	2026-10-07T17:57:23.4811987Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+test (python 3.11)	Post checkout source	2026-10-07T17:57:23.4857677Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+test (python 3.11)	Post checkout source	2026-10-07T17:57:23.5830872Z fatal: No url found for submodule path 'session-16-github-actions/mini-project 10-33-34-265' in .gitmodules
+test (python 3.11)	Post checkout source	2026-10-07T17:57:23.5877789Z ##[warning]The process '/usr/bin/git' failed with exit code 128
+test (python 3.11)	Complete job	﻿2026-10-07T17:57:23.5989936Z Cleaning up orphan processes
+test (python 3.11)	Complete job	2026-10-07T17:57:23.6267244Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4, actions/setup-python@v5, actions/upload-artifact@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+test (python 3.12)	Set up job	﻿2026-10-07T17:57:13.0709494Z Current runner version: '2.337.0'
+test (python 3.12)	Set up job	2026-10-07T17:57:13.0736373Z ##[group]Runner Image Provisioner
+test (python 3.12)	Set up job	2026-10-07T17:57:13.0737276Z Hosted Compute Agent
+test (python 3.12)	Set up job	2026-10-07T17:57:13.0737856Z Version: 20260901.588
+test (python 3.12)	Set up job	2026-10-07T17:57:13.0738661Z Commit: f88ec8081b781fac6c440065ac7ff9e710ce3d0b
+test (python 3.12)	Set up job	2026-10-07T17:57:13.0739414Z Build Date: 2026-09-01T19:56:44Z
+test (python 3.12)	Set up job	2026-10-07T17:57:13.0740148Z Worker ID: {57350bb1-1049-46ef-8745-58bfd6982535}
+test (python 3.12)	Set up job	2026-10-07T17:57:13.0740886Z Azure Region: westus2
+test (python 3.12)	Set up job	2026-10-07T17:57:13.0741701Z ##[endgroup]
+test (python 3.12)	Set up job	2026-10-07T17:57:13.0743472Z ##[group]Operating System
+test (python 3.12)	Set up job	2026-10-07T17:57:13.0744172Z Ubuntu
+test (python 3.12)	Set up job	2026-10-07T17:57:13.0744763Z 24.04.5
+test (python 3.12)	Set up job	2026-10-07T17:57:13.0745308Z LTS
+test (python 3.12)	Set up job	2026-10-07T17:57:13.0745879Z ##[endgroup]
+test (python 3.12)	Set up job	2026-10-07T17:57:13.0746867Z ##[group]Runner Image
+test (python 3.12)	Set up job	2026-10-07T17:57:13.0747511Z Image: ubuntu-24.04
+test (python 3.12)	Set up job	2026-10-07T17:57:13.0748072Z Version: 20260927.320.1
+test (python 3.12)	Set up job	2026-10-07T17:57:13.0749242Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20260927.320/images/ubuntu/Ubuntu2404-Readme.md
+test (python 3.12)	Set up job	2026-10-07T17:57:13.0751363Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20260927.320
+test (python 3.12)	Set up job	2026-10-07T17:57:13.0752377Z ##[endgroup]
+test (python 3.12)	Set up job	2026-10-07T17:57:13.0753670Z ##[group]GITHUB_TOKEN Permissions
+test (python 3.12)	Set up job	2026-10-07T17:57:13.0755683Z Contents: read
+test (python 3.12)	Set up job	2026-10-07T17:57:13.0756301Z Metadata: read
+test (python 3.12)	Set up job	2026-10-07T17:57:13.0756983Z Packages: read
+test (python 3.12)	Set up job	2026-10-07T17:57:13.0757593Z ##[endgroup]
+test (python 3.12)	Set up job	2026-10-07T17:57:13.0759884Z Secret source: Actions
+test (python 3.12)	Set up job	2026-10-07T17:57:13.0760895Z Cache mode: write
+test (python 3.12)	Set up job	2026-10-07T17:57:13.0762151Z Prepare workflow directory
+test (python 3.12)	Set up job	2026-10-07T17:57:13.1360023Z Prepare all required actions
+test (python 3.12)	Set up job	2026-10-07T17:57:13.1409606Z Getting action download info
+test (python 3.12)	Set up job	2026-10-07T17:57:13.5299864Z Download action repository 'actions/checkout@v4' (SHA:11d5960a326750d5838078e36cf38b85af677262)
+test (python 3.12)	Set up job	2026-10-07T17:57:13.6409277Z Download action repository 'actions/setup-python@v5' (SHA:a26af69be951a213d495a4c3e4e4022e16d87065)
+test (python 3.12)	Set up job	2026-10-07T17:57:13.7598591Z Download action repository 'actions/upload-artifact@v4' (SHA:ea165f8d65b6e75b540449e92b4886f43607fa02)
+test (python 3.12)	Set up job	2026-10-07T17:57:13.9712590Z Complete job name: test (python 3.12)
+test (python 3.12)	checkout source	﻿2026-10-07T17:57:14.0548387Z ##[group]Run actions/checkout@v4
+test (python 3.12)	checkout source	2026-10-07T17:57:14.0549357Z with:
+test (python 3.12)	checkout source	2026-10-07T17:57:14.0549843Z   repository: kushaltalati/devops-heros
+test (python 3.12)	checkout source	2026-10-07T17:57:14.0554160Z   token: ***
+test (python 3.12)	checkout source	2026-10-07T17:57:14.0554612Z   ssh-strict: true
+test (python 3.12)	checkout source	2026-10-07T17:57:14.0555069Z   ssh-user: git
+test (python 3.12)	checkout source	2026-10-07T17:57:14.0555534Z   persist-credentials: true
+test (python 3.12)	checkout source	2026-10-07T17:57:14.0556038Z   clean: true
+test (python 3.12)	checkout source	2026-10-07T17:57:14.0556499Z   sparse-checkout-cone-mode: true
+test (python 3.12)	checkout source	2026-10-07T17:57:14.0557030Z   fetch-depth: 1
+test (python 3.12)	checkout source	2026-10-07T17:57:14.0557473Z   fetch-tags: false
+test (python 3.12)	checkout source	2026-10-07T17:57:14.0557927Z   show-progress: true
+test (python 3.12)	checkout source	2026-10-07T17:57:14.0558380Z   lfs: false
+test (python 3.12)	checkout source	2026-10-07T17:57:14.0558801Z   submodules: false
+test (python 3.12)	checkout source	2026-10-07T17:57:14.0559256Z   set-safe-directory: true
+test (python 3.12)	checkout source	2026-10-07T17:57:14.0559774Z   allow-unsafe-pr-checkout: false
+test (python 3.12)	checkout source	2026-10-07T17:57:14.0560553Z env:
+test (python 3.12)	checkout source	2026-10-07T17:57:14.0561494Z   APP_DIR: session-16-github-actions/kushal-24bcs10123/unit-converter
+test (python 3.12)	checkout source	2026-10-07T17:57:14.0562314Z   IMAGE: ghcr.io/kushaltalati/unit-converter
+test (python 3.12)	checkout source	2026-10-07T17:57:14.0563069Z ##[endgroup]
+test (python 3.12)	checkout source	2026-10-07T17:57:14.1733625Z Syncing repository: kushaltalati/devops-heros
+test (python 3.12)	checkout source	2026-10-07T17:57:14.1737280Z ##[group]Getting Git version info
+test (python 3.12)	checkout source	2026-10-07T17:57:14.1738674Z Working directory is '/home/runner/work/devops-heros/devops-heros'
+test (python 3.12)	checkout source	2026-10-07T17:57:14.1740913Z [command]/usr/bin/git version
+test (python 3.12)	checkout source	2026-10-07T17:57:14.1862565Z git version 2.55.0
+test (python 3.12)	checkout source	2026-10-07T17:57:14.1924193Z ##[endgroup]
+test (python 3.12)	checkout source	2026-10-07T17:57:14.1942185Z Temporarily overriding HOME='/home/runner/work/_temp/1618ca6d-d344-4d51-96a4-f8fbd17c84b6' before making global git config changes
+test (python 3.12)	checkout source	2026-10-07T17:57:14.1945449Z Adding repository directory to the temporary git global config as a safe directory
+test (python 3.12)	checkout source	2026-10-07T17:57:14.1947819Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/devops-heros/devops-heros
+test (python 3.12)	checkout source	2026-10-07T17:57:14.1997434Z Deleting the contents of '/home/runner/work/devops-heros/devops-heros'
+test (python 3.12)	checkout source	2026-10-07T17:57:14.2002079Z ##[group]Initializing the repository
+test (python 3.12)	checkout source	2026-10-07T17:57:14.2007704Z [command]/usr/bin/git init /home/runner/work/devops-heros/devops-heros
+test (python 3.12)	checkout source	2026-10-07T17:57:14.2148736Z hint: Using 'master' as the name for the initial branch. This default branch name
+test (python 3.12)	checkout source	2026-10-07T17:57:14.2150098Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+test (python 3.12)	checkout source	2026-10-07T17:57:14.2153255Z hint: to use in all of your new repositories, which will suppress this warning,
+test (python 3.12)	checkout source	2026-10-07T17:57:14.2155063Z hint: call:
+test (python 3.12)	checkout source	2026-10-07T17:57:14.2156215Z hint:
+test (python 3.12)	checkout source	2026-10-07T17:57:14.2158742Z hint: 	git config --global init.defaultBranch <name>
+test (python 3.12)	checkout source	2026-10-07T17:57:14.2161725Z hint:
+test (python 3.12)	checkout source	2026-10-07T17:57:14.2163171Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+test (python 3.12)	checkout source	2026-10-07T17:57:14.2165151Z hint: 'development'. The just-created branch can be renamed via this command:
+test (python 3.12)	checkout source	2026-10-07T17:57:14.2166795Z hint:
+test (python 3.12)	checkout source	2026-10-07T17:57:14.2167806Z hint: 	git branch -m <name>
+test (python 3.12)	checkout source	2026-10-07T17:57:14.2168777Z hint:
+test (python 3.12)	checkout source	2026-10-07T17:57:14.2170132Z hint: Disable this message with "git config set advice.defaultBranchName false"
+test (python 3.12)	checkout source	2026-10-07T17:57:14.2172614Z Initialized empty Git repository in /home/runner/work/devops-heros/devops-heros/.git/
+test (python 3.12)	checkout source	2026-10-07T17:57:14.2177311Z [command]/usr/bin/git remote add origin https://github.com/kushaltalati/devops-heros
+test (python 3.12)	checkout source	2026-10-07T17:57:14.2238352Z ##[endgroup]
+test (python 3.12)	checkout source	2026-10-07T17:57:14.2240055Z ##[group]Disabling automatic garbage collection
+test (python 3.12)	checkout source	2026-10-07T17:57:14.2244082Z [command]/usr/bin/git config --local gc.auto 0
+test (python 3.12)	checkout source	2026-10-07T17:57:14.2305333Z ##[endgroup]
+test (python 3.12)	checkout source	2026-10-07T17:57:14.2306990Z ##[group]Setting up auth
+test (python 3.12)	checkout source	2026-10-07T17:57:14.2308532Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+test (python 3.12)	checkout source	2026-10-07T17:57:14.2337234Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+test (python 3.12)	checkout source	2026-10-07T17:57:14.2727628Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+test (python 3.12)	checkout source	2026-10-07T17:57:14.2769085Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+test (python 3.12)	checkout source	2026-10-07T17:57:14.3025237Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+test (python 3.12)	checkout source	2026-10-07T17:57:14.3064205Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+test (python 3.12)	checkout source	2026-10-07T17:57:14.3300013Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+test (python 3.12)	checkout source	2026-10-07T17:57:14.3346352Z ##[endgroup]
+test (python 3.12)	checkout source	2026-10-07T17:57:14.3347695Z ##[group]Fetching the repository
+test (python 3.12)	checkout source	2026-10-07T17:57:14.3357258Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +3f1d248654659041822803c87ea1dd2714c25234:refs/remotes/origin/ci-kushal-s16-s17
+test (python 3.12)	checkout source	2026-10-07T17:57:14.9046039Z From https://github.com/kushaltalati/devops-heros
+test (python 3.12)	checkout source	2026-10-07T17:57:14.9048630Z  * [new ref]         3f1d248654659041822803c87ea1dd2714c25234 -> origin/ci-kushal-s16-s17
+test (python 3.12)	checkout source	2026-10-07T17:57:14.9054429Z ##[endgroup]
+test (python 3.12)	checkout source	2026-10-07T17:57:14.9056188Z ##[group]Determining the checkout info
+test (python 3.12)	checkout source	2026-10-07T17:57:14.9058374Z ##[endgroup]
+test (python 3.12)	checkout source	2026-10-07T17:57:14.9065268Z [command]/usr/bin/git sparse-checkout disable
+test (python 3.12)	checkout source	2026-10-07T17:57:14.9126896Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+test (python 3.12)	checkout source	2026-10-07T17:57:14.9166875Z ##[group]Checking out the ref
+test (python 3.12)	checkout source	2026-10-07T17:57:14.9173425Z [command]/usr/bin/git checkout --progress --force -B ci-kushal-s16-s17 refs/remotes/origin/ci-kushal-s16-s17
+test (python 3.12)	checkout source	2026-10-07T17:57:14.9983030Z Switched to a new branch 'ci-kushal-s16-s17'
+test (python 3.12)	checkout source	2026-10-07T17:57:14.9986333Z branch 'ci-kushal-s16-s17' set up to track 'origin/ci-kushal-s16-s17'.
+test (python 3.12)	checkout source	2026-10-07T17:57:15.0002175Z ##[endgroup]
+test (python 3.12)	checkout source	2026-10-07T17:57:15.0053786Z [command]/usr/bin/git log -1 --format=%H
+test (python 3.12)	checkout source	2026-10-07T17:57:15.0083918Z 3f1d248654659041822803c87ea1dd2714c25234
+test (python 3.12)	set up python 3.12	﻿2026-10-07T17:57:15.0478085Z ##[group]Run actions/setup-python@v5
+test (python 3.12)	set up python 3.12	2026-10-07T17:57:15.0479395Z with:
+test (python 3.12)	set up python 3.12	2026-10-07T17:57:15.0480259Z   python-version: 3.12
+test (python 3.12)	set up python 3.12	2026-10-07T17:57:15.0481532Z   cache: pip
+test (python 3.12)	set up python 3.12	2026-10-07T17:57:15.0483499Z   cache-dependency-path: session-16-github-actions/kushal-24bcs10123/unit-converter/requirements-dev.txt
+test (python 3.12)	set up python 3.12	2026-10-07T17:57:15.0485793Z   check-latest: false
+test (python 3.12)	set up python 3.12	2026-10-07T17:57:15.0496827Z   token: ***
+test (python 3.12)	set up python 3.12	2026-10-07T17:57:15.0497775Z   update-environment: true
+test (python 3.12)	set up python 3.12	2026-10-07T17:57:15.0498869Z   allow-prereleases: false
+test (python 3.12)	set up python 3.12	2026-10-07T17:57:15.0499934Z   freethreaded: false
+test (python 3.12)	set up python 3.12	2026-10-07T17:57:15.0500884Z env:
+test (python 3.12)	set up python 3.12	2026-10-07T17:57:15.0502429Z   APP_DIR: session-16-github-actions/kushal-24bcs10123/unit-converter
+test (python 3.12)	set up python 3.12	2026-10-07T17:57:15.0504164Z   IMAGE: ghcr.io/kushaltalati/unit-converter
+test (python 3.12)	set up python 3.12	2026-10-07T17:57:15.0505426Z ##[endgroup]
+test (python 3.12)	set up python 3.12	2026-10-07T17:57:15.2047741Z ##[group]Installed versions
+test (python 3.12)	set up python 3.12	2026-10-07T17:57:15.2305794Z (node:2273) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+test (python 3.12)	set up python 3.12	2026-10-07T17:57:15.2308004Z (Use `node --trace-deprecation ...` to show where the warning was created)
+test (python 3.12)	set up python 3.12	2026-10-07T17:57:15.2309115Z Successfully set up CPython (3.12.14)
+test (python 3.12)	set up python 3.12	2026-10-07T17:57:15.2312679Z ##[endgroup]
+test (python 3.12)	set up python 3.12	2026-10-07T17:57:15.2732114Z [command]/opt/hostedtoolcache/Python/3.12.14/x64/bin/pip cache dir
+test (python 3.12)	set up python 3.12	2026-10-07T17:57:15.9357429Z /home/runner/.cache/pip
+test (python 3.12)	set up python 3.12	2026-10-07T17:57:16.2587231Z Cache hit for: setup-python-Linux-x64-24.04-Ubuntu-python-3.12.14-pip-f6d5b43e16dfdf73172ce59663477dbb4af660c805813ec2ecc875003f6ef0b9
+test (python 3.12)	set up python 3.12	2026-10-07T17:57:16.2737212Z (node:2273) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+test (python 3.12)	set up python 3.12	2026-10-07T17:57:17.5347449Z Received 0 of 7676848 (0.0%), 0.0 MBs/sec
+test (python 3.12)	set up python 3.12	2026-10-07T17:57:17.8116708Z Received 7676848 of 7676848 (100.0%), 5.7 MBs/sec
+test (python 3.12)	set up python 3.12	2026-10-07T17:57:17.8117771Z Cache Size: ~7 MB (7676848 B)
+test (python 3.12)	set up python 3.12	2026-10-07T17:57:17.8152345Z [command]/usr/bin/tar -xf /home/runner/work/_temp/b9be056f-5a78-4001-bbd4-f5686e2963dd/cache.tzst -P -C /home/runner/work/devops-heros/devops-heros --use-compress-program unzstd
+test (python 3.12)	set up python 3.12	2026-10-07T17:57:17.8500287Z Cache restored successfully
+test (python 3.12)	set up python 3.12	2026-10-07T17:57:17.8511575Z Cache restored from key: setup-python-Linux-x64-24.04-Ubuntu-python-3.12.14-pip-f6d5b43e16dfdf73172ce59663477dbb4af660c805813ec2ecc875003f6ef0b9
+test (python 3.12)	install dependencies	﻿2026-10-07T17:57:17.8687659Z ##[group]Run python -m pip install --upgrade pip
+test (python 3.12)	install dependencies	2026-10-07T17:57:17.8688163Z ^[[36;1mpython -m pip install --upgrade pip^[[0m
+test (python 3.12)	install dependencies	2026-10-07T17:57:17.8688543Z ^[[36;1mpip install -r requirements-dev.txt^[[0m
+test (python 3.12)	install dependencies	2026-10-07T17:57:17.8949065Z shell: /usr/bin/bash -e {0}
+test (python 3.12)	install dependencies	2026-10-07T17:57:17.8949478Z env:
+test (python 3.12)	install dependencies	2026-10-07T17:57:17.8949896Z   APP_DIR: session-16-github-actions/kushal-24bcs10123/unit-converter
+test (python 3.12)	install dependencies	2026-10-07T17:57:17.8950505Z   IMAGE: ghcr.io/kushaltalati/unit-converter
+test (python 3.12)	install dependencies	2026-10-07T17:57:17.8951242Z   pythonLocation: /opt/hostedtoolcache/Python/3.12.14/x64
+test (python 3.12)	install dependencies	2026-10-07T17:57:17.8951862Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.12.14/x64/lib/pkgconfig
+test (python 3.12)	install dependencies	2026-10-07T17:57:17.8952434Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.14/x64
+test (python 3.12)	install dependencies	2026-10-07T17:57:17.8952952Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.14/x64
+test (python 3.12)	install dependencies	2026-10-07T17:57:17.8953464Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.14/x64
+test (python 3.12)	install dependencies	2026-10-07T17:57:17.8953978Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.12.14/x64/lib
+test (python 3.12)	install dependencies	2026-10-07T17:57:17.8954497Z ##[endgroup]
+test (python 3.12)	install dependencies	2026-10-07T17:57:19.1252944Z Requirement already satisfied: pip in /opt/hostedtoolcache/Python/3.12.14/x64/lib/python3.12/site-packages (26.2.1)
+test (python 3.12)	install dependencies	2026-10-07T17:57:20.2746383Z Collecting fastapi==0.142.2 (from -r /home/runner/work/devops-heros/devops-heros/session-16-github-actions/kushal-24bcs10123/unit-converter/requirements.txt (line 1))
+test (python 3.12)	install dependencies	2026-10-07T17:57:20.2763748Z   Using cached fastapi-0.142.2-py3-none-any.whl.metadata (27 kB)
+test (python 3.12)	install dependencies	2026-10-07T17:57:20.3083463Z Collecting uvicorn==0.54.0 (from -r /home/runner/work/devops-heros/devops-heros/session-16-github-actions/kushal-24bcs10123/unit-converter/requirements.txt (line 2))
+test (python 3.12)	install dependencies	2026-10-07T17:57:20.3098950Z   Using cached uvicorn-0.54.0-py3-none-any.whl.metadata (6.6 kB)
+test (python 3.12)	install dependencies	2026-10-07T17:57:20.4255996Z Collecting pydantic==2.13.5 (from -r /home/runner/work/devops-heros/devops-heros/session-16-github-actions/kushal-24bcs10123/unit-converter/requirements.txt (line 3))
+test (python 3.12)	install dependencies	2026-10-07T17:57:20.4272669Z   Using cached pydantic-2.13.5-py3-none-any.whl.metadata (110 kB)
+test (python 3.12)	install dependencies	2026-10-07T17:57:20.4630039Z Collecting pytest==9.1.1 (from -r requirements-dev.txt (line 2))
+test (python 3.12)	install dependencies	2026-10-07T17:57:20.4672217Z   Using cached pytest-9.1.1-py3-none-any.whl.metadata (7.6 kB)
+test (python 3.12)	install dependencies	2026-10-07T17:57:20.4892841Z Collecting httpx==0.28.1 (from -r requirements-dev.txt (line 3))
+test (python 3.12)	install dependencies	2026-10-07T17:57:20.4909027Z   Using cached httpx-0.28.1-py3-none-any.whl.metadata (7.1 kB)
+test (python 3.12)	install dependencies	2026-10-07T17:57:20.5224301Z Collecting starlette>=0.46.0 (from fastapi==0.142.2->-r /home/runner/work/devops-heros/devops-heros/session-16-github-actions/kushal-24bcs10123/unit-converter/requirements.txt (line 1))
+test (python 3.12)	install dependencies	2026-10-07T17:57:20.5236921Z   Using cached starlette-1.7.0-py3-none-any.whl.metadata (6.6 kB)
+test (python 3.12)	install dependencies	2026-10-07T17:57:20.5430486Z Collecting typing-extensions>=4.8.0 (from fastapi==0.142.2->-r /home/runner/work/devops-heros/devops-heros/session-16-github-actions/kushal-24bcs10123/unit-converter/requirements.txt (line 1))
+test (python 3.12)	install dependencies	2026-10-07T17:57:20.5444165Z   Using cached typing_extensions-4.16.0-py3-none-any.whl.metadata (3.3 kB)
+test (python 3.12)	install dependencies	2026-10-07T17:57:20.5565583Z Collecting typing-inspection>=0.4.2 (from fastapi==0.142.2->-r /home/runner/work/devops-heros/devops-heros/session-16-github-actions/kushal-24bcs10123/unit-converter/requirements.txt (line 1))
+test (python 3.12)	install dependencies	2026-10-07T17:57:20.5578731Z   Using cached typing_inspection-0.4.4-py3-none-any.whl.metadata (2.6 kB)
+test (python 3.12)	install dependencies	2026-10-07T17:57:20.5694428Z Collecting annotated-doc>=0.0.2 (from fastapi==0.142.2->-r /home/runner/work/devops-heros/devops-heros/session-16-github-actions/kushal-24bcs10123/unit-converter/requirements.txt (line 1))
+test (python 3.12)	install dependencies	2026-10-07T17:57:20.5706414Z   Using cached annotated_doc-0.0.5-py3-none-any.whl.metadata (6.5 kB)
+test (python 3.12)	install dependencies	2026-10-07T17:57:20.5913887Z Collecting opentelemetry-api>=1.44.0 (from fastapi==0.142.2->-r /home/runner/work/devops-heros/devops-heros/session-16-github-actions/kushal-24bcs10123/unit-converter/requirements.txt (line 1))
+test (python 3.12)	install dependencies	2026-10-07T17:57:20.5928776Z   Using cached opentelemetry_api-1.45.1-py3-none-any.whl.metadata (1.4 kB)
+test (python 3.12)	install dependencies	2026-10-07T17:57:20.6131699Z Collecting click>=7.0 (from uvicorn==0.54.0->-r /home/runner/work/devops-heros/devops-heros/session-16-github-actions/kushal-24bcs10123/unit-converter/requirements.txt (line 2))
+test (python 3.12)	install dependencies	2026-10-07T17:57:20.6145214Z   Using cached click-8.5.0-py3-none-any.whl.metadata (2.6 kB)
+test (python 3.12)	install dependencies	2026-10-07T17:57:20.6282351Z Collecting h11>=0.8 (from uvicorn==0.54.0->-r /home/runner/work/devops-heros/devops-heros/session-16-github-actions/kushal-24bcs10123/unit-converter/requirements.txt (line 2))
+test (python 3.12)	install dependencies	2026-10-07T17:57:20.6294846Z   Using cached h11-0.16.0-py3-none-any.whl.metadata (8.3 kB)
+test (python 3.12)	install dependencies	2026-10-07T17:57:20.6437808Z Collecting annotated-types>=0.6.0 (from pydantic==2.13.5->-r /home/runner/work/devops-heros/devops-heros/session-16-github-actions/kushal-24bcs10123/unit-converter/requirements.txt (line 3))
+test (python 3.12)	install dependencies	2026-10-07T17:57:20.6451171Z   Using cached annotated_types-0.8.0-py3-none-any.whl.metadata (15 kB)
+test (python 3.12)	install dependencies	2026-10-07T17:57:21.3460440Z Collecting pydantic-core==2.46.5 (from pydantic==2.13.5->-r /home/runner/work/devops-heros/devops-heros/session-16-github-actions/kushal-24bcs10123/unit-converter/requirements.txt (line 3))
+test (python 3.12)	install dependencies	2026-10-07T17:57:21.3475920Z   Using cached pydantic_core-2.46.5-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (6.6 kB)
+test (python 3.12)	install dependencies	2026-10-07T17:57:21.3625649Z Collecting iniconfig>=1.0.1 (from pytest==9.1.1->-r requirements-dev.txt (line 2))
+test (python 3.12)	install dependencies	2026-10-07T17:57:21.3639346Z   Using cached iniconfig-2.3.1-py3-none-any.whl.metadata (2.8 kB)
+test (python 3.12)	install dependencies	2026-10-07T17:57:21.3808561Z Collecting packaging>=22 (from pytest==9.1.1->-r requirements-dev.txt (line 2))
+test (python 3.12)	install dependencies	2026-10-07T17:57:21.3823939Z   Using cached packaging-26.3-py3-none-any.whl.metadata (3.5 kB)
+test (python 3.12)	install dependencies	2026-10-07T17:57:21.3987826Z Collecting pluggy<2,>=1.5 (from pytest==9.1.1->-r requirements-dev.txt (line 2))
+test (python 3.12)	install dependencies	2026-10-07T17:57:21.4002714Z   Using cached pluggy-1.6.0-py3-none-any.whl.metadata (4.8 kB)
+test (python 3.12)	install dependencies	2026-10-07T17:57:21.4203271Z Collecting pygments>=2.7.2 (from pytest==9.1.1->-r requirements-dev.txt (line 2))
+test (python 3.12)	install dependencies	2026-10-07T17:57:21.4217742Z   Using cached pygments-2.21.0-py3-none-any.whl.metadata (2.5 kB)
+test (python 3.12)	install dependencies	2026-10-07T17:57:21.4442830Z Collecting anyio (from httpx==0.28.1->-r requirements-dev.txt (line 3))
+test (python 3.12)	install dependencies	2026-10-07T17:57:21.4457824Z   Using cached anyio-4.15.1-py3-none-any.whl.metadata (4.7 kB)
+test (python 3.12)	install dependencies	2026-10-07T17:57:21.4664686Z Collecting certifi (from httpx==0.28.1->-r requirements-dev.txt (line 3))
+test (python 3.12)	install dependencies	2026-10-07T17:57:21.4679363Z   Using cached certifi-2026.7.22-py3-none-any.whl.metadata (2.5 kB)
+test (python 3.12)	install dependencies	2026-10-07T17:57:21.4855664Z Collecting httpcore==1.* (from httpx==0.28.1->-r requirements-dev.txt (line 3))
+test (python 3.12)	install dependencies	2026-10-07T17:57:21.4869764Z   Using cached httpcore-1.0.9-py3-none-any.whl.metadata (21 kB)
+test (python 3.12)	install dependencies	2026-10-07T17:57:21.5064087Z Collecting idna (from httpx==0.28.1->-r requirements-dev.txt (line 3))
+test (python 3.12)	install dependencies	2026-10-07T17:57:21.5077955Z   Using cached idna-3.20-py3-none-any.whl.metadata (7.2 kB)
+test (python 3.12)	install dependencies	2026-10-07T17:57:21.5242154Z Using cached fastapi-0.142.2-py3-none-any.whl (144 kB)
+test (python 3.12)	install dependencies	2026-10-07T17:57:21.5254787Z Using cached uvicorn-0.54.0-py3-none-any.whl (87 kB)
+test (python 3.12)	install dependencies	2026-10-07T17:57:21.5266479Z Using cached pydantic-2.13.5-py3-none-any.whl (472 kB)
+test (python 3.12)	install dependencies	2026-10-07T17:57:21.5279698Z Using cached pytest-9.1.1-py3-none-any.whl (386 kB)
+test (python 3.12)	install dependencies	2026-10-07T17:57:21.5292846Z Using cached httpx-0.28.1-py3-none-any.whl (73 kB)
+test (python 3.12)	install dependencies	2026-10-07T17:57:21.5304970Z Using cached pydantic_core-2.46.5-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (2.1 MB)
+test (python 3.12)	install dependencies	2026-10-07T17:57:21.5324027Z Using cached httpcore-1.0.9-py3-none-any.whl (78 kB)
+test (python 3.12)	install dependencies	2026-10-07T17:57:21.5335963Z Using cached pluggy-1.6.0-py3-none-any.whl (20 kB)
+test (python 3.12)	install dependencies	2026-10-07T17:57:21.5347738Z Using cached annotated_doc-0.0.5-py3-none-any.whl (5.3 kB)
+test (python 3.12)	install dependencies	2026-10-07T17:57:21.5359326Z Using cached annotated_types-0.8.0-py3-none-any.whl (13 kB)
+test (python 3.12)	install dependencies	2026-10-07T17:57:21.5370748Z Using cached click-8.5.0-py3-none-any.whl (125 kB)
+test (python 3.12)	install dependencies	2026-10-07T17:57:21.5382882Z Using cached h11-0.16.0-py3-none-any.whl (37 kB)
+test (python 3.12)	install dependencies	2026-10-07T17:57:21.5394678Z Using cached iniconfig-2.3.1-py3-none-any.whl (7.6 kB)
+test (python 3.12)	install dependencies	2026-10-07T17:57:21.5406189Z Using cached opentelemetry_api-1.45.1-py3-none-any.whl (60 kB)
+test (python 3.12)	install dependencies	2026-10-07T17:57:21.5417806Z Using cached packaging-26.3-py3-none-any.whl (129 kB)
+test (python 3.12)	install dependencies	2026-10-07T17:57:21.5430167Z Using cached pygments-2.21.0-py3-none-any.whl (1.3 MB)
+test (python 3.12)	install dependencies	2026-10-07T17:57:21.5446537Z Using cached starlette-1.7.0-py3-none-any.whl (78 kB)
+test (python 3.12)	install dependencies	2026-10-07T17:57:21.5458372Z Using cached anyio-4.15.1-py3-none-any.whl (132 kB)
+test (python 3.12)	install dependencies	2026-10-07T17:57:21.5470014Z Using cached idna-3.20-py3-none-any.whl (69 kB)
+test (python 3.12)	install dependencies	2026-10-07T17:57:21.5481678Z Using cached typing_extensions-4.16.0-py3-none-any.whl (45 kB)
+test (python 3.12)	install dependencies	2026-10-07T17:57:21.5493413Z Using cached typing_inspection-0.4.4-py3-none-any.whl (14 kB)
+test (python 3.12)	install dependencies	2026-10-07T17:57:21.5504790Z Using cached certifi-2026.7.22-py3-none-any.whl (136 kB)
+test (python 3.12)	install dependencies	2026-10-07T17:57:21.6619090Z Installing collected packages: typing-extensions, pygments, pluggy, packaging, iniconfig, idna, h11, click, certifi, annotated-types, annotated-doc, uvicorn, typing-inspection, pytest, pydantic-core, opentelemetry-api, httpcore, anyio, starlette, pydantic, httpx, fastapi
+test (python 3.12)	install dependencies	2026-10-07T17:57:23.9015493Z 
+test (python 3.12)	install dependencies	2026-10-07T17:57:23.9042924Z Successfully installed annotated-doc-0.0.5 annotated-types-0.8.0 anyio-4.15.1 certifi-2026.7.22 click-8.5.0 fastapi-0.142.2 h11-0.16.0 httpcore-1.0.9 httpx-0.28.1 idna-3.20 iniconfig-2.3.1 opentelemetry-api-1.45.1 packaging-26.3 pluggy-1.6.0 pydantic-2.13.5 pydantic-core-2.46.5 pygments-2.21.0 pytest-9.1.1 starlette-1.7.0 typing-extensions-4.16.0 typing-inspection-0.4.4 uvicorn-0.54.0
+test (python 3.12)	run unit tests	﻿2026-10-07T17:57:24.0008098Z ##[group]Run pytest -v --junitxml=test-report-3.12.xml
+test (python 3.12)	run unit tests	2026-10-07T17:57:24.0008560Z ^[[36;1mpytest -v --junitxml=test-report-3.12.xml^[[0m
+test (python 3.12)	run unit tests	2026-10-07T17:57:24.0076106Z shell: /usr/bin/bash -e {0}
+test (python 3.12)	run unit tests	2026-10-07T17:57:24.0076388Z env:
+test (python 3.12)	run unit tests	2026-10-07T17:57:24.0076720Z   APP_DIR: session-16-github-actions/kushal-24bcs10123/unit-converter
+test (python 3.12)	run unit tests	2026-10-07T17:57:24.0077175Z   IMAGE: ghcr.io/kushaltalati/unit-converter
+test (python 3.12)	run unit tests	2026-10-07T17:57:24.0077578Z   pythonLocation: /opt/hostedtoolcache/Python/3.12.14/x64
+test (python 3.12)	run unit tests	2026-10-07T17:57:24.0078059Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.12.14/x64/lib/pkgconfig
+test (python 3.12)	run unit tests	2026-10-07T17:57:24.0078553Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.14/x64
+test (python 3.12)	run unit tests	2026-10-07T17:57:24.0078989Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.14/x64
+test (python 3.12)	run unit tests	2026-10-07T17:57:24.0079441Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.14/x64
+test (python 3.12)	run unit tests	2026-10-07T17:57:24.0079887Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.12.14/x64/lib
+test (python 3.12)	run unit tests	2026-10-07T17:57:24.0080256Z ##[endgroup]
+test (python 3.12)	run unit tests	2026-10-07T17:57:24.5808912Z ============================= test session starts ==============================
+test (python 3.12)	run unit tests	2026-10-07T17:57:24.5810223Z platform linux -- Python 3.12.14, pytest-9.1.1, pluggy-1.6.0 -- /opt/hostedtoolcache/Python/3.12.14/x64/bin/python
+test (python 3.12)	run unit tests	2026-10-07T17:57:24.5811539Z cachedir: .pytest_cache
+test (python 3.12)	run unit tests	2026-10-07T17:57:24.5812500Z rootdir: /home/runner/work/devops-heros/devops-heros/session-16-github-actions/kushal-24bcs10123/unit-converter
+test (python 3.12)	run unit tests	2026-10-07T17:57:24.5813523Z configfile: pytest.ini
+test (python 3.12)	run unit tests	2026-10-07T17:57:24.5813945Z testpaths: tests
+test (python 3.12)	run unit tests	2026-10-07T17:57:24.5814342Z plugins: anyio-4.15.1
+test (python 3.12)	run unit tests	2026-10-07T17:57:25.0190161Z collecting ... collected 11 items
+test (python 3.12)	run unit tests	2026-10-07T17:57:25.0190620Z 
+test (python 3.12)	run unit tests	2026-10-07T17:57:25.0292101Z tests/test_api.py::test_health PASSED                                    [  9%]
+test (python 3.12)	run unit tests	2026-10-07T17:57:25.0324929Z tests/test_api.py::test_units_lists_all_categories PASSED                [ 18%]
+test (python 3.12)	run unit tests	2026-10-07T17:57:25.0356822Z tests/test_api.py::test_convert_get PASSED                               [ 27%]
+test (python 3.12)	run unit tests	2026-10-07T17:57:25.0386739Z tests/test_api.py::test_convert_post PASSED                              [ 36%]
+test (python 3.12)	run unit tests	2026-10-07T17:57:25.0419233Z tests/test_api.py::test_bad_unit_is_400 PASSED                           [ 45%]
+test (python 3.12)	run unit tests	2026-10-07T17:57:25.0432835Z tests/test_converter.py::test_km_to_m PASSED                             [ 54%]
+test (python 3.12)	run unit tests	2026-10-07T17:57:25.0823483Z tests/test_converter.py::test_feet_to_inches FAILED                      [ 63%]
+test (python 3.12)	run unit tests	2026-10-07T17:57:25.0834188Z tests/test_converter.py::test_kg_to_lb PASSED                            [ 72%]
+test (python 3.12)	run unit tests	2026-10-07T17:57:25.0844399Z tests/test_converter.py::test_celsius_to_fahrenheit PASSED               [ 81%]
+test (python 3.12)	run unit tests	2026-10-07T17:57:25.0853183Z tests/test_converter.py::test_kelvin_round_trip PASSED                   [ 90%]
+test (python 3.12)	run unit tests	2026-10-07T17:57:25.1209119Z tests/test_converter.py::test_unknown_unit_raises PASSED                 [100%]
+test (python 3.12)	run unit tests	2026-10-07T17:57:25.1209870Z 
+test (python 3.12)	run unit tests	2026-10-07T17:57:25.1210180Z =================================== FAILURES ===================================
+test (python 3.12)	run unit tests	2026-10-07T17:57:25.1211381Z _____________________________ test_feet_to_inches ______________________________
+test (python 3.12)	run unit tests	2026-10-07T17:57:25.1211988Z 
+test (python 3.12)	run unit tests	2026-10-07T17:57:25.1212220Z     def test_feet_to_inches():
+test (python 3.12)	run unit tests	2026-10-07T17:57:25.1213086Z >       assert convert("length", 1, "ft", "in") == pytest.approx(10)  # wrong on purpose: 1 ft is 12 in
+test (python 3.12)	run unit tests	2026-10-07T17:57:25.1214022Z         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+test (python 3.12)	run unit tests	2026-10-07T17:57:25.1214864Z E       assert 12.000000000000002 == 10 ± 1.0e-05
+test (python 3.12)	run unit tests	2026-10-07T17:57:25.1215365Z E         
+test (python 3.12)	run unit tests	2026-10-07T17:57:25.1215650Z E         comparison failed
+test (python 3.12)	run unit tests	2026-10-07T17:57:25.1216008Z E         Obtained: 12.000000000000002
+test (python 3.12)	run unit tests	2026-10-07T17:57:25.1216436Z E         Expected: 10 ± 1.0e-05
+test (python 3.12)	run unit tests	2026-10-07T17:57:25.1216666Z 
+test (python 3.12)	run unit tests	2026-10-07T17:57:25.1216838Z tests/test_converter.py:11: AssertionError
+test (python 3.12)	run unit tests	2026-10-07T17:57:25.1217328Z =============================== warnings summary ===============================
+test (python 3.12)	run unit tests	2026-10-07T17:57:25.1218153Z ../../../../../../../../opt/hostedtoolcache/Python/3.12.14/x64/lib/python3.12/site-packages/fastapi/testclient.py:1
+test (python 3.12)	run unit tests	2026-10-07T17:57:25.1220183Z   /opt/hostedtoolcache/Python/3.12.14/x64/lib/python3.12/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+test (python 3.12)	run unit tests	2026-10-07T17:57:25.1221956Z     from starlette.testclient import TestClient as TestClient  # noqa
+test (python 3.12)	run unit tests	2026-10-07T17:57:25.1222376Z 
+test (python 3.12)	run unit tests	2026-10-07T17:57:25.1222687Z -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+test (python 3.12)	run unit tests	2026-10-07T17:57:25.1223859Z - generated xml file: /home/runner/work/devops-heros/devops-heros/session-16-github-actions/kushal-24bcs10123/unit-converter/test-report-3.12.xml -
+test (python 3.12)	run unit tests	2026-10-07T17:57:25.1225113Z =========================== short test summary info ============================
+test (python 3.12)	run unit tests	2026-10-07T17:57:25.1226092Z FAILED tests/test_converter.py::test_feet_to_inches - assert 12.000000000000002 == 10 ± 1.0e-05
+test (python 3.12)	run unit tests	2026-10-07T17:57:25.1226583Z   
+test (python 3.12)	run unit tests	2026-10-07T17:57:25.1226781Z   comparison failed
+test (python 3.12)	run unit tests	2026-10-07T17:57:25.1227013Z   Obtained: 12.000000000000002
+test (python 3.12)	run unit tests	2026-10-07T17:57:25.1227589Z   Expected: 10 ± 1.0e-05
+test (python 3.12)	run unit tests	2026-10-07T17:57:25.1228148Z =================== 1 failed, 10 passed, 1 warning in 0.51s ====================
+test (python 3.12)	run unit tests	2026-10-07T17:57:25.1972712Z ##[error]Process completed with exit code 1.
+test (python 3.12)	upload test report	﻿2026-10-07T17:57:25.2060662Z ##[group]Run actions/upload-artifact@v4
+test (python 3.12)	upload test report	2026-10-07T17:57:25.2060985Z with:
+test (python 3.12)	upload test report	2026-10-07T17:57:25.2061493Z   name: test-report-python-3.12
+test (python 3.12)	upload test report	2026-10-07T17:57:25.2061931Z   path: session-16-github-actions/kushal-24bcs10123/unit-converter/test-report-3.12.xml
+test (python 3.12)	upload test report	2026-10-07T17:57:25.2062382Z   if-no-files-found: warn
+test (python 3.12)	upload test report	2026-10-07T17:57:25.2062617Z   compression-level: 6
+test (python 3.12)	upload test report	2026-10-07T17:57:25.2062847Z   overwrite: false
+test (python 3.12)	upload test report	2026-10-07T17:57:25.2063065Z   include-hidden-files: false
+test (python 3.12)	upload test report	2026-10-07T17:57:25.2063311Z env:
+test (python 3.12)	upload test report	2026-10-07T17:57:25.2063597Z   APP_DIR: session-16-github-actions/kushal-24bcs10123/unit-converter
+test (python 3.12)	upload test report	2026-10-07T17:57:25.2064001Z   IMAGE: ghcr.io/kushaltalati/unit-converter
+test (python 3.12)	upload test report	2026-10-07T17:57:25.2064366Z   pythonLocation: /opt/hostedtoolcache/Python/3.12.14/x64
+test (python 3.12)	upload test report	2026-10-07T17:57:25.2064797Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.12.14/x64/lib/pkgconfig
+test (python 3.12)	upload test report	2026-10-07T17:57:25.2065238Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.14/x64
+test (python 3.12)	upload test report	2026-10-07T17:57:25.2065625Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.14/x64
+test (python 3.12)	upload test report	2026-10-07T17:57:25.2066033Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.14/x64
+test (python 3.12)	upload test report	2026-10-07T17:57:25.2066418Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.12.14/x64/lib
+test (python 3.12)	upload test report	2026-10-07T17:57:25.2066738Z ##[endgroup]
+test (python 3.12)	upload test report	2026-10-07T17:57:25.3780806Z (node:2395) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+test (python 3.12)	upload test report	2026-10-07T17:57:25.3782001Z (Use `node --trace-deprecation ...` to show where the warning was created)
+test (python 3.12)	upload test report	2026-10-07T17:57:25.3829994Z With the provided path, there will be 1 file uploaded
+test (python 3.12)	upload test report	2026-10-07T17:57:25.3846499Z Artifact name is valid!
+test (python 3.12)	upload test report	2026-10-07T17:57:25.3847109Z Root directory input is valid!
+test (python 3.12)	upload test report	2026-10-07T17:57:25.7931695Z Beginning upload of artifact content to blob storage
+test (python 3.12)	upload test report	2026-10-07T17:57:25.8134006Z (node:2395) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+test (python 3.12)	upload test report	2026-10-07T17:57:26.0739747Z Uploaded bytes 710
+test (python 3.12)	upload test report	2026-10-07T17:57:26.1485680Z Finished uploading artifact content to blob storage!
+test (python 3.12)	upload test report	2026-10-07T17:57:26.1486803Z SHA256 digest of uploaded artifact zip is cffe0a07922f157424df5cf78d40de3c89bb98a6f4ac3057a421d1b3ad849318
+test (python 3.12)	upload test report	2026-10-07T17:57:26.1488136Z Finalizing artifact upload
+test (python 3.12)	upload test report	2026-10-07T17:57:26.4241564Z Artifact test-report-python-3.12.zip successfully finalized. Artifact ID 11502225642
+test (python 3.12)	upload test report	2026-10-07T17:57:26.4243757Z Artifact test-report-python-3.12 has been successfully uploaded! Final size is 710 bytes. Artifact ID is 11502225642
+test (python 3.12)	upload test report	2026-10-07T17:57:26.4250630Z Artifact download URL: https://github.com/kushaltalati/devops-heros/actions/runs/37663051248/artifacts/11502225642
+test (python 3.12)	Post checkout source	﻿2026-10-07T17:57:26.4458516Z Post job cleanup.
+test (python 3.12)	Post checkout source	2026-10-07T17:57:26.5344730Z [command]/usr/bin/git version
+test (python 3.12)	Post checkout source	2026-10-07T17:57:26.5389635Z git version 2.55.0
+test (python 3.12)	Post checkout source	2026-10-07T17:57:26.5431184Z Temporarily overriding HOME='/home/runner/work/_temp/022ab793-a613-496f-8d51-034308f81724' before making global git config changes
+test (python 3.12)	Post checkout source	2026-10-07T17:57:26.5432617Z Adding repository directory to the temporary git global config as a safe directory
+test (python 3.12)	Post checkout source	2026-10-07T17:57:26.5438173Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/devops-heros/devops-heros
+test (python 3.12)	Post checkout source	2026-10-07T17:57:26.5481765Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+test (python 3.12)	Post checkout source	2026-10-07T17:57:26.5521362Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+test (python 3.12)	Post checkout source	2026-10-07T17:57:26.5788553Z fatal: No url found for submodule path 'session-16-github-actions/mini-project 10-33-34-265' in .gitmodules
+test (python 3.12)	Post checkout source	2026-10-07T17:57:26.5843181Z ##[warning]The process '/usr/bin/git' failed with exit code 128
+test (python 3.12)	Complete job	﻿2026-10-07T17:57:26.5988860Z Cleaning up orphan processes
+test (python 3.12)	Complete job	2026-10-07T17:57:26.6409104Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4, actions/setup-python@v5, actions/upload-artifact@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/

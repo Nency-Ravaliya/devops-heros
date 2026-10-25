@@ -1,0 +1,319 @@
+namespace/s13-volumes created
+
+############ 1. emptyDir - lives and dies with the Pod ############
+
+$ cat 01-volumes/emptydir-pod.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: emptydir-demo
+spec:
+  containers:
+    - name: app
+      image: nginx:1.27
+      volumeMounts:
+        - name: app-storage
+          mountPath: /data
+  volumes:
+    - name: app-storage
+      emptyDir: {}
+
+$ kubectl -n s13-volumes apply -f 01-volumes/emptydir-pod.yaml
+pod/emptydir-demo created
+
+$ wait_ready s13-volumes emptydir-demo
+pod/emptydir-demo condition met
+
+$ kubectl -n s13-volumes exec emptydir-demo -- sh -c 'echo "Hello Kubernetes" > /data/message.txt'
+
+$ kubectl -n s13-volumes exec emptydir-demo -- cat /data/message.txt
+Hello Kubernetes
+
+$ kubectl -n s13-volumes exec emptydir-demo -- df -h /data | tail -1          # it is a directory on the node, not a separate disk
+/dev/vda1       126G   33G   87G  27% /data
+
+$ kubectl -n s13-volumes get pod emptydir-demo -o jsonpath='{.spec.nodeName}{"\n"}'
+kushal-lab-worker
+
+############ container restart (kill PID 1) keeps emptyDir, pod delete loses it ############
+
+$ kubectl -n s13-volumes exec emptydir-demo -- sh -c 'kill 1'; sleep 8; kubectl -n s13-volumes get pod emptydir-demo
+NAME            READY   STATUS    RESTARTS     AGE
+emptydir-demo   1/1     Running   1 (8s ago)   9s
+
+$ kubectl -n s13-volumes exec emptydir-demo -- cat /data/message.txt       # still there: same pod, new container
+Hello Kubernetes
+
+$ kubectl -n s13-volumes delete pod emptydir-demo
+pod "emptydir-demo" deleted from s13-volumes namespace
+
+$ kubectl -n s13-volumes apply -f 01-volumes/emptydir-pod.yaml && wait_ready s13-volumes emptydir-demo
+pod/emptydir-demo created
+pod/emptydir-demo condition met
+
+$ kubectl -n s13-volumes exec emptydir-demo -- cat /data/message.txt       # gone: new pod = new emptyDir
+cat: /data/message.txt: No such file or directory
+command terminated with exit code 1
+
+############ 2. hostPath - a directory on the node ############
+
+$ cat 01-volumes/hostpath-pod.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: hostpath-demo
+spec:
+  containers:
+    - name: app
+      image: nginx:1.27
+      volumeMounts:
+        - name: host-storage
+          mountPath: /data
+  volumes:
+    - name: host-storage
+      hostPath:
+        path: /tmp/hostpath-data
+        type: DirectoryOrCreate
+
+$ kubectl -n s13-volumes apply -f 01-volumes/hostpath-pod.yaml && wait_ready s13-volumes hostpath-demo
+pod/hostpath-demo created
+pod/hostpath-demo condition met
+
+$ kubectl -n s13-volumes exec hostpath-demo -- sh -c 'echo "written by pod on $(hostname)" > /data/node-file.txt'
+
+$ kubectl -n s13-volumes get pod hostpath-demo -o wide --no-headers | awk '{print "pod runs on node:", $7}'
+pod runs on node: kushal-lab-worker
+
+$ docker exec kushal-lab-worker ls -l /tmp/hostpath-data/ && docker exec kushal-lab-worker cat /tmp/hostpath-data/node-file.txt    # visible on the kind node itself
+total 4
+-rw-r--r-- 1 root root 32 Oct  7 18:28 node-file.txt
+written by pod on hostpath-demo
+
+$ kubectl -n s13-volumes delete pod hostpath-demo
+pod "hostpath-demo" deleted from s13-volumes namespace
+
+############ the same manifest, scheduled on the other worker: the directory there is empty ############
+
+$ awk -v n=kushal-lab-worker2 '/^spec:/{print; print "  nodeName: " n; next}1' 01-volumes/hostpath-pod.yaml | kubectl -n s13-volumes apply -f - && wait_ready s13-volumes hostpath-demo
+pod/hostpath-demo created
+pod/hostpath-demo condition met
+
+$ kubectl -n s13-volumes get pod hostpath-demo -o jsonpath='new pod runs on node: {.spec.nodeName}{"\n"}'
+new pod runs on node: kushal-lab-worker2
+
+$ kubectl -n s13-volumes exec hostpath-demo -- cat /data/node-file.txt || echo '-> file missing: hostPath is a directory of ONE node'
+cat: /data/node-file.txt: No such file or directory
+command terminated with exit code 1
+-> file missing: hostPath is a directory of ONE node
+
+$ docker exec kushal-lab-worker2 ls -la /tmp/hostpath-data/
+total 0
+drwxr-xr-x 2 root root 40 Oct  7 18:28 .
+drwxrwxrwt 3 root root 60 Oct  7 18:28 ..
+
+############ pinning the pod to the original node makes hostPath look persistent ############
+
+$ kubectl -n s13-volumes delete pod hostpath-demo --ignore-not-found >/dev/null; awk -v n=kushal-lab-worker '/^spec:/{print; print "  nodeName: " n; next}1' 01-volumes/hostpath-pod.yaml | kubectl -n s13-volumes apply -f - && wait_ready s13-volumes hostpath-demo
+pod/hostpath-demo created
+pod/hostpath-demo condition met
+
+$ kubectl -n s13-volumes exec hostpath-demo -- cat /data/node-file.txt
+written by pod on hostpath-demo
+
+$ docker exec kushal-lab-worker rm -rf /tmp/hostpath-data; docker exec kushal-lab-worker2 rm -rf /tmp/hostpath-data    # tidy the nodes
+
+$ kubectl -n s13-volumes delete pod hostpath-demo --wait=false
+pod "hostpath-demo" deleted from s13-volumes namespace
+
+############ 3. PersistentVolume + PersistentVolumeClaim (static provisioning) ############
+
+$ cat 02-persistent-storage/pv.yaml
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: student-pv
+spec:
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  hostPath:
+    path: /tmp/student-data
+
+$ kubectl apply -f 02-persistent-storage/pv.yaml      # PVs are cluster-scoped, no namespace
+persistentvolume/student-pv created
+
+$ kubectl get pv student-pv
+NAME         CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS      CLAIM   STORAGECLASS   VOLUMEATTRIBUTESCLASS   REASON   AGE
+student-pv   1Gi        RWO            Retain           Available                          <unset>                          0s
+
+$ cat 02-persistent-storage/pvc.yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: student-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 500Mi
+
+$ kubectl -n s13-volumes apply -f 02-persistent-storage/pvc.yaml
+persistentvolumeclaim/student-pvc created
+
+$ sleep 3; kubectl -n s13-volumes get pvc student-pvc
+NAME          STATUS    VOLUME   CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE
+student-pvc   Pending                                      standard       <unset>                 3s
+
+$ kubectl get pv student-pv
+NAME         CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS      CLAIM   STORAGECLASS   VOLUMEATTRIBUTESCLASS   REASON   AGE
+student-pv   1Gi        RWO            Retain           Available                          <unset>                          3s
+
+############ trap: the PVC has no storageClassName, so it got the DEFAULT class (standard) and is waiting for dynamic provisioning - it will never bind to my hand-made PV ############
+
+$ kubectl -n s13-volumes get pvc student-pvc -o jsonpath='storageClassName={.spec.storageClassName}{"\n"}'
+storageClassName=standard
+
+$ kubectl -n s13-volumes delete pvc student-pvc
+persistentvolumeclaim "student-pvc" deleted from s13-volumes namespace
+
+$ sed 's/^spec:/spec:\n  storageClassName: ""/' 02-persistent-storage/pvc.yaml > /dev/null 2>&1; awk '/^spec:/{print; print "  storageClassName: \"\""; next}1' 02-persistent-storage/pvc.yaml | tee /tmp/pvc-static-12461.yaml | kubectl -n s13-volumes apply -f -
+persistentvolumeclaim/student-pvc created
+
+$ sleep 3; kubectl -n s13-volumes get pvc student-pvc
+NAME          STATUS   VOLUME       CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE
+student-pvc   Bound    student-pv   1Gi        RWO                           <unset>                 3s
+
+$ kubectl get pv student-pv                           # Available -> Bound, CLAIM column filled
+NAME         CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS   CLAIM                     STORAGECLASS   VOLUMEATTRIBUTESCLASS   REASON   AGE
+student-pv   1Gi        RWO            Retain           Bound    s13-volumes/student-pvc                  <unset>                          7s
+
+$ kubectl -n s13-volumes apply -f 02-persistent-storage/pod.yaml && wait_ready s13-volumes storage-demo
+pod/storage-demo created
+pod/storage-demo condition met
+
+$ kubectl -n s13-volumes exec storage-demo -- sh -c 'echo "Student: Kushal Talati 24BCS10123" > /data/student-data.txt'
+
+$ kubectl -n s13-volumes exec storage-demo -- cat /data/student-data.txt
+Student: Kushal Talati 24BCS10123
+
+$ kubectl -n s13-volumes delete pod storage-demo
+pod "storage-demo" deleted from s13-volumes namespace
+
+$ kubectl -n s13-volumes apply -f 02-persistent-storage/pod.yaml && wait_ready s13-volumes storage-demo
+pod/storage-demo created
+pod/storage-demo condition met
+
+$ kubectl -n s13-volumes exec storage-demo -- cat /data/student-data.txt   # survived the pod deletion
+Student: Kushal Talati 24BCS10123
+
+$ kubectl -n s13-volumes get pod storage-demo -o jsonpath='pod is on: {.spec.nodeName}{"\n"}'
+pod is on: kushal-lab-worker
+
+############ capacity vs request: PVC asked for 500Mi, got the whole 1Gi PV ############
+
+$ kubectl -n s13-volumes get pvc student-pvc -o jsonpath='requested={.spec.resources.requests.storage} got={.status.capacity.storage}{"\n"}'
+requested=500Mi got=1Gi
+
+############ reclaim policy Retain: deleting the PVC does not free the PV ############
+
+$ kubectl -n s13-volumes delete pod storage-demo && kubectl -n s13-volumes delete pvc student-pvc
+pod "storage-demo" deleted from s13-volumes namespace
+persistentvolumeclaim "student-pvc" deleted from s13-volumes namespace
+
+$ kubectl get pv student-pv                           # Released, not Available: the admin has to clean it
+NAME         CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS     CLAIM                     STORAGECLASS   VOLUMEATTRIBUTESCLASS   REASON   AGE
+student-pv   1Gi        RWO            Retain           Released   s13-volumes/student-pvc                  <unset>                          11s
+
+$ kubectl -n s13-volumes apply -f /tmp/pvc-static-12461.yaml; sleep 5; kubectl -n s13-volumes get pvc student-pvc    # a new claim cannot bind to a Released PV
+persistentvolumeclaim/student-pvc created
+NAME          STATUS    VOLUME   CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE
+student-pvc   Pending                                                     <unset>                 5s
+
+$ kubectl describe pv student-pv | grep -E '^(Status|Claim)'
+Status:          Released
+Claim:           s13-volumes/student-pvc
+
+$ kubectl -n s13-volumes delete pvc student-pvc; kubectl delete pv student-pv; rm -f /tmp/pvc-static-12461.yaml
+persistentvolumeclaim "student-pvc" deleted from s13-volumes namespace
+persistentvolume "student-pv" deleted
+
+############ 4. StorageClass + dynamic provisioning ############
+
+$ kubectl get storageclass
+NAME                 PROVISIONER             RECLAIMPOLICY   VOLUMEBINDINGMODE      ALLOWVOLUMEEXPANSION   AGE
+standard (default)   rancher.io/local-path   Delete          WaitForFirstConsumer   false                  19d
+
+$ kubectl describe storageclass standard | grep -E '^(Name|IsDefaultClass|Provisioner|ReclaimPolicy|VolumeBindingMode)'
+Name:            standard
+IsDefaultClass:  Yes
+Provisioner:           rancher.io/local-path
+ReclaimPolicy:         Delete
+VolumeBindingMode:     WaitForFirstConsumer
+
+$ cat 03-storageclass/pvc.yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: dynamic-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: standard
+  resources:
+    requests:
+      storage: 500Mi
+
+$ kubectl -n s13-volumes apply -f 03-storageclass/pvc.yaml
+persistentvolumeclaim/dynamic-pvc created
+
+$ sleep 3; kubectl -n s13-volumes get pvc dynamic-pvc
+NAME          STATUS    VOLUME   CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE
+dynamic-pvc   Pending                                      standard       <unset>                 3s
+
+$ kubectl -n s13-volumes describe pvc dynamic-pvc | grep -A3 '^Events'   # WaitForFirstConsumer: nothing happens until a pod uses it
+Events:
+  Type    Reason                Age   From                         Message
+  ----    ------                ----  ----                         -------
+  Normal  WaitForFirstConsumer  4s    persistentvolume-controller  waiting for first consumer to be created before binding
+
+$ sed 's/student-pvc/dynamic-pvc/; s/storage-demo/dynamic-demo/' 02-persistent-storage/pod.yaml | kubectl -n s13-volumes apply -f -
+pod/dynamic-demo created
+
+$ wait_ready s13-volumes dynamic-demo
+pod/dynamic-demo condition met
+
+$ kubectl -n s13-volumes get pvc dynamic-pvc
+NAME          STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE
+dynamic-pvc   Bound    pvc-623c3688-8feb-4d54-9050-a13771580f85   500Mi      RWO            standard       <unset>                 8s
+
+$ kubectl get pv | grep dynamic-pvc                   # the PV was created for me, name pvc-<uid>
+pvc-623c3688-8feb-4d54-9050-a13771580f85   500Mi      RWO            Delete           Bound    s13-volumes/dynamic-pvc        standard       <unset>                          1s
+
+$ kubectl get pv pvc-623c3688-8feb-4d54-9050-a13771580f85 -o jsonpath='{.spec.local.path}{"\n"}'
+
+
+$ kubectl -n local-path-storage logs deploy/local-path-provisioner | grep -i 'dynamic-pvc' | tail -3
+I1007 18:28:54.118438       1 event.go:389] "Event occurred" object="s13-volumes/dynamic-pvc" fieldPath="" kind="PersistentVolumeClaim" apiVersion="v1" type="Normal" reason="Provisioning" message="External provisioner is provisioning volume for claim \"s13-volumes/dynamic-pvc\""
+time="2026-10-07T18:28:57Z" level=info msg="Volume pvc-623c3688-8feb-4d54-9050-a13771580f85 has been created on kushal-lab-worker2:/var/local-path-provisioner/pvc-623c3688-8feb-4d54-9050-a13771580f85_s13-volumes_dynamic-pvc"
+I1007 18:28:57.207307       1 event.go:389] "Event occurred" object="s13-volumes/dynamic-pvc" fieldPath="" kind="PersistentVolumeClaim" apiVersion="v1" type="Normal" reason="ProvisioningSucceeded" message="Successfully provisioned volume pvc-623c3688-8feb-4d54-9050-a13771580f85"
+
+$ kubectl -n s13-volumes exec dynamic-demo -- sh -c 'echo dynamic > /data/d.txt'; kubectl -n s13-volumes delete pod dynamic-demo; sed 's/student-pvc/dynamic-pvc/; s/storage-demo/dynamic-demo/' 02-persistent-storage/pod.yaml | kubectl -n s13-volumes apply -f - >/dev/null; wait_ready s13-volumes dynamic-demo >/dev/null; kubectl -n s13-volumes exec dynamic-demo -- cat /data/d.txt
+pod "dynamic-demo" deleted from s13-volumes namespace
+dynamic
+
+############ reclaim policy Delete: deleting the PVC deletes the PV too ############
+
+$ kubectl -n s13-volumes delete pod dynamic-demo && kubectl -n s13-volumes delete pvc dynamic-pvc
+pod "dynamic-demo" deleted from s13-volumes namespace
+persistentvolumeclaim "dynamic-pvc" deleted from s13-volumes namespace
+
+$ sleep 5; kubectl get pv pvc-623c3688-8feb-4d54-9050-a13771580f85 2>&1
+Error from server (NotFound): persistentvolumes "pvc-623c3688-8feb-4d54-9050-a13771580f85" not found
+
+############ cleanup ############
+
+$ kubectl delete ns s13-volumes --wait=false
+namespace "s13-volumes" deleted

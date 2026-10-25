@@ -1,0 +1,10 @@
+backend:
+  replicas: 3
+  config:
+    APP_ENV: production
+    DAILY_GOAL_MINUTES: "180"
+frontend:
+  replicas: 2
+hpa:
+  minReplicas: 3
+  maxReplicas: 10

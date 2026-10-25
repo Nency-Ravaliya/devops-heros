@@ -1,0 +1,32 @@
+# Alerting rules for the demo app. The operator loads them into Prometheus; Prometheus sends firing alerts to Alertmanager.
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: s20-metrics-app
+  namespace: s20-monitoring
+  labels:
+    app: s20-metrics-app
+spec:
+  groups:
+    - name: s20-metrics-app.rules
+      rules:
+        - alert: S20AppDown
+          expr: absent(up{job="s20-metrics-app"} == 1)
+          for: 1m
+          labels: { severity: critical, owner: kushal-24bcs10123 }
+          annotations:
+            summary: "s20-metrics-app has no healthy scrape target"
+            description: "Prometheus has not been able to scrape a healthy s20-metrics-app pod for 1 minute."
+        - alert: S20HighCPU
+          expr: sum(rate(container_cpu_usage_seconds_total{namespace="s20-monitoring", container="app"}[1m])) > 0.2
+          for: 30s
+          labels: { severity: warning, owner: kushal-24bcs10123 }
+          annotations:
+            summary: "s20-metrics-app is using more than 200m CPU"
+            description: "CPU usage is {{ $value | printf \"%.2f\" }} cores, above the 0.2 core threshold for 30s."
+        - alert: S20HighMemory
+          expr: max(container_memory_working_set_bytes{namespace="s20-monitoring", container="app"}) > 100 * 1024 * 1024
+          for: 1m
+          labels: { severity: warning, owner: kushal-24bcs10123 }
+          annotations:
+            summary: "s20-metrics-app working set above 100Mi"

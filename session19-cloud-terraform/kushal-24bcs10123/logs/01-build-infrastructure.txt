@@ -1,0 +1,985 @@
+
+############ PROJECT FILES ############
+
+$ ls -A . scripts
+.:
+.gitignore
+localstack.tfvars
+main.tf
+outputs.tf
+provider.tf
+scripts
+terraform.tfvars
+terraform.tfvars.example
+variables.tf
+versions.tf
+
+scripts:
+user_data.sh
+
+$ cat versions.tf provider.tf
+terraform {
+  required_version = ">= 1.6.0"
+
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 6.0"
+    }
+    tls = {
+      source  = "hashicorp/tls"
+      version = "~> 4.0"
+    }
+  }
+}
+# Same pattern as session 18: plain real-AWS provider, with LocalStack switched on only when
+# aws_endpoint_url is set (terraform apply -var-file=localstack.tfvars).
+provider "aws" {
+  region = var.aws_region
+
+  access_key                  = var.aws_endpoint_url == null ? null : "test"
+  secret_key                  = var.aws_endpoint_url == null ? null : "test"
+  skip_credentials_validation = var.aws_endpoint_url != null
+  skip_metadata_api_check     = var.aws_endpoint_url != null
+  skip_requesting_account_id  = var.aws_endpoint_url != null
+  skip_region_validation      = var.aws_endpoint_url != null
+  s3_use_path_style           = var.aws_endpoint_url != null
+
+  dynamic "endpoints" {
+    for_each = var.aws_endpoint_url == null ? [] : [var.aws_endpoint_url]
+    content {
+      ec2 = endpoints.value
+      s3  = endpoints.value
+      sts = endpoints.value
+      iam = endpoints.value
+    }
+  }
+
+  default_tags {
+    tags = {
+      Project   = "session19"
+      Owner     = "kushal-24bcs10123"
+      ManagedBy = "Terraform"
+    }
+  }
+}
+
+$ cat variables.tf
+variable "aws_region" {
+  description = "AWS region for the whole stack."
+  type        = string
+  default     = "ap-south-1"
+}
+
+variable "project_name" {
+  description = "Prefix used in every resource Name tag."
+  type        = string
+  default     = "s19-kushal"
+}
+
+variable "vpc_cidr" {
+  description = "CIDR block of the VPC."
+  type        = string
+  default     = "10.20.0.0/16"
+}
+
+variable "public_subnet_cidr" {
+  description = "CIDR block of the public subnet (must be inside vpc_cidr)."
+  type        = string
+  default     = "10.20.1.0/24"
+}
+
+variable "instance_type" {
+  description = "EC2 instance type for the web server."
+  type        = string
+  default     = "t3.micro"
+}
+
+variable "ssh_allowed_cidr" {
+  description = "Where SSH (22) is allowed from. Narrow this to your own IP on real AWS."
+  type        = string
+  default     = "10.0.0.0/8"
+}
+
+variable "bucket_suffix" {
+  description = "Suffix that makes the S3 bucket name globally unique."
+  type        = string
+  default     = "24bcs10123"
+}
+
+variable "aws_endpoint_url" {
+  description = "Set to http://localhost:4566 for LocalStack. Leave null for real AWS."
+  type        = string
+  default     = null
+}
+
+variable "ami_id" {
+  description = "AMI to launch. null = look up the newest Amazon Linux 2023 image via data.aws_ami (real AWS); LocalStack needs an id from its own catalogue."
+  type        = string
+  default     = null
+}
+
+$ cat main.tf
+# ---------------------------------------------------------------------------
+# 1. Network: VPC -> public subnet -> Internet Gateway -> route table
+# ---------------------------------------------------------------------------
+resource "aws_vpc" "main" {
+  cidr_block           = var.vpc_cidr
+  enable_dns_support   = true
+  enable_dns_hostnames = true
+
+  tags = { Name = "${var.project_name}-vpc" }
+}
+
+resource "aws_subnet" "public" {
+  vpc_id                  = aws_vpc.main.id # implicit dependency on the VPC
+  cidr_block              = var.public_subnet_cidr
+  availability_zone       = "${var.aws_region}a"
+  map_public_ip_on_launch = true # instances launched here get a public IP
+
+  tags = { Name = "${var.project_name}-public-subnet" }
+}
+
+resource "aws_internet_gateway" "main" {
+  vpc_id = aws_vpc.main.id
+
+  tags = { Name = "${var.project_name}-igw" }
+}
+
+resource "aws_route_table" "public" {
+  vpc_id = aws_vpc.main.id
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.main.id # this route is what makes the subnet "public"
+  }
+
+  tags = { Name = "${var.project_name}-public-rt" }
+}
+
+resource "aws_route_table_association" "public" {
+  subnet_id      = aws_subnet.public.id
+  route_table_id = aws_route_table.public.id
+}
+
+# ---------------------------------------------------------------------------
+# 2. Firewall: security group for the web server
+# ---------------------------------------------------------------------------
+resource "aws_security_group" "web" {
+  name        = "${var.project_name}-web-sg"
+  description = "HTTP/HTTPS from anywhere, SSH from the admin range"
+  vpc_id      = aws_vpc.main.id
+
+  ingress {
+    description = "HTTP"
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    description = "HTTPS"
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    description = "SSH from admin range only"
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = [var.ssh_allowed_cidr]
+  }
+
+  egress {
+    description = "all outbound"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = { Name = "${var.project_name}-web-sg" }
+}
+
+# ---------------------------------------------------------------------------
+# 3. Compute: AMI lookup + key pair + EC2 instance with user_data
+# ---------------------------------------------------------------------------
+# On real AWS: newest Amazon Linux 2023 arm64 image. Skipped when var.ami_id is given (LocalStack).
+data "aws_ami" "al2023" {
+  count       = var.ami_id == null ? 1 : 0
+  most_recent = true
+  owners      = ["amazon"]
+
+  filter {
+    name   = "name"
+    values = ["al2023-ami-2023*-arm64"]
+  }
+}
+
+locals {
+  ami_id = var.ami_id != null ? var.ami_id : data.aws_ami.al2023[0].id
+}
+
+resource "tls_private_key" "ssh" {
+  algorithm = "ED25519"
+}
+
+resource "aws_key_pair" "web" {
+  key_name   = "${var.project_name}-key"
+  public_key = tls_private_key.ssh.public_key_openssh
+}
+
+resource "aws_instance" "web" {
+  ami                         = local.ami_id
+  instance_type               = var.instance_type
+  subnet_id                   = aws_subnet.public.id
+  vpc_security_group_ids      = [aws_security_group.web.id]
+  key_name                    = aws_key_pair.web.key_name
+  associate_public_ip_address = true
+  user_data                   = file("${path.module}/scripts/user_data.sh")
+
+  root_block_device {
+    volume_size = 8
+    volume_type = "gp3"
+  }
+
+  # Explicit dependency: without the IGW route the instance would boot before it can reach the internet,
+  # and user_data (dnf install nginx) would fail. Terraform cannot infer this from attributes.
+  depends_on = [aws_route_table_association.public]
+
+  tags = { Name = "${var.project_name}-web" }
+}
+
+# ---------------------------------------------------------------------------
+# 4. Storage: private S3 bucket for the app's assets / logs
+# ---------------------------------------------------------------------------
+resource "aws_s3_bucket" "assets" {
+  bucket        = "${var.project_name}-assets-${var.bucket_suffix}"
+  force_destroy = true
+
+  tags = { Name = "${var.project_name}-assets" }
+}
+
+resource "aws_s3_bucket_public_access_block" "assets" {
+  bucket                  = aws_s3_bucket.assets.id
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
+resource "aws_s3_bucket_versioning" "assets" {
+  bucket = aws_s3_bucket.assets.id
+  versioning_configuration { status = "Enabled" }
+}
+
+# A file that records which instance the bucket belongs to: shows outputs of one resource feeding another.
+resource "aws_s3_object" "instance_info" {
+  bucket  = aws_s3_bucket.assets.id
+  key     = "infra/instance.json"
+  content = jsonencode({ instance_id = aws_instance.web.id, private_ip = aws_instance.web.private_ip, vpc_id = aws_vpc.main.id })
+
+  content_type = "application/json"
+}
+
+$ cat outputs.tf
+output "vpc_id" {
+  description = "ID of the VPC."
+  value       = aws_vpc.main.id
+}
+
+output "vpc_cidr" {
+  value = aws_vpc.main.cidr_block
+}
+
+output "public_subnet_id" {
+  value = aws_subnet.public.id
+}
+
+output "internet_gateway_id" {
+  value = aws_internet_gateway.main.id
+}
+
+output "route_table_id" {
+  value = aws_route_table.public.id
+}
+
+output "security_group_id" {
+  value = aws_security_group.web.id
+}
+
+output "instance_id" {
+  value = aws_instance.web.id
+}
+
+output "instance_public_ip" {
+  description = "Public IP of the web server - open http://<ip>/ once user_data has finished."
+  value       = aws_instance.web.public_ip
+}
+
+output "instance_private_ip" {
+  value = aws_instance.web.private_ip
+}
+
+output "ami_id" {
+  value = aws_instance.web.ami
+}
+
+output "bucket_name" {
+  value = aws_s3_bucket.assets.bucket
+}
+
+output "bucket_arn" {
+  value = aws_s3_bucket.assets.arn
+}
+
+output "ssh_private_key_pem" {
+  description = "Private key for the instance (sensitive - only printed with terraform output -raw)."
+  value       = tls_private_key.ssh.private_key_openssh
+  sensitive   = true
+}
+
+$ cat terraform.tfvars localstack.tfvars
+# Copy to terraform.tfvars and adjust. No secrets belong here.
+aws_region         = "ap-south-1"
+project_name       = "s19-kushal"
+vpc_cidr           = "10.20.0.0/16"
+public_subnet_cidr = "10.20.1.0/24"
+instance_type      = "t3.micro"
+ssh_allowed_cidr   = "10.0.0.0/8" # LocalStack run; on real AWS put your own /32 here
+bucket_suffix      = "24bcs10123"
+# terraform apply -var-file=localstack.tfvars
+aws_endpoint_url = "http://localhost:4566"
+ami_id           = "ami-03cf127a" # from LocalStack's fixed AMI catalogue (describe-images); real AWS uses data.aws_ami
+
+$ cat scripts/user_data.sh
+#!/bin/bash
+# Runs once at first boot (cloud-init). Installs nginx and serves a page that names the instance.
+set -eux
+dnf install -y nginx
+TOKEN=$(curl -s -X PUT http://169.254.169.254/latest/api/token -H 'X-aws-ec2-metadata-token-ttl-seconds: 300')
+IID=$(curl -s -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/instance-id)
+AZ=$(curl -s -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/placement/availability-zone)
+cat > /usr/share/nginx/html/index.html <<HTML
+<h1>Session 19 - Terraform built this</h1>
+<p>instance: ${IID} in ${AZ}</p>
+<p>kushal-24bcs10123</p>
+HTML
+systemctl enable --now nginx
+
+############ LOCALSTACK IS EMPTY BEFORE WE START ############
+
+$ awsl ec2 describe-vpcs --query 'Vpcs[].{VpcId:VpcId,Cidr:CidrBlock,Default:IsDefault}' --output table
+----------------------------------------------
+|                DescribeVpcs                |
++---------------+-----------+----------------+
+|     Cidr      |  Default  |     VpcId      |
++---------------+-----------+----------------+
+|  172.31.0.0/16|  True     |  vpc-5a308e7b  |
++---------------+-----------+----------------+
+
+$ awsl ec2 describe-instances --query 'Reservations[].Instances[].InstanceId' --output text; echo '(no instances)'
+i-3b79c83ae0d0cf205	i-e6f3f17a525e385ce
+(no instances)
+
+$ awsl s3 ls; echo '(no buckets)'
+(no buckets)
+
+############ terraform init ############
+
+$ rm -rf .terraform terraform.tfstate terraform.tfstate.backup tfplan
+
+$ tf init -input=false
+Initializing the backend...
+
+Initializing provider plugins...
+- Finding hashicorp/aws versions matching "~> 6.0"...
+- Finding hashicorp/tls versions matching "~> 4.0"...
+- Installing hashicorp/aws v6.67.0...
+- Installed hashicorp/aws v6.67.0 (signed by HashiCorp)
+- Installing hashicorp/tls v4.4.1...
+- Installed hashicorp/tls v4.4.1 (signed by HashiCorp)
+
+Terraform has created a lock file .terraform.lock.hcl to record the provider
+selections it made above. Include this file in your version control repository
+so that Terraform can guarantee to make the same selections by default when
+you run "terraform init" in the future.
+
+Terraform has been successfully initialized!
+
+You may now begin working with Terraform. Try running "terraform plan" to see
+any changes that are required for your infrastructure. All Terraform commands
+should now work.
+
+If you ever set or change modules or backend configuration for Terraform,
+rerun this command to reinitialize your working directory. If you forget, other
+commands will detect it and remind you to do so if necessary.
+
+$ cat .terraform.lock.hcl | grep -E 'provider|version'
+provider "registry.terraform.io/hashicorp/aws" {
+  version     = "6.67.0"
+provider "registry.terraform.io/hashicorp/tls" {
+  version     = "4.4.1"
+
+############ terraform fmt + validate ############
+
+$ tf fmt -recursive -check -diff; echo "fmt exit code: $?"
+fmt exit code: 0
+
+$ tf validate
+Success! The configuration is valid.
+
+
+############ terraform plan ############
+
+$ tf plan -input=false -var-file=localstack.tfvars -out=tfplan
+
+Terraform used the selected providers to generate the following execution
+plan. Resource actions are indicated with the following symbols:
+  + create
+
+Terraform will perform the following actions:
+
+  # aws_instance.web will be created
+  + resource "aws_instance" "web" {
+      + ami                                  = "ami-03cf127a"
+      + arn                                  = (known after apply)
+      + associate_public_ip_address          = true
+      + availability_zone                    = (known after apply)
+      + disable_api_stop                     = (known after apply)
+      + disable_api_termination              = (known after apply)
+      + ebs_optimized                        = (known after apply)
+      + enable_primary_ipv6                  = (known after apply)
+      + force_destroy                        = false
+      + get_password_data                    = false
+      + host_id                              = (known after apply)
+      + host_resource_group_arn              = (known after apply)
+      + iam_instance_profile                 = (known after apply)
+      + id                                   = (known after apply)
+      + instance_initiated_shutdown_behavior = (known after apply)
+      + instance_lifecycle                   = (known after apply)
+      + instance_state                       = (known after apply)
+      + instance_type                        = "t3.micro"
+      + ipv6_address_count                   = (known after apply)
+      + ipv6_addresses                       = (known after apply)
+      + key_name                             = "s19-kushal-key"
+      + monitoring                           = (known after apply)
+      + outpost_arn                          = (known after apply)
+      + password_data                        = (known after apply)
+      + placement_group                      = (known after apply)
+      + placement_group_id                   = (known after apply)
+      + placement_partition_number           = (known after apply)
+      + primary_network_interface_id         = (known after apply)
+      + private_dns                          = (known after apply)
+      + private_ip                           = (known after apply)
+      + public_dns                           = (known after apply)
+      + public_ip                            = (known after apply)
+      + region                               = "ap-south-1"
+      + secondary_private_ips                = (known after apply)
+      + security_groups                      = (known after apply)
+      + source_dest_check                    = true
+      + spot_instance_request_id             = (known after apply)
+      + subnet_id                            = (known after apply)
+      + tags                                 = {
+          + "Name" = "s19-kushal-web"
+        }
+      + tags_all                             = {
+          + "ManagedBy" = "Terraform"
+          + "Name"      = "s19-kushal-web"
+          + "Owner"     = "kushal-24bcs10123"
+          + "Project"   = "session19"
+        }
+      + tenancy                              = (known after apply)
+      + user_data                            = <<-EOT
+            #!/bin/bash
+            # Runs once at first boot (cloud-init). Installs nginx and serves a page that names the instance.
+            set -eux
+            dnf install -y nginx
+            TOKEN=$(curl -s -X PUT http://169.254.169.254/latest/api/token -H 'X-aws-ec2-metadata-token-ttl-seconds: 300')
+            IID=$(curl -s -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/instance-id)
+            AZ=$(curl -s -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/placement/availability-zone)
+            cat > /usr/share/nginx/html/index.html <<HTML
+            <h1>Session 19 - Terraform built this</h1>
+            <p>instance: ${IID} in ${AZ}</p>
+            <p>kushal-24bcs10123</p>
+            HTML
+            systemctl enable --now nginx
+        EOT
+      + user_data_base64                     = (known after apply)
+      + user_data_replace_on_change          = false
+      + vpc_security_group_ids               = (known after apply)
+
+      + capacity_reservation_specification (known after apply)
+
+      + cpu_options (known after apply)
+
+      + ebs_block_device (known after apply)
+
+      + enclave_options (known after apply)
+
+      + ephemeral_block_device (known after apply)
+
+      + instance_market_options (known after apply)
+
+      + maintenance_options (known after apply)
+
+      + metadata_options (known after apply)
+
+      + network_interface (known after apply)
+
+      + primary_network_interface (known after apply)
+
+      + private_dns_name_options (known after apply)
+
+      + root_block_device {
+          + delete_on_termination = true
+          + device_name           = (known after apply)
+          + encrypted             = (known after apply)
+          + iops                  = (known after apply)
+          + kms_key_id            = (known after apply)
+          + tags_all              = (known after apply)
+          + throughput            = (known after apply)
+          + volume_id             = (known after apply)
+          + volume_size           = 8
+          + volume_type           = "gp3"
+        }
+
+      + secondary_network_interface (known after apply)
+    }
+
+  # aws_internet_gateway.main will be created
+  + resource "aws_internet_gateway" "main" {
+      + arn      = (known after apply)
+      + id       = (known after apply)
+      + owner_id = (known after apply)
+      + region   = "ap-south-1"
+      + tags     = {
+          + "Name" = "s19-kushal-igw"
+        }
+      + tags_all = {
+          + "ManagedBy" = "Terraform"
+          + "Name"      = "s19-kushal-igw"
+          + "Owner"     = "kushal-24bcs10123"
+          + "Project"   = "session19"
+        }
+      + vpc_id   = (known after apply)
+    }
+
+  # aws_key_pair.web will be created
+  + resource "aws_key_pair" "web" {
+      + arn             = (known after apply)
+      + fingerprint     = (known after apply)
+      + id              = (known after apply)
+      + key_name        = "s19-kushal-key"
+      + key_name_prefix = (known after apply)
+      + key_pair_id     = (known after apply)
+      + key_type        = (known after apply)
+      + public_key      = (known after apply)
+      + region          = "ap-south-1"
+      + tags_all        = {
+          + "ManagedBy" = "Terraform"
+          + "Owner"     = "kushal-24bcs10123"
+          + "Project"   = "session19"
+        }
+    }
+
+  # aws_route_table.public will be created
+  + resource "aws_route_table" "public" {
+      + arn              = (known after apply)
+      + id               = (known after apply)
+      + owner_id         = (known after apply)
+      + propagating_vgws = (known after apply)
+      + region           = "ap-south-1"
+      + route            = [
+          + {
+              + cidr_block                 = "0.0.0.0/0"
+              + gateway_id                 = (known after apply)
+                # (12 unchanged attributes hidden)
+            },
+        ]
+      + tags             = {
+          + "Name" = "s19-kushal-public-rt"
+        }
+      + tags_all         = {
+          + "ManagedBy" = "Terraform"
+          + "Name"      = "s19-kushal-public-rt"
+          + "Owner"     = "kushal-24bcs10123"
+          + "Project"   = "session19"
+        }
+      + vpc_id           = (known after apply)
+    }
+
+  # aws_route_table_association.public will be created
+  + resource "aws_route_table_association" "public" {
+      + id             = (known after apply)
+      + region         = "ap-south-1"
+      + route_table_id = (known after apply)
+      + subnet_id      = (known after apply)
+    }
+
+  # aws_s3_bucket.assets will be created
+  + resource "aws_s3_bucket" "assets" {
+      + acceleration_status         = (known after apply)
+      + acl                         = (known after apply)
+      + arn                         = (known after apply)
+      + bucket                      = "s19-kushal-assets-24bcs10123"
+      + bucket_domain_name          = (known after apply)
+      + bucket_namespace            = (known after apply)
+      + bucket_prefix               = (known after apply)
+      + bucket_region               = (known after apply)
+      + bucket_regional_domain_name = (known after apply)
+      + force_destroy               = true
+      + hosted_zone_id              = (known after apply)
+      + id                          = (known after apply)
+      + object_lock_enabled         = (known after apply)
+      + policy                      = (known after apply)
+      + region                      = "ap-south-1"
+      + request_payer               = (known after apply)
+      + tags                        = {
+          + "Name" = "s19-kushal-assets"
+        }
+      + tags_all                    = {
+          + "ManagedBy" = "Terraform"
+          + "Name"      = "s19-kushal-assets"
+          + "Owner"     = "kushal-24bcs10123"
+          + "Project"   = "session19"
+        }
+      + website_domain              = (known after apply)
+      + website_endpoint            = (known after apply)
+
+      + cors_rule (known after apply)
+
+      + grant (known after apply)
+
+      + lifecycle_rule (known after apply)
+
+      + logging (known after apply)
+
+      + object_lock_configuration (known after apply)
+
+      + replication_configuration (known after apply)
+
+      + server_side_encryption_configuration (known after apply)
+
+      + versioning (known after apply)
+
+      + website (known after apply)
+    }
+
+  # aws_s3_bucket_public_access_block.assets will be created
+  + resource "aws_s3_bucket_public_access_block" "assets" {
+      + block_public_acls       = true
+      + block_public_policy     = true
+      + bucket                  = (known after apply)
+      + id                      = (known after apply)
+      + ignore_public_acls      = true
+      + region                  = "ap-south-1"
+      + restrict_public_buckets = true
+    }
+
+  # aws_s3_bucket_versioning.assets will be created
+  + resource "aws_s3_bucket_versioning" "assets" {
+      + bucket = (known after apply)
+      + id     = (known after apply)
+      + region = "ap-south-1"
+
+      + versioning_configuration {
+          + mfa_delete = (known after apply)
+          + status     = "Enabled"
+        }
+    }
+
+  # aws_s3_object.instance_info will be created
+  + resource "aws_s3_object" "instance_info" {
+      + acl                    = (known after apply)
+      + arn                    = (known after apply)
+      + bucket                 = (known after apply)
+      + bucket_key_enabled     = (known after apply)
+      + checksum_crc32         = (known after apply)
+      + checksum_crc32c        = (known after apply)
+      + checksum_crc64nvme     = (known after apply)
+      + checksum_sha1          = (known after apply)
+      + checksum_sha256        = (known after apply)
+      + content                = (known after apply)
+      + content_type           = "application/json"
+      + etag                   = (known after apply)
+      + force_destroy          = false
+      + id                     = (known after apply)
+      + key                    = "infra/instance.json"
+      + kms_key_id             = (known after apply)
+      + region                 = "ap-south-1"
+      + server_side_encryption = (known after apply)
+      + storage_class          = (known after apply)
+      + tags_all               = {
+          + "ManagedBy" = "Terraform"
+          + "Owner"     = "kushal-24bcs10123"
+          + "Project"   = "session19"
+        }
+      + version_id             = (known after apply)
+    }
+
+  # aws_security_group.web will be created
+  + resource "aws_security_group" "web" {
+      + arn                    = (known after apply)
+      + description            = "HTTP/HTTPS from anywhere, SSH from the admin range"
+      + egress                 = [
+          + {
+              + cidr_blocks      = [
+                  + "0.0.0.0/0",
+                ]
+              + description      = "all outbound"
+              + from_port        = 0
+              + ipv6_cidr_blocks = []
+              + prefix_list_ids  = []
+              + protocol         = "-1"
+              + security_groups  = []
+              + self             = false
+              + to_port          = 0
+            },
+        ]
+      + id                     = (known after apply)
+      + ingress                = [
+          + {
+              + cidr_blocks      = [
+                  + "0.0.0.0/0",
+                ]
+              + description      = "HTTP"
+              + from_port        = 80
+              + ipv6_cidr_blocks = []
+              + prefix_list_ids  = []
+              + protocol         = "tcp"
+              + security_groups  = []
+              + self             = false
+              + to_port          = 80
+            },
+          + {
+              + cidr_blocks      = [
+                  + "0.0.0.0/0",
+                ]
+              + description      = "HTTPS"
+              + from_port        = 443
+              + ipv6_cidr_blocks = []
+              + prefix_list_ids  = []
+              + protocol         = "tcp"
+              + security_groups  = []
+              + self             = false
+              + to_port          = 443
+            },
+          + {
+              + cidr_blocks      = [
+                  + "10.0.0.0/8",
+                ]
+              + description      = "SSH from admin range only"
+              + from_port        = 22
+              + ipv6_cidr_blocks = []
+              + prefix_list_ids  = []
+              + protocol         = "tcp"
+              + security_groups  = []
+              + self             = false
+              + to_port          = 22
+            },
+        ]
+      + name                   = "s19-kushal-web-sg"
+      + name_prefix            = (known after apply)
+      + owner_id               = (known after apply)
+      + region                 = "ap-south-1"
+      + revoke_rules_on_delete = false
+      + tags                   = {
+          + "Name" = "s19-kushal-web-sg"
+        }
+      + tags_all               = {
+          + "ManagedBy" = "Terraform"
+          + "Name"      = "s19-kushal-web-sg"
+          + "Owner"     = "kushal-24bcs10123"
+          + "Project"   = "session19"
+        }
+      + vpc_id                 = (known after apply)
+    }
+
+  # aws_subnet.public will be created
+  + resource "aws_subnet" "public" {
+      + arn                                            = (known after apply)
+      + assign_ipv6_address_on_creation                = false
+      + availability_zone                              = "ap-south-1a"
+      + availability_zone_id                           = (known after apply)
+      + cidr_block                                     = "10.20.1.0/24"
+      + enable_dns64                                   = false
+      + enable_resource_name_dns_a_record_on_launch    = false
+      + enable_resource_name_dns_aaaa_record_on_launch = false
+      + id                                             = (known after apply)
+      + ipv6_cidr_block                                = (known after apply)
+      + ipv6_cidr_block_association_id                 = (known after apply)
+      + ipv6_native                                    = false
+      + map_public_ip_on_launch                        = true
+      + owner_id                                       = (known after apply)
+      + private_dns_hostname_type_on_launch            = (known after apply)
+      + region                                         = "ap-south-1"
+      + tags                                           = {
+          + "Name" = "s19-kushal-public-subnet"
+        }
+      + tags_all                                       = {
+          + "ManagedBy" = "Terraform"
+          + "Name"      = "s19-kushal-public-subnet"
+          + "Owner"     = "kushal-24bcs10123"
+          + "Project"   = "session19"
+        }
+      + vpc_id                                         = (known after apply)
+    }
+
+  # aws_vpc.main will be created
+  + resource "aws_vpc" "main" {
+      + arn                                  = (known after apply)
+      + cidr_block                           = "10.20.0.0/16"
+      + default_network_acl_id               = (known after apply)
+      + default_route_table_id               = (known after apply)
+      + default_security_group_id            = (known after apply)
+      + dhcp_options_id                      = (known after apply)
+      + enable_dns_hostnames                 = true
+      + enable_dns_support                   = true
+      + enable_network_address_usage_metrics = (known after apply)
+      + id                                   = (known after apply)
+      + instance_tenancy                     = "default"
+      + ipv6_association_id                  = (known after apply)
+      + ipv6_cidr_block                      = (known after apply)
+      + ipv6_cidr_block_network_border_group = (known after apply)
+      + main_route_table_id                  = (known after apply)
+      + owner_id                             = (known after apply)
+      + region                               = "ap-south-1"
+      + tags                                 = {
+          + "Name" = "s19-kushal-vpc"
+        }
+      + tags_all                             = {
+          + "ManagedBy" = "Terraform"
+          + "Name"      = "s19-kushal-vpc"
+          + "Owner"     = "kushal-24bcs10123"
+          + "Project"   = "session19"
+        }
+    }
+
+  # tls_private_key.ssh will be created
+  + resource "tls_private_key" "ssh" {
+      + algorithm                     = "ED25519"
+      + ecdsa_curve                   = "P224"
+      + id                            = (known after apply)
+      + private_key_openssh           = (sensitive value)
+      + private_key_pem               = (sensitive value)
+      + private_key_pem_pkcs8         = (sensitive value)
+      + public_key_fingerprint_md5    = (known after apply)
+      + public_key_fingerprint_sha256 = (known after apply)
+      + public_key_openssh            = (known after apply)
+      + public_key_pem                = (known after apply)
+      + rsa_bits                      = 2048
+    }
+
+Plan: 13 to add, 0 to change, 0 to destroy.
+
+Changes to Outputs:
+  + ami_id              = "ami-03cf127a"
+  + bucket_arn          = (known after apply)
+  + bucket_name         = "s19-kushal-assets-24bcs10123"
+  + instance_id         = (known after apply)
+  + instance_private_ip = (known after apply)
+  + instance_public_ip  = (known after apply)
+  + internet_gateway_id = (known after apply)
+  + public_subnet_id    = (known after apply)
+  + route_table_id      = (known after apply)
+  + security_group_id   = (known after apply)
+  + ssh_private_key_pem = (sensitive value)
+  + vpc_cidr            = "10.20.0.0/16"
+  + vpc_id              = (known after apply)
+
+─────────────────────────────────────────────────────────────────────────────
+
+Saved the plan to: tfplan
+
+To perform exactly these actions, run the following command to apply:
+    terraform apply "tfplan"
+
+$ tf show tfplan | grep -E '^  # |Plan:'
+  # aws_instance.web will be created
+  # aws_internet_gateway.main will be created
+  # aws_key_pair.web will be created
+  # aws_route_table.public will be created
+  # aws_route_table_association.public will be created
+  # aws_s3_bucket.assets will be created
+  # aws_s3_bucket_public_access_block.assets will be created
+  # aws_s3_bucket_versioning.assets will be created
+  # aws_s3_object.instance_info will be created
+  # aws_security_group.web will be created
+  # aws_subnet.public will be created
+  # aws_vpc.main will be created
+  # tls_private_key.ssh will be created
+Plan: 13 to add, 0 to change, 0 to destroy.
+
+############ terraform apply ############
+
+$ tf apply -input=false -auto-approve tfplan
+tls_private_key.ssh: Creating...
+tls_private_key.ssh: Creation complete after 0s [id=b649337b9e8832946123eef22832c973e81b7324]
+aws_key_pair.web: Creating...
+aws_vpc.main: Creating...
+aws_s3_bucket.assets: Creating...
+aws_key_pair.web: Creation complete after 0s [id=s19-kushal-key]
+aws_vpc.main: Creation complete after 0s [id=vpc-98dac775]
+aws_internet_gateway.main: Creating...
+aws_subnet.public: Creating...
+aws_security_group.web: Creating...
+aws_s3_bucket.assets: Creation complete after 0s [id=s19-kushal-assets-24bcs10123]
+aws_internet_gateway.main: Creation complete after 0s [id=igw-381d562a]
+aws_s3_bucket_public_access_block.assets: Creating...
+aws_s3_bucket_versioning.assets: Creating...
+aws_route_table.public: Creating...
+aws_s3_bucket_public_access_block.assets: Creation complete after 0s [id=s19-kushal-assets-24bcs10123]
+aws_security_group.web: Creation complete after 0s [id=sg-9e865c56a484cf533]
+aws_route_table.public: Creation complete after 0s [id=rtb-2a430a2f]
+aws_s3_bucket_versioning.assets: Creation complete after 1s [id=s19-kushal-assets-24bcs10123]
+aws_subnet.public: Still creating... [00m10s elapsed]
+aws_subnet.public: Creation complete after 10s [id=subnet-2a044d51]
+aws_route_table_association.public: Creating...
+aws_route_table_association.public: Creation complete after 0s [id=rtbassoc-782c89f5]
+aws_instance.web: Creating...
+aws_instance.web: Still creating... [00m10s elapsed]
+aws_instance.web: Creation complete after 10s [id=i-3842fe9324347c9fe]
+aws_s3_object.instance_info: Creating...
+aws_s3_object.instance_info: Creation complete after 0s [id=s19-kushal-assets-24bcs10123/infra/instance.json]
+
+Apply complete! Resources: 13 added, 0 changed, 0 destroyed.
+
+Outputs:
+
+ami_id = "ami-03cf127a"
+bucket_arn = "arn:aws:s3:::s19-kushal-assets-24bcs10123"
+bucket_name = "s19-kushal-assets-24bcs10123"
+instance_id = "i-3842fe9324347c9fe"
+instance_private_ip = "10.20.1.4"
+instance_public_ip = "54.214.155.183"
+internet_gateway_id = "igw-381d562a"
+public_subnet_id = "subnet-2a044d51"
+route_table_id = "rtb-2a430a2f"
+security_group_id = "sg-9e865c56a484cf533"
+ssh_private_key_pem = <sensitive>
+vpc_cidr = "10.20.0.0/16"
+vpc_id = "vpc-98dac775"
+
+############ outputs ############
+
+$ tf output
+ami_id = "ami-03cf127a"
+bucket_arn = "arn:aws:s3:::s19-kushal-assets-24bcs10123"
+bucket_name = "s19-kushal-assets-24bcs10123"
+instance_id = "i-3842fe9324347c9fe"
+instance_private_ip = "10.20.1.4"
+instance_public_ip = "54.214.155.183"
+internet_gateway_id = "igw-381d562a"
+public_subnet_id = "subnet-2a044d51"
+route_table_id = "rtb-2a430a2f"
+security_group_id = "sg-9e865c56a484cf533"
+ssh_private_key_pem = <sensitive>
+vpc_cidr = "10.20.0.0/16"
+vpc_id = "vpc-98dac775"
+
+$ rm -f tfplan

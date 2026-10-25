@@ -1,0 +1,7 @@
+NAME             READY   UP-TO-DATE   AVAILABLE   AGE
+session20-mini   2/2     2            2           17s
+session20-mini   2/3     2            2           3m44s
+session20-mini   2/3     2            2           3m44s
+session20-mini   2/3     2            2           3m44s
+session20-mini   2/3     3            2           3m44s
+session20-mini   3/3     3            3           3m44s

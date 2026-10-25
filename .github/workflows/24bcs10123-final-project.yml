@@ -1,0 +1,193 @@
+# StudyTrack capstone pipeline (Kushal Talati, 24BCS10123)
+#
+#   test ──┬── sast (bandit + semgrep)
+#          ├── sca (pip-audit + npm audit)
+#          └── secret-scan (gitleaks)
+#                    │
+#              helm-lint ── build-and-push (backend + frontend -> GHCR, tag = git sha)
+#                                   │
+#                            image-scan (trivy, fails on HIGH/CRITICAL)
+#                                   │
+#                            deploy (bump helm/values.yaml image.tag -> Argo CD syncs the cluster)
+name: 24bcs10123 final project - studytrack
+
+on:
+  push:
+    branches: [capstone-kushal-s21, sessions-13-21-kushal, main]
+    paths:
+      - "session21-python/kushal-24bcs10123/**"
+      - ".github/workflows/24bcs10123-final-project.yml"
+  workflow_dispatch:
+
+env:
+  PROJECT_DIR: session21-python/kushal-24bcs10123
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ghcr.io/${{ github.repository_owner }}/studytrack
+
+concurrency:
+  group: studytrack-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  # ------------------------------------------------------------------ 1. tests
+  test:
+    name: Unit tests (pytest)
+    runs-on: ubuntu-latest
+    defaults: { run: { working-directory: session21-python/kushal-24bcs10123/backend } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12", cache: pip, cache-dependency-path: session21-python/kushal-24bcs10123/backend/requirements-dev.txt }
+      - run: pip install -r requirements-dev.txt
+      - name: pytest
+        run: pytest -v --cov=app --cov-report=term-missing | tee pytest-output.txt
+      - uses: actions/upload-artifact@v4
+        with: { name: pytest-report, path: session21-python/kushal-24bcs10123/backend/pytest-output.txt }
+
+  # ------------------------------------------------------------------ 2. security (parallel, all need green tests)
+  sast:
+    name: SAST (bandit + semgrep)
+    needs: test
+    runs-on: ubuntu-latest
+    defaults: { run: { working-directory: session21-python/kushal-24bcs10123/backend } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install bandit semgrep
+      - name: bandit (python security linter)
+        run: bandit -r app -ll -f txt | tee ../bandit-report.txt
+      - name: semgrep (python + security-audit rulesets)
+        run: semgrep scan --config p/python --config p/security-audit --error --metrics=off app
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: sast-report, path: session21-python/kushal-24bcs10123/bandit-report.txt }
+
+  sca:
+    name: SCA (pip-audit + npm audit)
+    needs: test
+    runs-on: ubuntu-latest
+    defaults: { run: { working-directory: session21-python/kushal-24bcs10123 } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - name: pip-audit (known CVEs in python dependencies)
+        run: pip install pip-audit && pip-audit -r backend/requirements.txt --strict --desc
+      - uses: actions/setup-node@v4
+        with: { node-version: 24 }
+      - name: npm audit (production dependencies)
+        run: cd frontend && npm ci --no-audit --no-fund && npm audit --omit=dev --audit-level=high
+
+  secret-scan:
+    name: Secret scan (gitleaks)
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - name: gitleaks over the project directory and its git history
+        run: |
+          curl -sSL https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz | tar xz gitleaks
+          ./gitleaks git --no-banner --redact --verbose --config ${PROJECT_DIR}/.gitleaks.toml --log-opts="-- ${PROJECT_DIR} .github/workflows/24bcs10123-final-project.yml" .
+          ./gitleaks dir --no-banner --redact --config ${PROJECT_DIR}/.gitleaks.toml ${PROJECT_DIR}
+
+  helm-lint:
+    name: Helm lint + template
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/setup-helm@v4
+      - run: helm lint ${PROJECT_DIR}/helm/studytrack
+      - run: helm template studytrack ${PROJECT_DIR}/helm/studytrack -f ${PROJECT_DIR}/helm/studytrack/values-prod.yaml > rendered.yaml && grep -c '^kind:' rendered.yaml
+
+  # ------------------------------------------------------------------ 3. build + push
+  build-and-push:
+    name: Build and push images (GHCR)
+    needs: [sast, sca, secret-scan, helm-lint]
+    runs-on: ubuntu-latest
+    permissions: { contents: read, packages: write }
+    outputs:
+      tag: ${{ steps.meta.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: meta
+        run: echo "tag=sha-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+      - uses: docker/setup-qemu-action@v3      # my cluster is arm64 (Apple Silicon kind), the runner is amd64
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with: { registry: ghcr.io, username: "${{ github.actor }}", password: "${{ secrets.GITHUB_TOKEN }}" }
+      - name: Build + push backend
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ env.PROJECT_DIR }}/backend
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ${{ env.IMAGE_PREFIX }}-backend:${{ steps.meta.outputs.tag }}
+            ${{ env.IMAGE_PREFIX }}-backend:latest
+          cache-from: type=gha,scope=backend
+          cache-to: type=gha,scope=backend,mode=max
+      - name: "Build + push frontend (multi-stage: node build -> nginx)"
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ env.PROJECT_DIR }}/frontend
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ${{ env.IMAGE_PREFIX }}-frontend:${{ steps.meta.outputs.tag }}
+            ${{ env.IMAGE_PREFIX }}-frontend:latest
+          cache-from: type=gha,scope=frontend
+          cache-to: type=gha,scope=frontend,mode=max
+
+  # ------------------------------------------------------------------ 4. image scan gate
+  image-scan:
+    name: Container image scan (trivy)
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    permissions: { contents: read, packages: read }
+    strategy:
+      matrix: { image: [backend, frontend] }
+    steps:
+      - uses: docker/login-action@v3
+        with: { registry: ghcr.io, username: "${{ github.actor }}", password: "${{ secrets.GITHUB_TOKEN }}" }
+      # trivy runs from its own container image (the marketplace action's binary download kept failing);
+      # the docker login above leaves credentials in ~/.docker/config.json, which is mounted read-only.
+      - name: trivy - full report (never fails)
+        run: |
+          docker run --rm -v "$HOME/.docker/config.json:/root/.docker/config.json:ro" \
+            aquasec/trivy:0.65.0 image --scanners vuln --ignore-unfixed --exit-code 0 \
+            ${{ env.IMAGE_PREFIX }}-${{ matrix.image }}:${{ needs.build-and-push.outputs.tag }}
+      - name: trivy - security gate (HIGH/CRITICAL with a fix available => fail)
+        run: |
+          docker run --rm -v "$HOME/.docker/config.json:/root/.docker/config.json:ro" \
+            aquasec/trivy:0.65.0 image --scanners vuln --ignore-unfixed --severity HIGH,CRITICAL --exit-code 1 \
+            ${{ env.IMAGE_PREFIX }}-${{ matrix.image }}:${{ needs.build-and-push.outputs.tag }}
+
+  # ------------------------------------------------------------------ 5. deploy (GitOps)
+  deploy:
+    name: Deploy - bump image tag for Argo CD
+    needs: [build-and-push, image-scan]
+    if: github.ref_name == 'capstone-kushal-s21'   # Argo CD watches this branch only; the PR branch just runs CI
+    runs-on: ubuntu-latest
+    permissions: { contents: write }
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: "${{ github.ref_name }}" }
+      - name: Write the new tag into helm/studytrack/values.yaml
+        run: |
+          TAG="${{ needs.build-and-push.outputs.tag }}"
+          sed -i -E "s|^(  tag: ).*|\1${TAG}|" ${PROJECT_DIR}/helm/studytrack/values.yaml
+          grep -n '^  tag:' ${PROJECT_DIR}/helm/studytrack/values.yaml
+      - name: Commit and push (skips the pipeline on its own commit)
+        run: |
+          git config user.name "kushaltalati"
+          git config user.email "kushaltalati@users.noreply.github.com"
+          if git diff --quiet; then echo "tag unchanged, nothing to commit"; exit 0; fi
+          git commit -am "deploy: studytrack image ${{ needs.build-and-push.outputs.tag }} [skip ci]"
+          git push origin HEAD:${{ github.ref_name }}
+      - name: What happens next
+        run: |
+          echo "Argo CD (Application 'studytrack' on my kind cluster) watches this branch and path."
+          echo "It sees the new image.tag and rolls the Deployments out: helm values -> cluster, no kubectl from CI."

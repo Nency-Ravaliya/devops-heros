@@ -1,0 +1,35 @@
+
+$ kubectl apply -f k8s/namespace.yaml
+namespace/studytrack unchanged
+
+$ helm lint helm/studytrack
+==> Linting helm/studytrack
+[INFO] Chart.yaml: icon is recommended
+
+1 chart(s) linted, 0 chart(s) failed
+
+$ helm upgrade --install studytrack helm/studytrack -n studytrack --set image.tag=sha-da417a0 --wait --timeout 10m
+Release "studytrack" does not exist. Installing it now.
+NAME: studytrack
+LAST DEPLOYED: Wed Oct  7 23:34:30 2026
+NAMESPACE: studytrack
+STATUS: deployed
+REVISION: 1
+DESCRIPTION: Install complete
+TEST SUITE: None
+NOTES:
+StudyTrack 0.1.0 deployed as release "studytrack" in namespace studytrack.
+
+  kubectl -n studytrack get pods,svc,ingress,hpa
+  curl -H 'Host: studytrack.local' http://localhost/api/entries/summary
+
+Images: ghcr.io/kushaltalati/studytrack-backend:sha-da417a0 and ghcr.io/kushaltalati/studytrack-frontend:sha-da417a0
+
+$ helm list -n studytrack
+NAME      	NAMESPACE 	REVISION	UPDATED                             	STATUS  	CHART           	APP VERSION
+studytrack	studytrack	1       	2026-10-07 23:34:30.881139 +0530 IST	deployed	studytrack-0.1.0	0.1.0      
+
+$ helm get values studytrack -n studytrack
+USER-SUPPLIED VALUES:
+image:
+  tag: sha-da417a0

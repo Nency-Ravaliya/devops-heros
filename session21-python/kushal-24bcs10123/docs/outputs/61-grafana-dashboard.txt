@@ -1,0 +1,20 @@
+$ kubectl -n monitoring port-forward svc/kube-prometheus-stack-grafana 21300:80 &
+$ curl -s -u admin:*** localhost:21300/api/health
+{
+  "database": "ok",
+  "version": "13.2.3",
+  "commit": "90ffed056f0884267356c12a0eeb72a022af53f1"
+}
+$ curl -s -u admin:*** -X POST localhost:21300/api/dashboards/db -d {"dashboard": <monitoring/grafana-dashboard-studytrack.json>, "overwrite": true}
+{"folderUid":"","id":211805850468352,"slug":"studytrack","status":"success","uid":"studytrack","url":"/d/studytrack/studytrack","version":1}
+$ curl -s -u admin:*** localhost:21300/api/search?query=StudyTrack
+[{"id":211805850468352,"uid":"studytrack","orgId":1,"title":"StudyTrack","uri":"db/studytrack","url":"/d/studytrack/studytrack","slug":"","type":"dash-db","tags":["24bcs10123","studytrack"],"isStarred":false,"sortMeta":0,"isDeleted":false}]
+$ datasource uid for Prometheus: prometheus
+$ curl -s -u admin:*** -X POST localhost:21300/api/ds/query  (panel "HTTP requests / s by handler", last 15m, same query as the dashboard)
+  {'handler': '/api/entries'} points=2 max=0.02 req/s
+  {'handler': '/api/entries/summary'} points=17 max=174.36 req/s
+
+$ ... panel "p95 latency" instant
+  p95 = 0.1432701188533799 s
+
+Grafana UI: http://localhost:21300/d/studytrack (admin / the lab password from monitoring/prometheus-values.yaml)

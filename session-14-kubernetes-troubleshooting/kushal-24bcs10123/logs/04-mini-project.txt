@@ -1,0 +1,207 @@
+namespace/s14-mini created
+
+############ 1. deploy ############
+
+$ kubectl -n s14-mini apply -f deployment.yaml && kubectl -n s14-mini apply -f service.yaml
+deployment.apps/troubleshooting-app created
+service/troubleshooting-service created
+
+$ kubectl -n s14-mini rollout status deploy/troubleshooting-app --timeout=120s
+Waiting for deployment "troubleshooting-app" rollout to finish: 0 of 2 updated replicas are available...
+Waiting for deployment "troubleshooting-app" rollout to finish: 1 of 2 updated replicas are available...
+deployment "troubleshooting-app" successfully rolled out
+
+$ kubectl -n s14-mini get pods; kubectl -n s14-mini get service
+NAME                                   READY   STATUS    RESTARTS   AGE
+troubleshooting-app-59d4957864-7hmgf   1/1     Running   0          1s
+troubleshooting-app-59d4957864-8mb9q   1/1     Running   0          1s
+NAME                      TYPE        CLUSTER-IP    EXTERNAL-IP   PORT(S)   AGE
+troubleshooting-service   ClusterIP   10.96.1.212   <none>        80/TCP    1s
+
+############ 2. check the application ############
+
+$ kubectl -n s14-mini get pods -o wide
+NAME                                   READY   STATUS    RESTARTS   AGE   IP            NODE                 NOMINATED NODE   READINESS GATES
+troubleshooting-app-59d4957864-7hmgf   1/1     Running   0          1s    10.244.3.95   kushal-lab-worker    <none>           <none>
+troubleshooting-app-59d4957864-8mb9q   1/1     Running   0          1s    10.244.1.67   kushal-lab-worker2   <none>           <none>
+
+$ kubectl -n s14-mini describe pod troubleshooting-app-59d4957864-7hmgf | sed -n '/^Containers/,/^Conditions/p' | grep -E 'Image:|State|Ready|Port'
+    Image:          nginx:1.27
+    Port:           80/TCP
+    Host Port:      0/TCP
+    State:          Running
+    Ready:          True
+
+$ kubectl -n s14-mini logs troubleshooting-app-59d4957864-7hmgf | tail -3
+2026/10/07 18:13:08 [notice] 1#1: start worker process 35
+2026/10/07 18:13:08 [notice] 1#1: start worker process 36
+2026/10/07 18:13:08 [notice] 1#1: start worker process 37
+
+$ kubectl -n s14-mini exec troubleshooting-app-59d4957864-7hmgf -- curl -s localhost | grep title
+<title>Welcome to nginx!</title>
+
+############ 3./4. service and endpoints ############
+
+$ kubectl -n s14-mini describe service troubleshooting-service | grep -E 'Selector|TargetPort|Endpoints'
+Selector:                 app=troubleshooting-app
+TargetPort:               80/TCP
+Endpoints:                10.244.1.67:80,10.244.3.95:80
+
+$ kubectl -n s14-mini get endpoints troubleshooting-service
+Warning: v1 Endpoints is deprecated in v1.33+; use discovery.k8s.io/v1 EndpointSlice
+NAME                      ENDPOINTS                       AGE
+troubleshooting-service   10.244.1.67:80,10.244.3.95:80   3s
+
+$ kubectl -n s14-mini run client --image=busybox:1.36 --restart=Never -- sleep 3600; wait_ready s14-mini client
+pod/client created
+pod/client condition met
+
+$ kubectl -n s14-mini exec client -- wget -qO- -T 3 http://troubleshooting-service | grep title
+<title>Welcome to nginx!</title>
+
+############ 5./6. broken pod ############
+
+$ cat broken-pod.yaml
+apiVersion: v1
+kind: Pod
+
+metadata:
+  name: project-broken-pod
+
+spec:
+  containers:
+    - name: app
+      image: nginx:this-tag-does-not-exist
+$ kubectl -n s14-mini apply -f broken-pod.yaml
+pod/project-broken-pod created
+
+$ for i in 1 2 3 4 5 6; do sleep 5; kubectl -n s14-mini get pod project-broken-pod --no-headers; done
+project-broken-pod   0/1   ErrImagePull   0     5s
+project-broken-pod   0/1   ErrImagePull   0     10s
+project-broken-pod   0/1   ErrImagePull   0     16s
+project-broken-pod   0/1   ImagePullBackOff   0     21s
+project-broken-pod   0/1   ImagePullBackOff   0     26s
+project-broken-pod   0/1   ImagePullBackOff   0     31s
+
+$ kubectl -n s14-mini describe pod project-broken-pod | sed -n '/^Events/,$p'
+Events:
+  Type     Reason     Age                From               Message
+  ----     ------     ----               ----               -------
+  Normal   Scheduled  31s                default-scheduler  Successfully assigned s14-mini/project-broken-pod to kushal-lab-worker
+  Normal   BackOff    27s                kubelet            Back-off pulling image "nginx:this-tag-does-not-exist"
+  Warning  Failed     27s                kubelet            Error: ImagePullBackOff
+  Normal   Pulling    14s (x2 over 30s)  kubelet            Pulling image "nginx:this-tag-does-not-exist"
+  Warning  Failed     12s (x2 over 28s)  kubelet            Failed to pull image "nginx:this-tag-does-not-exist": rpc error: code = NotFound desc = failed to pull and unpack image "docker.io/library/nginx:this-tag-does-not-exist": failed to resolve reference "docker.io/library/nginx:this-tag-does-not-exist": docker.io/library/nginx:this-tag-does-not-exist: not found
+  Warning  Failed     12s (x2 over 28s)  kubelet            Error: ErrImagePull
+
+$ kubectl -n s14-mini get pod project-broken-pod -o jsonpath='{.status.containerStatuses[0].state.waiting.message}{"\n"}'
+Back-off pulling image "nginx:this-tag-does-not-exist": ErrImagePull: rpc error: code = NotFound desc = failed to pull and unpack image "docker.io/library/nginx:this-tag-does-not-exist": failed to resolve reference "docker.io/library/nginx:this-tag-does-not-exist": docker.io/library/nginx:this-tag-does-not-exist: not found
+
+$ curl -s 'https://hub.docker.com/v2/repositories/library/nginx/tags/this-tag-does-not-exist' | head -c 120; echo
+{"message":"httperror 404: tag 'this-tag-does-not-exist' not found","errinfo":{"namespace":"library","repository":"nginx
+ROOT CAUSE: nginx:this-tag-does-not-exist is not a tag of the nginx image. FIX: a real tag.
+
+$ kubectl -n s14-mini delete pod project-broken-pod; sed 's/nginx:this-tag-does-not-exist/nginx:1.27/' broken-pod.yaml | kubectl -n s14-mini apply -f - && wait_ready s14-mini project-broken-pod && kubectl -n s14-mini get pod project-broken-pod
+pod "project-broken-pod" deleted from s14-mini namespace
+pod/project-broken-pod created
+pod/project-broken-pod condition met
+NAME                 READY   STATUS    RESTARTS   AGE
+project-broken-pod   1/1     Running   0          1s
+
+############ 8./9. service selector challenge ############
+
+$ sed 's/app: troubleshooting-app/app: wrong-app/' service.yaml | sed -n '/selector/,+1p'
+  selector:
+    app: wrong-app
+
+$ sed '/selector:/{n;s/app: troubleshooting-app/app: wrong-app/;}' service.yaml | kubectl -n s14-mini apply -f -
+service/troubleshooting-service configured
+
+$ kubectl -n s14-mini get service troubleshooting-service
+NAME                      TYPE        CLUSTER-IP    EXTERNAL-IP   PORT(S)   AGE
+troubleshooting-service   ClusterIP   10.96.1.212   <none>        80/TCP    38s
+
+$ kubectl -n s14-mini get endpoints troubleshooting-service
+Warning: v1 Endpoints is deprecated in v1.33+; use discovery.k8s.io/v1 EndpointSlice
+NAME                      ENDPOINTS   AGE
+troubleshooting-service   <none>      39s
+
+$ kubectl -n s14-mini exec client -- sh -c 'wget -qO- -T 3 http://troubleshooting-service 2>&1 | tail -1'
+wget: can't connect to remote host (10.96.1.212): Connection refused
+
+$ kubectl -n s14-mini get pods --show-labels -l app=troubleshooting-app
+NAME                                   READY   STATUS    RESTARTS   AGE   LABELS
+troubleshooting-app-59d4957864-7hmgf   1/1     Running   0          40s   app=troubleshooting-app,pod-template-hash=59d4957864
+troubleshooting-app-59d4957864-8mb9q   1/1     Running   0          40s   app=troubleshooting-app,pod-template-hash=59d4957864
+
+$ kubectl -n s14-mini describe service troubleshooting-service | grep Selector
+Selector:                 app=wrong-app
+ROOT CAUSE: selector app=wrong-app vs pod label app=troubleshooting-app. FIX: re-apply the correct selector.
+
+$ kubectl -n s14-mini apply -f service.yaml; sleep 2; kubectl -n s14-mini get endpoints troubleshooting-service
+service/troubleshooting-service configured
+Warning: v1 Endpoints is deprecated in v1.33+; use discovery.k8s.io/v1 EndpointSlice
+NAME                      ENDPOINTS                       AGE
+troubleshooting-service   10.244.1.67:80,10.244.3.95:80   43s
+
+$ kubectl -n s14-mini exec client -- wget -qO- -T 3 http://troubleshooting-service | grep title
+<title>Welcome to nginx!</title>
+
+$ kubectl -n s14-mini exec client -- nslookup troubleshooting-service | tail -2
+command terminated with exit code 1
+** server can't find troubleshooting-service.svc.cluster.local: NXDOMAIN
+
+
+############ 10. final checklist run ############
+
+$ kubectl -n s14-mini get pods
+NAME                                   READY   STATUS    RESTARTS   AGE
+client                                 1/1     Running   0          40s
+project-broken-pod                     1/1     Running   0          6s
+troubleshooting-app-59d4957864-7hmgf   1/1     Running   0          43s
+troubleshooting-app-59d4957864-8mb9q   1/1     Running   0          43s
+
+$ kubectl -n s14-mini get events --types=Warning | head
+error: unknown flag: --types
+See 'kubectl get --help' for usage.
+
+$ cat /Users/kushalscaler/devops-heros/session-14-kubernetes-troubleshooting/kushal-24bcs10123/logs/04-mini-project-watch.txt
+NAME                                   READY   STATUS    RESTARTS   AGE
+troubleshooting-app-59d4957864-7hmgf   0/1     Pending   0          0s
+troubleshooting-app-59d4957864-8mb9q   0/1     Pending   0          0s
+troubleshooting-app-59d4957864-7hmgf   0/1     Pending   0          0s
+troubleshooting-app-59d4957864-8mb9q   0/1     Pending   0          0s
+troubleshooting-app-59d4957864-7hmgf   0/1     ContainerCreating   0          0s
+troubleshooting-app-59d4957864-8mb9q   0/1     ContainerCreating   0          0s
+troubleshooting-app-59d4957864-7hmgf   0/1     ContainerCreating   0          0s
+troubleshooting-app-59d4957864-8mb9q   0/1     ContainerCreating   0          0s
+troubleshooting-app-59d4957864-8mb9q   1/1     Running             0          1s
+troubleshooting-app-59d4957864-7hmgf   1/1     Running             0          1s
+client                                 0/1     Pending             0          0s
+client                                 0/1     Pending             0          0s
+client                                 0/1     ContainerCreating   0          0s
+client                                 0/1     ContainerCreating   0          0s
+client                                 1/1     Running             0          1s
+project-broken-pod                     0/1     Pending             0          0s
+project-broken-pod                     0/1     Pending             0          0s
+project-broken-pod                     0/1     ContainerCreating   0          0s
+project-broken-pod                     0/1     ContainerCreating   0          1s
+project-broken-pod                     0/1     ErrImagePull        0          4s
+project-broken-pod                     0/1     ImagePullBackOff    0          17s
+project-broken-pod                     0/1     Terminating         0          32s
+project-broken-pod                     0/1     Terminating         0          32s
+project-broken-pod                     0/1     Terminating         0          32s
+project-broken-pod                     0/1     ContainerStatusUnknown   0          33s
+project-broken-pod                     0/1     ContainerStatusUnknown   0          33s
+project-broken-pod                     0/1     ContainerStatusUnknown   0          33s
+project-broken-pod                     0/1     Pending                  0          0s
+project-broken-pod                     0/1     Pending                  0          0s
+project-broken-pod                     0/1     ContainerCreating        0          0s
+project-broken-pod                     0/1     ContainerCreating        0          1s
+project-broken-pod                     1/1     Running                  0          1s
+screenshot -> screenshots/04-mini-project-watch.png
+
+############ cleanup ############
+
+$ kubectl delete ns s14-mini --wait=false
+namespace "s14-mini" deleted

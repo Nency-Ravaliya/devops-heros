@@ -1,0 +1,204 @@
+
+############ AWS CLI: the VPC and everything in it ############
+
+$ awsl ec2 describe-vpcs --filters Name=tag:Name,Values=s19-kushal-vpc --query 'Vpcs[].{VpcId:VpcId,Cidr:CidrBlock,State:State,DnsHostnames:EnableDnsHostnames}' --output table
+---------------------------------------------------------------
+|                        DescribeVpcs                         |
++--------------+----------------+------------+----------------+
+|     Cidr     | DnsHostnames   |   State    |     VpcId      |
++--------------+----------------+------------+----------------+
+|  10.20.0.0/16|  None          |  available |  vpc-98dac775  |
++--------------+----------------+------------+----------------+
+
+$ awsl ec2 describe-subnets --filters Name=tag:Name,Values=s19-kushal-public-subnet --query 'Subnets[].{SubnetId:SubnetId,Cidr:CidrBlock,AZ:AvailabilityZone,PublicIpOnLaunch:MapPublicIpOnLaunch,Free:AvailableIpAddressCount}' --output table
+
+$ awsl ec2 describe-internet-gateways --filters Name=tag:Name,Values=s19-kushal-igw --query 'InternetGateways[].{IgwId:InternetGatewayId,AttachedTo:Attachments[0].VpcId,State:Attachments[0].State}' --output table
+-----------------------------------------------
+|          DescribeInternetGateways           |
++--------------+----------------+-------------+
+|  AttachedTo  |     IgwId      |    State    |
++--------------+----------------+-------------+
+|  vpc-98dac775|  igw-381d562a  |  available  |
++--------------+----------------+-------------+
+
+$ awsl ec2 describe-route-tables --filters Name=tag:Name,Values=s19-kushal-public-rt --query 'RouteTables[0].Routes[].{Dest:DestinationCidrBlock,Target:GatewayId,State:State}' --output table
+--------------------------------------------
+|            DescribeRouteTables           |
++---------------+---------+----------------+
+|     Dest      |  State  |    Target      |
++---------------+---------+----------------+
+|  10.20.0.0/16 |  active |  local         |
+|  0.0.0.0/0    |  active |  igw-381d562a  |
++---------------+---------+----------------+
+
+$ awsl ec2 describe-route-tables --filters Name=tag:Name,Values=s19-kushal-public-rt --query 'RouteTables[0].Associations[].{SubnetId:SubnetId,Main:Main}' --output table
+------------------------------
+|     DescribeRouteTables    |
++--------+-------------------+
+|  Main  |     SubnetId      |
++--------+-------------------+
+|  False |  subnet-2a044d51  |
++--------+-------------------+
+
+$ awsl ec2 describe-security-groups --filters Name=group-name,Values=s19-kushal-web-sg --query 'SecurityGroups[0].IpPermissions[].{From:FromPort,To:ToPort,Proto:IpProtocol,Cidr:IpRanges[0].CidrIp,Desc:IpRanges[0].Description}' --output table
+---------------------------------------------------------------------
+|                      DescribeSecurityGroups                       |
++------------+-----------------------------+-------+--------+-------+
+|    Cidr    |            Desc             | From  | Proto  |  To   |
++------------+-----------------------------+-------+--------+-------+
+|  0.0.0.0/0 |  HTTP                       |  80   |  tcp   |  80   |
+|  10.0.0.0/8|  SSH from admin range only  |  22   |  tcp   |  22   |
+|  0.0.0.0/0 |  HTTPS                      |  443  |  tcp   |  443  |
++------------+-----------------------------+-------+--------+-------+
+
+$ awsl ec2 describe-instances --filters Name=tag:Name,Values=s19-kushal-web --query 'Reservations[].Instances[].{Id:InstanceId,State:State.Name,Type:InstanceType,AMI:ImageId,Subnet:SubnetId,PrivateIp:PrivateIpAddress,PublicIp:PublicIpAddress,Key:KeyName,SG:SecurityGroups[0].GroupName}' --output table
+--------------------------------------
+|          DescribeInstances         |
++------------+-----------------------+
+|  AMI       |  ami-03cf127a         |
+|  Id        |  i-3842fe9324347c9fe  |
+|  Key       |  s19-kushal-key       |
+|  PrivateIp |  10.20.1.4            |
+|  PublicIp  |  54.214.155.183       |
+|  SG        |  None                 |
+|  State     |  running              |
+|  Subnet    |  subnet-2a044d51      |
+|  Type      |  t3.micro             |
++------------+-----------------------+
+
+$ awsl ec2 describe-instance-attribute --instance-id $(tf output -raw instance_id) --attribute userData --query 'UserData.Value' --output text | base64 --decode | head -5
+#!/bin/bash
+# Runs once at first boot (cloud-init). Installs nginx and serves a page that names the instance.
+set -eux
+dnf install -y nginx
+TOKEN=$(curl -s -X PUT http://169.254.169.254/latest/api/token -H 'X-aws-ec2-metadata-token-ttl-seconds: 300')
+
+$ awsl ec2 describe-key-pairs --key-names s19-kushal-key --query 'KeyPairs[].{Name:KeyName,Type:KeyType}' --output table
+----------------------------
+|     DescribeKeyPairs     |
++-----------------+--------+
+|      Name       | Type   |
++-----------------+--------+
+|  s19-kushal-key |  None  |
++-----------------+--------+
+
+############ AWS CLI: the bucket ############
+
+$ awsl s3 ls
+2026-10-07 23:17:54 s19-kushal-assets-24bcs10123
+
+$ awsl s3api get-public-access-block --bucket $(tf output -raw bucket_name) --query PublicAccessBlockConfiguration
+{
+    "BlockPublicAcls": true,
+    "IgnorePublicAcls": true,
+    "BlockPublicPolicy": true,
+    "RestrictPublicBuckets": true
+}
+
+$ awsl s3 ls s3://$(tf output -raw bucket_name) --recursive
+2026-10-07 23:18:14         86 infra/instance.json
+
+$ awsl s3 cp s3://$(tf output -raw bucket_name)/infra/instance.json - ; echo
+{"instance_id":"i-3842fe9324347c9fe","private_ip":"10.20.1.4","vpc_id":"vpc-98dac775"}
+
+############ TERRAFORM STATE ############
+
+$ tf state list
+aws_instance.web
+aws_internet_gateway.main
+aws_key_pair.web
+aws_route_table.public
+aws_route_table_association.public
+aws_s3_bucket.assets
+aws_s3_bucket_public_access_block.assets
+aws_s3_bucket_versioning.assets
+aws_s3_object.instance_info
+aws_security_group.web
+aws_subnet.public
+aws_vpc.main
+tls_private_key.ssh
+
+$ tf state show aws_instance.web | grep -E '^\s+(id|ami|instance_type|subnet_id|private_ip|public_ip|key_name|user_data)\s'
+    ami                                  = "ami-03cf127a"
+    id                                   = "i-3842fe9324347c9fe"
+    instance_type                        = "t3.micro"
+    key_name                             = "s19-kushal-key"
+    private_ip                           = "10.20.1.4"
+    public_ip                            = "54.214.155.183"
+    subnet_id                            = "subnet-2a044d51"
+    user_data                            = <<-EOT
+
+$ tf state show aws_route_table.public | sed -n '/route {/,/}/p'
+
+$ python3 -c "import json; s=json.load(open('terraform.tfstate')); print('terraform', s['terraform_version'], '| serial', s['serial'], '| resources', len(s['resources'])); [print(' -', r['type']+'.'+r['name'], '-> depends_on', r['instances'][0].get('dependencies', [])) for r in s['resources'] if r['mode']=='managed']"
+terraform 1.16.4 | serial 14 | resources 13
+ - aws_instance.web -> depends_on ['aws_internet_gateway.main', 'aws_key_pair.web', 'aws_route_table.public', 'aws_route_table_association.public', 'aws_security_group.web', 'aws_subnet.public', 'aws_vpc.main', 'data.aws_ami.al2023', 'tls_private_key.ssh']
+ - aws_internet_gateway.main -> depends_on ['aws_vpc.main']
+ - aws_key_pair.web -> depends_on ['tls_private_key.ssh']
+ - aws_route_table.public -> depends_on ['aws_internet_gateway.main', 'aws_vpc.main']
+ - aws_route_table_association.public -> depends_on ['aws_internet_gateway.main', 'aws_route_table.public', 'aws_subnet.public', 'aws_vpc.main']
+ - aws_s3_bucket.assets -> depends_on []
+ - aws_s3_bucket_public_access_block.assets -> depends_on ['aws_s3_bucket.assets']
+ - aws_s3_bucket_versioning.assets -> depends_on ['aws_s3_bucket.assets']
+ - aws_s3_object.instance_info -> depends_on ['aws_instance.web', 'aws_internet_gateway.main', 'aws_key_pair.web', 'aws_route_table.public', 'aws_route_table_association.public', 'aws_s3_bucket.assets', 'aws_security_group.web', 'aws_subnet.public', 'aws_vpc.main', 'data.aws_ami.al2023', 'tls_private_key.ssh']
+ - aws_security_group.web -> depends_on ['aws_vpc.main']
+ - aws_subnet.public -> depends_on ['aws_vpc.main']
+ - aws_vpc.main -> depends_on []
+ - tls_private_key.ssh -> depends_on []
+
+############ TERRAFORM GRAPH (dependencies) ############
+
+$ tf graph > ../diagrams/graph.dot && wc -l ../diagrams/graph.dot && grep -c -- '->' ../diagrams/graph.dot
+      33 ../diagrams/graph.dot
+15
+
+$ grep -- '->' ../diagrams/graph.dot | sed 's/"//g; s/^ *//' | sort
+aws_instance.web -> aws_key_pair.web;
+aws_instance.web -> aws_route_table_association.public;
+aws_instance.web -> aws_security_group.web;
+aws_instance.web -> data.aws_ami.al2023;
+aws_internet_gateway.main -> aws_vpc.main;
+aws_key_pair.web -> tls_private_key.ssh;
+aws_route_table_association.public -> aws_route_table.public;
+aws_route_table_association.public -> aws_subnet.public;
+aws_route_table.public -> aws_internet_gateway.main;
+aws_s3_bucket_public_access_block.assets -> aws_s3_bucket.assets;
+aws_s3_bucket_versioning.assets -> aws_s3_bucket.assets;
+aws_s3_object.instance_info -> aws_instance.web;
+aws_s3_object.instance_info -> aws_s3_bucket.assets;
+aws_security_group.web -> aws_vpc.main;
+aws_subnet.public -> aws_vpc.main;
+
+$ dot -Tpng ../diagrams/graph.dot -o ../diagrams/terraform-graph.png && dot -Tsvg ../diagrams/graph.dot -o ../diagrams/terraform-graph.svg && ls -la ../diagrams/
+total 152
+drwxr-xr-x@ 5 kushalscaler  staff    160 Oct  7 23:18 .
+drwxr-xr-x@ 7 kushalscaler  staff    224 Oct  7 23:16 ..
+-rw-r--r--@ 1 kushalscaler  staff   1783 Oct  7 23:18 graph.dot
+-rw-r--r--@ 1 kushalscaler  staff  60697 Oct  7 23:18 terraform-graph.png
+-rw-r--r--@ 1 kushalscaler  staff  11224 Oct  7 23:18 terraform-graph.svg
+
+############ DRIFT CHECK: plan again ############
+
+$ tf plan -input=false -var-file=localstack.tfvars -detailed-exitcode | tail -3; echo "exit code: ${PIPESTATUS[0]}  (0 = no changes, 2 = changes pending)"
+
+Note: You didn't use the -out option to save this plan, so Terraform can't
+guarantee to take exactly these actions if you run "terraform apply" now.
+exit code: 2  (0 = no changes, 2 = changes pending)
+
+############ SENSITIVE OUTPUT ############
+
+$ tf output ssh_private_key_pem
+<<EOT
+-----BEGIN OPENSSH PRIVATE KEY-----
+b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtz
+c2gtZWQyNTUxOQAAACAIPPMy2qOyOay73ztNEQiYJ5g3uOUH3xuoKPdGHOtpgQAA
+AIjfZLMw32SzMAAAAAtzc2gtZWQyNTUxOQAAACAIPPMy2qOyOay73ztNEQiYJ5g3
+uOUH3xuoKPdGHOtpgQAAAEB2Kfx8ILR9wrl4CDwe4XRjSDfo8yS4Zo1FjDYI1x1d
+Pwg88zLao7I5rLvfO00RCJgnmDe45QffG6go90Yc62mBAAAAAAECAwQF
+-----END OPENSSH PRIVATE KEY-----
+
+EOT
+
+$ tf output -raw ssh_private_key_pem | head -1; echo '... (only -raw reveals it; it is never stored in git, only in the state file)'
+-----BEGIN OPENSSH PRIVATE KEY-----
+... (only -raw reveals it; it is never stored in git, only in the state file)
